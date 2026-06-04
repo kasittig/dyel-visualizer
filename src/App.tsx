@@ -21,7 +21,7 @@ function extractSheetRef(input: string): SheetRef | null {
 type Tab = "exercises" | "charts";
 
 function App() {
-  const [url, setUrl] = useState("");
+  const [url, setUrl] = useState(import.meta.env.VITE_SHEET_URL ?? "");
   const [tab, setTab] = useState<Tab>("exercises");
   const sheetRef = extractSheetRef(url);
   const invalidUrl = url.length > 0 && !sheetRef;
