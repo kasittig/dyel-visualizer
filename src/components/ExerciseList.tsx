@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { SheetRow } from "../hooks/useSheetData";
+import { findCol } from "../hooks/useSheetData";
 
 function parseDate(str: string): Date | null {
   const d = new Date(str);
@@ -16,15 +17,15 @@ export function ExerciseList({ rows }: { rows: SheetRow[] }) {
   const bestE1RM = new Map<string, { value: number; date: Date }>();
 
   for (const row of rows) {
-    const exercise = row["Exercise"]?.trim();
-    const date = parseDate(row["Date"]?.trim());
+    const exercise = row["exercise"]?.trim();
+    const date = parseDate(row["date"]?.trim());
     if (!exercise || !date) continue;
 
     const existing = lastPerformed.get(exercise);
     if (!existing || date > existing) lastPerformed.set(exercise, date);
 
-    const weight = parseFloat(row["Weight (lbs)"] ?? "");
-    const reps = parseFloat(row["Reps"] ?? "");
+    const weight = parseFloat(findCol(row, "weight") ?? "");
+    const reps = parseFloat(row["reps"] ?? "");
     if (!isNaN(weight) && !isNaN(reps) && reps > 0) {
       const e1rm = calcE1RM(weight, reps);
       const best = bestE1RM.get(exercise);

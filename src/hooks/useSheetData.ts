@@ -2,6 +2,11 @@ import { useState, useEffect } from "react";
 
 export type SheetRow = Record<string, string>;
 
+export function findCol(row: SheetRow, keyword: string): string | undefined {
+  const key = Object.keys(row).find((k) => k.includes(keyword));
+  return key !== undefined ? row[key] : undefined;
+}
+
 type State =
   | { status: "idle" }
   | { status: "loading" }
@@ -10,10 +15,10 @@ type State =
 
 function parseCsv(csv: string): SheetRow[] {
   const lines = csv.trim().split("\n");
-  // Skip leading title rows by finding the first line that contains "Exercise"
-  const headerIdx = lines.findIndex((l) => l.includes("Exercise"));
+  // Skip leading title rows by finding the first line that contains "exercise"
+  const headerIdx = lines.findIndex((l) => l.toLowerCase().includes("exercise"));
   if (headerIdx === -1 || headerIdx >= lines.length - 1) return [];
-  const headers = lines[headerIdx].split(",").map((h) => h.trim());
+  const headers = lines[headerIdx].split(",").map((h) => h.trim().toLowerCase());
   return lines.slice(headerIdx + 1).map((line) => {
     const values = line.split(",").map((v) => v.trim());
     return Object.fromEntries(headers.map((h, i) => [h, values[i] ?? ""]));

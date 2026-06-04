@@ -9,6 +9,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import type { SheetRow } from "../hooks/useSheetData";
+import { findCol } from "../hooks/useSheetData";
 
 function calcE1RM(weight: number, reps: number): number {
   return reps === 1 ? weight : weight * (1 + 0.0333 * reps);
@@ -21,18 +22,18 @@ function formatDate(str: string): string {
 
 export function Charts({ rows }: { rows: SheetRow[] }) {
   const exercises = [
-    ...new Set(rows.map((r) => r["Exercise"]?.trim()).filter(Boolean)),
+    ...new Set(rows.map((r) => r["exercise"]?.trim()).filter(Boolean)),
   ].sort() as string[];
 
   const [exercise, setExercise] = useState(exercises[0] ?? "");
 
   const byDate = new Map<string, { e1rm: number; volume: number }>();
   for (const row of rows) {
-    if (row["Exercise"]?.trim() !== exercise) continue;
-    const date = row["Date"]?.trim();
+    if (row["exercise"]?.trim() !== exercise) continue;
+    const date = row["date"]?.trim();
     if (!date) continue;
-    const weight = parseFloat(row["Weight (lbs)"] ?? "");
-    const reps = parseFloat(row["Reps"] ?? "");
+    const weight = parseFloat(findCol(row, "weight") ?? "");
+    const reps = parseFloat(row["reps"] ?? "");
     if (isNaN(weight) || isNaN(reps) || reps <= 0) continue;
 
     const e1rm = calcE1RM(weight, reps);
