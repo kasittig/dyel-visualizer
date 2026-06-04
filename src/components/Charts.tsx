@@ -84,7 +84,7 @@ export function Charts({ rows }: { rows: SheetRow[] }) {
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="label" angle={-45} textAnchor="end" interval="preserveStartEnd" tick={{ fontSize: 11 }} />
               <YAxis tick={{ fontSize: 11 }} width={45} />
-              <Tooltip formatter={(v: number) => [`${v} lbs`, "E1RM"]} />
+              <Tooltip formatter={(v) => [`${v} lbs`, "E1RM"]} />
               <Line type="monotone" dataKey="e1rm" stroke="#6366f1" dot={{ r: 3 }} activeDot={{ r: 5 }} />
             </LineChart>
           </ResponsiveContainer>
@@ -95,7 +95,7 @@ export function Charts({ rows }: { rows: SheetRow[] }) {
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="label" angle={-45} textAnchor="end" interval="preserveStartEnd" tick={{ fontSize: 11 }} />
               <YAxis tick={{ fontSize: 11 }} width={45} />
-              <Tooltip formatter={(v: number) => [`${v} lbs`, "Volume"]} />
+              <Tooltip formatter={(v) => [`${v} lbs`, "Volume"]} />
               <Line type="monotone" dataKey="volume" stroke="#10b981" dot={{ r: 3 }} activeDot={{ r: 5 }} />
             </LineChart>
           </ResponsiveContainer>
