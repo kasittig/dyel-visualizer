@@ -32,9 +32,12 @@ export function useSheetData(sheetRef: SheetRef | null, gid = "0"): State {
     }
 
     setState({ status: "loading" });
+    const base = import.meta.env.DEV
+      ? "/sheets-proxy/spreadsheets"
+      : "https://docs.google.com/spreadsheets";
     const url = sheetRef.published
-      ? `/sheets-proxy/spreadsheets/d/e/${sheetRef.id}/pub?output=csv`
-      : `/sheets-proxy/spreadsheets/d/${sheetRef.id}/export?format=csv&gid=${gid}`;
+      ? `${base}/d/e/${sheetRef.id}/pub?output=csv`
+      : `${base}/d/${sheetRef.id}/export?format=csv&gid=${gid}`;
 
     fetch(url)
       .then((res) => {

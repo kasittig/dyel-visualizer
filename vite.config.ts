@@ -27,4 +27,5 @@ function sheetsProxyPlugin(): Plugin {
 
 export default defineConfig({
   plugins: [react(), sheetsProxyPlugin()],
+  base: "./",
 })
