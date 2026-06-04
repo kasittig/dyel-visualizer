@@ -18,6 +18,12 @@ function extractSheetRef(input: string): SheetRef | null {
   return null;
 }
 
+const EXAMPLE_CSV_URL =
+  "https://docs.google.com/spreadsheets/d/e/2PACX-1vQqznDyoxzza0HTmngCevHvq8wg7hOH5-wHb0NHwl9MEaBRf5yZAzRCvHA9ixbMEE6DJfrXAHjNCaS5/pub?output=csv";
+const EXAMPLE_SHEET_URL =
+  "https://docs.google.com/spreadsheets/d/e/2PACX-1vQqznDyoxzza0HTmngCevHvq8wg7hOH5-wHb0NHwl9MEaBRf5yZAzRCvHA9ixbMEE6DJfrXAHjNCaS5/pubhtml";
+const EXAMPLE_VISUALIZER_URL = `?sheet=${encodeURIComponent(EXAMPLE_CSV_URL)}`;
+
 type Tab = "exercises" | "charts";
 
 function App() {
@@ -48,6 +54,12 @@ function App() {
           That doesn't look like a Google Sheet URL.
         </p>
       )}
+      <p style={{ fontSize: "0.85rem", color: "#6b7280", marginTop: "0.5rem" }}>
+        Don't have a sheet?{" "}
+        <a href={EXAMPLE_VISUALIZER_URL}>View an example in the visualizer</a>
+        {" · "}
+        <a href={EXAMPLE_SHEET_URL} target="_blank" rel="noreferrer">View the example spreadsheet</a>
+      </p>
 
       <div style={{ marginTop: "1rem" }}>
         {state.status === "loading" && <p>Loading…</p>}
