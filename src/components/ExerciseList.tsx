@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { SheetRow } from "../hooks/useSheetData";
 
 function parseDate(str: string): Date | null {
@@ -5,15 +6,30 @@ function parseDate(str: string): Date | null {
   return isNaN(d.getTime()) ? null : d;
 }
 
+function calcE1RM(weight: number, reps: number): number {
+  return reps === 1 ? weight : weight * (1 + 0.0333 * reps);
+}
+
 export function ExerciseList({ rows }: { rows: SheetRow[] }) {
+  const [query, setQuery] = useState("");
   const lastPerformed = new Map<string, Date>();
+  const bestE1RM = new Map<string, { value: number; date: Date }>();
 
   for (const row of rows) {
     const exercise = row["Exercise"]?.trim();
     const date = parseDate(row["Date"]?.trim());
     if (!exercise || !date) continue;
+
     const existing = lastPerformed.get(exercise);
     if (!existing || date > existing) lastPerformed.set(exercise, date);
+
+    const weight = parseFloat(row["Weight (lbs)"] ?? "");
+    const reps = parseFloat(row["Reps"] ?? "");
+    if (!isNaN(weight) && !isNaN(reps) && reps > 0) {
+      const e1rm = calcE1RM(weight, reps);
+      const best = bestE1RM.get(exercise);
+      if (best === undefined || e1rm > best.value) bestE1RM.set(exercise, { value: e1rm, date });
+    }
   }
 
   const entries = [...lastPerformed.entries()].sort(
@@ -22,23 +38,45 @@ export function ExerciseList({ rows }: { rows: SheetRow[] }) {
 
   if (entries.length === 0) return <p>No exercise data found.</p>;
 
+  const filtered = query
+    ? entries.filter(([exercise]) =>
+        exercise.toLowerCase().includes(query.toLowerCase())
+      )
+    : entries;
+
   return (
     <section>
       <h2>Exercises</h2>
+      <input
+        type="search"
+        placeholder="Filter exercises…"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        style={{ width: "100%", padding: "0.5rem", boxSizing: "border-box", marginBottom: "0.75rem" }}
+      />
       <table style={{ borderCollapse: "collapse", width: "100%" }}>
         <thead>
           <tr>
             <th style={th}>Exercise</th>
             <th style={th}>Last Performed</th>
+            <th style={{ ...th, textAlign: "right" }}>Best E1RM (lbs)</th>
+            <th style={th}>E1RM Date</th>
           </tr>
         </thead>
         <tbody>
-          {entries.map(([exercise, date]) => (
-            <tr key={exercise}>
-              <td style={td}>{exercise}</td>
-              <td style={td}>{date.toLocaleDateString()}</td>
-            </tr>
-          ))}
+          {filtered.map(([exercise, date]) => {
+            const best = bestE1RM.get(exercise);
+            return (
+              <tr key={exercise}>
+                <td style={td}>{exercise}</td>
+                <td style={td}>{date.toLocaleDateString()}</td>
+                <td style={{ ...td, textAlign: "right" }}>
+                  {best !== undefined ? Math.round(best.value) : "—"}
+                </td>
+                <td style={td}>{best !== undefined ? best.date.toLocaleDateString() : "—"}</td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </section>
