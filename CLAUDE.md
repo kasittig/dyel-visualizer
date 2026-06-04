@@ -1,4 +1,4 @@
-# DYEL Calculator
+# DYEL Visualizer
 
 A React web app that reads workout data from a Google Sheet and displays data visualizations.
 

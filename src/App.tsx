@@ -30,7 +30,7 @@ function App() {
 
   return (
     <main style={{ padding: "2rem", fontFamily: "sans-serif", maxWidth: "700px" }}>
-      <h1>DYEL Calculator</h1>
+      <h1>DYEL Visualizer</h1>
       <label htmlFor="sheet-url" style={{ display: "block", marginBottom: "0.5rem" }}>
         Google Sheet URL
       </label>
