@@ -185,7 +185,7 @@ export function Charts({
             fontWeight: 600,
           }}
         >
-          Volume
+          Session Volume
         </button>
       </div>
       <ResponsiveContainer width="100%" height={300}>
