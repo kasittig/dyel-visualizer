@@ -6,17 +6,17 @@
 - [ ] Show only one exercise at a time (driven by the dropdown above)
 
 ## Bugs / correctness
-- [ ] `findCol` matches the first column containing "weight", which may hit "Bodyweight (lbs)" before "Weight (lbs)" — fix so bodyweight is excluded from E1RM/volume calculations
-- [ ] CSV parsing breaks when a cell value contains a comma — replace the naive split with `papaparse`
+- [x] `findCol` matches the first column containing "weight", which may hit "Bodyweight (lbs)" before "Weight (lbs)" — fix so bodyweight is excluded from E1RM/volume calculations
+- [x] CSV parsing breaks when a cell value contains a comma — replace the naive split with `papaparse`
 
 ## Code quality
-- [ ] Deduplicate `calcE1RM` — currently copy-pasted in both `Charts.tsx` and `ExerciseList.tsx`; move to a shared utility
+- [x] Deduplicate `calcE1RM` — currently copy-pasted in both `Charts.tsx` and `ExerciseList.tsx`; move to a shared utility
 
 ## Reliability
-- [ ] Add an error boundary so unhandled React errors show a message instead of a blank page
+- [x] Add an error boundary so unhandled React errors show a message instead of a blank page
 
 ## Performance
-- [ ] Bundle is ~540KB (mostly recharts) — evaluate a lighter charting library or lazy-load the charts with dynamic `import()` so they don't block initial render
+- [x] Bundle is ~540KB (mostly recharts) — evaluate a lighter charting library or lazy-load the charts with dynamic `import()` so they don't block initial render
 
 ## Future ideas
 - [ ] Multi-sheet support — expose a tab/sheet picker; `useSheetData` already accepts a `gid` param but it's hardcoded to `"0"` at the call site
