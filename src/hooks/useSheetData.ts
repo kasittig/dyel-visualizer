@@ -35,11 +35,9 @@ export function useSheetData(sheetRef: SheetRef | null, gid = "0"): State {
   const [state, setState] = useState<State>({ status: "idle" });
 
   useEffect(() => {
-    if (!sheetRef) {
-      setState({ status: "idle" });
-      return;
-    }
+    if (!sheetRef) return;
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setState({ status: "loading" });
     const base = import.meta.env.DEV
       ? "/sheets-proxy/spreadsheets"
@@ -79,7 +77,8 @@ export function useSheetData(sheetRef: SheetRef | null, gid = "0"): State {
       .catch((err) =>
         setState({ status: "error", message: String(err.message) })
       );
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sheetRef?.id, sheetRef?.published, gid]);
 
-  return state;
+  return sheetRef ? state : { status: "idle" };
 }
