@@ -77,9 +77,9 @@ export function ExerciseList({ rows, selectedExercise, onSelectExercise }: {
       <table style={{ borderCollapse: "collapse", width: "100%" }}>
         <thead>
           <tr>
-            <th style={th}>Exercise</th>
-            <th style={th}>Last 1-rep set</th>
-            <th style={th}>Last session E1RM</th>
+            <th style={th}>Movement</th>
+            <th style={th}>Last 1RM</th>
+            <th style={th}>Latest e1RM</th>
           </tr>
         </thead>
         <tbody>
