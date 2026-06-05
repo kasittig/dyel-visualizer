@@ -1,14 +1,11 @@
 import { useState } from "react";
 import type { SheetRow } from "../hooks/useSheetData";
 import { findCol } from "../hooks/useSheetData";
+import { calcE1RM } from "../utils/calcE1RM";
 
 function parseDate(str: string): Date | null {
   const d = new Date(str);
   return isNaN(d.getTime()) ? null : d;
-}
-
-function calcE1RM(weight: number, reps: number): number {
-  return reps === 1 ? weight : weight * (1 + 0.0333 * reps);
 }
 
 export function ExerciseList({ rows }: { rows: SheetRow[] }) {

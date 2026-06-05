@@ -10,10 +10,7 @@ import {
 } from "recharts";
 import type { SheetRow } from "../hooks/useSheetData";
 import { findCol } from "../hooks/useSheetData";
-
-function calcE1RM(weight: number, reps: number): number {
-  return reps === 1 ? weight : weight * (1 + 0.0333 * reps);
-}
+import { calcE1RM } from "../utils/calcE1RM";
 
 function formatDate(str: string): string {
   const d = new Date(str);
