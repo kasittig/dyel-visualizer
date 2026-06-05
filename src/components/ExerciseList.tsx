@@ -15,7 +15,8 @@ export function ExerciseList({ rows, selectedExercise, onSelectExercise }: {
 }) {
   const [query, setQuery] = useState("");
   const lastPerformed = new Map<string, Date>();
-  const bestE1RM = new Map<string, { value: number; date: Date }>();
+  const last1RepSet = new Map<string, { date: Date; weight: number }>();
+  const lastSessionE1RM = new Map<string, number>();
 
   for (const row of rows) {
     const exercise = row["exercise"]?.trim();
@@ -26,11 +27,28 @@ export function ExerciseList({ rows, selectedExercise, onSelectExercise }: {
     if (!existing || date > existing) lastPerformed.set(exercise, date);
 
     const weight = parseFloat(findCol(row, "weight") ?? "");
-    const reps = parseFloat(row["reps"] ?? "");
-    if (!isNaN(weight) && !isNaN(reps) && reps > 0) {
-      const e1rm = calcE1RM(weight, reps);
-      const best = bestE1RM.get(exercise);
-      if (best === undefined || e1rm > best.value) bestE1RM.set(exercise, { value: e1rm, date });
+    const repsStr = row["reps"]?.trim() ?? "";
+
+    if (!isNaN(weight) && repsStr === "1") {
+      const prev = last1RepSet.get(exercise);
+      if (prev === undefined || date > prev.date) last1RepSet.set(exercise, { date, weight });
+    }
+  }
+
+  for (const row of rows) {
+    const exercise = row["exercise"]?.trim();
+    const date = parseDate(row["date"]?.trim());
+    if (!exercise || !date) continue;
+
+    const lastDate = lastPerformed.get(exercise);
+    if (!lastDate || date.getTime() !== lastDate.getTime()) continue;
+
+    const weight = parseFloat(findCol(row, "weight") ?? "");
+    const repsNum = parseFloat(row["reps"] ?? "");
+    if (!isNaN(weight) && !isNaN(repsNum) && repsNum > 0) {
+      const e1rm = calcE1RM(weight, repsNum);
+      const prev = lastSessionE1RM.get(exercise);
+      if (prev === undefined || e1rm > prev) lastSessionE1RM.set(exercise, e1rm);
     }
   }
 
@@ -59,15 +77,15 @@ export function ExerciseList({ rows, selectedExercise, onSelectExercise }: {
       <table style={{ borderCollapse: "collapse", width: "100%" }}>
         <thead>
           <tr>
-            <th style={th}>Exercise</th>
-            <th style={th}>Last Performed</th>
-            <th style={{ ...th, textAlign: "right" }}>Best E1RM (lbs)</th>
-            <th style={th}>E1RM Date</th>
+            <th style={th}>Movement</th>
+            <th style={th}>Last 1RM</th>
+            <th style={th}>Latest e1RM</th>
           </tr>
         </thead>
         <tbody>
-          {filtered.map(([exercise, date]) => {
-            const best = bestE1RM.get(exercise);
+          {filtered.map(([exercise]) => {
+            const one = last1RepSet.get(exercise);
+            const sessionE1RM = lastSessionE1RM.get(exercise);
             const isSelected = exercise === selectedExercise;
             return (
               <tr
@@ -76,11 +94,12 @@ export function ExerciseList({ rows, selectedExercise, onSelectExercise }: {
                 style={{ background: isSelected ? "#ede9fe" : undefined, cursor: "pointer" }}
               >
                 <td style={{ ...td, fontWeight: isSelected ? 600 : undefined }}>{exercise}</td>
-                <td style={td}>{date.toLocaleDateString()}</td>
-                <td style={{ ...td, textAlign: "right" }}>
-                  {best !== undefined ? Math.round(best.value) : "—"}
+                <td style={td}>
+                  {one !== undefined ? `${one.date.toLocaleDateString()} · ${one.weight} lbs` : "—"}
                 </td>
-                <td style={td}>{best !== undefined ? best.date.toLocaleDateString() : "—"}</td>
+                <td style={td}>
+                  {sessionE1RM !== undefined ? `${Math.round(sessionE1RM)} lbs` : "—"}
+                </td>
               </tr>
             );
           })}
@@ -91,7 +110,7 @@ export function ExerciseList({ rows, selectedExercise, onSelectExercise }: {
 }
 
 const th: React.CSSProperties = {
-  textAlign: "left",
+  textAlign: "center",
   padding: "0.5rem 1rem",
   borderBottom: "2px solid #ccc",
 };
