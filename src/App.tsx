@@ -1,8 +1,11 @@
-import { useState } from "react";
+import { useState, lazy, Suspense } from "react";
 import { useSheetData } from "./hooks/useSheetData";
 import { ExerciseList } from "./components/ExerciseList";
-import { Charts } from "./components/Charts";
 import "./App.css";
+
+const Charts = lazy(() =>
+  import("./components/Charts").then((m) => ({ default: m.Charts }))
+);
 
 type SheetRef = { id: string; published: boolean };
 
@@ -89,7 +92,11 @@ function App() {
               ))}
             </div>
             {tab === "exercises" && <ExerciseList rows={state.rows} />}
-            {tab === "charts" && <Charts rows={state.rows} />}
+            {tab === "charts" && (
+              <Suspense fallback={<p>Loading charts…</p>}>
+                <Charts rows={state.rows} />
+              </Suspense>
+            )}
           </>
         )}
       </div>
