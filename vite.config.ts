@@ -1,4 +1,3 @@
-/// <reference types="vitest" />
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import type { Plugin } from 'vite'
@@ -29,7 +28,4 @@ function sheetsProxyPlugin(): Plugin {
 export default defineConfig({
   plugins: [react(), sheetsProxyPlugin()],
   base: "./",
-  test: {
-    environment: "node",
-  },
 })
