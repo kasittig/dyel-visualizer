@@ -8,7 +8,11 @@ function parseDate(str: string): Date | null {
   return isNaN(d.getTime()) ? null : d;
 }
 
-export function ExerciseList({ rows }: { rows: SheetRow[] }) {
+export function ExerciseList({ rows, selectedExercise, onSelectExercise }: {
+  rows: SheetRow[];
+  selectedExercise: string | null;
+  onSelectExercise: (exercise: string) => void;
+}) {
   const [query, setQuery] = useState("");
   const lastPerformed = new Map<string, Date>();
   const bestE1RM = new Map<string, { value: number; date: Date }>();
@@ -31,7 +35,7 @@ export function ExerciseList({ rows }: { rows: SheetRow[] }) {
   }
 
   const entries = [...lastPerformed.entries()].sort(
-    ([, a], [, b]) => b.getTime() - a.getTime()
+    ([a], [b]) => a.localeCompare(b)
   );
 
   if (entries.length === 0) return <p>No exercise data found.</p>;
@@ -64,9 +68,14 @@ export function ExerciseList({ rows }: { rows: SheetRow[] }) {
         <tbody>
           {filtered.map(([exercise, date]) => {
             const best = bestE1RM.get(exercise);
+            const isSelected = exercise === selectedExercise;
             return (
-              <tr key={exercise}>
-                <td style={td}>{exercise}</td>
+              <tr
+                key={exercise}
+                onClick={() => onSelectExercise(exercise)}
+                style={{ background: isSelected ? "#ede9fe" : undefined, cursor: "pointer" }}
+              >
+                <td style={{ ...td, fontWeight: isSelected ? 600 : undefined }}>{exercise}</td>
                 <td style={td}>{date.toLocaleDateString()}</td>
                 <td style={{ ...td, textAlign: "right" }}>
                   {best !== undefined ? Math.round(best.value) : "—"}

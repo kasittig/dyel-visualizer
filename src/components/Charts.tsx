@@ -1,4 +1,3 @@
-import { useState } from "react";
 import {
   LineChart,
   Line,
@@ -17,16 +16,12 @@ function formatDate(str: string): string {
   return isNaN(d.getTime()) ? str : d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "2-digit" });
 }
 
-export function Charts({ rows }: { rows: SheetRow[] }) {
-  const exercises = [
-    ...new Set(rows.map((r) => r["exercise"]?.trim()).filter(Boolean)),
-  ].sort() as string[];
-
-  const [exercise, setExercise] = useState(exercises[0] ?? "");
+export function Charts({ rows, selectedExercise }: { rows: SheetRow[]; selectedExercise: string | null }) {
+  const exercise = selectedExercise ?? "";
 
   const byDate = new Map<string, { e1rm: number; volume: number }>();
   for (const row of rows) {
-    if (row["exercise"]?.trim() !== exercise) continue;
+    if (!exercise || row["exercise"]?.trim() !== exercise) continue;
     const date = row["date"]?.trim();
     if (!date) continue;
     const weight = parseFloat(findCol(row, "weight") ?? "");
@@ -53,25 +48,7 @@ export function Charts({ rows }: { rows: SheetRow[] }) {
 
   return (
     <section>
-      <h2>Charts</h2>
-      <div style={{ marginBottom: "1.5rem" }}>
-        <label htmlFor="chart-exercise" style={{ marginRight: "0.5rem" }}>
-          Exercise
-        </label>
-        <select
-          id="chart-exercise"
-          value={exercise}
-          onChange={(e) => setExercise(e.target.value)}
-          style={{ padding: "0.25rem 0.5rem" }}
-        >
-          {exercises.map((ex) => (
-            <option key={ex} value={ex}>
-              {ex}
-            </option>
-          ))}
-        </select>
-      </div>
-
+      <h2>{exercise || "Select an exercise"}</h2>
       {data.length === 0 ? (
         <p>No data for this exercise.</p>
       ) : (
