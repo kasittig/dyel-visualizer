@@ -1,4 +1,4 @@
-import { useState, lazy, Suspense } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { useSheetData } from "./hooks/useSheetData";
 import { ExerciseList } from "./components/ExerciseList";
 import "./App.css";
@@ -27,16 +27,25 @@ const EXAMPLE_SHEET_URL =
   "https://docs.google.com/spreadsheets/d/e/2PACX-1vQqznDyoxzza0HTmngCevHvq8wg7hOH5-wHb0NHwl9MEaBRf5yZAzRCvHA9ixbMEE6DJfrXAHjNCaS5/pubhtml";
 const EXAMPLE_VISUALIZER_URL = `?sheet=${encodeURIComponent(EXAMPLE_CSV_URL)}`;
 
-type Tab = "exercises" | "charts";
-
 function App() {
   const params = new URLSearchParams(window.location.search);
   const [url, setUrl] = useState(params.get("sheet") ?? import.meta.env.VITE_SHEET_URL ?? "");
-  const [tab, setTab] = useState<Tab>("exercises");
+  const [selectedExercise, setSelectedExercise] = useState<string | null>(null);
   const sheetRef = extractSheetRef(url);
   const invalidUrl = url.length > 0 && !sheetRef;
 
   const state = useSheetData(sheetRef);
+
+  const exercises =
+    state.status === "success"
+      ? ([...new Set(state.rows.map((r) => r["exercise"]?.trim()).filter(Boolean))].sort() as string[])
+      : [];
+
+  useEffect(() => {
+    if (selectedExercise === null && exercises.length > 0) {
+      setSelectedExercise(exercises[0]);
+    }
+  }, [exercises, selectedExercise]);
 
   return (
     <main style={{ padding: "2rem", fontFamily: "sans-serif", maxWidth: "700px" }}>
@@ -48,7 +57,7 @@ function App() {
         id="sheet-url"
         type="text"
         value={url}
-        onChange={(e) => setUrl(e.target.value)}
+        onChange={(e) => { setUrl(e.target.value); setSelectedExercise(null); }}
         placeholder="https://docs.google.com/spreadsheets/d/…"
         style={{ width: "100%", padding: "0.5rem", boxSizing: "border-box" }}
       />
@@ -71,32 +80,17 @@ function App() {
         )}
         {state.status === "success" && (
           <>
-            <div style={{ display: "flex", gap: "0.25rem", marginBottom: "1rem", borderBottom: "2px solid #e5e7eb" }}>
-              {(["exercises", "charts"] as Tab[]).map((t) => (
-                <button
-                  key={t}
-                  onClick={() => setTab(t)}
-                  style={{
-                    padding: "0.5rem 1rem",
-                    border: "none",
-                    background: "none",
-                    cursor: "pointer",
-                    fontWeight: tab === t ? 600 : 400,
-                    borderBottom: tab === t ? "2px solid #6366f1" : "2px solid transparent",
-                    marginBottom: "-2px",
-                    textTransform: "capitalize",
-                  }}
-                >
-                  {t}
-                </button>
-              ))}
-            </div>
-            {tab === "exercises" && <ExerciseList rows={state.rows} />}
-            {tab === "charts" && (
-              <Suspense fallback={<p>Loading charts…</p>}>
-                <Charts rows={state.rows} />
-              </Suspense>
-            )}
+            <Suspense fallback={<p>Loading charts…</p>}>
+              <Charts
+                rows={state.rows}
+                selectedExercise={selectedExercise}
+              />
+            </Suspense>
+            <ExerciseList
+              rows={state.rows}
+              selectedExercise={selectedExercise}
+              onSelectExercise={setSelectedExercise}
+            />
           </>
         )}
       </div>
