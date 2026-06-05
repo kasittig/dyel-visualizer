@@ -3,7 +3,9 @@ import { useState, useEffect } from "react";
 export type SheetRow = Record<string, string>;
 
 export function findCol(row: SheetRow, keyword: string): string | undefined {
-  const key = Object.keys(row).find((k) => k.includes(keyword));
+  const key = Object.keys(row).find(
+    (k) => k.includes(keyword) && !k.includes("body" + keyword)
+  );
   return key !== undefined ? row[key] : undefined;
 }
 
