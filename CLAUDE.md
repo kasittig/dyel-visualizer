@@ -1,50 +1,36 @@
-# DYEL Visualizer
+# CLAUDE.md
 
-A React web app that reads workout data from a Google Sheet and displays data visualizations.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Stack
-
-- **Vite + React + TypeScript** — scaffolded with `npm create vite@latest`
-- **No UI library** — plain inline styles for now
-- **No charting library yet** — to be chosen once visualization requirements are clearer
-
-## Running the App
+## Commands
 
 ```bash
-npm run dev
+npm run dev       # start dev server at http://localhost:5173
+npm run build     # tsc -b && vite build
+npm test          # run all tests (vitest run --passWithNoTests)
+npm run lint      # eslint
+
+# run a single test file
+npx vitest run src/hooks/useSheetData.test.ts
 ```
 
-The dev server starts at `http://localhost:5173`. Vite must be running for the Google Sheets proxy to work (see below).
+## Architecture
 
-## Google Sheets Integration
+The app is a single-page React app with no backend. All data comes from a user-supplied Google Sheet URL.
 
-The app fetches data from a Google Sheet that the user pastes a URL into. All fetching goes through a Vite dev server proxy (`/sheets-proxy`) defined in `vite.config.ts` to avoid CORS issues — Vite's built-in proxy doesn't follow redirects, so a custom plugin uses Node's `fetch` instead.
+**Data flow:**
+1. `App.tsx` takes a URL, calls `extractSheetRef()` to parse it into `{ id, published }`, and passes it to `useSheetData()`
+2. `useSheetData` (in `src/hooks/useSheetData.ts`) fetches the sheet as CSV, skips any title rows above the header by scanning for the first line containing `"exercise"`, then parses with papaparse (headers are lowercased, values are trimmed)
+3. The resulting `SheetRow[]` (`Record<string, string>`) is passed down to `ExerciseList` and `Charts`
+4. `Charts` is lazy-loaded via `React.lazy` so recharts doesn't bloat the initial bundle
+5. `ErrorBoundary` (in `src/components/ErrorBoundary.tsx`) wraps `<App />` in `main.tsx`
 
-### Supported URL formats
+**Finding columns:** Use `findCol(row, keyword)` from `useSheetData.ts` rather than direct key access. It matches the keyword at a word boundary (e.g. `"weight"` matches `"weight (lbs)"` but not `"bodyweight (lbs)"`).
 
-The URL input (`App.tsx`) accepts:
-- Edit/view URLs: `https://docs.google.com/spreadsheets/d/SHEET_ID/edit`
-- Published web URLs: `https://docs.google.com/spreadsheets/u/N/d/e/PUBLISHED_ID/pubhtml`
-- Bare sheet IDs
+**Dev proxy:** `vite.config.ts` defines a `sheetsProxyPlugin` that forwards `/sheets-proxy/*` to `https://docs.google.com/*` using Node's `fetch` (which follows redirects server-side, avoiding CORS). In production, `useSheetData` hits Google directly — this only works with published sheets.
 
-For published sheet URLs, the export uses the `/pub?output=csv` endpoint. For regular sheet URLs, it uses `/export?format=csv`.
+## Constraints
 
-### Sheet format
+**Published sheets only.** The app must only support features that work with published Google Sheets (`/pub?output=csv`). Do not add features that require the `/export?format=csv` endpoint — it only works for sheets that are publicly accessible without publishing, which is a rare configuration.
 
-The sheet has a title row above the headers. The CSV parser (`useSheetData.ts`) finds the header row by scanning for the first line containing `"Exercise"` rather than assuming line 1 is the header.
-
-Current columns: `Date, Exercise, Sets, Weight (lbs), Reps, Est. 1RM, RPE, Notes, Bodyweight (lbs), Session Notes`
-
-## Key Files
-
-| File | Purpose |
-|------|---------|
-| `src/hooks/useSheetData.ts` | Fetches + parses sheet CSV; returns typed `idle/loading/error/success` state |
-| `src/components/ExerciseList.tsx` | Groups rows by exercise, shows last-performed date for each |
-| `src/App.tsx` | URL input, sheet ID extraction, top-level layout |
-| `vite.config.ts` | Sheets proxy plugin (follows redirects server-side) |
-
-## Known Limitations
-
-- The CSV parser is naive — cells containing commas will break parsing. Use `papaparse` if the sheet data ever includes commas in values.
-- The Vite proxy is dev-only. A production deployment needs a server-side proxy (e.g. a Netlify/Vercel rewrite rule or edge function).
+**TypeScript config split:** `tsconfig.node.json` only includes `vite.config.ts`; `tsconfig.app.json` only includes `src/`. The test config lives in `vitest.config.ts` (not in `vite.config.ts`) because Vitest 3 bundles its own Vite 7, whose types conflict with the project's Vite 8 — embedding a `test:` block in `vite.config.ts` breaks `tsc -b`.
