@@ -35,7 +35,7 @@ export function ExerciseList({ rows, selectedExercise, onSelectExercise }: {
   }
 
   const entries = [...lastPerformed.entries()].sort(
-    ([, a], [, b]) => b.getTime() - a.getTime()
+    ([a], [b]) => a.localeCompare(b)
   );
 
   if (entries.length === 0) return <p>No exercise data found.</p>;
