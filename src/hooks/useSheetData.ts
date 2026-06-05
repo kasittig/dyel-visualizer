@@ -74,10 +74,8 @@ export function useSheetData(sheetRef: SheetRef | null, gid = "0"): State {
         return res.text();
       })
       .then((csv) => setState({ status: "success", rows: parseCsv(csv) }))
-      .catch((err) =>
-        setState({ status: "error", message: String(err.message) })
-      );
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+      .catch((err) => setState({ status: "error", message: String(err.message) }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sheetRef?.id, sheetRef?.published, gid]);
 
   return sheetRef ? state : { status: "idle" };

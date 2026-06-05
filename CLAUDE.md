@@ -19,6 +19,7 @@ npx vitest run src/hooks/useSheetData.test.ts
 The app is a single-page React app with no backend. All data comes from a user-supplied Google Sheet URL.
 
 **Data flow:**
+
 1. `App.tsx` takes a URL, calls `extractSheetRef()` to parse it into `{ id, published }`, and passes it to `useSheetData()`
 2. `useSheetData` (in `src/hooks/useSheetData.ts`) fetches the sheet as CSV, skips any title rows above the header by scanning for the first line containing `"exercise"`, then parses with papaparse (headers are lowercased, values are trimmed)
 3. The resulting `SheetRow[]` (`Record<string, string>`) is passed down to `ExerciseList` and `Charts`

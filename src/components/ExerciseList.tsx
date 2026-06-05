@@ -8,7 +8,11 @@ function parseDate(str: string): Date | null {
   return isNaN(d.getTime()) ? null : d;
 }
 
-export function ExerciseList({ rows, selectedExercise, onSelectExercise }: {
+export function ExerciseList({
+  rows,
+  selectedExercise,
+  onSelectExercise,
+}: {
   rows: SheetRow[];
   selectedExercise: string | null;
   onSelectExercise: (exercise: string) => void;
@@ -52,16 +56,12 @@ export function ExerciseList({ rows, selectedExercise, onSelectExercise }: {
     }
   }
 
-  const entries = [...lastPerformed.entries()].sort(
-    ([a], [b]) => a.localeCompare(b)
-  );
+  const entries = [...lastPerformed.entries()].sort(([a], [b]) => a.localeCompare(b));
 
   if (entries.length === 0) return <p>No exercise data found.</p>;
 
   const filtered = query
-    ? entries.filter(([exercise]) =>
-        exercise.toLowerCase().includes(query.toLowerCase())
-      )
+    ? entries.filter(([exercise]) => exercise.toLowerCase().includes(query.toLowerCase()))
     : entries;
 
   return (
@@ -72,7 +72,12 @@ export function ExerciseList({ rows, selectedExercise, onSelectExercise }: {
         placeholder="Filter exercises…"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        style={{ width: "100%", padding: "0.5rem", boxSizing: "border-box", marginBottom: "0.75rem" }}
+        style={{
+          width: "100%",
+          padding: "0.5rem",
+          boxSizing: "border-box",
+          marginBottom: "0.75rem",
+        }}
       />
       <table style={{ borderCollapse: "collapse", width: "100%" }}>
         <thead>
