@@ -1,4 +1,4 @@
-import { useState, lazy, Suspense } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { useSheetData } from "./hooks/useSheetData";
 import { ExerciseList } from "./components/ExerciseList";
 import "./App.css";
@@ -41,7 +41,11 @@ function App() {
       ? ([...new Set(state.rows.map((r) => r["exercise"]?.trim()).filter(Boolean))].sort() as string[])
       : [];
 
-  const effectiveExercise = selectedExercise ?? exercises[0] ?? null;
+  useEffect(() => {
+    if (selectedExercise === null && exercises.length > 0) {
+      setSelectedExercise(exercises[0]);
+    }
+  }, [exercises, selectedExercise]);
 
   return (
     <main style={{ padding: "2rem", fontFamily: "sans-serif", maxWidth: "700px" }}>
@@ -79,12 +83,12 @@ function App() {
             <Suspense fallback={<p>Loading charts…</p>}>
               <Charts
                 rows={state.rows}
-                selectedExercise={effectiveExercise}
+                selectedExercise={selectedExercise}
               />
             </Suspense>
             <ExerciseList
               rows={state.rows}
-              selectedExercise={effectiveExercise}
+              selectedExercise={selectedExercise}
               onSelectExercise={setSelectedExercise}
             />
           </>
