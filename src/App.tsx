@@ -32,11 +32,12 @@ type Tab = "exercises" | "charts";
 function App() {
   const params = new URLSearchParams(window.location.search);
   const [url, setUrl] = useState(params.get("sheet") ?? import.meta.env.VITE_SHEET_URL ?? "");
+  const [gid, setGid] = useState(params.get("gid") ?? "0");
   const [tab, setTab] = useState<Tab>("exercises");
   const sheetRef = extractSheetRef(url);
   const invalidUrl = url.length > 0 && !sheetRef;
 
-  const state = useSheetData(sheetRef);
+  const state = useSheetData(sheetRef, gid);
 
   return (
     <main style={{ padding: "2rem", fontFamily: "sans-serif", maxWidth: "700px" }}>
@@ -56,6 +57,22 @@ function App() {
         <p style={{ color: "red", marginTop: "0.5rem" }}>
           That doesn't look like a Google Sheet URL.
         </p>
+      )}
+      {sheetRef && !sheetRef.published && (
+        <div style={{ marginTop: "0.75rem" }}>
+          <label htmlFor="sheet-gid" style={{ display: "block", marginBottom: "0.25rem", fontSize: "0.9rem" }}>
+            Sheet tab GID{" "}
+            <span style={{ color: "#6b7280", fontWeight: 400 }}>(from the <code>gid=</code> param in the sheet URL; default is the first tab)</span>
+          </label>
+          <input
+            id="sheet-gid"
+            type="text"
+            value={gid}
+            onChange={(e) => setGid(e.target.value)}
+            placeholder="0"
+            style={{ width: "12rem", padding: "0.4rem 0.5rem", boxSizing: "border-box" }}
+          />
+        </div>
       )}
       <p style={{ fontSize: "0.85rem", color: "#6b7280", marginTop: "0.5rem" }}>
         Don't have a sheet?{" "}
