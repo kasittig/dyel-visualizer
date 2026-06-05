@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import Papa from "papaparse";
 
 export type SheetRow = Record<string, string>;
 
@@ -19,11 +20,13 @@ function parseCsv(csv: string): SheetRow[] {
   // Skip leading title rows by finding the first line that contains "exercise"
   const headerIdx = lines.findIndex((l) => l.toLowerCase().includes("exercise"));
   if (headerIdx === -1 || headerIdx >= lines.length - 1) return [];
-  const headers = lines[headerIdx].split(",").map((h) => h.trim().toLowerCase());
-  return lines.slice(headerIdx + 1).map((line) => {
-    const values = line.split(",").map((v) => v.trim());
-    return Object.fromEntries(headers.map((h, i) => [h, values[i] ?? ""]));
+  const result = Papa.parse<SheetRow>(lines.slice(headerIdx).join("\n"), {
+    header: true,
+    skipEmptyLines: true,
+    transformHeader: (h) => h.trim().toLowerCase(),
+    transform: (v) => v.trim(),
   });
+  return result.data;
 }
 
 type SheetRef = { id: string; published: boolean };
