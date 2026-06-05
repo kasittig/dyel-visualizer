@@ -110,7 +110,7 @@ export function ExerciseList({ rows, selectedExercise, onSelectExercise }: {
 }
 
 const th: React.CSSProperties = {
-  textAlign: "left",
+  textAlign: "center",
   padding: "0.5rem 1rem",
   borderBottom: "2px solid #ccc",
 };
