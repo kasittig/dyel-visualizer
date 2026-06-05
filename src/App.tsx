@@ -3,9 +3,7 @@ import { useSheetData } from "./hooks/useSheetData";
 import { ExerciseList } from "./components/ExerciseList";
 import "./App.css";
 
-const Charts = lazy(() =>
-  import("./components/Charts").then((m) => ({ default: m.Charts }))
-);
+const Charts = lazy(() => import("./components/Charts").then((m) => ({ default: m.Charts })));
 
 type SheetRef = { id: string; published: boolean };
 
@@ -38,7 +36,9 @@ function App() {
 
   const exercises =
     state.status === "success"
-      ? ([...new Set(state.rows.map((r) => r["exercise"]?.trim()).filter(Boolean))].sort() as string[])
+      ? ([
+          ...new Set(state.rows.map((r) => r["exercise"]?.trim()).filter(Boolean)),
+        ].sort() as string[])
       : [];
 
   const effectiveExercise = selectedExercise ?? exercises[0] ?? null;
@@ -53,7 +53,10 @@ function App() {
         id="sheet-url"
         type="text"
         value={url}
-        onChange={(e) => { setUrl(e.target.value); setSelectedExercise(null); }}
+        onChange={(e) => {
+          setUrl(e.target.value);
+          setSelectedExercise(null);
+        }}
         placeholder="https://docs.google.com/spreadsheets/d/…"
         style={{ width: "100%", padding: "0.5rem", boxSizing: "border-box" }}
       />
@@ -63,24 +66,20 @@ function App() {
         </p>
       )}
       <p style={{ fontSize: "0.85rem", color: "#6b7280", marginTop: "0.5rem" }}>
-        Don't have a sheet?{" "}
-        <a href={EXAMPLE_VISUALIZER_URL}>View an example in the visualizer</a>
+        Don't have a sheet? <a href={EXAMPLE_VISUALIZER_URL}>View an example in the visualizer</a>
         {" · "}
-        <a href={EXAMPLE_SHEET_URL} target="_blank" rel="noreferrer">View the example spreadsheet</a>
+        <a href={EXAMPLE_SHEET_URL} target="_blank" rel="noreferrer">
+          View the example spreadsheet
+        </a>
       </p>
 
       <div style={{ marginTop: "1rem" }}>
         {state.status === "loading" && <p>Loading…</p>}
-        {state.status === "error" && (
-          <p style={{ color: "red" }}>{state.message}</p>
-        )}
+        {state.status === "error" && <p style={{ color: "red" }}>{state.message}</p>}
         {state.status === "success" && (
           <>
             <Suspense fallback={<p>Loading charts…</p>}>
-              <Charts
-                rows={state.rows}
-                selectedExercise={effectiveExercise}
-              />
+              <Charts rows={state.rows} selectedExercise={effectiveExercise} />
             </Suspense>
             <ExerciseList
               rows={state.rows}

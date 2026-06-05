@@ -11,11 +11,11 @@ describe("findCol", () => {
   });
 
   it("matches bare 'weight'", () => {
-    expect(findCol({ "weight": "100" }, "weight")).toBe("100");
+    expect(findCol({ weight: "100" }, "weight")).toBe("100");
   });
 
   it("matches 'Weight' (case-normalised by parser)", () => {
-    expect(findCol({ "weight": "100" }, "weight")).toBe("100");
+    expect(findCol({ weight: "100" }, "weight")).toBe("100");
   });
 
   it("does not match 'bodyweight (lbs)'", () => {

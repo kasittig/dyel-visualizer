@@ -13,15 +13,31 @@ import { findCol } from "../hooks/useSheetData";
 
 function formatDate(str: string): string {
   const d = new Date(str);
-  return isNaN(d.getTime()) ? str : d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "2-digit" });
+  return isNaN(d.getTime())
+    ? str
+    : d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "2-digit" });
 }
 
 const LINE_COLORS = [
-  "#6366f1", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6",
-  "#06b6d4", "#f97316", "#ec4899", "#84cc16", "#14b8a6",
+  "#6366f1",
+  "#10b981",
+  "#f59e0b",
+  "#ef4444",
+  "#8b5cf6",
+  "#06b6d4",
+  "#f97316",
+  "#ec4899",
+  "#84cc16",
+  "#14b8a6",
 ];
 
-export function Charts({ rows, selectedExercise }: { rows: SheetRow[]; selectedExercise: string | null }) {
+export function Charts({
+  rows,
+  selectedExercise,
+}: {
+  rows: SheetRow[];
+  selectedExercise: string | null;
+}) {
   const [hidden, setHidden] = useState<Set<string>>(new Set());
 
   if (!selectedExercise) {
@@ -113,9 +129,17 @@ export function Charts({ rows, selectedExercise }: { rows: SheetRow[]; selectedE
       <ResponsiveContainer width="100%" height={300}>
         <LineChart data={data} margin={{ top: 4, right: 16, bottom: 40, left: 0 }}>
           <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="label" angle={-45} textAnchor="end" interval="preserveStartEnd" tick={{ fontSize: 11 }} />
+          <XAxis
+            dataKey="label"
+            angle={-45}
+            textAnchor="end"
+            interval="preserveStartEnd"
+            tick={{ fontSize: 11 }}
+          />
           <YAxis tick={{ fontSize: 11 }} width={45} unit=" lbs" />
-          <Tooltip formatter={(v, name) => [`${v} lbs`, `${String(name).replace("rep", "")} reps`]} />
+          <Tooltip
+            formatter={(v, name) => [`${v} lbs`, `${String(name).replace("rep", "")} reps`]}
+          />
           {repCounts.map((rep, i) => (
             <Line
               key={rep}
