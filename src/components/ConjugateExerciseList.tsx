@@ -5,25 +5,30 @@ import { conjugateLiftLabel, parseConjugateLift } from "../utils/parseConjugate"
 import { useLastSessionStats } from "../hooks/useLastSessionStats";
 import { LastSessionCell, OneRepMaxCell } from "./ExerciseCells";
 import { setsRepsLabel } from "../utils/setsRepsLabel";
+import type { AttrFilter } from "../utils/conjugateFilter";
+import { meetsFilter } from "../utils/conjugateFilter";
 
 export function ConjugateExerciseList({
   rows,
   liftType,
   hidden,
+  attributeFilter,
   onToggle,
 }: {
   rows: SheetRow[];
   liftType: ConjugateLift["liftType"];
   hidden: Set<string>;
+  attributeFilter: Map<string, AttrFilter>;
   onToggle: (label: string) => void;
 }) {
   const keyFn = useCallback(
     (row: SheetRow) => {
       const parsed = parseConjugateLift(row["exercise"]?.trim() ?? "");
       if (!parsed || parsed.liftType !== liftType) return null;
+      if (!meetsFilter(parsed, attributeFilter)) return null;
       return conjugateLiftLabel(parsed);
     },
-    [liftType]
+    [liftType, attributeFilter]
   );
 
   const { lastPerformed, last1RepSet, lastSessionE1RM, lastSessionBestSet, lastSessionAllSets } =

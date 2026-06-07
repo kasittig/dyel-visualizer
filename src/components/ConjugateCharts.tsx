@@ -12,6 +12,8 @@ import { findCol } from "../hooks/useSheetData";
 import type { ConjugateLift } from "../types/conjugate";
 import { calcE1RM } from "../utils/calcE1RM";
 import { conjugateLiftLabel, parseConjugateLift } from "../utils/parseConjugate";
+import type { AttrFilter } from "../utils/conjugateFilter";
+import { meetsFilter } from "../utils/conjugateFilter";
 
 const LINE_COLORS = [
   "#6366f1",
@@ -37,10 +39,12 @@ export function ConjugateCharts({
   rows,
   liftType,
   hidden,
+  attributeFilter,
 }: {
   rows: SheetRow[];
   liftType: ConjugateLift["liftType"];
   hidden: Set<string>;
+  attributeFilter: Map<string, AttrFilter>;
 }) {
   // label → date → best e1RM
   const e1rmByLabelAndDate = new Map<string, Map<string, number>>();
@@ -48,6 +52,7 @@ export function ConjugateCharts({
   for (const row of rows) {
     const parsed = parseConjugateLift(row["exercise"]?.trim() ?? "");
     if (!parsed || parsed.liftType !== liftType) continue;
+    if (!meetsFilter(parsed, attributeFilter)) continue;
     const date = row["date"]?.trim();
     if (!date) continue;
     const weight = parseFloat(findCol(row, "weight") ?? "");

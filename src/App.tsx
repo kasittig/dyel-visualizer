@@ -2,8 +2,10 @@ import { useState, lazy, Suspense } from "react";
 import { useSheetData } from "./hooks/useSheetData";
 import { ConjugateCharts } from "./components/ConjugateCharts";
 import { ConjugateExerciseList } from "./components/ConjugateExerciseList";
+import { ConjugateFilters } from "./components/ConjugateFilters";
 import { ExerciseList } from "./components/ExerciseList";
 import type { ConjugateLift } from "./types/conjugate";
+import type { AttrFilter } from "./utils/conjugateFilter";
 import "./App.css";
 
 const Charts = lazy(() => import("./components/Charts").then((m) => ({ default: m.Charts })));
@@ -16,6 +18,10 @@ const TABS: { id: LiftTab; label: string }[] = [
   { id: "bench", label: "Bench" },
   { id: "deadlift", label: "Deadlift" },
 ];
+
+function emptyFilters(): Record<LiftTab, Map<string, AttrFilter>> {
+  return { squat: new Map(), bench: new Map(), deadlift: new Map() };
+}
 
 function extractSheetRef(input: string): SheetRef | null {
   // Published web URL: .../d/e/PUBLISHED_ID/pubhtml (may have /u/N/ before /d/)
@@ -45,6 +51,8 @@ function App() {
     bench: new Set(),
     deadlift: new Set(),
   });
+  const [attributeFilters, setAttributeFilters] =
+    useState<Record<LiftTab, Map<string, AttrFilter>>>(emptyFilters);
   const [selectedExercise, setSelectedExercise] = useState<string | null>(null);
   const sheetRef = extractSheetRef(url);
   const invalidUrl = url.length > 0 && !sheetRef;
@@ -69,6 +77,18 @@ function App() {
     });
   }
 
+  function toggleAttrFilter(key: string, side: "with" | "without") {
+    setAttributeFilters((prev) => {
+      const tabMap = new Map(prev[activeTab]);
+      const current = tabMap.get(key) ?? { with: true, without: true };
+      const next = { ...current, [side]: !current[side] };
+      // Remove the entry entirely if back to default (both true = no filter)
+      if (next.with && next.without) tabMap.delete(key);
+      else tabMap.set(key, next);
+      return { ...prev, [activeTab]: tabMap };
+    });
+  }
+
   return (
     <main style={{ padding: "2rem", fontFamily: "sans-serif", maxWidth: "700px" }}>
       <h1>DYEL Visualizer</h1>
@@ -83,6 +103,7 @@ function App() {
           setUrl(e.target.value);
           setSelectedExercise(null);
           setHiddenVariations({ squat: new Set(), bench: new Set(), deadlift: new Set() });
+          setAttributeFilters(emptyFilters());
         }}
         placeholder="https://docs.google.com/spreadsheets/d/…"
         style={{ width: "100%", padding: "0.5rem", boxSizing: "border-box" }}
@@ -154,15 +175,23 @@ function App() {
                     </button>
                   ))}
                 </div>
+                <ConjugateFilters
+                  rows={state.rows}
+                  liftType={activeTab}
+                  filters={attributeFilters[activeTab]}
+                  onToggle={toggleAttrFilter}
+                />
                 <ConjugateCharts
                   rows={state.rows}
                   liftType={activeTab}
                   hidden={hiddenVariations[activeTab]}
+                  attributeFilter={attributeFilters[activeTab]}
                 />
                 <ConjugateExerciseList
                   rows={state.rows}
                   liftType={activeTab}
                   hidden={hiddenVariations[activeTab]}
+                  attributeFilter={attributeFilters[activeTab]}
                   onToggle={toggleVariation}
                 />
               </>
