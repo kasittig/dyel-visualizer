@@ -1,4 +1,3 @@
-import { useState } from "react";
 import {
   CartesianGrid,
   Legend,
@@ -38,12 +37,12 @@ function formatDate(str: string): string {
 export function ConjugateCharts({
   rows,
   liftType,
+  hidden,
 }: {
   rows: SheetRow[];
   liftType: ConjugateLift["liftType"];
+  hidden: Set<string>;
 }) {
-  const [hidden, setHidden] = useState<Set<string>>(new Set());
-
   // label → date → best e1RM
   const e1rmByLabelAndDate = new Map<string, Map<string, number>>();
 
@@ -87,41 +86,8 @@ export function ConjugateCharts({
     return point;
   });
 
-  function toggleVariation(label: string) {
-    setHidden((prev) => {
-      const next = new Set(prev);
-      if (next.has(label)) next.delete(label);
-      else next.add(label);
-      return next;
-    });
-  }
-
   return (
     <section>
-      <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginBottom: "0.75rem" }}>
-        {variations.map((label, i) => {
-          const isHidden = hidden.has(label);
-          const color = LINE_COLORS[i % LINE_COLORS.length];
-          return (
-            <button
-              key={label}
-              onClick={() => toggleVariation(label)}
-              style={{
-                padding: "0.2rem 0.6rem",
-                borderRadius: "9999px",
-                border: `2px solid ${color}`,
-                background: isHidden ? "transparent" : color,
-                color: isHidden ? color : "#fff",
-                cursor: "pointer",
-                fontSize: "0.8rem",
-                fontWeight: 600,
-              }}
-            >
-              {label}
-            </button>
-          );
-        })}
-      </div>
       <ResponsiveContainer width="100%" height={300}>
         <LineChart data={data} margin={{ top: 4, right: 16, bottom: 40, left: 0 }}>
           <CartesianGrid strokeDasharray="3 3" />

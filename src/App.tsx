@@ -1,11 +1,17 @@
-import { useState, lazy, Suspense } from "react";
+import { useState } from "react";
 import { useSheetData } from "./hooks/useSheetData";
-import { ExerciseList } from "./components/ExerciseList";
+import { ConjugateCharts } from "./components/ConjugateCharts";
+import { ConjugateExerciseList } from "./components/ConjugateExerciseList";
 import "./App.css";
 
-const Charts = lazy(() => import("./components/Charts").then((m) => ({ default: m.Charts })));
-
 type SheetRef = { id: string; published: boolean };
+type LiftTab = "squat" | "bench" | "deadlift";
+
+const TABS: { id: LiftTab; label: string }[] = [
+  { id: "squat", label: "Squat" },
+  { id: "bench", label: "Bench" },
+  { id: "deadlift", label: "Deadlift" },
+];
 
 function extractSheetRef(input: string): SheetRef | null {
   // Published web URL: .../d/e/PUBLISHED_ID/pubhtml (may have /u/N/ before /d/)
@@ -28,20 +34,21 @@ const EXAMPLE_VISUALIZER_URL = `?sheet=${encodeURIComponent(EXAMPLE_CSV_URL)}`;
 function App() {
   const params = new URLSearchParams(window.location.search);
   const [url, setUrl] = useState(params.get("sheet") ?? import.meta.env.VITE_SHEET_URL ?? "");
-  const [selectedExercise, setSelectedExercise] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<LiftTab>("squat");
+  const [hiddenVariations, setHiddenVariations] = useState<Set<string>>(new Set());
   const sheetRef = extractSheetRef(url);
   const invalidUrl = url.length > 0 && !sheetRef;
 
   const state = useSheetData(sheetRef);
 
-  const exercises =
-    state.status === "success"
-      ? ([
-          ...new Set(state.rows.map((r) => r["exercise"]?.trim()).filter(Boolean)),
-        ].sort() as string[])
-      : [];
-
-  const effectiveExercise = selectedExercise ?? exercises[0] ?? null;
+  function toggleVariation(label: string) {
+    setHiddenVariations((prev) => {
+      const next = new Set(prev);
+      if (next.has(label)) next.delete(label);
+      else next.add(label);
+      return next;
+    });
+  }
 
   return (
     <main style={{ padding: "2rem", fontFamily: "sans-serif", maxWidth: "700px" }}>
@@ -55,7 +62,7 @@ function App() {
         value={url}
         onChange={(e) => {
           setUrl(e.target.value);
-          setSelectedExercise(null);
+          setHiddenVariations(new Set());
         }}
         placeholder="https://docs.google.com/spreadsheets/d/…"
         style={{ width: "100%", padding: "0.5rem", boxSizing: "border-box" }}
@@ -78,13 +85,40 @@ function App() {
         {state.status === "error" && <p style={{ color: "red" }}>{state.message}</p>}
         {state.status === "success" && (
           <>
-            <Suspense fallback={<p>Loading charts…</p>}>
-              <Charts rows={state.rows} selectedExercise={effectiveExercise} />
-            </Suspense>
-            <ExerciseList
+            <div
+              style={{
+                display: "flex",
+                gap: "1.5rem",
+                borderBottom: "2px solid #e5e7eb",
+                marginBottom: "1rem",
+              }}
+            >
+              {TABS.map(({ id, label }) => (
+                <button
+                  key={id}
+                  onClick={() => setActiveTab(id)}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    borderBottom: activeTab === id ? "2px solid #6366f1" : "2px solid transparent",
+                    marginBottom: "-2px",
+                    padding: "0.4rem 0",
+                    cursor: "pointer",
+                    fontWeight: activeTab === id ? 700 : 400,
+                    fontSize: "1rem",
+                    color: activeTab === id ? "#6366f1" : "#374151",
+                  }}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            <ConjugateCharts rows={state.rows} liftType={activeTab} hidden={hiddenVariations} />
+            <ConjugateExerciseList
               rows={state.rows}
-              selectedExercise={effectiveExercise}
-              onSelectExercise={setSelectedExercise}
+              liftType={activeTab}
+              hidden={hiddenVariations}
+              onToggle={toggleVariation}
             />
           </>
         )}
