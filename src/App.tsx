@@ -3,12 +3,13 @@ import { useSheetData } from "./hooks/useSheetData";
 import { ConjugateCharts } from "./components/ConjugateCharts";
 import { ConjugateExerciseList } from "./components/ConjugateExerciseList";
 import { ExerciseList } from "./components/ExerciseList";
+import type { ConjugateLift } from "./types/conjugate";
 import "./App.css";
 
 const Charts = lazy(() => import("./components/Charts").then((m) => ({ default: m.Charts })));
 
 type SheetRef = { id: string; published: boolean };
-type LiftTab = "squat" | "bench" | "deadlift";
+type LiftTab = ConjugateLift["liftType"];
 
 const TABS: { id: LiftTab; label: string }[] = [
   { id: "squat", label: "Squat" },
@@ -39,7 +40,11 @@ function App() {
   const [url, setUrl] = useState(params.get("sheet") ?? import.meta.env.VITE_SHEET_URL ?? "");
   const [conjugateMode, setConjugateMode] = useState(false);
   const [activeTab, setActiveTab] = useState<LiftTab>("squat");
-  const [hiddenVariations, setHiddenVariations] = useState<Set<string>>(new Set());
+  const [hiddenVariations, setHiddenVariations] = useState<Record<LiftTab, Set<string>>>({
+    squat: new Set(),
+    bench: new Set(),
+    deadlift: new Set(),
+  });
   const [selectedExercise, setSelectedExercise] = useState<string | null>(null);
   const sheetRef = extractSheetRef(url);
   const invalidUrl = url.length > 0 && !sheetRef;
@@ -57,10 +62,10 @@ function App() {
 
   function toggleVariation(label: string) {
     setHiddenVariations((prev) => {
-      const next = new Set(prev);
-      if (next.has(label)) next.delete(label);
-      else next.add(label);
-      return next;
+      const tabSet = new Set(prev[activeTab]);
+      if (tabSet.has(label)) tabSet.delete(label);
+      else tabSet.add(label);
+      return { ...prev, [activeTab]: tabSet };
     });
   }
 
@@ -77,7 +82,7 @@ function App() {
         onChange={(e) => {
           setUrl(e.target.value);
           setSelectedExercise(null);
-          setHiddenVariations(new Set());
+          setHiddenVariations({ squat: new Set(), bench: new Set(), deadlift: new Set() });
         }}
         placeholder="https://docs.google.com/spreadsheets/d/…"
         style={{ width: "100%", padding: "0.5rem", boxSizing: "border-box" }}
@@ -149,11 +154,15 @@ function App() {
                     </button>
                   ))}
                 </div>
-                <ConjugateCharts rows={state.rows} liftType={activeTab} hidden={hiddenVariations} />
+                <ConjugateCharts
+                  rows={state.rows}
+                  liftType={activeTab}
+                  hidden={hiddenVariations[activeTab]}
+                />
                 <ConjugateExerciseList
                   rows={state.rows}
                   liftType={activeTab}
-                  hidden={hiddenVariations}
+                  hidden={hiddenVariations[activeTab]}
                   onToggle={toggleVariation}
                 />
               </>

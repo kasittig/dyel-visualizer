@@ -1,13 +1,10 @@
+import { useCallback } from "react";
 import type { SheetRow } from "../hooks/useSheetData";
-import { findCol } from "../hooks/useSheetData";
 import type { ConjugateLift } from "../types/conjugate";
-import { calcE1RM } from "../utils/calcE1RM";
 import { conjugateLiftLabel, parseConjugateLift } from "../utils/parseConjugate";
-
-function parseDate(str: string): Date | null {
-  const d = new Date(str);
-  return isNaN(d.getTime()) ? null : d;
-}
+import { useLastSessionStats } from "../hooks/useLastSessionStats";
+import { LastSessionCell, OneRepMaxCell } from "./ExerciseCells";
+import { setsRepsLabel } from "../utils/setsRepsLabel";
 
 export function ConjugateExerciseList({
   rows,
@@ -20,55 +17,17 @@ export function ConjugateExerciseList({
   hidden: Set<string>;
   onToggle: (label: string) => void;
 }) {
-  const lastPerformed = new Map<string, Date>();
-  const last1RepSet = new Map<string, { date: Date; weight: number }>();
-  const lastSessionE1RM = new Map<string, number>();
-  const lastSessionBestSet = new Map<string, { weight: number; reps: number }>();
-  const lastSessionAllSets = new Map<string, { weight: number; reps: number }[]>();
+  const keyFn = useCallback(
+    (row: SheetRow) => {
+      const parsed = parseConjugateLift(row["exercise"]?.trim() ?? "");
+      if (!parsed || parsed.liftType !== liftType) return null;
+      return conjugateLiftLabel(parsed);
+    },
+    [liftType]
+  );
 
-  for (const row of rows) {
-    const parsed = parseConjugateLift(row["exercise"]?.trim() ?? "");
-    if (!parsed || parsed.liftType !== liftType) continue;
-    const label = conjugateLiftLabel(parsed);
-    const date = parseDate(row["date"]?.trim() ?? "");
-    if (!date) continue;
-
-    const existing = lastPerformed.get(label);
-    if (!existing || date > existing) lastPerformed.set(label, date);
-
-    const weight = parseFloat(findCol(row, "weight") ?? "");
-    const repsStr = row["reps"]?.trim() ?? "";
-    if (!isNaN(weight) && repsStr === "1") {
-      const prev = last1RepSet.get(label);
-      if (!prev || date > prev.date) last1RepSet.set(label, { date, weight });
-    }
-  }
-
-  for (const row of rows) {
-    const parsed = parseConjugateLift(row["exercise"]?.trim() ?? "");
-    if (!parsed || parsed.liftType !== liftType) continue;
-    const label = conjugateLiftLabel(parsed);
-    const date = parseDate(row["date"]?.trim() ?? "");
-    if (!date) continue;
-
-    const lastDate = lastPerformed.get(label);
-    if (!lastDate || date.getTime() !== lastDate.getTime()) continue;
-
-    const weight = parseFloat(findCol(row, "weight") ?? "");
-    const reps = parseFloat(row["reps"] ?? "");
-    if (!isNaN(weight) && !isNaN(reps) && reps > 0) {
-      const roundedReps = Math.round(reps);
-      const e1rm = calcE1RM(weight, reps);
-      const prev = lastSessionE1RM.get(label);
-      if (prev === undefined || e1rm > prev) {
-        lastSessionE1RM.set(label, e1rm);
-        lastSessionBestSet.set(label, { weight, reps: roundedReps });
-      }
-      const all = lastSessionAllSets.get(label) ?? [];
-      all.push({ weight, reps: roundedReps });
-      lastSessionAllSets.set(label, all);
-    }
-  }
+  const { lastPerformed, last1RepSet, lastSessionE1RM, lastSessionBestSet, lastSessionAllSets } =
+    useLastSessionStats(rows, keyFn);
 
   const allVariations = [...lastPerformed.keys()].sort();
   if (allVariations.length === 0) return <p>No {liftType} data found.</p>;
@@ -95,10 +54,7 @@ export function ConjugateExerciseList({
             const lastDate = lastPerformed.get(label);
             const bestSet = lastSessionBestSet.get(label);
             const allSets = lastSessionAllSets.get(label) ?? [];
-            const setCount = bestSet
-              ? allSets.filter((s) => s.weight === bestSet.weight && s.reps === bestSet.reps).length
-              : 0;
-            const setsReps = bestSet ? `${setCount}×${bestSet.reps} @ ${bestSet.weight} lbs` : null;
+            const setsReps = setsRepsLabel(bestSet, allSets);
             const isHidden = hidden.has(label);
             if (isHidden) {
               return (
@@ -113,30 +69,14 @@ export function ConjugateExerciseList({
               <tr key={label} onClick={() => onToggle(label)} style={{ cursor: "pointer" }}>
                 <td style={td}>{label}</td>
                 <td style={td}>
-                  {one ? (
-                    <>
-                      <span style={{ color: "#6b7280", fontSize: "0.85rem", whiteSpace: "nowrap" }}>
-                        {one.date.toLocaleDateString()}
-                      </span>
-                      <br />
-                      {one.weight} lbs
-                    </>
-                  ) : (
-                    "—"
-                  )}
+                  <OneRepMaxCell one={one} />
                 </td>
                 <td style={td}>
-                  {sessionE1RM !== undefined && lastDate && setsReps ? (
-                    <>
-                      <span style={{ color: "#6b7280", fontSize: "0.85rem", whiteSpace: "nowrap" }}>
-                        {lastDate.toLocaleDateString()} · {setsReps}
-                      </span>
-                      <br />
-                      {Math.round(sessionE1RM)} lbs
-                    </>
-                  ) : (
-                    "—"
-                  )}
+                  <LastSessionCell
+                    sessionE1RM={sessionE1RM}
+                    lastDate={lastDate}
+                    setsReps={setsReps}
+                  />
                 </td>
               </tr>
             );

@@ -132,18 +132,20 @@ export function ConjugateCharts({
           />
           <YAxis tick={{ fontSize: 11 }} width={45} unit=" lbs" />
           <Tooltip formatter={(v, name) => [`${v} lbs`, String(name)]} />
-          {variations.map((label, i) => (
-            <Line
-              key={label}
-              type="monotone"
-              dataKey={label}
-              stroke={LINE_COLORS[i % LINE_COLORS.length]}
-              hide={hidden.has(label)}
-              dot={{ r: 3 }}
-              activeDot={{ r: 5 }}
-              connectNulls
-            />
-          ))}
+          {variations
+            .map((label, i) => ({ label, i }))
+            .filter(({ label }) => !hidden.has(label))
+            .map(({ label, i }) => (
+              <Line
+                key={label}
+                type="monotone"
+                dataKey={label}
+                stroke={LINE_COLORS[i % LINE_COLORS.length]}
+                dot={{ r: 3 }}
+                activeDot={{ r: 5 }}
+                connectNulls
+              />
+            ))}
         </LineChart>
       </ResponsiveContainer>
     </section>

@@ -34,6 +34,7 @@ export function parseConjugateLift(name: string): ConjugateLift | null {
   }
 
   if (base.includes("squat")) {
+    const hasReverseBands = has("reverse band");
     return {
       liftType: "squat",
       variation: {
@@ -41,7 +42,7 @@ export function parseConjugateLift(name: string): ConjugateLift | null {
         bar: has("ssb") || has("safety") ? "ssb" : "standard",
         hasBox: has("box"),
         hasChains: has("chain"),
-        hasBands: has("band"),
+        hasBands: !hasReverseBands && has("band"),
       },
     };
   }
@@ -59,6 +60,7 @@ export function parseConjugateLift(name: string): ConjugateLift | null {
     else if (has("bamboo")) bar = "bamboo";
     else if (has("dumbbell") || hasToken("db")) bar = "dumbbell";
 
+    const hasReverseBands = has("reverse band");
     return {
       liftType: "bench",
       variation: {
@@ -72,7 +74,7 @@ export function parseConjugateLift(name: string): ConjugateLift | null {
               ? "medium"
               : "competition",
         hasChains: has("chain"),
-        hasBands: has("band"),
+        hasBands: !hasReverseBands && has("band"),
         isFloorPress: base.includes("floor"),
         boardHeight: extractHeight("board"),
         hasSlingshot: has("slingshot"),
