@@ -1,12 +1,8 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import type { SheetRow } from "../hooks/useSheetData";
-import { findCol } from "../hooks/useSheetData";
-import { calcE1RM } from "../utils/calcE1RM";
-
-function parseDate(str: string): Date | null {
-  const d = new Date(str);
-  return isNaN(d.getTime()) ? null : d;
-}
+import { useLastSessionStats } from "../hooks/useLastSessionStats";
+import { LastSessionCell, OneRepMaxCell } from "./ExerciseCells";
+import { setsRepsLabel } from "../utils/setsRepsLabel";
 
 export function ExerciseList({
   rows,
@@ -18,43 +14,10 @@ export function ExerciseList({
   onSelectExercise: (exercise: string) => void;
 }) {
   const [query, setQuery] = useState("");
-  const lastPerformed = new Map<string, Date>();
-  const last1RepSet = new Map<string, { date: Date; weight: number }>();
-  const lastSessionE1RM = new Map<string, number>();
 
-  for (const row of rows) {
-    const exercise = row["exercise"]?.trim();
-    const date = parseDate(row["date"]?.trim());
-    if (!exercise || !date) continue;
-
-    const existing = lastPerformed.get(exercise);
-    if (!existing || date > existing) lastPerformed.set(exercise, date);
-
-    const weight = parseFloat(findCol(row, "weight") ?? "");
-    const repsStr = row["reps"]?.trim() ?? "";
-
-    if (!isNaN(weight) && repsStr === "1") {
-      const prev = last1RepSet.get(exercise);
-      if (prev === undefined || date > prev.date) last1RepSet.set(exercise, { date, weight });
-    }
-  }
-
-  for (const row of rows) {
-    const exercise = row["exercise"]?.trim();
-    const date = parseDate(row["date"]?.trim());
-    if (!exercise || !date) continue;
-
-    const lastDate = lastPerformed.get(exercise);
-    if (!lastDate || date.getTime() !== lastDate.getTime()) continue;
-
-    const weight = parseFloat(findCol(row, "weight") ?? "");
-    const repsNum = parseFloat(row["reps"] ?? "");
-    if (!isNaN(weight) && !isNaN(repsNum) && repsNum > 0) {
-      const e1rm = calcE1RM(weight, repsNum);
-      const prev = lastSessionE1RM.get(exercise);
-      if (prev === undefined || e1rm > prev) lastSessionE1RM.set(exercise, e1rm);
-    }
-  }
+  const keyFn = useCallback((row: SheetRow) => row["exercise"]?.trim() || null, []);
+  const { lastPerformed, last1RepSet, lastSessionE1RM, lastSessionBestSet, lastSessionAllSets } =
+    useLastSessionStats(rows, keyFn);
 
   const entries = [...lastPerformed.entries()].sort(([a], [b]) => a.localeCompare(b));
 
@@ -91,6 +54,10 @@ export function ExerciseList({
           {filtered.map(([exercise]) => {
             const one = last1RepSet.get(exercise);
             const sessionE1RM = lastSessionE1RM.get(exercise);
+            const lastDate = lastPerformed.get(exercise);
+            const bestSet = lastSessionBestSet.get(exercise);
+            const allSets = lastSessionAllSets.get(exercise) ?? [];
+            const setsReps = setsRepsLabel(bestSet, allSets);
             const isSelected = exercise === selectedExercise;
             return (
               <tr
@@ -100,10 +67,14 @@ export function ExerciseList({
               >
                 <td style={{ ...td, fontWeight: isSelected ? 600 : undefined }}>{exercise}</td>
                 <td style={td}>
-                  {one !== undefined ? `${one.date.toLocaleDateString()} · ${one.weight} lbs` : "—"}
+                  <OneRepMaxCell one={one} />
                 </td>
                 <td style={td}>
-                  {sessionE1RM !== undefined ? `${Math.round(sessionE1RM)} lbs` : "—"}
+                  <LastSessionCell
+                    sessionE1RM={sessionE1RM}
+                    lastDate={lastDate}
+                    setsReps={setsReps}
+                  />
                 </td>
               </tr>
             );
