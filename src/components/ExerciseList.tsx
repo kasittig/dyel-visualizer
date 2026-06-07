@@ -21,6 +21,8 @@ export function ExerciseList({
   const lastPerformed = new Map<string, Date>();
   const last1RepSet = new Map<string, { date: Date; weight: number }>();
   const lastSessionE1RM = new Map<string, number>();
+  const lastSessionBestSet = new Map<string, { weight: number; reps: number }>();
+  const lastSessionAllSets = new Map<string, { weight: number; reps: number }[]>();
 
   for (const row of rows) {
     const exercise = row["exercise"]?.trim();
@@ -48,11 +50,18 @@ export function ExerciseList({
     if (!lastDate || date.getTime() !== lastDate.getTime()) continue;
 
     const weight = parseFloat(findCol(row, "weight") ?? "");
-    const repsNum = parseFloat(row["reps"] ?? "");
-    if (!isNaN(weight) && !isNaN(repsNum) && repsNum > 0) {
-      const e1rm = calcE1RM(weight, repsNum);
+    const reps = parseFloat(row["reps"] ?? "");
+    if (!isNaN(weight) && !isNaN(reps) && reps > 0) {
+      const roundedReps = Math.round(reps);
+      const e1rm = calcE1RM(weight, reps);
       const prev = lastSessionE1RM.get(exercise);
-      if (prev === undefined || e1rm > prev) lastSessionE1RM.set(exercise, e1rm);
+      if (prev === undefined || e1rm > prev) {
+        lastSessionE1RM.set(exercise, e1rm);
+        lastSessionBestSet.set(exercise, { weight, reps: roundedReps });
+      }
+      const all = lastSessionAllSets.get(exercise) ?? [];
+      all.push({ weight, reps: roundedReps });
+      lastSessionAllSets.set(exercise, all);
     }
   }
 
@@ -91,6 +100,13 @@ export function ExerciseList({
           {filtered.map(([exercise]) => {
             const one = last1RepSet.get(exercise);
             const sessionE1RM = lastSessionE1RM.get(exercise);
+            const lastDate = lastPerformed.get(exercise);
+            const bestSet = lastSessionBestSet.get(exercise);
+            const allSets = lastSessionAllSets.get(exercise) ?? [];
+            const setCount = bestSet
+              ? allSets.filter((s) => s.weight === bestSet.weight && s.reps === bestSet.reps).length
+              : 0;
+            const setsReps = bestSet ? `${setCount}×${bestSet.reps} @ ${bestSet.weight} lbs` : null;
             const isSelected = exercise === selectedExercise;
             return (
               <tr
@@ -100,10 +116,30 @@ export function ExerciseList({
               >
                 <td style={{ ...td, fontWeight: isSelected ? 600 : undefined }}>{exercise}</td>
                 <td style={td}>
-                  {one !== undefined ? `${one.date.toLocaleDateString()} · ${one.weight} lbs` : "—"}
+                  {one ? (
+                    <>
+                      <span style={{ color: "#6b7280", fontSize: "0.85rem", whiteSpace: "nowrap" }}>
+                        {one.date.toLocaleDateString()}
+                      </span>
+                      <br />
+                      {one.weight} lbs
+                    </>
+                  ) : (
+                    "—"
+                  )}
                 </td>
                 <td style={td}>
-                  {sessionE1RM !== undefined ? `${Math.round(sessionE1RM)} lbs` : "—"}
+                  {sessionE1RM !== undefined && lastDate && setsReps ? (
+                    <>
+                      <span style={{ color: "#6b7280", fontSize: "0.85rem", whiteSpace: "nowrap" }}>
+                        {lastDate.toLocaleDateString()} · {setsReps}
+                      </span>
+                      <br />
+                      {Math.round(sessionE1RM)} lbs
+                    </>
+                  ) : (
+                    "—"
+                  )}
                 </td>
               </tr>
             );

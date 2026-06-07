@@ -23,6 +23,8 @@ export function ConjugateExerciseList({
   const lastPerformed = new Map<string, Date>();
   const last1RepSet = new Map<string, { date: Date; weight: number }>();
   const lastSessionE1RM = new Map<string, number>();
+  const lastSessionBestSet = new Map<string, { weight: number; reps: number }>();
+  const lastSessionAllSets = new Map<string, { weight: number; reps: number }[]>();
 
   for (const row of rows) {
     const parsed = parseConjugateLift(row["exercise"]?.trim() ?? "");
@@ -55,14 +57,25 @@ export function ConjugateExerciseList({
     const weight = parseFloat(findCol(row, "weight") ?? "");
     const reps = parseFloat(row["reps"] ?? "");
     if (!isNaN(weight) && !isNaN(reps) && reps > 0) {
+      const roundedReps = Math.round(reps);
       const e1rm = calcE1RM(weight, reps);
       const prev = lastSessionE1RM.get(label);
-      if (prev === undefined || e1rm > prev) lastSessionE1RM.set(label, e1rm);
+      if (prev === undefined || e1rm > prev) {
+        lastSessionE1RM.set(label, e1rm);
+        lastSessionBestSet.set(label, { weight, reps: roundedReps });
+      }
+      const all = lastSessionAllSets.get(label) ?? [];
+      all.push({ weight, reps: roundedReps });
+      lastSessionAllSets.set(label, all);
     }
   }
 
-  const variations = [...lastPerformed.keys()].sort();
-  if (variations.length === 0) return <p>No {liftType} data found.</p>;
+  const allVariations = [...lastPerformed.keys()].sort();
+  if (allVariations.length === 0) return <p>No {liftType} data found.</p>;
+
+  const visible = allVariations.filter((v) => !hidden.has(v));
+  const minimized = allVariations.filter((v) => hidden.has(v));
+  const variations = [...visible, ...minimized];
 
   return (
     <section>
@@ -79,19 +92,51 @@ export function ConjugateExerciseList({
           {variations.map((label) => {
             const one = last1RepSet.get(label);
             const sessionE1RM = lastSessionE1RM.get(label);
+            const lastDate = lastPerformed.get(label);
+            const bestSet = lastSessionBestSet.get(label);
+            const allSets = lastSessionAllSets.get(label) ?? [];
+            const setCount = bestSet
+              ? allSets.filter((s) => s.weight === bestSet.weight && s.reps === bestSet.reps).length
+              : 0;
+            const setsReps = bestSet ? `${setCount}×${bestSet.reps} @ ${bestSet.weight} lbs` : null;
             const isHidden = hidden.has(label);
+            if (isHidden) {
+              return (
+                <tr key={label} onClick={() => onToggle(label)} style={{ cursor: "pointer" }}>
+                  <td colSpan={3} style={{ ...td, color: "#9ca3af", fontSize: "0.85rem" }}>
+                    {label}
+                  </td>
+                </tr>
+              );
+            }
             return (
-              <tr
-                key={label}
-                onClick={() => onToggle(label)}
-                style={{ opacity: isHidden ? 0.4 : 1, cursor: "pointer" }}
-              >
+              <tr key={label} onClick={() => onToggle(label)} style={{ cursor: "pointer" }}>
                 <td style={td}>{label}</td>
                 <td style={td}>
-                  {one ? `${one.date.toLocaleDateString()} · ${one.weight} lbs` : "—"}
+                  {one ? (
+                    <>
+                      <span style={{ color: "#6b7280", fontSize: "0.85rem", whiteSpace: "nowrap" }}>
+                        {one.date.toLocaleDateString()}
+                      </span>
+                      <br />
+                      {one.weight} lbs
+                    </>
+                  ) : (
+                    "—"
+                  )}
                 </td>
                 <td style={td}>
-                  {sessionE1RM !== undefined ? `${Math.round(sessionE1RM)} lbs` : "—"}
+                  {sessionE1RM !== undefined && lastDate && setsReps ? (
+                    <>
+                      <span style={{ color: "#6b7280", fontSize: "0.85rem", whiteSpace: "nowrap" }}>
+                        {lastDate.toLocaleDateString()} · {setsReps}
+                      </span>
+                      <br />
+                      {Math.round(sessionE1RM)} lbs
+                    </>
+                  ) : (
+                    "—"
+                  )}
                 </td>
               </tr>
             );

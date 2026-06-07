@@ -1,8 +1,11 @@
-import { useState } from "react";
+import { useState, lazy, Suspense } from "react";
 import { useSheetData } from "./hooks/useSheetData";
 import { ConjugateCharts } from "./components/ConjugateCharts";
 import { ConjugateExerciseList } from "./components/ConjugateExerciseList";
+import { ExerciseList } from "./components/ExerciseList";
 import "./App.css";
+
+const Charts = lazy(() => import("./components/Charts").then((m) => ({ default: m.Charts })));
 
 type SheetRef = { id: string; published: boolean };
 type LiftTab = "squat" | "bench" | "deadlift";
@@ -34,12 +37,23 @@ const EXAMPLE_VISUALIZER_URL = `?sheet=${encodeURIComponent(EXAMPLE_CSV_URL)}`;
 function App() {
   const params = new URLSearchParams(window.location.search);
   const [url, setUrl] = useState(params.get("sheet") ?? import.meta.env.VITE_SHEET_URL ?? "");
+  const [conjugateMode, setConjugateMode] = useState(false);
   const [activeTab, setActiveTab] = useState<LiftTab>("squat");
   const [hiddenVariations, setHiddenVariations] = useState<Set<string>>(new Set());
+  const [selectedExercise, setSelectedExercise] = useState<string | null>(null);
   const sheetRef = extractSheetRef(url);
   const invalidUrl = url.length > 0 && !sheetRef;
 
   const state = useSheetData(sheetRef);
+
+  const exercises =
+    state.status === "success"
+      ? ([
+          ...new Set(state.rows.map((r) => r["exercise"]?.trim()).filter(Boolean)),
+        ].sort() as string[])
+      : [];
+
+  const effectiveExercise = selectedExercise ?? exercises[0] ?? null;
 
   function toggleVariation(label: string) {
     setHiddenVariations((prev) => {
@@ -62,6 +76,7 @@ function App() {
         value={url}
         onChange={(e) => {
           setUrl(e.target.value);
+          setSelectedExercise(null);
           setHiddenVariations(new Set());
         }}
         placeholder="https://docs.google.com/spreadsheets/d/…"
@@ -85,41 +100,75 @@ function App() {
         {state.status === "error" && <p style={{ color: "red" }}>{state.message}</p>}
         {state.status === "success" && (
           <>
-            <div
+            <label
               style={{
-                display: "flex",
-                gap: "1.5rem",
-                borderBottom: "2px solid #e5e7eb",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "0.5rem",
                 marginBottom: "1rem",
+                cursor: "pointer",
+                fontSize: "0.9rem",
               }}
             >
-              {TABS.map(({ id, label }) => (
-                <button
-                  key={id}
-                  onClick={() => setActiveTab(id)}
+              <input
+                type="checkbox"
+                checked={conjugateMode}
+                onChange={(e) => setConjugateMode(e.target.checked)}
+              />
+              Conjugate Mode
+            </label>
+
+            {conjugateMode ? (
+              <>
+                <div
                   style={{
-                    background: "none",
-                    border: "none",
-                    borderBottom: activeTab === id ? "2px solid #6366f1" : "2px solid transparent",
-                    marginBottom: "-2px",
-                    padding: "0.4rem 0",
-                    cursor: "pointer",
-                    fontWeight: activeTab === id ? 700 : 400,
-                    fontSize: "1rem",
-                    color: activeTab === id ? "#6366f1" : "#374151",
+                    display: "flex",
+                    gap: "1.5rem",
+                    borderBottom: "2px solid #e5e7eb",
+                    marginBottom: "1rem",
                   }}
                 >
-                  {label}
-                </button>
-              ))}
-            </div>
-            <ConjugateCharts rows={state.rows} liftType={activeTab} hidden={hiddenVariations} />
-            <ConjugateExerciseList
-              rows={state.rows}
-              liftType={activeTab}
-              hidden={hiddenVariations}
-              onToggle={toggleVariation}
-            />
+                  {TABS.map(({ id, label }) => (
+                    <button
+                      key={id}
+                      onClick={() => setActiveTab(id)}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        borderBottom:
+                          activeTab === id ? "2px solid #6366f1" : "2px solid transparent",
+                        marginBottom: "-2px",
+                        padding: "0.4rem 0",
+                        cursor: "pointer",
+                        fontWeight: activeTab === id ? 700 : 400,
+                        fontSize: "1rem",
+                        color: activeTab === id ? "#6366f1" : "#374151",
+                      }}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                <ConjugateCharts rows={state.rows} liftType={activeTab} hidden={hiddenVariations} />
+                <ConjugateExerciseList
+                  rows={state.rows}
+                  liftType={activeTab}
+                  hidden={hiddenVariations}
+                  onToggle={toggleVariation}
+                />
+              </>
+            ) : (
+              <>
+                <Suspense fallback={<p>Loading charts…</p>}>
+                  <Charts rows={state.rows} selectedExercise={effectiveExercise} />
+                </Suspense>
+                <ExerciseList
+                  rows={state.rows}
+                  selectedExercise={effectiveExercise}
+                  onSelectExercise={setSelectedExercise}
+                />
+              </>
+            )}
           </>
         )}
       </div>
