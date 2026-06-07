@@ -275,7 +275,7 @@ describe("conjugateLiftLabel", () => {
     ).toBe("Floor Press w/ Chains");
   });
 
-  it('labels Sumo 2" Deadlift', () => {
+  it('labels Opposite 2" Deadlift', () => {
     expect(
       conjugateLiftLabel({
         liftType: "deadlift",
@@ -288,7 +288,7 @@ describe("conjugateLiftLabel", () => {
           deficitHeight: null,
         },
       })
-    ).toBe('Sumo 2" Deadlift');
+    ).toBe('Opposite 2" Deadlift');
   });
 
   it("labels Deadlift w/ Reverse Bands", () => {
