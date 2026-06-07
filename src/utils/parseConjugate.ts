@@ -89,7 +89,7 @@ export function parseConjugateLift(name: string): ConjugateLift | null {
       liftType: "deadlift",
       variation: {
         ...DEFAULT_DEADLIFT_VARIATION,
-        isReverseStance: has("sumo") || has("opposite"),
+        isReverseStance: has("opposite"),
         hasChains: has("chain"),
         hasBands: !hasReverseBands && has("band"),
         hasReverseBands,
@@ -158,7 +158,7 @@ export function conjugateLiftLabel(lift: ConjugateLift): string {
       const { isReverseStance, hasChains, hasBands, hasReverseBands, blockHeight, deficitHeight } =
         lift.variation;
       const parts: string[] = [];
-      if (isReverseStance) parts.push("Sumo");
+      if (isReverseStance) parts.push("Opposite");
       if (blockHeight !== null) parts.push(`${blockHeight}"`);
       if (deficitHeight !== null) parts.push(`${deficitHeight}" Deficit`);
       parts.push("Deadlift");
