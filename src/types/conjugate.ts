@@ -1,5 +1,12 @@
 export type SquatBar = "standard" | "ssb";
-export type BenchBar = "standard" | "american" | "swiss" | "bamboo" | "dumbbell" | "bench_builder";
+export type BenchBar =
+  | "standard"
+  | "american"
+  | "swiss"
+  | "bamboo"
+  | "duffalo"
+  | "dumbbell"
+  | "bench_builder";
 export type BenchGrip = "close" | "medium" | "competition";
 export type BenchAngle = "flat" | "incline" | "decline";
 
