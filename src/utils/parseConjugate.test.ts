@@ -43,7 +43,7 @@ describe("parseConjugateLift", () => {
           hasChains: false,
           hasBands: false,
           isFloorPress: false,
-          boardHeight: null,
+          boardCount: null,
           hasSlingshot: false,
           hasPause: false,
         },
@@ -109,7 +109,7 @@ describe("parseConjugateLift", () => {
     it("parses Bench (2 Board)", () => {
       expect(parseConjugateLift("Bench (2 Board)")).toMatchObject({
         liftType: "bench",
-        variation: { boardHeight: 2 },
+        variation: { boardCount: 2 },
       });
     });
 
@@ -262,7 +262,7 @@ describe("conjugateLiftLabel", () => {
           hasChains: false,
           hasBands: false,
           isFloorPress: false,
-          boardHeight: null,
+          boardCount: null,
           hasSlingshot: false,
           hasPause: false,
         },
@@ -281,12 +281,31 @@ describe("conjugateLiftLabel", () => {
           hasChains: true,
           hasBands: false,
           isFloorPress: false,
-          boardHeight: null,
+          boardCount: null,
           hasSlingshot: false,
           hasPause: false,
         },
       })
     ).toBe("Swiss Bar Bench Press w/ Chains");
+  });
+
+  it("labels 2 Board Bench Press without inch mark", () => {
+    expect(
+      conjugateLiftLabel({
+        liftType: "bench",
+        variation: {
+          bar: "standard",
+          angle: "flat",
+          grip: "competition",
+          hasChains: false,
+          hasBands: false,
+          isFloorPress: false,
+          boardCount: 2,
+          hasSlingshot: false,
+          hasPause: false,
+        },
+      })
+    ).toBe("Bench Press w/ 2 Board");
   });
 
   it("labels Floor Press w/ Chains", () => {
@@ -300,7 +319,7 @@ describe("conjugateLiftLabel", () => {
           hasChains: true,
           hasBands: false,
           isFloorPress: true,
-          boardHeight: null,
+          boardCount: null,
           hasSlingshot: false,
           hasPause: false,
         },

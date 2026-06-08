@@ -77,7 +77,7 @@ export function parseConjugateLift(name: string): ConjugateLift | null {
         hasChains: has("chain"),
         hasBands: !hasReverseBands && has("band"),
         isFloorPress: base.includes("floor"),
-        boardHeight: extractHeight("board"),
+        boardCount: extractHeight("board"),
         hasSlingshot: has("slingshot"),
         hasPause: has("command"),
       },
@@ -131,7 +131,7 @@ export function conjugateLiftLabel(lift: ConjugateLift): string {
         angle,
         grip,
         isFloorPress,
-        boardHeight,
+        boardCount,
         hasSlingshot,
         hasChains,
         hasBands,
@@ -148,7 +148,7 @@ export function conjugateLiftLabel(lift: ConjugateLift): string {
       else if (angle === "decline") parts.push("Decline Bench Press");
       else parts.push("Bench Press");
       const equip: string[] = [];
-      if (boardHeight !== null) equip.push(`${boardHeight}" Board`);
+      if (boardCount !== null) equip.push(`${boardCount} Board`);
       if (hasSlingshot) equip.push("Slingshot");
       if (hasChains) equip.push("Chains");
       if (hasBands) equip.push("Bands");
