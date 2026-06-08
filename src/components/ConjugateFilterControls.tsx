@@ -13,6 +13,7 @@ const BENCH_BARS: { value: BenchBar; label: string }[] = [
   { value: "american", label: "American" },
   { value: "swiss", label: "Swiss" },
   { value: "bamboo", label: "Bamboo" },
+  { value: "duffalo", label: "Duffalo" },
   { value: "dumbbell", label: "Dumbbell" },
   { value: "bench_builder", label: "Bench Builder" },
 ];
