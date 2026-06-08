@@ -78,6 +78,20 @@ describe("parseConjugateLift", () => {
       });
     });
 
+    it("parses Duffalo Bar Bench Press", () => {
+      expect(parseConjugateLift("Duffalo Bar Bench Press")).toMatchObject({
+        liftType: "bench",
+        variation: { bar: "duffalo" },
+      });
+    });
+
+    it("parses Duffalo Bar Bench Press (chain)", () => {
+      expect(parseConjugateLift("Duffalo Bar Bench Press (chain)")).toMatchObject({
+        liftType: "bench",
+        variation: { bar: "duffalo", hasChains: true },
+      });
+    });
+
     it("parses Bench (bands)", () => {
       expect(parseConjugateLift("Bench (bands)")).toMatchObject({
         liftType: "bench",
@@ -235,6 +249,25 @@ describe("conjugateLiftLabel", () => {
         variation: { bar: "ssb", hasBox: true, hasChains: true, hasBands: false },
       })
     ).toBe("SSB Box Squat w/ Chains");
+  });
+
+  it("labels Duffalo Bar Bench Press", () => {
+    expect(
+      conjugateLiftLabel({
+        liftType: "bench",
+        variation: {
+          bar: "duffalo",
+          angle: "flat",
+          grip: "competition",
+          hasChains: false,
+          hasBands: false,
+          isFloorPress: false,
+          boardHeight: null,
+          hasSlingshot: false,
+          hasPause: false,
+        },
+      })
+    ).toBe("Duffalo Bar Bench Press");
   });
 
   it("labels Swiss Bar Bench Press w/ Chains", () => {

@@ -58,6 +58,7 @@ export function parseConjugateLift(name: string): ConjugateLift | null {
     else if (has("swiss")) bar = "swiss";
     else if (has("american")) bar = "american";
     else if (has("bamboo")) bar = "bamboo";
+    else if (has("duffalo")) bar = "duffalo";
     else if (has("dumbbell") || hasToken("db")) bar = "dumbbell";
 
     const hasReverseBands = has("reverse band");
@@ -106,6 +107,7 @@ const BENCH_BAR_LABELS: Partial<Record<BenchBar, string>> = {
   american: "American Bar",
   swiss: "Swiss Bar",
   bamboo: "Bamboo Bar",
+  duffalo: "Duffalo Bar",
   dumbbell: "Dumbbell",
 };
 
