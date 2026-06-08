@@ -305,7 +305,7 @@ describe("conjugateLiftLabel", () => {
           hasPause: false,
         },
       })
-    ).toBe("Bench Press w/ 2 Board");
+    ).toBe("2 Board Bench Press");
   });
 
   it("labels Floor Press w/ Chains", () => {
