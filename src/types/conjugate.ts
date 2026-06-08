@@ -24,7 +24,7 @@ export interface BenchVariation {
   hasChains: boolean;
   hasBands: boolean;
   isFloorPress: boolean;
-  boardHeight: number | null;
+  boardCount: number | null;
   hasSlingshot: boolean;
   hasPause: boolean;
 }
@@ -57,7 +57,7 @@ export const DEFAULT_BENCH_VARIATION: BenchVariation = {
   hasChains: false,
   hasBands: false,
   isFloorPress: false,
-  boardHeight: null,
+  boardCount: null,
   hasSlingshot: false,
   hasPause: false,
 };
