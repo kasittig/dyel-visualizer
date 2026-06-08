@@ -142,7 +142,7 @@ export function conjugateLiftLabel(lift: ConjugateLift): string {
       if (barLabel) parts.push(barLabel);
       if (grip === "close") parts.push("Close Grip");
       else if (grip === "medium") parts.push("Medium Grip");
-      if (boardCount !== null) parts.push(`${boardCount} Board`);
+      if (boardCount !== null) parts.push(`${boardCount}-Board`);
       if (bar === "bench_builder") parts.push("Bench Builder");
       else if (isFloorPress) parts.push("Floor Press");
       else if (angle === "incline") parts.push("Incline Bench Press");
