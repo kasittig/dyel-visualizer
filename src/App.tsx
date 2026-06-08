@@ -2,8 +2,16 @@ import { useState, lazy, Suspense } from "react";
 import { useSheetData } from "./hooks/useSheetData";
 import { ConjugateCharts } from "./components/ConjugateCharts";
 import { ConjugateExerciseList } from "./components/ConjugateExerciseList";
+import { ConjugateFilterControls } from "./components/ConjugateFilterControls";
 import { ExerciseList } from "./components/ExerciseList";
 import type { ConjugateLift } from "./types/conjugate";
+import {
+  DEFAULT_BENCH_FILTER,
+  DEFAULT_DEADLIFT_FILTER,
+  DEFAULT_SQUAT_FILTER,
+} from "./types/conjugateFilters";
+import type { BenchFilter, DeadliftFilter, SquatFilter } from "./types/conjugateFilters";
+import { getFilteredOutLabels } from "./utils/conjugateFilters";
 import "./App.css";
 
 const Charts = lazy(() => import("./components/Charts").then((m) => ({ default: m.Charts })));
@@ -45,6 +53,9 @@ function App() {
     bench: new Set(),
     deadlift: new Set(),
   });
+  const [squatFilter, setSquatFilter] = useState<SquatFilter>(DEFAULT_SQUAT_FILTER);
+  const [benchFilter, setBenchFilter] = useState<BenchFilter>(DEFAULT_BENCH_FILTER);
+  const [deadliftFilter, setDeadliftFilter] = useState<DeadliftFilter>(DEFAULT_DEADLIFT_FILTER);
   const [selectedExercise, setSelectedExercise] = useState<string | null>(null);
   const sheetRef = extractSheetRef(url);
   const invalidUrl = url.length > 0 && !sheetRef;
@@ -59,6 +70,16 @@ function App() {
       : [];
 
   const effectiveExercise = selectedExercise ?? exercises[0] ?? null;
+
+  const currentFilter =
+    activeTab === "squat" ? squatFilter : activeTab === "bench" ? benchFilter : deadliftFilter;
+
+  const filteredOutLabels =
+    state.status === "success"
+      ? getFilteredOutLabels(state.rows, activeTab, currentFilter)
+      : new Set<string>();
+
+  const effectiveHidden = new Set([...hiddenVariations[activeTab], ...filteredOutLabels]);
 
   function toggleVariation(label: string) {
     setHiddenVariations((prev) => {
@@ -83,6 +104,9 @@ function App() {
           setUrl(e.target.value);
           setSelectedExercise(null);
           setHiddenVariations({ squat: new Set(), bench: new Set(), deadlift: new Set() });
+          setSquatFilter(DEFAULT_SQUAT_FILTER);
+          setBenchFilter(DEFAULT_BENCH_FILTER);
+          setDeadliftFilter(DEFAULT_DEADLIFT_FILTER);
         }}
         placeholder="https://docs.google.com/spreadsheets/d/…"
         style={{ width: "100%", padding: "0.5rem", boxSizing: "border-box" }}
@@ -154,15 +178,20 @@ function App() {
                     </button>
                   ))}
                 </div>
-                <ConjugateCharts
-                  rows={state.rows}
+                <ConjugateFilterControls
                   liftType={activeTab}
-                  hidden={hiddenVariations[activeTab]}
+                  squatFilter={squatFilter}
+                  benchFilter={benchFilter}
+                  deadliftFilter={deadliftFilter}
+                  onSquatChange={setSquatFilter}
+                  onBenchChange={setBenchFilter}
+                  onDeadliftChange={setDeadliftFilter}
                 />
+                <ConjugateCharts rows={state.rows} liftType={activeTab} hidden={effectiveHidden} />
                 <ConjugateExerciseList
                   rows={state.rows}
                   liftType={activeTab}
-                  hidden={hiddenVariations[activeTab]}
+                  hidden={effectiveHidden}
                   onToggle={toggleVariation}
                 />
               </>
