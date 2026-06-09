@@ -8,25 +8,22 @@ import {
   YAxis,
 } from "recharts";
 import { findCol } from "../hooks/useSheetData";
-import type { ConjugateLift } from "../types/conjugate";
 import { calcE1RM } from "../utils/e1rm";
 import { formatDate, LINE_COLORS } from "../utils/chartUtils";
 import type { ParsedConjugateRow } from "../utils/parseConjugate";
 
 export function ConjugateCharts({
   rows,
-  liftType,
   hidden,
 }: {
   rows: ParsedConjugateRow[];
-  liftType: ConjugateLift["liftType"];
   hidden: Set<string>;
 }) {
   // label → date → best e1RM
   const e1rmByLabelAndDate = new Map<string, Map<string, number>>();
 
   for (const { row, lift, label } of rows) {
-    if (!lift || lift.liftType !== liftType || !label) continue;
+    if (!lift || !label) continue;
     const date = row["date"]?.trim();
     if (!date) continue;
     const weight = parseFloat(findCol(row, "weight") ?? "");
@@ -43,7 +40,7 @@ export function ConjugateCharts({
   if (e1rmByLabelAndDate.size === 0) {
     return (
       <section>
-        <p style={{ color: "#6b7280" }}>No {liftType} data found.</p>
+        <p style={{ color: "#6b7280" }}>No data found.</p>
       </section>
     );
   }

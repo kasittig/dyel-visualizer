@@ -31,14 +31,26 @@ export type ConjugatePresence = {
   deadlift: DeadliftPresence;
 };
 
-export function getConjugatePresence(rows: ParsedConjugateRow[]): ConjugatePresence {
-  const squat: SquatPresence = {
+export function getSquatPresence(rows: ParsedConjugateRow[]): SquatPresence {
+  const presence: SquatPresence = {
     bars: new Set(),
     hasBox: false,
     hasChains: false,
     hasBands: false,
   };
-  const bench: BenchPresence = {
+  for (const { lift } of rows) {
+    if (!lift || lift.liftType !== "squat") continue;
+    const v = lift.variation;
+    presence.bars.add(v.bar);
+    if (v.hasBox) presence.hasBox = true;
+    if (v.hasChains) presence.hasChains = true;
+    if (v.hasBands) presence.hasBands = true;
+  }
+  return presence;
+}
+
+export function getBenchPresence(rows: ParsedConjugateRow[]): BenchPresence {
+  const presence: BenchPresence = {
     bars: new Set(),
     angles: new Set(),
     hasChains: false,
@@ -46,39 +58,35 @@ export function getConjugatePresence(rows: ParsedConjugateRow[]): ConjugatePrese
     hasSlingshot: false,
     hasPause: false,
   };
-  const deadlift: DeadliftPresence = {
+  for (const { lift } of rows) {
+    if (!lift || lift.liftType !== "bench") continue;
+    const v = lift.variation;
+    presence.bars.add(v.bar);
+    presence.angles.add(v.angle);
+    if (v.hasChains) presence.hasChains = true;
+    if (v.hasBands) presence.hasBands = true;
+    if (v.hasSlingshot) presence.hasSlingshot = true;
+    if (v.hasPause) presence.hasPause = true;
+  }
+  return presence;
+}
+
+export function getDeadliftPresence(rows: ParsedConjugateRow[]): DeadliftPresence {
+  const presence: DeadliftPresence = {
     hasReverseStance: false,
     hasChains: false,
     hasBands: false,
     hasReverseBands: false,
   };
-
   for (const { lift } of rows) {
-    if (!lift) continue;
-    if (lift.liftType === "squat") {
-      const v = lift.variation;
-      squat.bars.add(v.bar);
-      if (v.hasBox) squat.hasBox = true;
-      if (v.hasChains) squat.hasChains = true;
-      if (v.hasBands) squat.hasBands = true;
-    } else if (lift.liftType === "bench") {
-      const v = lift.variation;
-      bench.bars.add(v.bar);
-      bench.angles.add(v.angle);
-      if (v.hasChains) bench.hasChains = true;
-      if (v.hasBands) bench.hasBands = true;
-      if (v.hasSlingshot) bench.hasSlingshot = true;
-      if (v.hasPause) bench.hasPause = true;
-    } else {
-      const v = lift.variation;
-      if (v.isReverseStance) deadlift.hasReverseStance = true;
-      if (v.hasChains) deadlift.hasChains = true;
-      if (v.hasBands) deadlift.hasBands = true;
-      if (v.hasReverseBands) deadlift.hasReverseBands = true;
-    }
+    if (!lift || lift.liftType !== "deadlift") continue;
+    const v = lift.variation;
+    if (v.isReverseStance) presence.hasReverseStance = true;
+    if (v.hasChains) presence.hasChains = true;
+    if (v.hasBands) presence.hasBands = true;
+    if (v.hasReverseBands) presence.hasReverseBands = true;
   }
-
-  return { squat, bench, deadlift };
+  return presence;
 }
 
 type LiftWithFilter =

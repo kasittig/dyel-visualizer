@@ -11,7 +11,12 @@ import {
   DEFAULT_SQUAT_FILTER,
 } from "./types/conjugateFilters";
 import type { BenchFilter, DeadliftFilter, SquatFilter } from "./types/conjugateFilters";
-import { getConjugatePresence, getFilteredOutLabels } from "./utils/conjugateFilters";
+import {
+  getBenchPresence,
+  getDeadliftPresence,
+  getFilteredOutLabels,
+  getSquatPresence,
+} from "./utils/conjugateFilters";
 import type { FilteredOutQuery } from "./utils/conjugateFilters";
 import { parseConjugateRows } from "./utils/parseConjugate";
 
@@ -87,11 +92,33 @@ function App() {
     [state]
   );
 
-  const presence = useMemo(() => getConjugatePresence(parsedConjugateRows), [parsedConjugateRows]);
+  const squatRows = useMemo(
+    () => parsedConjugateRows.filter((p) => p.lift?.liftType === "squat"),
+    [parsedConjugateRows]
+  );
+  const benchRows = useMemo(
+    () => parsedConjugateRows.filter((p) => p.lift?.liftType === "bench"),
+    [parsedConjugateRows]
+  );
+  const deadliftRows = useMemo(
+    () => parsedConjugateRows.filter((p) => p.lift?.liftType === "deadlift"),
+    [parsedConjugateRows]
+  );
+
+  const squatPresence = useMemo(() => getSquatPresence(squatRows), [squatRows]);
+  const benchPresence = useMemo(() => getBenchPresence(benchRows), [benchRows]);
+  const deadliftPresence = useMemo(() => getDeadliftPresence(deadliftRows), [deadliftRows]);
+  const presence = useMemo(
+    () => ({ squat: squatPresence, bench: benchPresence, deadlift: deadliftPresence }),
+    [squatPresence, benchPresence, deadliftPresence]
+  );
+
+  const activeRows =
+    activeTab === "squat" ? squatRows : activeTab === "bench" ? benchRows : deadliftRows;
 
   const filteredOutLabels = useMemo(
-    () => getFilteredOutLabels(parsedConjugateRows, currentQuery),
-    [parsedConjugateRows, currentQuery]
+    () => getFilteredOutLabels(activeRows, currentQuery),
+    [activeRows, currentQuery]
   );
 
   const effectiveHidden = new Set([...hiddenVariations[activeTab], ...filteredOutLabels]);
@@ -208,14 +235,9 @@ function App() {
                   onBenchChange={setBenchFilter}
                   onDeadliftChange={setDeadliftFilter}
                 />
-                <ConjugateCharts
-                  rows={parsedConjugateRows}
-                  liftType={activeTab}
-                  hidden={effectiveHidden}
-                />
+                <ConjugateCharts rows={activeRows} hidden={effectiveHidden} />
                 <ConjugateExerciseList
-                  rows={parsedConjugateRows}
-                  liftType={activeTab}
+                  rows={activeRows}
                   hidden={effectiveHidden}
                   onToggle={toggleVariation}
                 />

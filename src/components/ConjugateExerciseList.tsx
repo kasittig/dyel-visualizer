@@ -1,6 +1,5 @@
 import { useCallback, useMemo } from "react";
 import type { SheetRow } from "../hooks/useSheetData";
-import type { ConjugateLift } from "../types/conjugate";
 import type { ParsedConjugateRow } from "../utils/parseConjugate";
 import { useLastSessionStats } from "../hooks/useLastSessionStats";
 import { LastSessionCell, OneRepMaxCell, PredictedE1RMCell } from "./ExerciseCells";
@@ -9,20 +8,15 @@ import { th, td } from "../utils/tableStyles";
 
 export function ConjugateExerciseList({
   rows,
-  liftType,
   hidden,
   onToggle,
 }: {
   rows: ParsedConjugateRow[];
-  liftType: ConjugateLift["liftType"];
   hidden: Set<string>;
   onToggle: (label: string) => void;
 }) {
   const sheetRows = useMemo(() => rows.map((p) => p.row), [rows]);
-  const rowLabelMap = useMemo(
-    () => new Map(rows.map((p) => [p.row, p.lift?.liftType === liftType ? p.label : null])),
-    [rows, liftType]
-  );
+  const rowLabelMap = useMemo(() => new Map(rows.map((p) => [p.row, p.label ?? null])), [rows]);
   const keyFn = useCallback((row: SheetRow) => rowLabelMap.get(row) ?? null, [rowLabelMap]);
 
   const {
@@ -35,7 +29,7 @@ export function ConjugateExerciseList({
   } = useLastSessionStats(sheetRows, keyFn);
 
   const allVariations = [...lastPerformed.keys()].sort();
-  if (allVariations.length === 0) return <p>No {liftType} data found.</p>;
+  if (allVariations.length === 0) return <p>No data found.</p>;
 
   const visible = allVariations.filter((v) => !hidden.has(v));
   const minimized = allVariations.filter((v) => hidden.has(v));
