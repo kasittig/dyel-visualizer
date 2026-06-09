@@ -7,11 +7,10 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import type { SheetRow } from "../hooks/useSheetData";
 import { findCol } from "../hooks/useSheetData";
 import type { ConjugateLift } from "../types/conjugate";
 import { calcE1RM } from "../utils/calcE1RM";
-import { conjugateLiftLabel, parseConjugateLift } from "../utils/parseConjugate";
+import type { ParsedConjugateRow } from "../utils/parseConjugate";
 
 const LINE_COLORS = [
   "#6366f1",
@@ -38,23 +37,21 @@ export function ConjugateCharts({
   liftType,
   hidden,
 }: {
-  rows: SheetRow[];
+  rows: ParsedConjugateRow[];
   liftType: ConjugateLift["liftType"];
   hidden: Set<string>;
 }) {
   // label → date → best e1RM
   const e1rmByLabelAndDate = new Map<string, Map<string, number>>();
 
-  for (const row of rows) {
-    const parsed = parseConjugateLift(row["exercise"]?.trim() ?? "");
-    if (!parsed || parsed.liftType !== liftType) continue;
+  for (const { row, lift, label } of rows) {
+    if (!lift || lift.liftType !== liftType || !label) continue;
     const date = row["date"]?.trim();
     if (!date) continue;
     const weight = parseFloat(findCol(row, "weight") ?? "");
     const reps = parseFloat(row["reps"] ?? "");
     if (isNaN(weight) || isNaN(reps) || reps <= 0) continue;
 
-    const label = conjugateLiftLabel(parsed);
     const e1rm = calcE1RM(weight, reps);
     if (!e1rmByLabelAndDate.has(label)) e1rmByLabelAndDate.set(label, new Map());
     const byDate = e1rmByLabelAndDate.get(label)!;

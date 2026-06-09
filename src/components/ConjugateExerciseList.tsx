@@ -1,7 +1,7 @@
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import type { SheetRow } from "../hooks/useSheetData";
 import type { ConjugateLift } from "../types/conjugate";
-import { conjugateLiftLabel, parseConjugateLift } from "../utils/parseConjugate";
+import type { ParsedConjugateRow } from "../utils/parseConjugate";
 import { useLastSessionStats } from "../hooks/useLastSessionStats";
 import { LastSessionCell, OneRepMaxCell } from "./ExerciseCells";
 import { setsRepsLabel } from "../utils/setsRepsLabel";
@@ -12,22 +12,20 @@ export function ConjugateExerciseList({
   hidden,
   onToggle,
 }: {
-  rows: SheetRow[];
+  rows: ParsedConjugateRow[];
   liftType: ConjugateLift["liftType"];
   hidden: Set<string>;
   onToggle: (label: string) => void;
 }) {
-  const keyFn = useCallback(
-    (row: SheetRow) => {
-      const parsed = parseConjugateLift(row["exercise"]?.trim() ?? "");
-      if (!parsed || parsed.liftType !== liftType) return null;
-      return conjugateLiftLabel(parsed);
-    },
-    [liftType]
+  const sheetRows = useMemo(() => rows.map((p) => p.row), [rows]);
+  const rowLabelMap = useMemo(
+    () => new Map(rows.map((p) => [p.row, p.lift?.liftType === liftType ? p.label : null])),
+    [rows, liftType]
   );
+  const keyFn = useCallback((row: SheetRow) => rowLabelMap.get(row) ?? null, [rowLabelMap]);
 
   const { lastPerformed, last1RepSet, lastSessionE1RM, lastSessionBestSet, lastSessionAllSets } =
-    useLastSessionStats(rows, keyFn);
+    useLastSessionStats(sheetRows, keyFn);
 
   const allVariations = [...lastPerformed.keys()].sort();
   if (allVariations.length === 0) return <p>No {liftType} data found.</p>;

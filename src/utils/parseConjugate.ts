@@ -1,4 +1,18 @@
+import type { SheetRow } from "../hooks/useSheetData";
 import type { BenchBar, ConjugateLift } from "../types/conjugate";
+
+export type ParsedConjugateRow = {
+  row: SheetRow;
+  lift: ConjugateLift | null;
+  label: string | null;
+};
+
+export function parseConjugateRows(rows: SheetRow[]): ParsedConjugateRow[] {
+  return rows.map((row) => {
+    const lift = parseConjugateLift(row["exercise"]?.trim() ?? "");
+    return { row, lift, label: lift ? conjugateLiftLabel(lift) : null };
+  });
+}
 import {
   DEFAULT_BENCH_VARIATION,
   DEFAULT_DEADLIFT_VARIATION,

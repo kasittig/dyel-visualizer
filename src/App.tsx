@@ -1,4 +1,4 @@
-import { useState, lazy, Suspense } from "react";
+import { useState, lazy, Suspense, useMemo } from "react";
 import { useSheetData } from "./hooks/useSheetData";
 import { ConjugateCharts } from "./components/ConjugateCharts";
 import { ConjugateExerciseList } from "./components/ConjugateExerciseList";
@@ -12,6 +12,7 @@ import {
 } from "./types/conjugateFilters";
 import type { BenchFilter, DeadliftFilter, SquatFilter } from "./types/conjugateFilters";
 import { getFilteredOutLabels } from "./utils/conjugateFilters";
+import { parseConjugateRows } from "./utils/parseConjugate";
 import "./App.css";
 
 const Charts = lazy(() => import("./components/Charts").then((m) => ({ default: m.Charts })));
@@ -74,10 +75,15 @@ function App() {
   const currentFilter =
     activeTab === "squat" ? squatFilter : activeTab === "bench" ? benchFilter : deadliftFilter;
 
-  const filteredOutLabels =
-    state.status === "success"
-      ? getFilteredOutLabels(state.rows, activeTab, currentFilter)
-      : new Set<string>();
+  const parsedConjugateRows = useMemo(
+    () => (state.status === "success" ? parseConjugateRows(state.rows) : []),
+    [state]
+  );
+
+  const filteredOutLabels = useMemo(
+    () => getFilteredOutLabels(parsedConjugateRows, activeTab, currentFilter),
+    [parsedConjugateRows, activeTab, currentFilter]
+  );
 
   const effectiveHidden = new Set([...hiddenVariations[activeTab], ...filteredOutLabels]);
 
@@ -192,9 +198,13 @@ function App() {
                   onBenchChange={setBenchFilter}
                   onDeadliftChange={setDeadliftFilter}
                 />
-                <ConjugateCharts rows={state.rows} liftType={activeTab} hidden={effectiveHidden} />
+                <ConjugateCharts
+                  rows={parsedConjugateRows}
+                  liftType={activeTab}
+                  hidden={effectiveHidden}
+                />
                 <ConjugateExerciseList
-                  rows={state.rows}
+                  rows={parsedConjugateRows}
                   liftType={activeTab}
                   hidden={effectiveHidden}
                   onToggle={toggleVariation}
