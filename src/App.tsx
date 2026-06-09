@@ -3,6 +3,7 @@ import { useSheetData } from "./hooks/useSheetData";
 import { ConjugateCharts } from "./components/ConjugateCharts";
 import { ConjugateExerciseList } from "./components/ConjugateExerciseList";
 import { ConjugateFilterControls } from "./components/ConjugateFilterControls";
+import { ConjugateWeightCalculator } from "./components/ConjugateWeightCalculator";
 import { ExerciseList } from "./components/ExerciseList";
 import type { ConjugateLift } from "./types/conjugate";
 import {
@@ -201,6 +202,7 @@ function App() {
                   onBenchChange={setBenchFilter}
                   onDeadliftChange={setDeadliftFilter}
                 />
+                <ConjugateWeightCalculator rows={parsedConjugateRows} liftType={activeTab} />
                 <ConjugateCharts
                   rows={parsedConjugateRows}
                   liftType={activeTab}
