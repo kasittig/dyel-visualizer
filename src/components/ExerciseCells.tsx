@@ -11,6 +11,11 @@ export function OneRepMaxCell({ one }: { one: { date: Date; weight: number } | u
   );
 }
 
+export function PredictedE1RMCell({ predicted }: { predicted: number | null | undefined }) {
+  if (predicted == null) return <>—</>;
+  return <>{Math.round(predicted)} lbs</>;
+}
+
 export function LastSessionCell({
   sessionE1RM,
   lastDate,

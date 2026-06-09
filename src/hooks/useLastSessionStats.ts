@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import type { SheetRow } from "./useSheetData";
 import { findCol } from "./useSheetData";
-import { calcE1RM } from "../utils/e1rm";
+import { calcE1RM, predictE1RM } from "../utils/e1rm";
 
 function parseDate(str: string): Date | null {
   const d = new Date(str);
@@ -15,13 +15,15 @@ export function useLastSessionStats(rows: SheetRow[], keyFn: (row: SheetRow) => 
     const lastSessionE1RM = new Map<string, number>();
     const lastSessionBestSet = new Map<string, { weight: number; reps: number }>();
     const lastSessionAllSets = new Map<string, { weight: number; reps: number }[]>();
+    const e1rmHistory = new Map<string, Map<string, number>>();
 
-    // Pass 1: find the most-recent date for each key.
+    // Pass 1: find the most-recent date for each key, and build full e1RM history.
     // This must complete before pass 2 so we know which rows belong to the "last session."
     for (const row of rows) {
       const key = keyFn(row);
       if (!key) continue;
-      const date = parseDate(row["date"]?.trim() ?? "");
+      const dateStr = row["date"]?.trim() ?? "";
+      const date = parseDate(dateStr);
       if (!date) continue;
 
       const existing = lastPerformed.get(key);
@@ -29,9 +31,17 @@ export function useLastSessionStats(rows: SheetRow[], keyFn: (row: SheetRow) => 
 
       const weight = parseFloat(findCol(row, "weight") ?? "");
       const repsStr = row["reps"]?.trim() ?? "";
-      if (!isNaN(weight) && parseFloat(repsStr) === 1) {
+      const reps = parseFloat(repsStr);
+      if (!isNaN(weight) && reps === 1) {
         const prev = last1RepSet.get(key);
         if (!prev || date > prev.date) last1RepSet.set(key, { date, weight });
+      }
+      if (!isNaN(weight) && !isNaN(reps) && reps > 0) {
+        const e1rm = calcE1RM(weight, reps);
+        if (!e1rmHistory.has(key)) e1rmHistory.set(key, new Map());
+        const dateMap = e1rmHistory.get(key)!;
+        const prevBest = dateMap.get(dateStr);
+        if (prevBest === undefined || e1rm > prevBest) dateMap.set(dateStr, e1rm);
       }
     }
 
@@ -61,6 +71,17 @@ export function useLastSessionStats(rows: SheetRow[], keyFn: (row: SheetRow) => 
       }
     }
 
-    return { lastPerformed, last1RepSet, lastSessionE1RM, lastSessionBestSet, lastSessionAllSets };
+    const today = new Date();
+    const predictedE1RM = new Map<string, number | null>();
+    for (const [key, dateMap] of e1rmHistory) predictedE1RM.set(key, predictE1RM(dateMap, today));
+
+    return {
+      lastPerformed,
+      last1RepSet,
+      lastSessionE1RM,
+      lastSessionBestSet,
+      lastSessionAllSets,
+      predictedE1RM,
+    };
   }, [rows, keyFn]);
 }
