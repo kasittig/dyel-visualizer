@@ -3,6 +3,7 @@ import type { SheetRow } from "../hooks/useSheetData";
 import { useLastSessionStats } from "../hooks/useLastSessionStats";
 import { LastSessionCell, OneRepMaxCell } from "./ExerciseCells";
 import { setsRepsLabel } from "../utils/setsRepsLabel";
+import { th, td } from "../utils/tableStyles";
 
 export function ExerciseList({
   rows,
@@ -84,14 +85,3 @@ export function ExerciseList({
     </section>
   );
 }
-
-const th: React.CSSProperties = {
-  textAlign: "center",
-  padding: "0.5rem 1rem",
-  borderBottom: "2px solid #ccc",
-};
-
-const td: React.CSSProperties = {
-  padding: "0.4rem 1rem",
-  borderBottom: "1px solid #eee",
-};
