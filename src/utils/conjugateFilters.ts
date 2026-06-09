@@ -81,50 +81,71 @@ export function getConjugatePresence(rows: ParsedConjugateRow[]): ConjugatePrese
   return { squat, bench, deadlift };
 }
 
-type AnyFilter = SquatFilter | BenchFilter | DeadliftFilter;
+type LiftWithFilter =
+  | { liftType: "squat"; lift: Extract<ConjugateLift, { liftType: "squat" }>; filter: SquatFilter }
+  | { liftType: "bench"; lift: Extract<ConjugateLift, { liftType: "bench" }>; filter: BenchFilter }
+  | {
+      liftType: "deadlift";
+      lift: Extract<ConjugateLift, { liftType: "deadlift" }>;
+      filter: DeadliftFilter;
+    };
 
-function isFilteredOut(lift: ConjugateLift, filter: AnyFilter): boolean {
-  if (lift.liftType === "squat") {
-    const f = filter as SquatFilter;
+function isFilteredOut(liftWithFilter: LiftWithFilter): boolean {
+  if (liftWithFilter.liftType === "squat") {
+    const { lift, filter } = liftWithFilter;
     const v = lift.variation;
-    if (f.bars.size > 0 && !f.bars.has(v.bar)) return true;
-    if (f.onlyBox && !v.hasBox) return true;
-    if (f.onlyChains && !v.hasChains) return true;
-    if (f.onlyBands && !v.hasBands) return true;
+    if (filter.bars.size > 0 && !filter.bars.has(v.bar)) return true;
+    if (filter.onlyBox && !v.hasBox) return true;
+    if (filter.onlyChains && !v.hasChains) return true;
+    if (filter.onlyBands && !v.hasBands) return true;
     return false;
   }
-  if (lift.liftType === "bench") {
-    const f = filter as BenchFilter;
+  if (liftWithFilter.liftType === "bench") {
+    const { lift, filter } = liftWithFilter;
     const v = lift.variation;
-    if (f.bars.size > 0 && !f.bars.has(v.bar)) return true;
-    if (f.angles.size > 0 && !f.angles.has(v.angle)) return true;
-    if (f.onlyChains && !v.hasChains) return true;
-    if (f.onlyBands && !v.hasBands) return true;
-    if (f.onlySlingshot && !v.hasSlingshot) return true;
-    if (f.onlyPause && !v.hasPause) return true;
+    if (filter.bars.size > 0 && !filter.bars.has(v.bar)) return true;
+    if (filter.angles.size > 0 && !filter.angles.has(v.angle)) return true;
+    if (filter.onlyChains && !v.hasChains) return true;
+    if (filter.onlyBands && !v.hasBands) return true;
+    if (filter.onlySlingshot && !v.hasSlingshot) return true;
+    if (filter.onlyPause && !v.hasPause) return true;
     return false;
   }
-  if (lift.liftType === "deadlift") {
-    const f = filter as DeadliftFilter;
+  if (liftWithFilter.liftType === "deadlift") {
+    const { lift, filter } = liftWithFilter;
     const v = lift.variation;
-    if (f.onlyReverseStance && !v.isReverseStance) return true;
-    if (f.onlyChains && !v.hasChains) return true;
-    if (f.onlyBands && !v.hasBands) return true;
-    if (f.onlyReverseBands && !v.hasReverseBands) return true;
+    if (filter.onlyReverseStance && !v.isReverseStance) return true;
+    if (filter.onlyChains && !v.hasChains) return true;
+    if (filter.onlyBands && !v.hasBands) return true;
+    if (filter.onlyReverseBands && !v.hasReverseBands) return true;
     return false;
   }
   return false;
 }
 
+export type FilteredOutQuery =
+  | { liftType: "squat"; filter: SquatFilter }
+  | { liftType: "bench"; filter: BenchFilter }
+  | { liftType: "deadlift"; filter: DeadliftFilter };
+
 export function getFilteredOutLabels(
   rows: ParsedConjugateRow[],
-  liftType: ConjugateLift["liftType"],
-  filter: AnyFilter
+  query: FilteredOutQuery
 ): Set<string> {
   const out = new Set<string>();
   for (const { lift, label } of rows) {
-    if (!lift || lift.liftType !== liftType || !label) continue;
-    if (isFilteredOut(lift, filter)) {
+    if (!lift || lift.liftType !== query.liftType || !label) continue;
+    if (
+      (query.liftType === "squat" &&
+        lift.liftType === "squat" &&
+        isFilteredOut({ liftType: "squat", lift, filter: query.filter })) ||
+      (query.liftType === "bench" &&
+        lift.liftType === "bench" &&
+        isFilteredOut({ liftType: "bench", lift, filter: query.filter })) ||
+      (query.liftType === "deadlift" &&
+        lift.liftType === "deadlift" &&
+        isFilteredOut({ liftType: "deadlift", lift, filter: query.filter }))
+    ) {
       out.add(label);
     }
   }
