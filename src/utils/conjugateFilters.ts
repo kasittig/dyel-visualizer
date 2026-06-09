@@ -22,7 +22,6 @@ function isFilteredOut(lift: ConjugateLift, filter: AnyFilter): boolean {
     if (f.angles.size > 0 && !f.angles.has(v.angle)) return true;
     if (f.onlyChains && !v.hasChains) return true;
     if (f.onlyBands && !v.hasBands) return true;
-    if (f.onlyFloorPress && !v.isFloorPress) return true;
     if (f.onlySlingshot && !v.hasSlingshot) return true;
     if (f.onlyPause && !v.hasPause) return true;
     return false;

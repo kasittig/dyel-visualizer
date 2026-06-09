@@ -8,7 +8,7 @@ export type BenchBar =
   | "dumbbell"
   | "bench_builder";
 export type BenchGrip = "close" | "medium" | "competition";
-export type BenchAngle = "flat" | "incline" | "decline";
+export type BenchAngle = "flat" | "incline" | "decline" | "floor";
 
 export interface SquatVariation {
   bar: SquatBar;
@@ -23,7 +23,6 @@ export interface BenchVariation {
   grip: BenchGrip;
   hasChains: boolean;
   hasBands: boolean;
-  isFloorPress: boolean;
   boardCount: number | null;
   hasSlingshot: boolean;
   hasPause: boolean;
@@ -56,7 +55,6 @@ export const DEFAULT_BENCH_VARIATION: BenchVariation = {
   grip: "competition",
   hasChains: false,
   hasBands: false,
-  isFloorPress: false,
   boardCount: null,
   hasSlingshot: false,
   hasPause: false,
