@@ -1,7 +1,6 @@
-import type { SheetRow } from "../hooks/useSheetData";
 import type { ConjugateLift } from "../types/conjugate";
 import type { BenchFilter, DeadliftFilter, SquatFilter } from "../types/conjugateFilters";
-import { conjugateLiftLabel, parseConjugateLift } from "./parseConjugate";
+import type { ParsedConjugateRow } from "./parseConjugate";
 
 type AnyFilter = SquatFilter | BenchFilter | DeadliftFilter;
 
@@ -39,16 +38,15 @@ function isFilteredOut(lift: ConjugateLift, filter: AnyFilter): boolean {
 }
 
 export function getFilteredOutLabels(
-  rows: SheetRow[],
+  rows: ParsedConjugateRow[],
   liftType: ConjugateLift["liftType"],
   filter: AnyFilter
 ): Set<string> {
   const out = new Set<string>();
-  for (const row of rows) {
-    const parsed = parseConjugateLift(row["exercise"]?.trim() ?? "");
-    if (!parsed || parsed.liftType !== liftType) continue;
-    if (isFilteredOut(parsed, filter)) {
-      out.add(conjugateLiftLabel(parsed));
+  for (const { lift, label } of rows) {
+    if (!lift || lift.liftType !== liftType || !label) continue;
+    if (isFilteredOut(lift, filter)) {
+      out.add(label);
     }
   }
   return out;
