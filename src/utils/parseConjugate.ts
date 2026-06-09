@@ -47,16 +47,32 @@ export function parseConjugateLift(name: string): ConjugateLift | null {
     return null;
   }
 
+  // Extracts a nominal weight label from a modifier phrase like "80 lbs chains" or "chains, 80 lbs".
+  // The number is a label (e.g. total chain weight when fully suspended), not an effective loading value.
+  function extractModifierWeight(keyword: string): number | null {
+    const re = new RegExp(
+      `(\\d+(?:\\.\\d+)?)\\s*(?:lbs?)?\\s*${keyword}|${keyword}[\\s,]*(?::)?[\\s,]*(\\d+(?:\\.\\d+)?)\\s*(?:lbs?)?`,
+      "i"
+    );
+    const m = lower.match(re);
+    if (m) return parseFloat(m[1] ?? m[2]);
+    return null;
+  }
+
   if (base.includes("squat")) {
     const hasReverseBands = has("reverse band");
+    const hasChains = has("chain");
+    const hasBands = !hasReverseBands && has("band");
     return {
       liftType: "squat",
       variation: {
         ...DEFAULT_SQUAT_VARIATION,
         bar: has("ssb") || has("safety") ? "ssb" : "standard",
         hasBox: has("box"),
-        hasChains: has("chain"),
-        hasBands: !hasReverseBands && has("band"),
+        hasChains,
+        chainWeight: hasChains ? extractModifierWeight("chains?") : null,
+        hasBands,
+        bandWeight: hasBands ? extractModifierWeight("bands?") : null,
       },
     };
   }
@@ -76,6 +92,8 @@ export function parseConjugateLift(name: string): ConjugateLift | null {
     else if (has("dumbbell") || hasToken("db")) bar = "dumbbell";
 
     const hasReverseBands = has("reverse band");
+    const hasChains = has("chain");
+    const hasBands = !hasReverseBands && has("band");
     return {
       liftType: "bench",
       variation: {
@@ -94,8 +112,10 @@ export function parseConjugateLift(name: string): ConjugateLift | null {
             : hasToken("medium")
               ? "medium"
               : "competition",
-        hasChains: has("chain"),
-        hasBands: !hasReverseBands && has("band"),
+        hasChains,
+        chainWeight: hasChains ? extractModifierWeight("chains?") : null,
+        hasBands,
+        bandWeight: hasBands ? extractModifierWeight("bands?") : null,
         boardCount: extractHeight("board"),
         hasSlingshot: has("slingshot"),
         hasPause: has("command"),
@@ -105,13 +125,17 @@ export function parseConjugateLift(name: string): ConjugateLift | null {
 
   if (base.includes("deadlift")) {
     const hasReverseBands = has("reverse band");
+    const hasChains = has("chain");
+    const hasBands = !hasReverseBands && has("band");
     return {
       liftType: "deadlift",
       variation: {
         ...DEFAULT_DEADLIFT_VARIATION,
         isReverseStance: has("opposite"),
-        hasChains: has("chain"),
-        hasBands: !hasReverseBands && has("band"),
+        hasChains,
+        chainWeight: hasChains ? extractModifierWeight("chains?") : null,
+        hasBands,
+        bandWeight: hasBands ? extractModifierWeight("bands?") : null,
         hasReverseBands,
         blockHeight: extractHeight("block"),
         deficitHeight: extractHeight("deficit"),

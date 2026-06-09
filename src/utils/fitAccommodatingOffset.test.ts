@@ -204,6 +204,72 @@ describe("fitAccommodatingOffset", () => {
     });
   });
 
+  describe("alpha coefficient fitting", () => {
+    it("computes alpha when chain sets have labeled weights (paired_blocks path)", () => {
+      // Use PAIRED_ROWS where chain sets have explicit weight labels.
+      // offset ≈ 76.667 lbs, nominal weight = 100 lbs → alpha ≈ 0.767
+      const labeledRows: ParsedConjugateRow[] = PAIRED_ROWS.map((r) => {
+        if (!r.lift || !r.lift.variation.hasChains) return r;
+        const lift = parseConjugateLift(r.row.exercise.replace("(Chains)", "(100 lbs chains)"));
+        return { ...r, lift, label: lift ? conjugateLiftLabel(lift) : null };
+      });
+      const result = fitAccommodatingOffset(labeledRows, "bench", "chains");
+      expect(result.method).toBe("paired_blocks");
+      expect(result.alpha).not.toBeNull();
+      expect(result.nominalModifierWeight).toBeCloseTo(100, 0);
+      // alpha × 100 ≈ offset
+      expect(result.alpha! * 100).toBeCloseTo(result.offset, 1);
+    });
+
+    it("infers chain weight for unlabeled sessions from labeled ones in the same variation group", () => {
+      // Two sessions have labels, one does not. All three pair with straight work.
+      const rows: ParsedConjugateRow[] = [
+        // Window 0: labeled chain set
+        makeRow("Bench", "2026-01-05", 300, 3),
+        {
+          ...makeRow("Bench (Chains)", "2026-01-10", 225, 3),
+          ...(() => {
+            const lift = parseConjugateLift("Bench (80 lbs chains)");
+            return { lift, label: lift ? conjugateLiftLabel(lift) : null };
+          })(),
+        },
+        // Window 1: unlabeled chain set (same variation, inferred weight = 80)
+        makeRow("Bench", "2026-01-26", 295, 3),
+        makeRow("Bench (Chains)", "2026-02-01", 220, 3),
+        // Window 2: labeled chain set
+        makeRow("Bench", "2026-02-17", 310, 3),
+        {
+          ...makeRow("Bench (Chains)", "2026-02-20", 230, 3),
+          ...(() => {
+            const lift = parseConjugateLift("Bench (80 lbs chains)");
+            return { lift, label: lift ? conjugateLiftLabel(lift) : null };
+          })(),
+        },
+      ];
+      const result = fitAccommodatingOffset(rows, "bench", "chains");
+      expect(result.method).toBe("paired_blocks");
+      // nominalModifierWeight is inferred from the two labeled sessions
+      expect(result.nominalModifierWeight).toBeCloseTo(80, 0);
+      // alpha should be computed (not null) because labeled sessions exist
+      expect(result.alpha).not.toBeNull();
+    });
+
+    it("returns alpha=null when no chain sets have a weight label", () => {
+      // Unlabeled chain sets → nominalModifierWeight=null → alpha=null
+      const result = fitAccommodatingOffset(PAIRED_ROWS, "bench", "chains");
+      expect(result.alpha).toBeNull();
+      expect(result.nominalModifierWeight).toBeNull();
+    });
+
+    it("returns nominalModifierWeight=null in the default fallback path", () => {
+      const rows = [makeRow("Bench (Chains)", "2026-01-05", 225, 3)];
+      const result = fitAccommodatingOffset(rows, "bench", "chains");
+      expect(result.method).toBe("default");
+      expect(result.alpha).toBeNull();
+      expect(result.nominalModifierWeight).toBeNull();
+    });
+  });
+
   describe("reverse bands", () => {
     // Reverse bands are a deadlift-only modifier that reduce effective load.
     // Same window spacing as PAIRED_ROWS (Feb 17 = day 43 → window 2).

@@ -6,28 +6,56 @@ describe("parseConjugateLift", () => {
     it("parses plain Squat", () => {
       expect(parseConjugateLift("Squat")).toEqual({
         liftType: "squat",
-        variation: { bar: "standard", hasBox: false, hasChains: false, hasBands: false },
+        variation: {
+          bar: "standard",
+          hasBox: false,
+          hasChains: false,
+          chainWeight: null,
+          hasBands: false,
+          bandWeight: null,
+        },
       });
     });
 
     it("parses Box Squat", () => {
       expect(parseConjugateLift("Box Squat")).toEqual({
         liftType: "squat",
-        variation: { bar: "standard", hasBox: true, hasChains: false, hasBands: false },
+        variation: {
+          bar: "standard",
+          hasBox: true,
+          hasChains: false,
+          chainWeight: null,
+          hasBands: false,
+          bandWeight: null,
+        },
       });
     });
 
     it("parses Squat (SSB)", () => {
       expect(parseConjugateLift("Squat (SSB)")).toEqual({
         liftType: "squat",
-        variation: { bar: "ssb", hasBox: false, hasChains: false, hasBands: false },
+        variation: {
+          bar: "ssb",
+          hasBox: false,
+          hasChains: false,
+          chainWeight: null,
+          hasBands: false,
+          bandWeight: null,
+        },
       });
     });
 
     it("is case-insensitive", () => {
       expect(parseConjugateLift("box SQUAT")).toEqual({
         liftType: "squat",
-        variation: { bar: "standard", hasBox: true, hasChains: false, hasBands: false },
+        variation: {
+          bar: "standard",
+          hasBox: true,
+          hasChains: false,
+          chainWeight: null,
+          hasBands: false,
+          bandWeight: null,
+        },
       });
     });
   });
@@ -41,7 +69,9 @@ describe("parseConjugateLift", () => {
           angle: "flat",
           grip: "competition",
           hasChains: false,
+          chainWeight: null,
           hasBands: false,
+          bandWeight: null,
           boardCount: null,
           hasSlingshot: false,
           hasPause: false,
@@ -176,7 +206,9 @@ describe("parseConjugateLift", () => {
         variation: {
           isReverseStance: false,
           hasChains: false,
+          chainWeight: null,
           hasBands: false,
+          bandWeight: null,
           hasReverseBands: false,
           blockHeight: null,
           deficitHeight: null,
@@ -220,6 +252,57 @@ describe("parseConjugateLift", () => {
     });
   });
 
+  describe("chain weight parsing", () => {
+    it("extracts chainWeight from '80 lbs chains' in exercise name", () => {
+      expect(parseConjugateLift("Bench (80 lbs chains)")).toMatchObject({
+        liftType: "bench",
+        variation: { hasChains: true, chainWeight: 80 },
+      });
+    });
+
+    it("extracts chainWeight from 'chains, 80 lbs' (comma-separated modifiers)", () => {
+      expect(parseConjugateLift("Bench (chains, 80 lbs)")).toMatchObject({
+        liftType: "bench",
+        variation: { hasChains: true, chainWeight: 80 },
+      });
+    });
+
+    it("extracts chainWeight from '80lb chain'", () => {
+      expect(parseConjugateLift("Squat (80lb chain)")).toMatchObject({
+        liftType: "squat",
+        variation: { hasChains: true, chainWeight: 80 },
+      });
+    });
+
+    it("leaves chainWeight null when no weight is specified", () => {
+      expect(parseConjugateLift("Bench (chains)")).toMatchObject({
+        liftType: "bench",
+        variation: { hasChains: true, chainWeight: null },
+      });
+    });
+
+    it("extracts bandWeight from '50 lbs bands'", () => {
+      expect(parseConjugateLift("Bench (50 lbs bands)")).toMatchObject({
+        liftType: "bench",
+        variation: { hasBands: true, bandWeight: 50 },
+      });
+    });
+
+    it("leaves bandWeight null when no weight is specified", () => {
+      expect(parseConjugateLift("Bench (bands)")).toMatchObject({
+        liftType: "bench",
+        variation: { hasBands: true, bandWeight: null },
+      });
+    });
+
+    it("does not extract bandWeight for reverse bands", () => {
+      expect(parseConjugateLift("Deadlift (reverse bands)")).toMatchObject({
+        liftType: "deadlift",
+        variation: { hasReverseBands: true, hasBands: false, bandWeight: null },
+      });
+    });
+  });
+
   describe("non-conjugate exercises", () => {
     it("returns null for Lat Pulldown", () => {
       expect(parseConjugateLift("Lat Pulldown")).toBeNull();
@@ -236,7 +319,14 @@ describe("conjugateLiftLabel", () => {
     expect(
       conjugateLiftLabel({
         liftType: "squat",
-        variation: { bar: "standard", hasBox: false, hasChains: false, hasBands: false },
+        variation: {
+          bar: "standard",
+          hasBox: false,
+          hasChains: false,
+          chainWeight: null,
+          hasBands: false,
+          bandWeight: null,
+        },
       })
     ).toBe("Squat");
   });
@@ -245,7 +335,14 @@ describe("conjugateLiftLabel", () => {
     expect(
       conjugateLiftLabel({
         liftType: "squat",
-        variation: { bar: "ssb", hasBox: true, hasChains: true, hasBands: false },
+        variation: {
+          bar: "ssb",
+          hasBox: true,
+          hasChains: true,
+          chainWeight: null,
+          hasBands: false,
+          bandWeight: null,
+        },
       })
     ).toBe("SSB Box Squat w/ Chains");
   });
@@ -259,7 +356,9 @@ describe("conjugateLiftLabel", () => {
           angle: "flat",
           grip: "competition",
           hasChains: false,
+          chainWeight: null,
           hasBands: false,
+          bandWeight: null,
           boardCount: null,
           hasSlingshot: false,
           hasPause: false,
@@ -277,7 +376,9 @@ describe("conjugateLiftLabel", () => {
           angle: "flat",
           grip: "competition",
           hasChains: true,
+          chainWeight: null,
           hasBands: false,
+          bandWeight: null,
           boardCount: null,
           hasSlingshot: false,
           hasPause: false,
@@ -295,7 +396,9 @@ describe("conjugateLiftLabel", () => {
           angle: "flat",
           grip: "competition",
           hasChains: false,
+          chainWeight: null,
           hasBands: false,
+          bandWeight: null,
           boardCount: 2,
           hasSlingshot: false,
           hasPause: false,
@@ -313,7 +416,9 @@ describe("conjugateLiftLabel", () => {
           angle: "floor",
           grip: "competition",
           hasChains: true,
+          chainWeight: null,
           hasBands: false,
+          bandWeight: null,
           boardCount: null,
           hasSlingshot: false,
           hasPause: false,
@@ -329,7 +434,9 @@ describe("conjugateLiftLabel", () => {
         variation: {
           isReverseStance: true,
           hasChains: false,
+          chainWeight: null,
           hasBands: false,
+          bandWeight: null,
           hasReverseBands: false,
           blockHeight: 2,
           deficitHeight: null,
@@ -345,7 +452,9 @@ describe("conjugateLiftLabel", () => {
         variation: {
           isReverseStance: false,
           hasChains: false,
+          chainWeight: null,
           hasBands: false,
+          bandWeight: null,
           hasReverseBands: true,
           blockHeight: null,
           deficitHeight: null,

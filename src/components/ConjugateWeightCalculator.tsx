@@ -9,13 +9,17 @@ const REP_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 function offsetDescription(fit: FitResult, label: string): string | null {
   if (fit.modifiedSetCount === 0) return null;
   const lbs = Math.round(fit.offset);
+  const prefix =
+    fit.nominalModifierWeight !== null
+      ? `${Math.round(fit.nominalModifierWeight)} lb ${label}`
+      : label;
   switch (fit.method) {
     case "paired_blocks":
-      return `${label} offset: ${lbs} lbs (${fit.pairedBlockCount} paired blocks)`;
+      return `${prefix}: effective weight ${lbs} lbs (${fit.pairedBlockCount} paired blocks)`;
     case "global_mean":
-      return `${label} offset: ${lbs} lbs (estimated from session averages — add paired straight/${label} blocks to improve)`;
+      return `${prefix}: effective weight ${lbs} lbs (estimated from session averages — add paired straight/${label} blocks to improve)`;
     case "default":
-      return `${label} offset: ${lbs} lbs (default — no straight work to calibrate from)`;
+      return `${prefix}: assumed ${lbs} lbs effective (no straight work to calibrate from)`;
   }
 }
 

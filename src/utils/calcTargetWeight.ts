@@ -2,14 +2,13 @@ import type { ParsedConjugateRow } from "./parseConjugate";
 import type { ConjugateLift } from "../types/conjugate";
 import { findCol } from "../hooks/useSheetData";
 import { fitAccommodatingOffset, type FitResult } from "./fitAccommodatingOffset";
-import { calcNormalizedE1RM, type AccommodatingOffsets } from "./calcNormalizedE1RM";
+import { calcNormalizedE1RM, type AccommodatingFits } from "./calcNormalizedE1RM";
 
 const TRAILING_WEEKS = 12;
 
 export type TargetWeightResult = {
   targetWeight: number;
   workingE1RM: number;
-  offsets: AccommodatingOffsets;
   fitMeta: { chains: FitResult; bands: FitResult; reverseBands: FitResult };
   sessionCount: number;
 };
@@ -27,10 +26,10 @@ export function calcTargetWeight(
   const chainsFit = fitAccommodatingOffset(rows, liftType, "chains");
   const bandsFit = fitAccommodatingOffset(rows, liftType, "bands");
   const reverseBandsFit = fitAccommodatingOffset(rows, liftType, "reverseBands");
-  const offsets: AccommodatingOffsets = {
-    chains: chainsFit.offset,
-    bands: bandsFit.offset,
-    reverseBands: reverseBandsFit.offset,
+  const fits: AccommodatingFits = {
+    chains: { offset: chainsFit.offset, alpha: chainsFit.alpha },
+    bands: { offset: bandsFit.offset, alpha: bandsFit.alpha },
+    reverseBands: { offset: reverseBandsFit.offset, alpha: reverseBandsFit.alpha },
   };
 
   const cutoff = new Date(now);
@@ -50,7 +49,7 @@ export function calcTargetWeight(
     if (isNaN(barWeight) || isNaN(reps) || reps <= 0) continue;
 
     sessionDates.add(dateStr);
-    const e1rm = calcNormalizedE1RM(barWeight, reps, row.lift, offsets);
+    const e1rm = calcNormalizedE1RM(barWeight, reps, row.lift, fits);
     if (e1rm > bestE1RM) bestE1RM = e1rm;
   }
 
@@ -63,7 +62,6 @@ export function calcTargetWeight(
   return {
     targetWeight,
     workingE1RM: Math.round(bestE1RM),
-    offsets,
     fitMeta: { chains: chainsFit, bands: bandsFit, reverseBands: reverseBandsFit },
     sessionCount: sessionDates.size,
   };
