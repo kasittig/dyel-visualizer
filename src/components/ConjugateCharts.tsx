@@ -9,7 +9,7 @@ import {
 } from "recharts";
 import { findCol } from "../hooks/useSheetData";
 import type { ConjugateLift } from "../types/conjugate";
-import { calcE1RM } from "../utils/calcE1RM";
+import { calcE1RM } from "../utils/e1rm";
 import { formatDate, LINE_COLORS } from "../utils/chartUtils";
 import type { ParsedConjugateRow } from "../utils/parseConjugate";
 
