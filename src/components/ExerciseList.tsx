@@ -1,6 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
 import type { SheetRow } from "../hooks/useSheetData";
-import type { LabeledRow } from "../utils/labeledRow";
 import { useLastSessionStats } from "../hooks/useLastSessionStats";
 import { LastSessionCell, OneRepMaxCell, PredictedE1RMCell } from "./ExerciseCells";
 import { setsRepsLabel } from "../utils/setsRepsLabel";
@@ -14,7 +13,7 @@ export function ExerciseList({
   columnHeader = "Movement",
   showSearch = false,
 }: {
-  rows: LabeledRow[];
+  rows: { row: SheetRow; label: string | null }[];
   hidden: Set<string>;
   onToggle: (label: string) => void;
   heading?: string;
