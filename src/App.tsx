@@ -119,22 +119,19 @@ function App() {
 
   const effectiveHidden = new Set([...hiddenVariations[activeTab], ...filteredOutLabels]);
 
+  function toggleInSet<T>(set: Set<T>, item: T): Set<T> {
+    const next = new Set(set);
+    if (next.has(item)) next.delete(item);
+    else next.add(item);
+    return next;
+  }
+
   function toggleExercise(exercise: string) {
-    setHiddenExercises((prev) => {
-      const next = new Set(prev);
-      if (next.has(exercise)) next.delete(exercise);
-      else next.add(exercise);
-      return next;
-    });
+    setHiddenExercises((prev) => toggleInSet(prev, exercise));
   }
 
   function toggleVariation(label: string) {
-    setHiddenVariations((prev) => {
-      const tabSet = new Set(prev[activeTab]);
-      if (tabSet.has(label)) tabSet.delete(label);
-      else tabSet.add(label);
-      return { ...prev, [activeTab]: tabSet };
-    });
+    setHiddenVariations((prev) => ({ ...prev, [activeTab]: toggleInSet(prev[activeTab], label) }));
   }
 
   return (
