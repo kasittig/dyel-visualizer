@@ -16,9 +16,9 @@ const DEFAULT_OFFSET_LBS = 50;
 const BLOCK_DAYS = 21;
 const MIN_PAIRED_BLOCKS = 3;
 
-type ParsedSet = { date: Date; barWeight: number; reps: number };
+type ParsedSet = { date: Date; barWeight: number; reps: number; baseKey: string };
 
-function parseSet(row: ParsedConjugateRow): ParsedSet | null {
+function parseSet(row: ParsedConjugateRow): Omit<ParsedSet, "baseKey"> | null {
   const date = new Date(row.row["date"]?.trim() ?? "");
   if (isNaN(date.getTime())) return null;
   const barWeight = parseFloat(findCol(row.row, "weight") ?? "");
@@ -33,12 +33,48 @@ function hasModifier(lift: ConjugateLift, type: AccommodatingType): boolean {
   return lift.liftType === "deadlift" && lift.variation.hasReverseBands;
 }
 
-function isAnyAccommodated(lift: ConjugateLift): boolean {
-  return (
-    lift.variation.hasChains ||
-    lift.variation.hasBands ||
-    (lift.liftType === "deadlift" && lift.variation.hasReverseBands)
-  );
+// Returns a string key representing every variation field except the modifier being fitted.
+// Two lifts with the same key differ only in whether they have that modifier, so their
+// e1RMs can be directly compared to estimate the modifier's effective weight contribution.
+function baseVariationKey(lift: ConjugateLift, modifierType: AccommodatingType): string {
+  switch (lift.liftType) {
+    case "squat": {
+      const v = lift.variation;
+      return [
+        "squat",
+        v.bar,
+        String(v.hasBox),
+        String(modifierType !== "chains" && v.hasChains),
+        String(modifierType !== "bands" && v.hasBands),
+      ].join(":");
+    }
+    case "bench": {
+      const v = lift.variation;
+      return [
+        "bench",
+        v.bar,
+        v.angle,
+        v.grip,
+        String(v.boardCount),
+        String(v.hasSlingshot),
+        String(v.hasPause),
+        String(modifierType !== "chains" && v.hasChains),
+        String(modifierType !== "bands" && v.hasBands),
+      ].join(":");
+    }
+    case "deadlift": {
+      const v = lift.variation;
+      return [
+        "deadlift",
+        String(v.isReverseStance),
+        String(v.blockHeight),
+        String(v.deficitHeight),
+        String(modifierType !== "chains" && v.hasChains),
+        String(modifierType !== "bands" && v.hasBands),
+        String(modifierType !== "reverseBands" && v.hasReverseBands),
+      ].join(":");
+    }
+  }
 }
 
 export function fitAccommodatingOffset(
@@ -47,16 +83,17 @@ export function fitAccommodatingOffset(
   modifierType: AccommodatingType
 ): FitResult {
   const modifiedSets: ParsedSet[] = [];
-  const straightSets: ParsedSet[] = [];
+  const comparableSets: ParsedSet[] = [];
 
   for (const row of rows) {
     if (!row.lift || row.lift.liftType !== liftType) continue;
     const parsed = parseSet(row);
     if (!parsed) continue;
+    const baseKey = baseVariationKey(row.lift, modifierType);
     if (hasModifier(row.lift, modifierType)) {
-      modifiedSets.push(parsed);
-    } else if (!isAnyAccommodated(row.lift)) {
-      straightSets.push(parsed);
+      modifiedSets.push({ ...parsed, baseKey });
+    } else {
+      comparableSets.push({ ...parsed, baseKey });
     }
   }
 
@@ -69,31 +106,32 @@ export function fitAccommodatingOffset(
     };
   }
 
-  const minTime = Math.min(...[...modifiedSets, ...straightSets].map((s) => s.date.getTime()));
+  // Group by "(windowIndex):(baseKey)" so only same-variation sets within the same block are paired.
+  const allTimes = [...modifiedSets, ...comparableSets].map((s) => s.date.getTime());
+  const minTime = Math.min(...allTimes);
   const windowMs = BLOCK_DAYS * 24 * 60 * 60 * 1000;
-  const windowOf = (d: Date) => Math.floor((d.getTime() - minTime) / windowMs);
+  const windowKeyOf = (s: ParsedSet) =>
+    `${Math.floor((s.date.getTime() - minTime) / windowMs)}:${s.baseKey}`;
 
-  const modByWindow = new Map<number, ParsedSet[]>();
-  const strByWindow = new Map<number, ParsedSet[]>();
+  const modByGroup = new Map<string, ParsedSet[]>();
+  const cmpByGroup = new Map<string, ParsedSet[]>();
   for (const s of modifiedSets) {
-    const w = windowOf(s.date);
-    modByWindow.set(w, [...(modByWindow.get(w) ?? []), s]);
+    const k = windowKeyOf(s);
+    modByGroup.set(k, [...(modByGroup.get(k) ?? []), s]);
   }
-  for (const s of straightSets) {
-    const w = windowOf(s.date);
-    strByWindow.set(w, [...(strByWindow.get(w) ?? []), s]);
+  for (const s of comparableSets) {
+    const k = windowKeyOf(s);
+    cmpByGroup.set(k, [...(cmpByGroup.get(k) ?? []), s]);
   }
 
-  const pairedWindows = [...modByWindow.keys()].filter((w) => strByWindow.has(w));
+  const pairedGroups = [...modByGroup.keys()].filter((k) => cmpByGroup.has(k));
 
-  if (pairedWindows.length >= MIN_PAIRED_BLOCKS) {
+  if (pairedGroups.length >= MIN_PAIRED_BLOCKS) {
     const offsets: number[] = [];
-    for (const w of pairedWindows) {
-      const bestStraightE1RM = Math.max(
-        ...strByWindow.get(w)!.map((s) => calcE1RM(s.barWeight, s.reps))
-      );
-      for (const ms of modByWindow.get(w)!) {
-        const apparentWeight = bestStraightE1RM / (1 + ms.reps / 30);
+    for (const k of pairedGroups) {
+      const bestCmpE1RM = Math.max(...cmpByGroup.get(k)!.map((s) => calcE1RM(s.barWeight, s.reps)));
+      for (const ms of modByGroup.get(k)!) {
+        const apparentWeight = bestCmpE1RM / (1 + ms.reps / 30);
         // chains/bands add load at lockout; reverse bands reduce effective load
         const delta =
           modifierType === "reverseBands"
@@ -106,26 +144,40 @@ export function fitAccommodatingOffset(
     return {
       offset: Math.max(0, mean),
       method: "paired_blocks",
-      pairedBlockCount: pairedWindows.length,
+      pairedBlockCount: pairedGroups.length,
       modifiedSetCount: modifiedSets.length,
     };
   }
 
-  if (straightSets.length > 0) {
-    const meanStr =
-      straightSets.reduce((sum, s) => sum + calcE1RM(s.barWeight, s.reps), 0) / straightSets.length;
-    const meanMod =
-      modifiedSets.reduce((sum, s) => sum + calcE1RM(s.barWeight, s.reps), 0) / modifiedSets.length;
-    const offset = modifierType === "reverseBands" ? meanMod - meanStr : meanStr - meanMod;
+  // Global mean fallback: group by baseKey across all time, require same base variation.
+  const modByBase = new Map<string, ParsedSet[]>();
+  const cmpByBase = new Map<string, ParsedSet[]>();
+  for (const s of modifiedSets) modByBase.set(s.baseKey, [...(modByBase.get(s.baseKey) ?? []), s]);
+  for (const s of comparableSets)
+    cmpByBase.set(s.baseKey, [...(cmpByBase.get(s.baseKey) ?? []), s]);
+
+  const baseKeysWithBoth = [...modByBase.keys()].filter((k) => cmpByBase.has(k));
+
+  if (baseKeysWithBoth.length > 0) {
+    const offsetsPerBase = baseKeysWithBoth.map((k) => {
+      const meanCmp =
+        cmpByBase.get(k)!.reduce((sum, s) => sum + calcE1RM(s.barWeight, s.reps), 0) /
+        cmpByBase.get(k)!.length;
+      const meanMod =
+        modByBase.get(k)!.reduce((sum, s) => sum + calcE1RM(s.barWeight, s.reps), 0) /
+        modByBase.get(k)!.length;
+      return modifierType === "reverseBands" ? meanMod - meanCmp : meanCmp - meanMod;
+    });
+    const mean = offsetsPerBase.reduce((a, b) => a + b, 0) / offsetsPerBase.length;
     return {
-      offset: Math.max(0, offset),
+      offset: Math.max(0, mean),
       method: "global_mean",
       pairedBlockCount: 0,
       modifiedSetCount: modifiedSets.length,
     };
   }
 
-  // Chain/band sets exist but no straight sets to calibrate from
+  // Modified sets exist but no comparable variation to calibrate from
   return {
     offset: DEFAULT_OFFSET_LBS,
     method: "default",
