@@ -1,5 +1,11 @@
 import type { BenchAngle, BenchBar, ConjugateLift, SquatBar } from "../types/conjugate";
 import type { BenchFilter, DeadliftFilter, SquatFilter } from "../types/conjugateFilters";
+import type {
+  BenchPresence,
+  ConjugatePresence,
+  DeadliftPresence,
+  SquatPresence,
+} from "../utils/conjugateFilters";
 
 type LiftTab = ConjugateLift["liftType"];
 
@@ -70,39 +76,53 @@ function FilterRow({ label, children }: { label: string; children: React.ReactNo
 function SquatFilters({
   filter,
   onChange,
+  presence,
 }: {
   filter: SquatFilter;
   onChange: (f: SquatFilter) => void;
+  presence: SquatPresence;
 }) {
+  const bars = SQUAT_BARS.filter((b) => presence.bars.has(b.value));
+  const hasEquipment = presence.hasBox || presence.hasChains || presence.hasBands;
   return (
     <>
-      <FilterRow label="Bar">
-        {SQUAT_BARS.map(({ value, label }) => (
-          <CheckboxRow
-            key={value}
-            label={label}
-            checked={filter.bars.has(value)}
-            onChange={() => onChange({ ...filter, bars: toggleSetItem(filter.bars, value) })}
-          />
-        ))}
-      </FilterRow>
-      <FilterRow label="Equipment">
-        <CheckboxRow
-          label="Box"
-          checked={filter.onlyBox}
-          onChange={(v) => onChange({ ...filter, onlyBox: v })}
-        />
-        <CheckboxRow
-          label="Chains"
-          checked={filter.onlyChains}
-          onChange={(v) => onChange({ ...filter, onlyChains: v })}
-        />
-        <CheckboxRow
-          label="Bands"
-          checked={filter.onlyBands}
-          onChange={(v) => onChange({ ...filter, onlyBands: v })}
-        />
-      </FilterRow>
+      {bars.length >= 2 && (
+        <FilterRow label="Bar">
+          {bars.map(({ value, label }) => (
+            <CheckboxRow
+              key={value}
+              label={label}
+              checked={filter.bars.has(value)}
+              onChange={() => onChange({ ...filter, bars: toggleSetItem(filter.bars, value) })}
+            />
+          ))}
+        </FilterRow>
+      )}
+      {hasEquipment && (
+        <FilterRow label="Equipment">
+          {presence.hasBox && (
+            <CheckboxRow
+              label="Box"
+              checked={filter.onlyBox}
+              onChange={(v) => onChange({ ...filter, onlyBox: v })}
+            />
+          )}
+          {presence.hasChains && (
+            <CheckboxRow
+              label="Chains"
+              checked={filter.onlyChains}
+              onChange={(v) => onChange({ ...filter, onlyChains: v })}
+            />
+          )}
+          {presence.hasBands && (
+            <CheckboxRow
+              label="Bands"
+              checked={filter.onlyBands}
+              onChange={(v) => onChange({ ...filter, onlyBands: v })}
+            />
+          )}
+        </FilterRow>
+      )}
     </>
   );
 }
@@ -110,54 +130,74 @@ function SquatFilters({
 function BenchFilters({
   filter,
   onChange,
+  presence,
 }: {
   filter: BenchFilter;
   onChange: (f: BenchFilter) => void;
+  presence: BenchPresence;
 }) {
+  const bars = BENCH_BARS.filter((b) => presence.bars.has(b.value));
+  const angles = BENCH_ANGLES.filter((a) => presence.angles.has(a.value));
+  const hasEquipment =
+    presence.hasChains || presence.hasBands || presence.hasSlingshot || presence.hasPause;
   return (
     <>
-      <FilterRow label="Bar">
-        {BENCH_BARS.map(({ value, label }) => (
-          <CheckboxRow
-            key={value}
-            label={label}
-            checked={filter.bars.has(value)}
-            onChange={() => onChange({ ...filter, bars: toggleSetItem(filter.bars, value) })}
-          />
-        ))}
-      </FilterRow>
-      <FilterRow label="Angle">
-        {BENCH_ANGLES.map(({ value, label }) => (
-          <CheckboxRow
-            key={value}
-            label={label}
-            checked={filter.angles.has(value)}
-            onChange={() => onChange({ ...filter, angles: toggleSetItem(filter.angles, value) })}
-          />
-        ))}
-      </FilterRow>
-      <FilterRow label="Equipment">
-        <CheckboxRow
-          label="Chains"
-          checked={filter.onlyChains}
-          onChange={(v) => onChange({ ...filter, onlyChains: v })}
-        />
-        <CheckboxRow
-          label="Bands"
-          checked={filter.onlyBands}
-          onChange={(v) => onChange({ ...filter, onlyBands: v })}
-        />
-        <CheckboxRow
-          label="Slingshot"
-          checked={filter.onlySlingshot}
-          onChange={(v) => onChange({ ...filter, onlySlingshot: v })}
-        />
-        <CheckboxRow
-          label="Pause"
-          checked={filter.onlyPause}
-          onChange={(v) => onChange({ ...filter, onlyPause: v })}
-        />
-      </FilterRow>
+      {bars.length >= 2 && (
+        <FilterRow label="Bar">
+          {bars.map(({ value, label }) => (
+            <CheckboxRow
+              key={value}
+              label={label}
+              checked={filter.bars.has(value)}
+              onChange={() => onChange({ ...filter, bars: toggleSetItem(filter.bars, value) })}
+            />
+          ))}
+        </FilterRow>
+      )}
+      {angles.length >= 2 && (
+        <FilterRow label="Angle">
+          {angles.map(({ value, label }) => (
+            <CheckboxRow
+              key={value}
+              label={label}
+              checked={filter.angles.has(value)}
+              onChange={() => onChange({ ...filter, angles: toggleSetItem(filter.angles, value) })}
+            />
+          ))}
+        </FilterRow>
+      )}
+      {hasEquipment && (
+        <FilterRow label="Equipment">
+          {presence.hasChains && (
+            <CheckboxRow
+              label="Chains"
+              checked={filter.onlyChains}
+              onChange={(v) => onChange({ ...filter, onlyChains: v })}
+            />
+          )}
+          {presence.hasBands && (
+            <CheckboxRow
+              label="Bands"
+              checked={filter.onlyBands}
+              onChange={(v) => onChange({ ...filter, onlyBands: v })}
+            />
+          )}
+          {presence.hasSlingshot && (
+            <CheckboxRow
+              label="Slingshot"
+              checked={filter.onlySlingshot}
+              onChange={(v) => onChange({ ...filter, onlySlingshot: v })}
+            />
+          )}
+          {presence.hasPause && (
+            <CheckboxRow
+              label="Pause"
+              checked={filter.onlyPause}
+              onChange={(v) => onChange({ ...filter, onlyPause: v })}
+            />
+          )}
+        </FilterRow>
+      )}
     </>
   );
 }
@@ -165,38 +205,69 @@ function BenchFilters({
 function DeadliftFilters({
   filter,
   onChange,
+  presence,
 }: {
   filter: DeadliftFilter;
   onChange: (f: DeadliftFilter) => void;
+  presence: DeadliftPresence;
 }) {
   return (
     <FilterRow label="Equipment">
-      <CheckboxRow
-        label="Opposite Stance"
-        checked={filter.onlyReverseStance}
-        onChange={(v) => onChange({ ...filter, onlyReverseStance: v })}
-      />
-      <CheckboxRow
-        label="Chains"
-        checked={filter.onlyChains}
-        onChange={(v) => onChange({ ...filter, onlyChains: v })}
-      />
-      <CheckboxRow
-        label="Bands"
-        checked={filter.onlyBands}
-        onChange={(v) => onChange({ ...filter, onlyBands: v })}
-      />
-      <CheckboxRow
-        label="Reverse Bands"
-        checked={filter.onlyReverseBands}
-        onChange={(v) => onChange({ ...filter, onlyReverseBands: v })}
-      />
+      {presence.hasReverseStance && (
+        <CheckboxRow
+          label="Opposite Stance"
+          checked={filter.onlyReverseStance}
+          onChange={(v) => onChange({ ...filter, onlyReverseStance: v })}
+        />
+      )}
+      {presence.hasChains && (
+        <CheckboxRow
+          label="Chains"
+          checked={filter.onlyChains}
+          onChange={(v) => onChange({ ...filter, onlyChains: v })}
+        />
+      )}
+      {presence.hasBands && (
+        <CheckboxRow
+          label="Bands"
+          checked={filter.onlyBands}
+          onChange={(v) => onChange({ ...filter, onlyBands: v })}
+        />
+      )}
+      {presence.hasReverseBands && (
+        <CheckboxRow
+          label="Reverse Bands"
+          checked={filter.onlyReverseBands}
+          onChange={(v) => onChange({ ...filter, onlyReverseBands: v })}
+        />
+      )}
     </FilterRow>
   );
 }
 
+function hasAnyFilters(liftType: LiftTab, presence: ConjugatePresence): boolean {
+  if (liftType === "squat") {
+    const p = presence.squat;
+    return p.bars.size >= 2 || p.hasBox || p.hasChains || p.hasBands;
+  }
+  if (liftType === "bench") {
+    const p = presence.bench;
+    return (
+      p.bars.size >= 2 ||
+      p.angles.size >= 2 ||
+      p.hasChains ||
+      p.hasBands ||
+      p.hasSlingshot ||
+      p.hasPause
+    );
+  }
+  const p = presence.deadlift;
+  return p.hasReverseStance || p.hasChains || p.hasBands || p.hasReverseBands;
+}
+
 export function ConjugateFilterControls({
   liftType,
+  presence,
   squatFilter,
   benchFilter,
   deadliftFilter,
@@ -205,6 +276,7 @@ export function ConjugateFilterControls({
   onDeadliftChange,
 }: {
   liftType: LiftTab;
+  presence: ConjugatePresence;
   squatFilter: SquatFilter;
   benchFilter: BenchFilter;
   deadliftFilter: DeadliftFilter;
@@ -212,14 +284,24 @@ export function ConjugateFilterControls({
   onBenchChange: (f: BenchFilter) => void;
   onDeadliftChange: (f: DeadliftFilter) => void;
 }) {
+  if (!hasAnyFilters(liftType, presence)) return null;
+
   return (
     <details style={{ marginBottom: "1rem", fontSize: "0.9rem" }}>
       <summary style={{ cursor: "pointer", color: "#374151", userSelect: "none" }}>Filters</summary>
       <div style={{ marginTop: "0.6rem", paddingLeft: "0.5rem" }}>
-        {liftType === "squat" && <SquatFilters filter={squatFilter} onChange={onSquatChange} />}
-        {liftType === "bench" && <BenchFilters filter={benchFilter} onChange={onBenchChange} />}
+        {liftType === "squat" && (
+          <SquatFilters filter={squatFilter} onChange={onSquatChange} presence={presence.squat} />
+        )}
+        {liftType === "bench" && (
+          <BenchFilters filter={benchFilter} onChange={onBenchChange} presence={presence.bench} />
+        )}
         {liftType === "deadlift" && (
-          <DeadliftFilters filter={deadliftFilter} onChange={onDeadliftChange} />
+          <DeadliftFilters
+            filter={deadliftFilter}
+            onChange={onDeadliftChange}
+            presence={presence.deadlift}
+          />
         )}
       </div>
     </details>

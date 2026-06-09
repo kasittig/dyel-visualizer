@@ -1,6 +1,85 @@
-import type { ConjugateLift } from "../types/conjugate";
+import type { BenchAngle, BenchBar, ConjugateLift, SquatBar } from "../types/conjugate";
 import type { BenchFilter, DeadliftFilter, SquatFilter } from "../types/conjugateFilters";
 import type { ParsedConjugateRow } from "./parseConjugate";
+
+export type SquatPresence = {
+  bars: Set<SquatBar>;
+  hasBox: boolean;
+  hasChains: boolean;
+  hasBands: boolean;
+};
+
+export type BenchPresence = {
+  bars: Set<BenchBar>;
+  angles: Set<BenchAngle>;
+  hasChains: boolean;
+  hasBands: boolean;
+  hasSlingshot: boolean;
+  hasPause: boolean;
+};
+
+export type DeadliftPresence = {
+  hasReverseStance: boolean;
+  hasChains: boolean;
+  hasBands: boolean;
+  hasReverseBands: boolean;
+};
+
+export type ConjugatePresence = {
+  squat: SquatPresence;
+  bench: BenchPresence;
+  deadlift: DeadliftPresence;
+};
+
+export function getConjugatePresence(rows: ParsedConjugateRow[]): ConjugatePresence {
+  const squat: SquatPresence = {
+    bars: new Set(),
+    hasBox: false,
+    hasChains: false,
+    hasBands: false,
+  };
+  const bench: BenchPresence = {
+    bars: new Set(),
+    angles: new Set(),
+    hasChains: false,
+    hasBands: false,
+    hasSlingshot: false,
+    hasPause: false,
+  };
+  const deadlift: DeadliftPresence = {
+    hasReverseStance: false,
+    hasChains: false,
+    hasBands: false,
+    hasReverseBands: false,
+  };
+
+  for (const { lift } of rows) {
+    if (!lift) continue;
+    if (lift.liftType === "squat") {
+      const v = lift.variation;
+      squat.bars.add(v.bar);
+      if (v.hasBox) squat.hasBox = true;
+      if (v.hasChains) squat.hasChains = true;
+      if (v.hasBands) squat.hasBands = true;
+    } else if (lift.liftType === "bench") {
+      const v = lift.variation;
+      bench.bars.add(v.bar);
+      bench.angles.add(v.angle);
+      if (v.hasChains) bench.hasChains = true;
+      if (v.hasBands) bench.hasBands = true;
+      if (v.hasSlingshot) bench.hasSlingshot = true;
+      if (v.hasPause) bench.hasPause = true;
+    } else {
+      const v = lift.variation;
+      if (v.isReverseStance) deadlift.hasReverseStance = true;
+      if (v.hasChains) deadlift.hasChains = true;
+      if (v.hasBands) deadlift.hasBands = true;
+      if (v.hasReverseBands) deadlift.hasReverseBands = true;
+    }
+  }
+
+  return { squat, bench, deadlift };
+}
 
 type AnyFilter = SquatFilter | BenchFilter | DeadliftFilter;
 
