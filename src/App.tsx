@@ -72,12 +72,15 @@ function App() {
 
   const effectiveExercise = selectedExercise ?? exercises[0] ?? null;
 
-  const currentQuery: FilteredOutQuery =
-    activeTab === "squat"
-      ? { liftType: "squat", filter: squatFilter }
-      : activeTab === "bench"
-        ? { liftType: "bench", filter: benchFilter }
-        : { liftType: "deadlift", filter: deadliftFilter };
+  const currentQuery = useMemo<FilteredOutQuery>(
+    () =>
+      activeTab === "squat"
+        ? { liftType: "squat", filter: squatFilter }
+        : activeTab === "bench"
+          ? { liftType: "bench", filter: benchFilter }
+          : { liftType: "deadlift", filter: deadliftFilter },
+    [activeTab, squatFilter, benchFilter, deadliftFilter]
+  );
 
   const parsedConjugateRows = useMemo(
     () => (state.status === "success" ? parseConjugateRows(state.rows) : []),
