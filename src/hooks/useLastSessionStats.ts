@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import type { SheetRow } from "./useSheetData";
 import { findCol } from "./useSheetData";
-import { calcE1RM } from "../utils/calcE1RM";
+import { calcE1RM } from "../utils/e1rm";
 
 function parseDate(str: string): Date | null {
   const d = new Date(str);

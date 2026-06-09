@@ -11,7 +11,7 @@ import {
 } from "recharts";
 import type { SheetRow } from "../hooks/useSheetData";
 import { findCol } from "../hooks/useSheetData";
-import { calcE1RM } from "../utils/calcE1RM";
+import { calcE1RM } from "../utils/e1rm";
 import { calcVolume } from "../utils/calcVolume";
 import { formatDate, LINE_COLORS } from "../utils/chartUtils";
 
