@@ -22,8 +22,8 @@ export function ConjugateCharts({
   // label → date → best e1RM
   const e1rmByLabelAndDate = new Map<string, Map<string, number>>();
 
-  for (const { row, lift, label } of rows) {
-    if (!lift || !label) continue;
+  for (const { row, label } of rows) {
+    if (!label) continue;
     const date = row["date"]?.trim();
     if (!date) continue;
     const weight = parseFloat(findCol(row, "weight") ?? "");

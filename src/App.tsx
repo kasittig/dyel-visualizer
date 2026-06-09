@@ -1,4 +1,4 @@
-import { useState, lazy, Suspense, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { useSheetData } from "./hooks/useSheetData";
 import { ConjugateCharts } from "./components/ConjugateCharts";
 import { ConjugateFilterControls } from "./components/ConjugateFilterControls";
@@ -18,8 +18,6 @@ import {
 } from "./utils/conjugateFilters";
 import type { FilteredOutQuery } from "./utils/conjugateFilters";
 import { parseConjugateRows } from "./utils/parseConjugate";
-
-const Charts = lazy(() => import("./components/Charts").then((m) => ({ default: m.Charts })));
 
 type SheetRef = { id: string; published: boolean };
 type LiftTab = ConjugateLift["liftType"];
@@ -67,32 +65,6 @@ function App() {
 
   const state = useSheetData(sheetRef);
 
-  const exercises =
-    state.status === "success"
-      ? ([
-          ...new Set(state.rows.map((r) => r["exercise"]?.trim()).filter(Boolean)),
-        ].sort() as string[])
-      : [];
-
-  const exerciseRows = useMemo(
-    () =>
-      state.status === "success"
-        ? state.rows.map((r) => ({ row: r, label: r["exercise"]?.trim() || null }))
-        : [],
-    [state]
-  );
-
-  const effectiveExercise = exercises.find((e) => !hiddenExercises.has(e)) ?? null;
-
-  function toggleExercise(label: string) {
-    setHiddenExercises((prev) => {
-      const next = new Set(prev);
-      if (next.has(label)) next.delete(label);
-      else next.add(label);
-      return next;
-    });
-  }
-
   const currentQuery = useMemo<FilteredOutQuery>(
     () =>
       activeTab === "squat"
@@ -105,6 +77,14 @@ function App() {
 
   const parsedConjugateRows = useMemo(
     () => (state.status === "success" ? parseConjugateRows(state.rows) : []),
+    [state]
+  );
+
+  const normalModeRows = useMemo(
+    () =>
+      state.status === "success"
+        ? state.rows.map((row) => ({ row, lift: null, label: row["exercise"]?.trim() ?? null }))
+        : [],
     [state]
   );
 
@@ -139,13 +119,19 @@ function App() {
 
   const effectiveHidden = new Set([...hiddenVariations[activeTab], ...filteredOutLabels]);
 
+  function toggleInSet<T>(set: Set<T>, item: T): Set<T> {
+    const next = new Set(set);
+    if (next.has(item)) next.delete(item);
+    else next.add(item);
+    return next;
+  }
+
+  function toggleExercise(exercise: string) {
+    setHiddenExercises((prev) => toggleInSet(prev, exercise));
+  }
+
   function toggleVariation(label: string) {
-    setHiddenVariations((prev) => {
-      const tabSet = new Set(prev[activeTab]);
-      if (tabSet.has(label)) tabSet.delete(label);
-      else tabSet.add(label);
-      return { ...prev, [activeTab]: tabSet };
-    });
+    setHiddenVariations((prev) => ({ ...prev, [activeTab]: toggleInSet(prev[activeTab], label) }));
   }
 
   return (
@@ -262,11 +248,9 @@ function App() {
               </>
             ) : (
               <>
-                <Suspense fallback={<p>Loading charts…</p>}>
-                  <Charts rows={state.rows} selectedExercise={effectiveExercise} />
-                </Suspense>
+                <ConjugateCharts rows={normalModeRows} hidden={hiddenExercises} />
                 <ExerciseList
-                  rows={exerciseRows}
+                  rows={normalModeRows}
                   hidden={hiddenExercises}
                   onToggle={toggleExercise}
                   showSearch
