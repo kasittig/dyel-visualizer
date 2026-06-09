@@ -16,6 +16,8 @@ export function useLastSessionStats(rows: SheetRow[], keyFn: (row: SheetRow) => 
     const lastSessionBestSet = new Map<string, { weight: number; reps: number }>();
     const lastSessionAllSets = new Map<string, { weight: number; reps: number }[]>();
 
+    // Pass 1: find the most-recent date for each key.
+    // This must complete before pass 2 so we know which rows belong to the "last session."
     for (const row of rows) {
       const key = keyFn(row);
       if (!key) continue;
@@ -33,6 +35,7 @@ export function useLastSessionStats(rows: SheetRow[], keyFn: (row: SheetRow) => 
       }
     }
 
+    // Pass 2: compute e1RM and set stats for the last session only.
     for (const row of rows) {
       const key = keyFn(row);
       if (!key) continue;
