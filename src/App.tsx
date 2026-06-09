@@ -11,7 +11,7 @@ import {
   DEFAULT_SQUAT_FILTER,
 } from "./types/conjugateFilters";
 import type { BenchFilter, DeadliftFilter, SquatFilter } from "./types/conjugateFilters";
-import { getFilteredOutLabels } from "./utils/conjugateFilters";
+import { getConjugatePresence, getFilteredOutLabels } from "./utils/conjugateFilters";
 import { parseConjugateRows } from "./utils/parseConjugate";
 import "./App.css";
 
@@ -79,6 +79,8 @@ function App() {
     () => (state.status === "success" ? parseConjugateRows(state.rows) : []),
     [state]
   );
+
+  const presence = useMemo(() => getConjugatePresence(parsedConjugateRows), [parsedConjugateRows]);
 
   const filteredOutLabels = useMemo(
     () => getFilteredOutLabels(parsedConjugateRows, activeTab, currentFilter),
@@ -191,6 +193,7 @@ function App() {
                 </div>
                 <ConjugateFilterControls
                   liftType={activeTab}
+                  presence={presence}
                   squatFilter={squatFilter}
                   benchFilter={benchFilter}
                   deadliftFilter={deadliftFilter}
