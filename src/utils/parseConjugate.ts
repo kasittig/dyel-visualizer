@@ -67,7 +67,13 @@ export function parseConjugateLift(name: string): ConjugateLift | null {
       variation: {
         ...DEFAULT_BENCH_VARIATION,
         bar,
-        angle: has("incline") ? "incline" : has("decline") ? "decline" : "flat",
+        angle: has("incline")
+          ? "incline"
+          : has("decline")
+            ? "decline"
+            : has("floor")
+              ? "floor"
+              : "flat",
         grip:
           hasToken("cg") || has("close grip")
             ? "close"
@@ -76,7 +82,6 @@ export function parseConjugateLift(name: string): ConjugateLift | null {
               : "competition",
         hasChains: has("chain"),
         hasBands: !hasReverseBands && has("band"),
-        isFloorPress: base.includes("floor"),
         boardCount: extractHeight("board"),
         hasSlingshot: has("slingshot"),
         hasPause: has("command"),
@@ -126,17 +131,8 @@ export function conjugateLiftLabel(lift: ConjugateLift): string {
       return parts.join(" ");
     }
     case "bench": {
-      const {
-        bar,
-        angle,
-        grip,
-        isFloorPress,
-        boardCount,
-        hasSlingshot,
-        hasChains,
-        hasBands,
-        hasPause,
-      } = lift.variation;
+      const { bar, angle, grip, boardCount, hasSlingshot, hasChains, hasBands, hasPause } =
+        lift.variation;
       const parts: string[] = [];
       const barLabel = BENCH_BAR_LABELS[bar];
       if (barLabel) parts.push(barLabel);
@@ -144,7 +140,7 @@ export function conjugateLiftLabel(lift: ConjugateLift): string {
       else if (grip === "medium") parts.push("Medium Grip");
       if (boardCount !== null) parts.push(`${boardCount}-Board`);
       if (bar === "bench_builder") parts.push("Bench Builder");
-      else if (isFloorPress) parts.push("Floor Press");
+      else if (angle == "floor") parts.push("Floor Press");
       else if (angle === "incline") parts.push("Incline Bench Press");
       else if (angle === "decline") parts.push("Decline Bench Press");
       else parts.push("Bench Press");

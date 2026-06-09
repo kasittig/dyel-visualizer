@@ -12,7 +12,6 @@ export interface BenchFilter {
   angles: Set<BenchAngle>;
   onlyChains: boolean;
   onlyBands: boolean;
-  onlyFloorPress: boolean;
   onlySlingshot: boolean;
   onlyPause: boolean;
 }
@@ -36,7 +35,6 @@ export const DEFAULT_BENCH_FILTER: BenchFilter = {
   angles: new Set(),
   onlyChains: false,
   onlyBands: false,
-  onlyFloorPress: false,
   onlySlingshot: false,
   onlyPause: false,
 };

@@ -22,6 +22,7 @@ const BENCH_ANGLES: { value: BenchAngle; label: string }[] = [
   { value: "flat", label: "Flat" },
   { value: "incline", label: "Incline" },
   { value: "decline", label: "Decline" },
+  { value: "floor", label: "Floor Press" },
 ];
 
 function toggleSetItem<T>(set: Set<T>, item: T): Set<T> {
@@ -145,11 +146,6 @@ function BenchFilters({
           label="Bands"
           checked={filter.onlyBands}
           onChange={(v) => onChange({ ...filter, onlyBands: v })}
-        />
-        <CheckboxRow
-          label="Floor Press"
-          checked={filter.onlyFloorPress}
-          onChange={(v) => onChange({ ...filter, onlyFloorPress: v })}
         />
         <CheckboxRow
           label="Slingshot"

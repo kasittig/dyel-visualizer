@@ -42,7 +42,6 @@ describe("parseConjugateLift", () => {
           grip: "competition",
           hasChains: false,
           hasBands: false,
-          isFloorPress: false,
           boardCount: null,
           hasSlingshot: false,
           hasPause: false,
@@ -137,14 +136,14 @@ describe("parseConjugateLift", () => {
     it("parses Floor Press", () => {
       expect(parseConjugateLift("Floor Press")).toMatchObject({
         liftType: "bench",
-        variation: { isFloorPress: true },
+        variation: { angle: "floor" },
       });
     });
 
     it("parses Floor Press (chain)", () => {
       expect(parseConjugateLift("Floor Press (chain)")).toMatchObject({
         liftType: "bench",
-        variation: { isFloorPress: true, hasChains: true },
+        variation: { angle: "floor", hasChains: true },
       });
     });
 
@@ -261,7 +260,6 @@ describe("conjugateLiftLabel", () => {
           grip: "competition",
           hasChains: false,
           hasBands: false,
-          isFloorPress: false,
           boardCount: null,
           hasSlingshot: false,
           hasPause: false,
@@ -280,7 +278,6 @@ describe("conjugateLiftLabel", () => {
           grip: "competition",
           hasChains: true,
           hasBands: false,
-          isFloorPress: false,
           boardCount: null,
           hasSlingshot: false,
           hasPause: false,
@@ -299,7 +296,6 @@ describe("conjugateLiftLabel", () => {
           grip: "competition",
           hasChains: false,
           hasBands: false,
-          isFloorPress: false,
           boardCount: 2,
           hasSlingshot: false,
           hasPause: false,
@@ -314,11 +310,10 @@ describe("conjugateLiftLabel", () => {
         liftType: "bench",
         variation: {
           bar: "standard",
-          angle: "flat",
+          angle: "floor",
           grip: "competition",
           hasChains: true,
           hasBands: false,
-          isFloorPress: true,
           boardCount: null,
           hasSlingshot: false,
           hasPause: false,
