@@ -3,7 +3,7 @@ import type { SheetRow } from "../hooks/useSheetData";
 import type { ConjugateLift } from "../types/conjugate";
 import type { ParsedConjugateRow } from "../utils/parseConjugate";
 import { useLastSessionStats } from "../hooks/useLastSessionStats";
-import { LastSessionCell, OneRepMaxCell } from "./ExerciseCells";
+import { LastSessionCell, OneRepMaxCell, PredictedE1RMCell } from "./ExerciseCells";
 import { setsRepsLabel } from "../utils/setsRepsLabel";
 import { th, td } from "../utils/tableStyles";
 
@@ -25,8 +25,14 @@ export function ConjugateExerciseList({
   );
   const keyFn = useCallback((row: SheetRow) => rowLabelMap.get(row) ?? null, [rowLabelMap]);
 
-  const { lastPerformed, last1RepSet, lastSessionE1RM, lastSessionBestSet, lastSessionAllSets } =
-    useLastSessionStats(sheetRows, keyFn);
+  const {
+    lastPerformed,
+    last1RepSet,
+    lastSessionE1RM,
+    lastSessionBestSet,
+    lastSessionAllSets,
+    predictedE1RM,
+  } = useLastSessionStats(sheetRows, keyFn);
 
   const allVariations = [...lastPerformed.keys()].sort();
   if (allVariations.length === 0) return <p>No {liftType} data found.</p>;
@@ -44,6 +50,7 @@ export function ConjugateExerciseList({
             <th style={th}>Variation</th>
             <th style={th}>Last 1RM</th>
             <th style={th}>Latest e1RM</th>
+            <th style={th}>Predicted e1RM</th>
           </tr>
         </thead>
         <tbody>
@@ -58,7 +65,7 @@ export function ConjugateExerciseList({
             if (isHidden) {
               return (
                 <tr key={label} onClick={() => onToggle(label)} style={{ cursor: "pointer" }}>
-                  <td colSpan={3} style={{ ...td, color: "#9ca3af", fontSize: "0.85rem" }}>
+                  <td colSpan={4} style={{ ...td, color: "#9ca3af", fontSize: "0.85rem" }}>
                     {label}
                   </td>
                 </tr>
@@ -76,6 +83,9 @@ export function ConjugateExerciseList({
                     lastDate={lastDate}
                     setsReps={setsReps}
                   />
+                </td>
+                <td style={td}>
+                  <PredictedE1RMCell predicted={predictedE1RM.get(label)} />
                 </td>
               </tr>
             );
