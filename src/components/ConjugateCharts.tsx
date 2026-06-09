@@ -10,27 +10,8 @@ import {
 import { findCol } from "../hooks/useSheetData";
 import type { ConjugateLift } from "../types/conjugate";
 import { calcE1RM } from "../utils/calcE1RM";
+import { formatDate, LINE_COLORS } from "../utils/chartUtils";
 import type { ParsedConjugateRow } from "../utils/parseConjugate";
-
-const LINE_COLORS = [
-  "#6366f1",
-  "#10b981",
-  "#f59e0b",
-  "#ef4444",
-  "#8b5cf6",
-  "#06b6d4",
-  "#f97316",
-  "#ec4899",
-  "#84cc16",
-  "#14b8a6",
-];
-
-function formatDate(str: string): string {
-  const d = new Date(str);
-  return isNaN(d.getTime())
-    ? str
-    : d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "2-digit" });
-}
 
 export function ConjugateCharts({
   rows,

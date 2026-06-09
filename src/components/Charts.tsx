@@ -13,26 +13,7 @@ import type { SheetRow } from "../hooks/useSheetData";
 import { findCol } from "../hooks/useSheetData";
 import { calcE1RM } from "../utils/calcE1RM";
 import { calcVolume } from "../utils/calcVolume";
-
-function formatDate(str: string): string {
-  const d = new Date(str);
-  return isNaN(d.getTime())
-    ? str
-    : d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "2-digit" });
-}
-
-const LINE_COLORS = [
-  "#6366f1",
-  "#10b981",
-  "#f59e0b",
-  "#ef4444",
-  "#8b5cf6",
-  "#06b6d4",
-  "#f97316",
-  "#ec4899",
-  "#84cc16",
-  "#14b8a6",
-];
+import { formatDate, LINE_COLORS } from "../utils/chartUtils";
 
 const E1RM_COLOR = "#dc2626";
 const VOLUME_COLOR = "#0369a1";
