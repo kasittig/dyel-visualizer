@@ -1,7 +1,6 @@
 import { useState, lazy, Suspense, useMemo } from "react";
 import { useSheetData } from "./hooks/useSheetData";
 import { ConjugateCharts } from "./components/ConjugateCharts";
-import { ConjugateExerciseList } from "./components/ConjugateExerciseList";
 import { ConjugateFilterControls } from "./components/ConjugateFilterControls";
 import { ExerciseList } from "./components/ExerciseList";
 import type { ConjugateLift } from "./types/conjugate";
@@ -62,7 +61,7 @@ function App() {
   const [squatFilter, setSquatFilter] = useState<SquatFilter>(DEFAULT_SQUAT_FILTER);
   const [benchFilter, setBenchFilter] = useState<BenchFilter>(DEFAULT_BENCH_FILTER);
   const [deadliftFilter, setDeadliftFilter] = useState<DeadliftFilter>(DEFAULT_DEADLIFT_FILTER);
-  const [selectedExercise, setSelectedExercise] = useState<string | null>(null);
+  const [hiddenExercises, setHiddenExercises] = useState<Set<string>>(new Set());
   const sheetRef = extractSheetRef(url);
   const invalidUrl = url.length > 0 && !sheetRef;
 
@@ -75,7 +74,24 @@ function App() {
         ].sort() as string[])
       : [];
 
-  const effectiveExercise = selectedExercise ?? exercises[0] ?? null;
+  const exerciseRows = useMemo(
+    () =>
+      state.status === "success"
+        ? state.rows.map((r) => ({ row: r, label: r["exercise"]?.trim() || null }))
+        : [],
+    [state]
+  );
+
+  const effectiveExercise = exercises.find((e) => !hiddenExercises.has(e)) ?? null;
+
+  function toggleExercise(label: string) {
+    setHiddenExercises((prev) => {
+      const next = new Set(prev);
+      if (next.has(label)) next.delete(label);
+      else next.add(label);
+      return next;
+    });
+  }
 
   const currentQuery = useMemo<FilteredOutQuery>(
     () =>
@@ -149,7 +165,7 @@ function App() {
         value={url}
         onChange={(e) => {
           setUrl(e.target.value);
-          setSelectedExercise(null);
+          setHiddenExercises(new Set());
           setHiddenVariations({ squat: new Set(), bench: new Set(), deadlift: new Set() });
           setSquatFilter(DEFAULT_SQUAT_FILTER);
           setBenchFilter(DEFAULT_BENCH_FILTER);
@@ -236,10 +252,12 @@ function App() {
                   onDeadliftChange={setDeadliftFilter}
                 />
                 <ConjugateCharts rows={activeRows} hidden={effectiveHidden} />
-                <ConjugateExerciseList
+                <ExerciseList
                   rows={activeRows}
                   hidden={effectiveHidden}
                   onToggle={toggleVariation}
+                  heading="Variations"
+                  columnHeader="Variation"
                 />
               </>
             ) : (
@@ -248,9 +266,10 @@ function App() {
                   <Charts rows={state.rows} selectedExercise={effectiveExercise} />
                 </Suspense>
                 <ExerciseList
-                  rows={state.rows}
-                  selectedExercise={effectiveExercise}
-                  onSelectExercise={setSelectedExercise}
+                  rows={exerciseRows}
+                  hidden={hiddenExercises}
+                  onToggle={toggleExercise}
+                  showSearch
                 />
               </>
             )}

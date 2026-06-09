@@ -1,5 +1,6 @@
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import type { SheetRow } from "../hooks/useSheetData";
+import type { LabeledRow } from "../utils/labeledRow";
 import { useLastSessionStats } from "../hooks/useLastSessionStats";
 import { LastSessionCell, OneRepMaxCell, PredictedE1RMCell } from "./ExerciseCells";
 import { setsRepsLabel } from "../utils/setsRepsLabel";
@@ -7,16 +8,25 @@ import { th, td } from "../utils/tableStyles";
 
 export function ExerciseList({
   rows,
-  selectedExercise,
-  onSelectExercise,
+  hidden,
+  onToggle,
+  heading = "Exercises",
+  columnHeader = "Movement",
+  showSearch = false,
 }: {
-  rows: SheetRow[];
-  selectedExercise: string | null;
-  onSelectExercise: (exercise: string) => void;
+  rows: LabeledRow[];
+  hidden: Set<string>;
+  onToggle: (label: string) => void;
+  heading?: string;
+  columnHeader?: string;
+  showSearch?: boolean;
 }) {
   const [query, setQuery] = useState("");
 
-  const keyFn = useCallback((row: SheetRow) => row["exercise"]?.trim() || null, []);
+  const sheetRows = useMemo(() => rows.map((r) => r.row), [rows]);
+  const rowLabelMap = useMemo(() => new Map(rows.map((r) => [r.row, r.label ?? null])), [rows]);
+  const keyFn = useCallback((row: SheetRow) => rowLabelMap.get(row) ?? null, [rowLabelMap]);
+
   const {
     lastPerformed,
     last1RepSet,
@@ -24,56 +34,67 @@ export function ExerciseList({
     lastSessionBestSet,
     lastSessionAllSets,
     predictedE1RM,
-  } = useLastSessionStats(rows, keyFn);
+  } = useLastSessionStats(sheetRows, keyFn);
 
-  const entries = [...lastPerformed.entries()].sort(([a], [b]) => a.localeCompare(b));
+  const allLabels = [...lastPerformed.keys()].sort();
+  if (allLabels.length === 0) return <p>No data found.</p>;
 
-  if (entries.length === 0) return <p>No exercise data found.</p>;
+  const visible = allLabels.filter((l) => !hidden.has(l));
+  const minimized = allLabels.filter((l) => hidden.has(l));
+  const labels = [...visible, ...minimized];
 
-  const filtered = query
-    ? entries.filter(([exercise]) => exercise.toLowerCase().includes(query.toLowerCase()))
-    : entries;
+  const displayed =
+    showSearch && query
+      ? labels.filter((l) => l.toLowerCase().includes(query.toLowerCase()))
+      : labels;
 
   return (
     <section>
-      <h2>Exercises</h2>
-      <input
-        type="search"
-        placeholder="Filter exercises…"
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        style={{
-          width: "100%",
-          padding: "0.5rem",
-          boxSizing: "border-box",
-          marginBottom: "0.75rem",
-        }}
-      />
+      <h2>{heading}</h2>
+      {showSearch && (
+        <input
+          type="search"
+          placeholder={`Filter ${heading.toLowerCase()}…`}
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          style={{
+            width: "100%",
+            padding: "0.5rem",
+            boxSizing: "border-box",
+            marginBottom: "0.75rem",
+          }}
+        />
+      )}
       <table style={{ borderCollapse: "collapse", width: "100%" }}>
         <thead>
           <tr>
-            <th style={th}>Movement</th>
+            <th style={th}>{columnHeader}</th>
             <th style={th}>Last 1RM</th>
             <th style={th}>Latest Session</th>
             <th style={th}>Predicted e1RM</th>
           </tr>
         </thead>
         <tbody>
-          {filtered.map(([exercise]) => {
-            const one = last1RepSet.get(exercise);
-            const sessionE1RM = lastSessionE1RM.get(exercise);
-            const lastDate = lastPerformed.get(exercise);
-            const bestSet = lastSessionBestSet.get(exercise);
-            const allSets = lastSessionAllSets.get(exercise) ?? [];
+          {displayed.map((label) => {
+            const one = last1RepSet.get(label);
+            const sessionE1RM = lastSessionE1RM.get(label);
+            const lastDate = lastPerformed.get(label);
+            const bestSet = lastSessionBestSet.get(label);
+            const allSets = lastSessionAllSets.get(label) ?? [];
             const setsReps = setsRepsLabel(bestSet, allSets);
-            const isSelected = exercise === selectedExercise;
+            const isHidden = hidden.has(label);
+            if (isHidden) {
+              return (
+                <tr key={label} onClick={() => onToggle(label)} style={{ cursor: "pointer" }}>
+                  <td colSpan={4} style={{ ...td, color: "#9ca3af", fontSize: "0.85rem" }}>
+                    {label}
+                  </td>
+                </tr>
+              );
+            }
             return (
-              <tr
-                key={exercise}
-                onClick={() => onSelectExercise(exercise)}
-                style={{ background: isSelected ? "#ede9fe" : undefined, cursor: "pointer" }}
-              >
-                <td style={{ ...td, fontWeight: isSelected ? 600 : undefined }}>{exercise}</td>
+              <tr key={label} onClick={() => onToggle(label)} style={{ cursor: "pointer" }}>
+                <td style={td}>{label}</td>
                 <td style={td}>
                   <OneRepMaxCell one={one} />
                 </td>
@@ -85,7 +106,7 @@ export function ExerciseList({
                   />
                 </td>
                 <td style={td}>
-                  <PredictedE1RMCell predicted={predictedE1RM.get(exercise)} />
+                  <PredictedE1RMCell predicted={predictedE1RM.get(label)} />
                 </td>
               </tr>
             );
