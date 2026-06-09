@@ -33,12 +33,34 @@ describe("predictE1RM", () => {
     expect(predictE1RM(sessions, d("2024-01-07"))).toBeCloseTo(115, 1);
   });
 
-  it("clamps to the first session for dates before the first session", () => {
+  it("extrapolates backward at the rate of the first two sessions", () => {
+    // 100 on Jan 10, 120 on Jan 20 → +2/day. Jan 5 (5 days before first) → 90
     const sessions = new Map([
       ["2024-01-10", 100],
       ["2024-01-20", 120],
     ]);
-    expect(predictE1RM(sessions, d("2024-01-01"))).toBe(100);
+    expect(predictE1RM(sessions, d("2024-01-05"))).toBeCloseTo(90, 1);
+  });
+
+  it("clamps backward extrapolation to 0", () => {
+    // 50 on Jan 10, 100 on Jan 20 → +5/day backward → goes negative far enough back
+    const sessions = new Map([
+      ["2024-01-10", 50],
+      ["2024-01-20", 100],
+    ]);
+    // Jan 1 (9 days before first): 50 + 5 * (-9) = 5
+    expect(predictE1RM(sessions, d("2024-01-01"))).toBeCloseTo(5, 1);
+    // Dec 28 (13 days before first): 50 + 5 * (-13) = -15 → clamped to 0
+    expect(predictE1RM(sessions, d("2023-12-28"))).toBe(0);
+  });
+
+  it("clamps forward extrapolation to 0", () => {
+    // 10 on Jan 1, 0 on Jan 10 → -1/day. Jan 20 → -10 → clamped to 0
+    const sessions = new Map([
+      ["2024-01-01", 10],
+      ["2024-01-11", 0],
+    ]);
+    expect(predictE1RM(sessions, d("2024-01-21"))).toBe(0);
   });
 
   it("returns exact e1RM when target is on a session date", () => {

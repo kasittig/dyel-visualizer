@@ -11,13 +11,18 @@ export function predictE1RM(sessionsByDate: Map<string, number>, targetDate: Dat
   const first = sorted[0];
   const last = sorted[sorted.length - 1];
 
-  if (target <= first.t) return first.e1rm;
+  if (target <= first.t) {
+    const next = sorted[1];
+    const dt = next.t - first.t;
+    const rate = dt === 0 ? 0 : (next.e1rm - first.e1rm) / dt;
+    return Math.max(0, first.e1rm + rate * (target - first.t));
+  }
 
   if (target >= last.t) {
     const prev = sorted[sorted.length - 2];
     const dt = last.t - prev.t;
     const rate = dt === 0 ? 0 : (last.e1rm - prev.e1rm) / dt;
-    return last.e1rm + rate * (target - last.t);
+    return Math.max(0, last.e1rm + rate * (target - last.t));
   }
 
   let lo = 0,
