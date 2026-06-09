@@ -1,7 +1,7 @@
 import { useCallback, useState } from "react";
 import type { SheetRow } from "../hooks/useSheetData";
 import { useLastSessionStats } from "../hooks/useLastSessionStats";
-import { LastSessionCell, OneRepMaxCell } from "./ExerciseCells";
+import { LastSessionCell, OneRepMaxCell, PredictedE1RMCell } from "./ExerciseCells";
 import { setsRepsLabel } from "../utils/setsRepsLabel";
 import { th, td } from "../utils/tableStyles";
 
@@ -17,8 +17,14 @@ export function ExerciseList({
   const [query, setQuery] = useState("");
 
   const keyFn = useCallback((row: SheetRow) => row["exercise"]?.trim() || null, []);
-  const { lastPerformed, last1RepSet, lastSessionE1RM, lastSessionBestSet, lastSessionAllSets } =
-    useLastSessionStats(rows, keyFn);
+  const {
+    lastPerformed,
+    last1RepSet,
+    lastSessionE1RM,
+    lastSessionBestSet,
+    lastSessionAllSets,
+    predictedE1RM,
+  } = useLastSessionStats(rows, keyFn);
 
   const entries = [...lastPerformed.entries()].sort(([a], [b]) => a.localeCompare(b));
 
@@ -48,7 +54,8 @@ export function ExerciseList({
           <tr>
             <th style={th}>Movement</th>
             <th style={th}>Last 1RM</th>
-            <th style={th}>Latest e1RM</th>
+            <th style={th}>Latest Session</th>
+            <th style={th}>Predicted e1RM</th>
           </tr>
         </thead>
         <tbody>
@@ -76,6 +83,9 @@ export function ExerciseList({
                     lastDate={lastDate}
                     setsReps={setsReps}
                   />
+                </td>
+                <td style={td}>
+                  <PredictedE1RMCell predicted={predictedE1RM.get(exercise)} />
                 </td>
               </tr>
             );
