@@ -12,6 +12,7 @@ import {
 } from "./types/conjugateFilters";
 import type { BenchFilter, DeadliftFilter, SquatFilter } from "./types/conjugateFilters";
 import { getConjugatePresence, getFilteredOutLabels } from "./utils/conjugateFilters";
+import type { FilteredOutQuery } from "./utils/conjugateFilters";
 import { parseConjugateRows } from "./utils/parseConjugate";
 
 const Charts = lazy(() => import("./components/Charts").then((m) => ({ default: m.Charts })));
@@ -71,8 +72,15 @@ function App() {
 
   const effectiveExercise = selectedExercise ?? exercises[0] ?? null;
 
-  const currentFilter =
-    activeTab === "squat" ? squatFilter : activeTab === "bench" ? benchFilter : deadliftFilter;
+  const currentQuery = useMemo<FilteredOutQuery>(
+    () =>
+      activeTab === "squat"
+        ? { liftType: "squat", filter: squatFilter }
+        : activeTab === "bench"
+          ? { liftType: "bench", filter: benchFilter }
+          : { liftType: "deadlift", filter: deadliftFilter },
+    [activeTab, squatFilter, benchFilter, deadliftFilter]
+  );
 
   const parsedConjugateRows = useMemo(
     () => (state.status === "success" ? parseConjugateRows(state.rows) : []),
@@ -82,8 +90,8 @@ function App() {
   const presence = useMemo(() => getConjugatePresence(parsedConjugateRows), [parsedConjugateRows]);
 
   const filteredOutLabels = useMemo(
-    () => getFilteredOutLabels(parsedConjugateRows, activeTab, currentFilter),
-    [parsedConjugateRows, activeTab, currentFilter]
+    () => getFilteredOutLabels(parsedConjugateRows, currentQuery),
+    [parsedConjugateRows, currentQuery]
   );
 
   const effectiveHidden = new Set([...hiddenVariations[activeTab], ...filteredOutLabels]);
