@@ -54,7 +54,7 @@ export function ExerciseList({
           <tr>
             <th style={th}>Movement</th>
             <th style={th}>Last 1RM</th>
-            <th style={th}>Latest e1RM</th>
+            <th style={th}>Latest Session</th>
             <th style={th}>Predicted e1RM</th>
           </tr>
         </thead>
