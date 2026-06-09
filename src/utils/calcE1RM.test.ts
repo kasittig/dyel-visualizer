@@ -3,7 +3,7 @@ import { calcE1RM } from "./calcE1RM";
 
 describe("calcE1RM", () => {
   it("returns weight unchanged for a single rep", () => {
-    expect(calcE1RM(100, 1)).toBeCloseTo(100 * (1 + 1 / 30));
+    expect(calcE1RM(100, 1)).toBe(100);
   });
 
   it("applies the Epley formula for typical rep counts", () => {
