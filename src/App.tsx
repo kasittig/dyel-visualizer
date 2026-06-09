@@ -13,7 +13,6 @@ import {
 import type { BenchFilter, DeadliftFilter, SquatFilter } from "./types/conjugateFilters";
 import { getConjugatePresence, getFilteredOutLabels } from "./utils/conjugateFilters";
 import { parseConjugateRows } from "./utils/parseConjugate";
-import "./App.css";
 
 const Charts = lazy(() => import("./components/Charts").then((m) => ({ default: m.Charts })));
 
