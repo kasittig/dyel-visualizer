@@ -23,7 +23,7 @@ export function ExerciseList({
   const [query, setQuery] = useState("");
 
   const sheetRows = useMemo(() => rows.map((r) => r.row), [rows]);
-  const rowLabelMap = useMemo(() => new Map(rows.map((r) => [r.row, r.label ?? null])), [rows]);
+  const rowLabelMap = useMemo(() => new Map(rows.map((r) => [r.row, r.label])), [rows]);
   const keyFn = useCallback((row: SheetRow) => rowLabelMap.get(row) ?? null, [rowLabelMap]);
 
   const {
@@ -44,7 +44,7 @@ export function ExerciseList({
 
   const displayed =
     showSearch && query
-      ? labels.filter((l) => l.toLowerCase().includes(query.toLowerCase()))
+      ? visible.filter((l) => l.toLowerCase().includes(query.toLowerCase()))
       : labels;
 
   return (
