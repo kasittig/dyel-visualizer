@@ -1,0 +1,40 @@
+.conjugate-info-page {
+  text-align: left;
+}
+
+.conjugate-info-content h1 {
+  font-size: 2rem;
+  letter-spacing: -0.5px;
+  margin: 0 0 1.5rem;
+}
+
+.conjugate-info-content h2 {
+  font-size: 1.25rem;
+  margin: 2rem 0 0.5rem;
+}
+
+.conjugate-info-content h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-h);
+  margin: 1.25rem 0 0.25rem;
+}
+
+.conjugate-info-content p {
+  margin: 0.75rem 0;
+  color: var(--text);
+}
+
+.conjugate-info-content ul {
+  margin: 0.75rem 0;
+  padding-left: 1.5rem;
+  color: var(--text);
+}
+
+.conjugate-info-content li {
+  margin: 0.25rem 0;
+}
+
+.conjugate-info-content strong {
+  color: var(--text-h);
+}

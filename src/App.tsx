@@ -93,6 +93,11 @@ function App() {
   return (
     <main style={{ padding: "2rem", fontFamily: "sans-serif", maxWidth: "700px" }}>
       <h1>DYEL Visualizer</h1>
+      <p style={{ fontSize: "0.85rem", color: "#6b7280", marginTop: "-0.5rem" }}>
+        <a href="?page=conjugate" style={{ color: "#6366f1" }}>
+          What is the conjugate method?
+        </a>
+      </p>
       <label htmlFor="sheet-url" style={{ display: "block", marginBottom: "0.5rem" }}>
         Google Sheet URL
       </label>
