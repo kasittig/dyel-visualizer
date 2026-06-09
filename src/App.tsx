@@ -1,9 +1,9 @@
-import { useState, lazy, Suspense, useMemo } from "react";
+import { useState, lazy, Suspense, useMemo, useCallback } from "react";
 import { useSheetData } from "./hooks/useSheetData";
+import type { SheetRow } from "./hooks/useSheetData";
 import { ConjugateCharts } from "./components/ConjugateCharts";
-import { ConjugateExerciseList } from "./components/ConjugateExerciseList";
 import { ConjugateFilterControls } from "./components/ConjugateFilterControls";
-import { ExerciseList } from "./components/ExerciseList";
+import { ExerciseTable } from "./components/ExerciseTable";
 import type { ConjugateLift } from "./types/conjugate";
 import {
   DEFAULT_BENCH_FILTER,
@@ -104,6 +104,24 @@ function App() {
       return { ...prev, [activeTab]: tabSet };
     });
   }
+
+  const conjugateSheetRows = useMemo(
+    () => parsedConjugateRows.map((p) => p.row),
+    [parsedConjugateRows]
+  );
+  const conjugateRowLabelMap = useMemo(
+    () =>
+      new Map(
+        parsedConjugateRows.map((p) => [p.row, p.lift?.liftType === activeTab ? p.label : null])
+      ),
+    [parsedConjugateRows, activeTab]
+  );
+  const conjugateKeyFn = useCallback(
+    (row: SheetRow) => conjugateRowLabelMap.get(row) ?? null,
+    [conjugateRowLabelMap]
+  );
+
+  const exerciseKeyFn = useCallback((row: SheetRow) => row["exercise"]?.trim() || null, []);
 
   return (
     <main style={{ padding: "2rem", fontFamily: "sans-serif", maxWidth: "700px" }}>
@@ -213,11 +231,12 @@ function App() {
                   liftType={activeTab}
                   hidden={effectiveHidden}
                 />
-                <ConjugateExerciseList
-                  rows={parsedConjugateRows}
-                  liftType={activeTab}
-                  hidden={effectiveHidden}
-                  onToggle={toggleVariation}
+                <ExerciseTable
+                  sheetRows={conjugateSheetRows}
+                  keyFn={conjugateKeyFn}
+                  heading="Variations"
+                  emptyMessage={`No ${activeTab} data found.`}
+                  mode={{ type: "toggle", hidden: effectiveHidden, onToggle: toggleVariation }}
                 />
               </>
             ) : (
@@ -225,10 +244,16 @@ function App() {
                 <Suspense fallback={<p>Loading charts…</p>}>
                   <Charts rows={state.rows} selectedExercise={effectiveExercise} />
                 </Suspense>
-                <ExerciseList
-                  rows={state.rows}
-                  selectedExercise={effectiveExercise}
-                  onSelectExercise={setSelectedExercise}
+                <ExerciseTable
+                  sheetRows={state.rows}
+                  keyFn={exerciseKeyFn}
+                  heading="Exercises"
+                  emptyMessage="No exercise data found."
+                  mode={{
+                    type: "select",
+                    selectedKey: effectiveExercise,
+                    onSelect: setSelectedExercise,
+                  }}
                 />
               </>
             )}
