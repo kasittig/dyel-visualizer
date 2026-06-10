@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseConjugateData } from "./parseConjugateData";
+import { nameToExercise, parseConjugateData } from "./parseConjugateData";
 
 function csv(...rows: string[]): string {
   return ["Date,Exercise,Sets,Reps,Weight (lbs)", ...rows].join("\n");
@@ -72,7 +72,7 @@ describe("parseConjugateData", () => {
     const result = parseConjugateData(csv("2024-01-15,Trap Bar Deadlift,4,6,275"));
     const [exercise] = result[0];
     expect(exercise.bar).toBe("trap bar");
-    expect(exercise.stance).toBeNull();
+    expect(exercise.stance).toBe("competition");
   });
 
   it("skips leading title rows before the header", () => {
@@ -110,8 +110,285 @@ describe("parseConjugateData", () => {
     expect(result[1][0].type).toBe("bench");
   });
 
-  it("sets displayName from conjugateLiftLabel", () => {
-    const result = parseConjugateData(csv("2024-01-15,SSB Box Squat,3,5,275"));
-    expect(result[0][0].displayName).toBe("SSB Box Squat");
+  it("sets displayName from input", () => {
+    const result = parseConjugateData(csv("2024-01-15,Box SSB,3,5,275"));
+    expect(result[0][0].displayName).toBe("Box SSB");
+  });
+});
+
+describe("nameToExercise", () => {
+  describe("squat", () => {
+    it("parses plain Squat", () => {
+      expect(nameToExercise("Squat")).toEqual({
+        type: "squat",
+        bar: "standard",
+        stance: null,
+        addlWts: [],
+        equipment: null,
+        displayName: "Squat",
+        sessions: [],
+      });
+    });
+
+    it("parses Box Squat", () => {
+      expect(nameToExercise("Box Squat")).toMatchObject({
+        type: "squat",
+        bar: "standard",
+        equipment: "box",
+        addlWts: [],
+      });
+    });
+
+    it("parses Squat (SSB)", () => {
+      expect(nameToExercise("Squat (SSB)")).toMatchObject({
+        type: "squat",
+        bar: "ssb",
+        equipment: null,
+      });
+    });
+
+    it("is case-insensitive", () => {
+      expect(nameToExercise("box SQUAT")).toMatchObject({
+        type: "squat",
+        bar: "standard",
+        equipment: "box",
+      });
+    });
+  });
+
+  describe("bench", () => {
+    it("parses plain Bench", () => {
+      expect(nameToExercise("Bench")).toEqual({
+        type: "bench",
+        bar: "standard",
+        stance: "competition grip",
+        addlWts: [],
+        equipment: null,
+        displayName: "Bench",
+        sessions: [],
+      });
+    });
+
+    it("parses Bench (American Bar)", () => {
+      expect(nameToExercise("Bench (American Bar)")).toMatchObject({
+        type: "bench",
+        bar: "american",
+      });
+    });
+
+    it("parses Bench (American Bar, CG)", () => {
+      expect(nameToExercise("Bench (American Bar, CG)")).toMatchObject({
+        type: "bench",
+        bar: "american",
+        stance: "close grip",
+      });
+    });
+
+    it("parses Bench (CG)", () => {
+      expect(nameToExercise("Bench (CG)")).toMatchObject({
+        type: "bench",
+        stance: "close grip",
+      });
+    });
+
+    it("parses Bench (Swiss Bar, Chain)", () => {
+      expect(nameToExercise("Bench (Swiss Bar, Chain)")).toMatchObject({
+        type: "bench",
+        bar: "swiss",
+        addlWts: ["chains"],
+      });
+    });
+
+    it("parses Duffalo Bar Bench Press", () => {
+      expect(nameToExercise("Duffalo Bar Bench Press")).toMatchObject({
+        type: "bench",
+        bar: "duffalo",
+      });
+    });
+
+    it("parses Duffalo Bar Bench Press (chain)", () => {
+      expect(nameToExercise("Duffalo Bar Bench Press (chain)")).toMatchObject({
+        type: "bench",
+        bar: "duffalo",
+        addlWts: ["chains"],
+      });
+    });
+
+    it("parses Bench (bands)", () => {
+      expect(nameToExercise("Bench (bands)")).toMatchObject({
+        type: "bench",
+        addlWts: ["bands"],
+      });
+    });
+
+    it("parses Bench (slingshot, chain)", () => {
+      expect(nameToExercise("Bench (slingshot, chain)")).toMatchObject({
+        type: "bench",
+        stance: "slingshot",
+        addlWts: ["chains"],
+      });
+    });
+
+    it("parses Bench (2 Board)", () => {
+      expect(nameToExercise("Bench (2 Board)")).toMatchObject({
+        type: "bench",
+        equipment: "2 board",
+      });
+    });
+
+    it("parses Bench (Dumbbell)", () => {
+      expect(nameToExercise("Bench (Dumbbell)")).toMatchObject({
+        type: "bench",
+        bar: "dumbbell",
+      });
+    });
+
+    it("parses Bench (Dumbbell, Decline)", () => {
+      expect(nameToExercise("Bench (Dumbbell, Decline)")).toMatchObject({
+        type: "bench",
+        bar: "dumbbell",
+        equipment: "decline",
+      });
+    });
+
+    it("parses Incline Bench", () => {
+      expect(nameToExercise("Incline Bench")).toMatchObject({
+        type: "bench",
+        equipment: "incline",
+      });
+    });
+
+    it("parses Floor Press", () => {
+      expect(nameToExercise("Floor Press")).toMatchObject({
+        type: "bench",
+        equipment: "floor",
+      });
+    });
+
+    it("parses Floor Press (chain)", () => {
+      expect(nameToExercise("Floor Press (chain)")).toMatchObject({
+        type: "bench",
+        equipment: "floor",
+        addlWts: ["chains"],
+      });
+    });
+
+    it("parses Bench Builder as standard bar", () => {
+      expect(nameToExercise("Bench Builder")).toMatchObject({
+        type: "bench",
+        bar: "standard",
+        stance: "builder",
+      });
+    });
+
+    it("parses Bench (Commands) as pause equipment", () => {
+      expect(nameToExercise("Bench (Commands)")).toMatchObject({
+        type: "bench",
+        equipment: "pause",
+      });
+    });
+
+    it("is case-insensitive for bar names", () => {
+      expect(nameToExercise("bench (SWISS BAR)")).toMatchObject({
+        type: "bench",
+        bar: "swiss",
+      });
+    });
+  });
+
+  describe("deadlift", () => {
+    it("parses plain Deadlift", () => {
+      expect(nameToExercise("Deadlift")).toEqual({
+        type: "deadlift",
+        bar: "standard",
+        stance: "competition",
+        addlWts: [],
+        equipment: null,
+        displayName: "Deadlift",
+        sessions: [],
+      });
+    });
+
+    it("parses Deadlift (opposite)", () => {
+      expect(nameToExercise("Deadlift (opposite)")).toMatchObject({
+        type: "deadlift",
+        stance: "opposite",
+      });
+    });
+
+    it("parses Deadlift (sumo)", () => {
+      expect(nameToExercise("Deadlift (sumo)")).toMatchObject({
+        type: "deadlift",
+        stance: "sumo",
+      });
+    });
+
+    it("parses Deadlift (conventional)", () => {
+      expect(nameToExercise("Deadlift (conventional)")).toMatchObject({
+        type: "deadlift",
+        stance: "conventional",
+      });
+    });
+
+    it("parses Deadlift (romanian)", () => {
+      expect(nameToExercise("Deadlift (romanian)")).toMatchObject({
+        type: "deadlift",
+        stance: "romanian",
+      });
+    });
+
+    it("parses Trap Bar Deadlift", () => {
+      expect(nameToExercise("Trap Bar Deadlift")).toMatchObject({
+        type: "deadlift",
+        bar: "trap bar",
+        stance: "competition",
+      });
+    });
+
+    it("parses Deadlift (trap bar)", () => {
+      expect(nameToExercise("Deadlift (trap bar)")).toMatchObject({
+        type: "deadlift",
+        bar: "trap bar",
+        stance: "competition",
+      });
+    });
+
+    it('parses Deadlift (2" Deficit)', () => {
+      expect(nameToExercise('Deadlift (2" Deficit)')).toMatchObject({
+        type: "deadlift",
+        equipment: "deficit",
+      });
+    });
+
+    it('parses Deadlift (2" Block)', () => {
+      expect(nameToExercise('Deadlift (2" Block)')).toMatchObject({
+        type: "deadlift",
+        equipment: "blocks",
+      });
+    });
+
+    it("parses Deadlift (bands)", () => {
+      expect(nameToExercise("Deadlift (bands)")).toMatchObject({
+        type: "deadlift",
+        addlWts: ["bands"],
+      });
+    });
+
+    it("parses Deadlift (reverse bands) as rev. bands, not bands", () => {
+      expect(nameToExercise("Deadlift (reverse bands)")).toMatchObject({
+        type: "deadlift",
+        addlWts: ["rev. bands"],
+      });
+    });
+  });
+
+  describe("non-conjugate exercises", () => {
+    it("returns null for Lat Pulldown", () => {
+      expect(nameToExercise("Lat Pulldown")).toBeNull();
+    });
+
+    it("returns null for Overhead Press", () => {
+      expect(nameToExercise("Overhead Press")).toBeNull();
+    });
   });
 });

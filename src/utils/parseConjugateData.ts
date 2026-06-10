@@ -1,101 +1,147 @@
 import Papa from "papaparse";
 import { findCol } from "../hooks/useSheetData";
-import { conjugateLiftLabel, parseConjugateLift } from "./parseConjugate";
-import type {
-  ConjugateAddlWt,
-  ConjugateBar,
-  ConjugateEquipment,
-  ConjugateExercise,
-  ConjugateLift,
-  ConjugateStance,
-  TrainingSession,
+import {
+  type ConjugateAddlWt,
+  type ConjugateBar,
+  type ConjugateEquipment,
+  type ConjugateExercise,
+  type ConjugateStance,
+  type TrainingSession,
 } from "../types/conjugate";
 
 type RawRow = Record<string, string>;
 
-function liftToExercise(lift: ConjugateLift): ConjugateExercise {
-  const displayName = conjugateLiftLabel(lift);
+export function nameToExercise(name: string): ConjugateExercise | null {
+  const displayName = name;
 
-  switch (lift.liftType) {
-    case "squat": {
-      const { bar, hasBox, hasChains, hasBands } = lift.variation;
-      const addlWts: ConjugateAddlWt[] = [
-        ...(hasChains ? (["chains"] as const) : []),
-        ...(hasBands ? (["bands"] as const) : []),
-      ];
-      return {
-        type: "squat",
-        bar,
-        stance: null,
-        addlWts,
-        equipment: hasBox ? "box" : null,
-        displayName,
-        sessions: [],
-      };
-    }
+  const lower = name.toLowerCase().trim();
+  const parenIdx = lower.indexOf("(");
+  const base = (parenIdx === -1 ? lower : lower.slice(0, parenIdx)).trim();
+  const modStr =
+    parenIdx === -1
+      ? ""
+      : lower
+          .slice(parenIdx + 1)
+          .replace(/\)/g, "")
+          .trim();
+  const modifiers = modStr ? modStr.split(",").map((m) => m.trim()) : [];
 
-    case "bench": {
-      const { bar, angle, grip, boardCount, hasSlingshot, hasChains, hasBands, hasPause } =
-        lift.variation;
+  const has = (phrase: string) => lower.includes(phrase);
+  const tokens = new Set([...base.split(/\s+/), ...modifiers.flatMap((m) => m.split(/\s+/))]);
+  const hasToken = (t: string) => tokens.has(t);
 
-      const conjugateBar: ConjugateBar | null =
-        bar === "bench_builder" ? null : (bar as ConjugateBar);
-
-      const stance: ConjugateStance = hasSlingshot
-        ? "slingshot"
-        : bar === "bench_builder"
-          ? "builder"
-          : grip === "close"
-            ? "close grip"
-            : grip === "medium"
-              ? "medium grip"
-              : "competition grip";
-
-      let equipment: ConjugateEquipment | null = null;
-      if (angle === "incline") equipment = "incline";
-      else if (angle === "decline") equipment = "decline";
-      else if (angle === "floor") equipment = "floor";
-      else if (boardCount === 1) equipment = "1 board";
-      else if (boardCount === 2) equipment = "2 board";
-      else if (boardCount === 3) equipment = "3 board";
-      else if (hasPause) equipment = "pause";
-
-      const addlWts: ConjugateAddlWt[] = [
-        ...(hasChains ? (["chains"] as const) : []),
-        ...(hasBands ? (["bands"] as const) : []),
-      ];
-
-      return {
-        type: "bench",
-        bar: conjugateBar,
-        stance,
-        addlWts,
-        equipment,
-        displayName,
-        sessions: [],
-      };
-    }
-
-    case "deadlift": {
-      const { stance, hasChains, hasBands, hasReverseBands, blockHeight, deficitHeight } =
-        lift.variation;
-      const isTrapBar = stance === "trap bar";
-      const addlWts: ConjugateAddlWt[] = [
-        ...(hasChains ? (["chains"] as const) : []),
-        ...(hasReverseBands ? (["rev. bands"] as const) : []),
-        ...(hasBands ? (["bands"] as const) : []),
-      ];
-      return {
-        type: "deadlift",
-        bar: isTrapBar ? "trap bar" : null,
-        stance: isTrapBar ? null : (stance as ConjugateStance),
-        addlWts,
-        equipment: blockHeight !== null ? "blocks" : deficitHeight !== null ? "deficit" : null,
-        displayName,
-        sessions: [],
-      };
-    }
+  function extractHeight(keyword: string): number | null {
+    // Matches "2" keyword" or "2 keyword" (with or without inch mark)
+    const re = new RegExp(
+      `(\\d+(?:\\.\\d+)?)(?:\\s*")?\\s*${keyword}|${keyword}\\s*(\\d+(?:\\.\\d+)?)`,
+      "i"
+    );
+    const m = lower.match(re);
+    if (m) return parseFloat(m[1] ?? m[2]);
+    return null;
   }
+
+  const hasReverseBands = has("reverse band");
+  const hasChains = has("chain");
+  const hasBands = !hasReverseBands && has("band");
+  const addlWts: ConjugateAddlWt[] = [
+    ...(hasChains ? (["chains"] as const) : []),
+    ...(hasBands ? (["bands"] as const) : []),
+    ...(hasReverseBands ? (["rev. bands"] as const) : []),
+  ];
+
+  if (base.includes("squat") || base.includes("ssb")) {
+    const bar = has("ssb") || has("safety") ? "ssb" : "standard";
+    return {
+      type: "squat",
+      bar,
+      stance: null,
+      addlWts,
+      equipment: has("box") ? "box" : null,
+      displayName,
+      sessions: [],
+    };
+  }
+
+  if (
+    base.includes("floor") ||
+    base.includes("bench") ||
+    base.includes("incline") ||
+    base.includes("decline")
+  ) {
+    let bar: ConjugateBar = "standard";
+    if (has("swiss")) bar = "swiss";
+    else if (has("american")) bar = "american";
+    else if (has("bamboo")) bar = "bamboo";
+    else if (has("duffalo")) bar = "duffalo";
+    else if (has("dumbbell") || hasToken("db")) bar = "dumbbell";
+
+    const grip =
+      hasToken("cg") || has("close grip") ? "close" : hasToken("medium") ? "medium" : "competition";
+
+    const stance: ConjugateStance = has("slingshot")
+      ? "slingshot"
+      : has("builder")
+        ? "builder"
+        : grip === "close"
+          ? "close grip"
+          : grip === "medium"
+            ? "medium grip"
+            : "competition grip";
+
+    let equipment: ConjugateEquipment | null = null;
+    const boardCount = extractHeight("board");
+
+    if (has("incline")) equipment = "incline";
+    else if (has("decline")) equipment = "decline";
+    else if (base.includes("floor")) equipment = "floor";
+    else if (boardCount === 1) equipment = "1 board";
+    else if (boardCount === 2) equipment = "2 board";
+    else if (boardCount === 3) equipment = "3 board";
+    else if (has("command")) equipment = "pause";
+
+    const addlWts: ConjugateAddlWt[] = [
+      ...(hasChains ? (["chains"] as const) : []),
+      ...(hasBands ? (["bands"] as const) : []),
+    ];
+
+    return {
+      type: "bench",
+      bar: bar,
+      stance,
+      addlWts,
+      equipment,
+      displayName,
+      sessions: [],
+    };
+  }
+
+  if (base.includes("deadlift")) {
+    const stanceTerms = ["romanian", "sumo", "conventional", "opposite"] as const;
+    const stance = stanceTerms.find((t) => has(t)) ?? "competition";
+
+    const isTrapBar = has("trap bar");
+    const addlWts: ConjugateAddlWt[] = [
+      ...(hasChains ? (["chains"] as const) : []),
+      ...(hasReverseBands ? (["rev. bands"] as const) : []),
+      ...(hasBands ? (["bands"] as const) : []),
+    ];
+    return {
+      type: "deadlift",
+      bar: isTrapBar ? "trap bar" : "standard",
+      stance: stance as ConjugateStance,
+      addlWts,
+      equipment:
+        extractHeight("block") !== null
+          ? "blocks"
+          : extractHeight("deficit") !== null
+            ? "deficit"
+            : null,
+      displayName,
+      sessions: [],
+    };
+  }
+  return null;
 }
 
 function parseSession(row: RawRow): TrainingSession | null {
@@ -125,11 +171,13 @@ export function parseConjugateData(csv: string): Array<[ConjugateExercise, Train
 
   const result: Array<[ConjugateExercise, TrainingSession]> = [];
   for (const row of rows) {
-    const lift = parseConjugateLift(row["exercise"] ?? "");
+    const exerciseName = row["exercise"] ?? "";
+    if (!exerciseName) continue;
+    const lift = nameToExercise(row["exercise"]);
     if (!lift) continue;
     const session = parseSession(row);
     if (!session) continue;
-    result.push([liftToExercise(lift), session]);
+    result.push([lift, session]);
   }
   return result;
 }
