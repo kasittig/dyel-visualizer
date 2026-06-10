@@ -1,14 +1,8 @@
 import { useMemo } from "react";
-import type { SheetRow } from "./useSheetData";
-import { findCol } from "./useSheetData";
 import { calcE1RM, predictE1RM } from "../utils/e1rm";
+import type { ConjugateDataPair } from "./useConjugateData";
 
-function parseDate(str: string): Date | null {
-  const d = new Date(str);
-  return isNaN(d.getTime()) ? null : d;
-}
-
-export function useLastSessionStats(rows: SheetRow[], keyFn: (row: SheetRow) => string | null) {
+export function useLastSessionStats(pairs: ConjugateDataPair[]) {
   return useMemo(() => {
     const lastPerformed = new Map<string, Date>();
     const last1RepSet = new Map<string, { date: Date; weight: number }>();
@@ -19,24 +13,19 @@ export function useLastSessionStats(rows: SheetRow[], keyFn: (row: SheetRow) => 
 
     // Pass 1: find the most-recent date for each key, and build full e1RM history.
     // This must complete before pass 2 so we know which rows belong to the "last session."
-    for (const row of rows) {
-      const key = keyFn(row);
-      if (!key) continue;
-      const dateStr = row["date"]?.trim() ?? "";
-      const date = parseDate(dateStr);
-      if (!date) continue;
+    for (const [exercise, session] of pairs) {
+      const key = exercise.displayName;
+      const { date, weight, reps } = session;
+      const dateStr = date.toISOString();
 
       const existing = lastPerformed.get(key);
       if (!existing || date > existing) lastPerformed.set(key, date);
 
-      const weight = parseFloat(findCol(row, "weight") ?? "");
-      const repsStr = row["reps"]?.trim() ?? "";
-      const reps = parseFloat(repsStr);
-      if (!isNaN(weight) && reps === 1) {
+      if (reps === 1) {
         const prev = last1RepSet.get(key);
         if (!prev || date > prev.date) last1RepSet.set(key, { date, weight });
       }
-      if (!isNaN(weight) && !isNaN(reps) && reps > 0) {
+      if (reps > 0) {
         const e1rm = calcE1RM(weight, reps);
         if (!e1rmHistory.has(key)) e1rmHistory.set(key, new Map());
         const dateMap = e1rmHistory.get(key)!;
@@ -46,18 +35,14 @@ export function useLastSessionStats(rows: SheetRow[], keyFn: (row: SheetRow) => 
     }
 
     // Pass 2: compute e1RM and set stats for the last session only.
-    for (const row of rows) {
-      const key = keyFn(row);
-      if (!key) continue;
-      const date = parseDate(row["date"]?.trim() ?? "");
-      if (!date) continue;
+    for (const [exercise, session] of pairs) {
+      const key = exercise.displayName;
+      const { date, weight, reps } = session;
 
       const lastDate = lastPerformed.get(key);
       if (!lastDate || date.getTime() !== lastDate.getTime()) continue;
 
-      const weight = parseFloat(findCol(row, "weight") ?? "");
-      const reps = parseFloat(row["reps"] ?? "");
-      if (!isNaN(weight) && !isNaN(reps) && reps > 0) {
+      if (reps > 0) {
         const roundedReps = Math.round(reps);
         const e1rm = calcE1RM(weight, reps);
         const prev = lastSessionE1RM.get(key);
@@ -83,5 +68,5 @@ export function useLastSessionStats(rows: SheetRow[], keyFn: (row: SheetRow) => 
       lastSessionAllSets,
       predictedE1RM,
     };
-  }, [rows, keyFn]);
+  }, [pairs]);
 }

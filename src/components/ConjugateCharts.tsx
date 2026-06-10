@@ -7,28 +7,25 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { findCol } from "../hooks/useSheetData";
 import { calcE1RM } from "../utils/e1rm";
 import { formatDate, LINE_COLORS } from "../utils/chartUtils";
-import type { ParsedConjugateRow } from "../utils/parseConjugate";
+import type { ConjugateDataPair } from "../hooks/useConjugateData";
 
 export function ConjugateCharts({
   rows,
   hidden,
 }: {
-  rows: ParsedConjugateRow[];
+  rows: ConjugateDataPair[];
   hidden: Set<string>;
 }) {
   // label → date → best e1RM
   const e1rmByLabelAndDate = new Map<string, Map<string, number>>();
 
-  for (const { row, label } of rows) {
-    if (!label) continue;
-    const date = row["date"]?.trim();
-    if (!date) continue;
-    const weight = parseFloat(findCol(row, "weight") ?? "");
-    const reps = parseFloat(row["reps"] ?? "");
-    if (isNaN(weight) || isNaN(reps) || reps <= 0) continue;
+  for (const [exercise, session] of rows) {
+    const label = exercise.displayName;
+    const date = session.date.toISOString().slice(0, 10);
+    const { weight, reps } = session;
+    if (reps <= 0) continue;
 
     const e1rm = calcE1RM(weight, reps);
     if (!e1rmByLabelAndDate.has(label)) e1rmByLabelAndDate.set(label, new Map());
