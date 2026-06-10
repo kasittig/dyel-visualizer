@@ -1,26 +1,11 @@
 import { useState, useMemo } from "react";
 import { useSheetData } from "./hooks/useSheetData";
 import { ConjugateCharts } from "./components/ConjugateCharts";
-import { ConjugateFilterControls } from "./components/ConjugateFilterControls";
 import { ExerciseList } from "./components/ExerciseList";
-import type { ConjugateLift } from "./types/conjugate";
-import {
-  DEFAULT_BENCH_FILTER,
-  DEFAULT_DEADLIFT_FILTER,
-  DEFAULT_SQUAT_FILTER,
-} from "./types/conjugateFilters";
-import type { BenchFilter, DeadliftFilter, SquatFilter } from "./types/conjugateFilters";
-import {
-  getBenchPresence,
-  getDeadliftPresence,
-  getFilteredOutLabels,
-  getSquatPresence,
-} from "./utils/conjugateFilters";
-import type { FilteredOutQuery } from "./utils/conjugateFilters";
 import { parseConjugateRows } from "./utils/parseConjugate";
 
 type SheetRef = { id: string; published: boolean };
-type LiftTab = ConjugateLift["liftType"];
+type LiftTab = "squat" | "bench" | "deadlift";
 
 const TABS: { id: LiftTab; label: string }[] = [
   { id: "squat", label: "Squat" },
@@ -56,24 +41,11 @@ function App() {
     bench: new Set(),
     deadlift: new Set(),
   });
-  const [squatFilter, setSquatFilter] = useState<SquatFilter>(DEFAULT_SQUAT_FILTER);
-  const [benchFilter, setBenchFilter] = useState<BenchFilter>(DEFAULT_BENCH_FILTER);
-  const [deadliftFilter, setDeadliftFilter] = useState<DeadliftFilter>(DEFAULT_DEADLIFT_FILTER);
   const [hiddenExercises, setHiddenExercises] = useState<Set<string>>(new Set());
   const sheetRef = extractSheetRef(url);
   const invalidUrl = url.length > 0 && !sheetRef;
 
   const state = useSheetData(sheetRef);
-
-  const currentQuery = useMemo<FilteredOutQuery>(
-    () =>
-      activeTab === "squat"
-        ? { liftType: "squat", filter: squatFilter }
-        : activeTab === "bench"
-          ? { liftType: "bench", filter: benchFilter }
-          : { liftType: "deadlift", filter: deadliftFilter },
-    [activeTab, squatFilter, benchFilter, deadliftFilter]
-  );
 
   const parsedConjugateRows = useMemo(
     () => (state.status === "success" ? parseConjugateRows(state.rows) : []),
@@ -83,41 +55,26 @@ function App() {
   const normalModeRows = useMemo(
     () =>
       state.status === "success"
-        ? state.rows.map((row) => ({ row, lift: null, label: row["exercise"]?.trim() ?? null }))
+        ? state.rows.map((row) => ({ row, exercise: null, label: row["exercise"]?.trim() ?? null }))
         : [],
     [state]
   );
 
   const squatRows = useMemo(
-    () => parsedConjugateRows.filter((p) => p.lift?.liftType === "squat"),
+    () => parsedConjugateRows.filter((p) => p.exercise?.type === "squat"),
     [parsedConjugateRows]
   );
   const benchRows = useMemo(
-    () => parsedConjugateRows.filter((p) => p.lift?.liftType === "bench"),
+    () => parsedConjugateRows.filter((p) => p.exercise?.type === "bench"),
     [parsedConjugateRows]
   );
   const deadliftRows = useMemo(
-    () => parsedConjugateRows.filter((p) => p.lift?.liftType === "deadlift"),
+    () => parsedConjugateRows.filter((p) => p.exercise?.type === "deadlift"),
     [parsedConjugateRows]
-  );
-
-  const squatPresence = useMemo(() => getSquatPresence(squatRows), [squatRows]);
-  const benchPresence = useMemo(() => getBenchPresence(benchRows), [benchRows]);
-  const deadliftPresence = useMemo(() => getDeadliftPresence(deadliftRows), [deadliftRows]);
-  const presence = useMemo(
-    () => ({ squat: squatPresence, bench: benchPresence, deadlift: deadliftPresence }),
-    [squatPresence, benchPresence, deadliftPresence]
   );
 
   const activeRows =
     activeTab === "squat" ? squatRows : activeTab === "bench" ? benchRows : deadliftRows;
-
-  const filteredOutLabels = useMemo(
-    () => getFilteredOutLabels(activeRows, currentQuery),
-    [activeRows, currentQuery]
-  );
-
-  const effectiveHidden = new Set([...hiddenVariations[activeTab], ...filteredOutLabels]);
 
   function toggleInSet<T>(set: Set<T>, item: T): Set<T> {
     const next = new Set(set);
@@ -153,9 +110,6 @@ function App() {
           setUrl(e.target.value);
           setHiddenExercises(new Set());
           setHiddenVariations({ squat: new Set(), bench: new Set(), deadlift: new Set() });
-          setSquatFilter(DEFAULT_SQUAT_FILTER);
-          setBenchFilter(DEFAULT_BENCH_FILTER);
-          setDeadliftFilter(DEFAULT_DEADLIFT_FILTER);
         }}
         placeholder="https://docs.google.com/spreadsheets/d/…"
         style={{ width: "100%", padding: "0.5rem", boxSizing: "border-box" }}
@@ -227,20 +181,10 @@ function App() {
                     </button>
                   ))}
                 </div>
-                <ConjugateFilterControls
-                  liftType={activeTab}
-                  presence={presence}
-                  squatFilter={squatFilter}
-                  benchFilter={benchFilter}
-                  deadliftFilter={deadliftFilter}
-                  onSquatChange={setSquatFilter}
-                  onBenchChange={setBenchFilter}
-                  onDeadliftChange={setDeadliftFilter}
-                />
-                <ConjugateCharts rows={activeRows} hidden={effectiveHidden} />
+                <ConjugateCharts rows={activeRows} hidden={hiddenVariations[activeTab]} />
                 <ExerciseList
                   rows={activeRows}
-                  hidden={effectiveHidden}
+                  hidden={hiddenVariations[activeTab]}
                   onToggle={toggleVariation}
                   heading="Variations"
                   columnHeader="Variation"
