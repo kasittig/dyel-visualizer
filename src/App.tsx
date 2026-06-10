@@ -2,11 +2,10 @@ import { useState, useMemo } from "react";
 import { useSheetData } from "./hooks/useSheetData";
 import { ConjugateCharts } from "./components/ConjugateCharts";
 import { ExerciseList } from "./components/ExerciseList";
-import type { ConjugateLift } from "./types/conjugate";
 import { parseConjugateRows } from "./utils/parseConjugate";
 
 type SheetRef = { id: string; published: boolean };
-type LiftTab = ConjugateLift["liftType"];
+type LiftTab = "squat" | "bench" | "deadlift";
 
 const TABS: { id: LiftTab; label: string }[] = [
   { id: "squat", label: "Squat" },
@@ -52,15 +51,15 @@ function App() {
   );
 
   const squatRows = useMemo(
-    () => parsedConjugateRows.filter((p) => p.lift?.liftType === "squat"),
+    () => parsedConjugateRows.filter((p) => p.exercise?.type === "squat"),
     [parsedConjugateRows]
   );
   const benchRows = useMemo(
-    () => parsedConjugateRows.filter((p) => p.lift?.liftType === "bench"),
+    () => parsedConjugateRows.filter((p) => p.exercise?.type === "bench"),
     [parsedConjugateRows]
   );
   const deadliftRows = useMemo(
-    () => parsedConjugateRows.filter((p) => p.lift?.liftType === "deadlift"),
+    () => parsedConjugateRows.filter((p) => p.exercise?.type === "deadlift"),
     [parsedConjugateRows]
   );
 
@@ -68,6 +67,7 @@ function App() {
     activeTab === "squat" ? squatRows : activeTab === "bench" ? benchRows : deadliftRows;
 
   const effectiveHidden = hiddenVariations[activeTab];
+
 
   function toggleInSet<T>(set: Set<T>, item: T): Set<T> {
     const next = new Set(set);
