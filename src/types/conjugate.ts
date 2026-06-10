@@ -76,3 +76,42 @@ export const DEFAULT_DEADLIFT_VARIATION: DeadliftVariation = {
   blockHeight: null,
   deficitHeight: null,
 };
+
+export type ConjugateBar =
+  | "ssb"
+  | "american"
+  | "swiss"
+  | "cambered"
+  | "standard"
+  | "trap bar"
+  | "zercher"
+  | "duffalo"
+  | "dumbbell";
+
+export type ConjugateStance =
+  | "close grip"
+  | "sumo"
+  | "conventional"
+  | "competition"
+  | "opposite"
+  | "medium grip"
+  | "competition grip"
+  | "wide grip";
+
+export type ConjugateAddlWt = "bands" | "rev. bands" | "chains";
+
+export interface TrainingSession {
+  date: Date;
+  sets: number;
+  reps: number;
+  weight: number;
+}
+
+export interface ConjugateExercise {
+  type: "squat" | "bench" | "deadlift";
+  bar: ConjugateBar | null;
+  stance: ConjugateStance | null;
+  addlWts: ConjugateAddlWt[];
+  displayName: string;
+  sessions: TrainingSession[];
+}
