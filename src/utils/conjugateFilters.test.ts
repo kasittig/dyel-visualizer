@@ -79,8 +79,16 @@ describe("getDeadliftPresence", () => {
   });
 
   it("detects opposite stance", () => {
-    const p = getDeadliftPresence(rows(["Opposite Deadlift"]));
-    expect(p.hasReverseStance).toBe(true);
+    const p = getDeadliftPresence(rows(["Deadlift (opposite)"]));
+    expect(p.stances.has("opposite")).toBe(true);
+  });
+
+  it("detects multiple stances", () => {
+    const p = getDeadliftPresence(rows(["Deadlift", "Deadlift (sumo)", "Deadlift (conventional)"]));
+    expect(p.stances.has("competition")).toBe(true);
+    expect(p.stances.has("sumo")).toBe(true);
+    expect(p.stances.has("conventional")).toBe(true);
+    expect(p.stances.size).toBe(3);
   });
 });
 

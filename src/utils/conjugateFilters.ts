@@ -1,4 +1,10 @@
-import type { BenchAngle, BenchBar, ConjugateLift, SquatBar } from "../types/conjugate";
+import type {
+  BenchAngle,
+  BenchBar,
+  ConjugateLift,
+  DeadliftStance,
+  SquatBar,
+} from "../types/conjugate";
 import type { BenchFilter, DeadliftFilter, SquatFilter } from "../types/conjugateFilters";
 import type { ParsedConjugateRow } from "./parseConjugate";
 
@@ -19,7 +25,7 @@ export type BenchPresence = {
 };
 
 export type DeadliftPresence = {
-  hasReverseStance: boolean;
+  stances: Set<DeadliftStance>;
   hasChains: boolean;
   hasBands: boolean;
   hasReverseBands: boolean;
@@ -73,7 +79,7 @@ export function getBenchPresence(rows: ParsedConjugateRow[]): BenchPresence {
 
 export function getDeadliftPresence(rows: ParsedConjugateRow[]): DeadliftPresence {
   const presence: DeadliftPresence = {
-    hasReverseStance: false,
+    stances: new Set(),
     hasChains: false,
     hasBands: false,
     hasReverseBands: false,
@@ -81,7 +87,7 @@ export function getDeadliftPresence(rows: ParsedConjugateRow[]): DeadliftPresenc
   for (const { lift } of rows) {
     if (!lift || lift.liftType !== "deadlift") continue;
     const v = lift.variation;
-    if (v.isReverseStance) presence.hasReverseStance = true;
+    presence.stances.add(v.stance);
     if (v.hasChains) presence.hasChains = true;
     if (v.hasBands) presence.hasBands = true;
     if (v.hasReverseBands) presence.hasReverseBands = true;
@@ -122,7 +128,7 @@ function isFilteredOut(liftWithFilter: LiftWithFilter): boolean {
   if (liftWithFilter.liftType === "deadlift") {
     const { lift, filter } = liftWithFilter;
     const v = lift.variation;
-    if (filter.onlyReverseStance && !v.isReverseStance) return true;
+    if (filter.stances.size > 0 && !filter.stances.has(v.stance)) return true;
     if (filter.onlyChains && !v.hasChains) return true;
     if (filter.onlyBands && !v.hasBands) return true;
     if (filter.onlyReverseBands && !v.hasReverseBands) return true;

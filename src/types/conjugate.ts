@@ -28,8 +28,16 @@ export interface BenchVariation {
   hasPause: boolean;
 }
 
+export type DeadliftStance =
+  | "competition"
+  | "conventional"
+  | "romanian"
+  | "sumo"
+  | "opposite"
+  | "trap bar";
+
 export interface DeadliftVariation {
-  isReverseStance: boolean;
+  stance: DeadliftStance;
   hasChains: boolean;
   hasBands: boolean;
   hasReverseBands: boolean;
@@ -61,7 +69,7 @@ export const DEFAULT_BENCH_VARIATION: BenchVariation = {
 };
 
 export const DEFAULT_DEADLIFT_VARIATION: DeadliftVariation = {
-  isReverseStance: false,
+  stance: "competition",
   hasChains: false,
   hasBands: false,
   hasReverseBands: false,

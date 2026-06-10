@@ -1,4 +1,4 @@
-import type { BenchAngle, BenchBar, SquatBar } from "./conjugate";
+import type { BenchAngle, BenchBar, DeadliftStance, SquatBar } from "./conjugate";
 
 export interface SquatFilter {
   bars: Set<SquatBar>;
@@ -17,7 +17,7 @@ export interface BenchFilter {
 }
 
 export interface DeadliftFilter {
-  onlyReverseStance: boolean;
+  stances: Set<DeadliftStance>;
   onlyChains: boolean;
   onlyBands: boolean;
   onlyReverseBands: boolean;
@@ -40,7 +40,7 @@ export const DEFAULT_BENCH_FILTER: BenchFilter = {
 };
 
 export const DEFAULT_DEADLIFT_FILTER: DeadliftFilter = {
-  onlyReverseStance: false,
+  stances: new Set(),
   onlyChains: false,
   onlyBands: false,
   onlyReverseBands: false,
