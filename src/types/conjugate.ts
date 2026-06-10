@@ -77,6 +77,8 @@ export const DEFAULT_DEADLIFT_VARIATION: DeadliftVariation = {
   deficitHeight: null,
 };
 
+// Different bar types go here.
+// We expect the bar type to impact the distribution of the weight on the bar
 export type ConjugateBar =
   | "ssb"
   | "american"
@@ -86,8 +88,11 @@ export type ConjugateBar =
   | "trap bar"
   | "zercher"
   | "duffalo"
-  | "dumbbell";
+  | "dumbbell"
+  | "bamboo";
 
+// Different stances go here.
+// We expect the stance type to impact the lifter's leverages which impacts the amount of force that they can transfer to the weight lifted
 export type ConjugateStance =
   | "close grip"
   | "sumo"
@@ -96,8 +101,25 @@ export type ConjugateStance =
   | "opposite"
   | "medium grip"
   | "competition grip"
-  | "wide grip";
+  | "wide grip"
+  | "romanian"
+  | "slingshot";
 
+// Different equipment types go here.
+// Changing the equipment changes where the lifter's body is positioned relative to the weight and the ground
+export type ConjugateEquipment =
+  | "incline"
+  | "decline"
+  | "blocks"
+  | "deficit"
+  | "1 board"
+  | "2 board"
+  | "3 board"
+  | "pause"
+  | "floor";
+
+// This is where ways of adding additional weight to the bar go.
+// Additional weights can impact the stability of the bar and the effective amount of weight lifted.
 export type ConjugateAddlWt = "bands" | "rev. bands" | "chains";
 
 export interface TrainingSession {
@@ -112,6 +134,7 @@ export interface ConjugateExercise {
   bar: ConjugateBar | null;
   stance: ConjugateStance | null;
   addlWts: ConjugateAddlWt[];
+  equipment: ConjugateEquipment | null;
   displayName: string;
   sessions: TrainingSession[];
 }
