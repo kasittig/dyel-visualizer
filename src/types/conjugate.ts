@@ -103,7 +103,8 @@ export type ConjugateStance =
   | "competition grip"
   | "wide grip"
   | "romanian"
-  | "slingshot";
+  | "slingshot"
+  | "builder";
 
 // Different equipment types go here.
 // Changing the equipment changes where the lifter's body is positioned relative to the weight and the ground
@@ -116,7 +117,8 @@ export type ConjugateEquipment =
   | "2 board"
   | "3 board"
   | "pause"
-  | "floor";
+  | "floor"
+  | "box";
 
 // This is where ways of adding additional weight to the bar go.
 // Additional weights can impact the stability of the bar and the effective amount of weight lifted.
