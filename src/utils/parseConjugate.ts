@@ -105,11 +105,12 @@ export function parseConjugateLift(name: string): ConjugateLift | null {
 
   if (base.includes("deadlift")) {
     const hasReverseBands = has("reverse band");
+    const stanceTerms = ["trap bar", "romanian", "sumo", "conventional", "opposite"] as const;
     return {
       liftType: "deadlift",
       variation: {
         ...DEFAULT_DEADLIFT_VARIATION,
-        isReverseStance: has("opposite"),
+        stance: stanceTerms.find((t) => has(t)) ?? "competition",
         hasChains: has("chain"),
         hasBands: !hasReverseBands && has("band"),
         hasReverseBands,
@@ -167,10 +168,16 @@ export function conjugateLiftLabel(lift: ConjugateLift): string {
       return parts.join(" ");
     }
     case "deadlift": {
-      const { isReverseStance, hasChains, hasBands, hasReverseBands, blockHeight, deficitHeight } =
+      const { stance, hasChains, hasBands, hasReverseBands, blockHeight, deficitHeight } =
         lift.variation;
       const parts: string[] = [];
-      if (isReverseStance) parts.push("Opposite");
+      if (stance !== "competition")
+        parts.push(
+          stance
+            .split(" ")
+            .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+            .join(" ")
+        );
       if (blockHeight !== null) parts.push(`${blockHeight}"`);
       if (deficitHeight !== null) parts.push(`${deficitHeight}" Deficit`);
       parts.push("Deadlift");

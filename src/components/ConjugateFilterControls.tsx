@@ -213,13 +213,24 @@ function DeadliftFilters({
 }) {
   return (
     <FilterRow label="Equipment">
-      {presence.hasReverseStance && (
+      {[...presence.stances].sort().map((s) => (
         <CheckboxRow
-          label="Opposite Stance"
-          checked={filter.onlyReverseStance}
-          onChange={(v) => onChange({ ...filter, onlyReverseStance: v })}
+          key={s}
+          label={
+            s
+              .split(" ")
+              .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+              .join(" ") + " Stance"
+          }
+          checked={filter.stances.has(s)}
+          onChange={(checked) => {
+            const next = new Set(filter.stances);
+            if (checked) next.add(s);
+            else next.delete(s);
+            onChange({ ...filter, stances: next });
+          }}
         />
-      )}
+      ))}
       {presence.hasChains && (
         <CheckboxRow
           label="Chains"
@@ -262,7 +273,7 @@ function hasAnyFilters(liftType: LiftTab, presence: ConjugatePresence): boolean 
     );
   }
   const p = presence.deadlift;
-  return p.hasReverseStance || p.hasChains || p.hasBands || p.hasReverseBands;
+  return p.stances.size > 1 || p.hasChains || p.hasBands || p.hasReverseBands;
 }
 
 export function ConjugateFilterControls({

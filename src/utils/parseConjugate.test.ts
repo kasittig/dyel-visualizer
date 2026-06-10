@@ -174,7 +174,7 @@ describe("parseConjugateLift", () => {
       expect(parseConjugateLift("Deadlift")).toEqual({
         liftType: "deadlift",
         variation: {
-          isReverseStance: false,
+          stance: "competition",
           hasChains: false,
           hasBands: false,
           hasReverseBands: false,
@@ -184,10 +184,45 @@ describe("parseConjugateLift", () => {
       });
     });
 
-    it("parses Deadlift (opposite) as reverse stance", () => {
+    it("parses Deadlift (opposite)", () => {
       expect(parseConjugateLift("Deadlift (opposite)")).toMatchObject({
         liftType: "deadlift",
-        variation: { isReverseStance: true },
+        variation: { stance: "opposite" },
+      });
+    });
+
+    it("parses Deadlift (sumo)", () => {
+      expect(parseConjugateLift("Deadlift (sumo)")).toMatchObject({
+        liftType: "deadlift",
+        variation: { stance: "sumo" },
+      });
+    });
+
+    it("parses Deadlift (conventional)", () => {
+      expect(parseConjugateLift("Deadlift (conventional)")).toMatchObject({
+        liftType: "deadlift",
+        variation: { stance: "conventional" },
+      });
+    });
+
+    it("parses Deadlift (romanian)", () => {
+      expect(parseConjugateLift("Deadlift (romanian)")).toMatchObject({
+        liftType: "deadlift",
+        variation: { stance: "romanian" },
+      });
+    });
+
+    it("parses Trap Bar Deadlift", () => {
+      expect(parseConjugateLift("Trap Bar Deadlift")).toMatchObject({
+        liftType: "deadlift",
+        variation: { stance: "trap bar" },
+      });
+    });
+
+    it("parses Deadlift (trap bar)", () => {
+      expect(parseConjugateLift("Deadlift (trap bar)")).toMatchObject({
+        liftType: "deadlift",
+        variation: { stance: "trap bar" },
       });
     });
 
@@ -327,7 +362,7 @@ describe("conjugateLiftLabel", () => {
       conjugateLiftLabel({
         liftType: "deadlift",
         variation: {
-          isReverseStance: true,
+          stance: "opposite",
           hasChains: false,
           hasBands: false,
           hasReverseBands: false,
@@ -338,12 +373,60 @@ describe("conjugateLiftLabel", () => {
     ).toBe('Opposite 2" Deadlift');
   });
 
+  it("labels Sumo Deadlift", () => {
+    expect(
+      conjugateLiftLabel({
+        liftType: "deadlift",
+        variation: {
+          stance: "sumo",
+          hasChains: false,
+          hasBands: false,
+          hasReverseBands: false,
+          blockHeight: null,
+          deficitHeight: null,
+        },
+      })
+    ).toBe("Sumo Deadlift");
+  });
+
+  it("labels Trap Bar Deadlift", () => {
+    expect(
+      conjugateLiftLabel({
+        liftType: "deadlift",
+        variation: {
+          stance: "trap bar",
+          hasChains: false,
+          hasBands: false,
+          hasReverseBands: false,
+          blockHeight: null,
+          deficitHeight: null,
+        },
+      })
+    ).toBe("Trap Bar Deadlift");
+  });
+
+  it("labels competition stance as plain Deadlift", () => {
+    expect(
+      conjugateLiftLabel({
+        liftType: "deadlift",
+        variation: {
+          stance: "competition",
+          hasChains: false,
+          hasBands: false,
+          hasReverseBands: false,
+          blockHeight: null,
+          deficitHeight: null,
+        },
+      })
+    ).toBe("Deadlift");
+  });
+
   it("labels Deadlift w/ Reverse Bands", () => {
     expect(
       conjugateLiftLabel({
         liftType: "deadlift",
         variation: {
-          isReverseStance: false,
+          stance: "competition",
           hasChains: false,
           hasBands: false,
           hasReverseBands: true,
