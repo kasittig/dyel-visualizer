@@ -134,7 +134,18 @@ export function nameToExercise(name: string): ConjugateExercise | null {
   };
 }
 
-function parseSession(row: RawRow): TrainingSession | null {
+type RawSession = Omit<TrainingSession, "unit"> & { unit: "lbs" | "kg" | null };
+
+function findWeightUnit(row: RawRow): "lbs" | "kg" | null {
+  const re = /^weight(\W|$)/;
+  const key = Object.keys(row).find((k) => re.test(k));
+  if (!key) return null;
+  if (key.includes("kg")) return "kg";
+  if (key.includes("lb")) return "lbs";
+  return null;
+}
+
+function parseSession(row: RawRow): RawSession | null {
   const dateStr = row["date"]?.trim() ?? "";
   const date = new Date(dateStr);
   if (!dateStr || isNaN(date.getTime())) return null;
@@ -144,7 +155,7 @@ function parseSession(row: RawRow): TrainingSession | null {
   if (isNaN(weight) || isNaN(reps) || reps <= 0) return null;
 
   const sets = parseInt(findCol(row, "sets") ?? "") || 1;
-  return { date, sets, reps, weight, e1rm: calcE1RM(weight, reps) };
+  return { date, sets, reps, weight, e1rm: calcE1RM(weight, reps), unit: findWeightUnit(row) };
 }
 
 export function parseConjugateData(csv: string): Array<[ConjugateExercise, TrainingSession]> {
@@ -159,7 +170,7 @@ export function parseConjugateData(csv: string): Array<[ConjugateExercise, Train
     transform: (v) => v.trim(),
   }).data;
 
-  const result: Array<[ConjugateExercise, TrainingSession]> = [];
+  const raw: Array<[ConjugateExercise, RawSession]> = [];
   for (const row of rows) {
     const exerciseName = row["exercise"] ?? "";
     if (!exerciseName) continue;
@@ -167,7 +178,10 @@ export function parseConjugateData(csv: string): Array<[ConjugateExercise, Train
     if (!lift) continue;
     const session = parseSession(row);
     if (!session) continue;
-    result.push([lift, session]);
+    raw.push([lift, session]);
   }
-  return result;
+
+  // Only fall back to "lbs" when no unit annotation exists anywhere in the data.
+  const hasAnyUnit = raw.some(([, s]) => s.unit !== null);
+  return raw.map(([ex, s]) => [ex, { ...s, unit: hasAnyUnit ? (s.unit ?? "lbs") : "lbs" }]);
 }

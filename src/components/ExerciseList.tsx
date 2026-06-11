@@ -31,6 +31,8 @@ export function ExerciseList({
 }) {
   const [query, setQuery] = useState("");
 
+  const unit = rows[0]?.[1].unit ?? "lbs";
+
   const {
     lastPerformed,
     last1RepSet,
@@ -120,7 +122,7 @@ export function ExerciseList({
             const lastDate = lastPerformed.get(label);
             const bestSet = lastSessionBestSet.get(label);
             const allSets = lastSessionAllSets.get(label) ?? [];
-            const setsReps = setsRepsLabel(bestSet, allSets);
+            const setsReps = setsRepsLabel(bestSet, allSets, unit);
             const isHidden = hidden.has(label);
             if (isHidden) {
               return (
@@ -150,21 +152,22 @@ export function ExerciseList({
               >
                 <td style={td}>{label}</td>
                 <td style={td}>
-                  <OneRepMaxCell one={one} />
+                  <OneRepMaxCell one={one} unit={unit} />
                 </td>
                 <td style={td}>
                   <LastSessionCell
                     sessionE1RM={sessionE1RM}
                     lastDate={lastDate}
                     setsReps={setsReps}
+                    unit={unit}
                   />
                 </td>
                 <td style={td}>
-                  <PredictedE1RMCell predicted={predictedE1RM.get(label)} />
+                  <PredictedE1RMCell predicted={predictedE1RM.get(label)} unit={unit} />
                 </td>
                 {hasAddlWtExercises && (
                   <td style={td}>
-                    <AddlWtOffsetCell addlWtOffset={addlWtOffset.get(label)} />
+                    <AddlWtOffsetCell addlWtOffset={addlWtOffset.get(label)} unit={unit} />
                   </td>
                 )}
                 {hasVariantExercises && (

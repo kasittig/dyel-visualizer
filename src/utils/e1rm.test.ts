@@ -11,6 +11,7 @@ const s = (dateStr: string, e1rm: number): TrainingSession => ({
   reps: 1,
   weight: e1rm,
   e1rm,
+  unit: "lbs",
 });
 
 const w = (dateStr: string, weight: number, reps: number): TrainingSession => ({
@@ -19,6 +20,7 @@ const w = (dateStr: string, weight: number, reps: number): TrainingSession => ({
   reps,
   weight,
   e1rm: calcE1RM(weight, reps),
+  unit: "lbs",
 });
 
 describe("calcE1RM", () => {

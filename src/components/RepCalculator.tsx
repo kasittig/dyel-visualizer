@@ -47,6 +47,8 @@ export function RepCalculator({
     to: new Date(),
   }));
 
+  const unit = pairs[0]?.[1].unit ?? "lbs";
+
   const hasAccessories = useMemo(() => pairs.some(([ex]) => ex.type === "accessory"), [pairs]);
 
   const stats = useLastSessionStats(pairs, baselineNames);
@@ -255,7 +257,7 @@ export function RepCalculator({
               }}
             >
               <label htmlFor="calc-weight" style={muted}>
-                Weight (lbs)
+                Weight ({unit})
               </label>
               <input
                 id="calc-weight"
@@ -269,7 +271,7 @@ export function RepCalculator({
             </div>
 
             <div style={{ ...muted, alignSelf: "flex-end", paddingBottom: "0.5rem" }}>
-              e1RM: {Math.round(estimate.e1rm)} lbs
+              e1RM: {Math.round(estimate.e1rm)} {unit}
             </div>
           </div>
 

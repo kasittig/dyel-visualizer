@@ -4,26 +4,44 @@ const muted: React.CSSProperties = {
   whiteSpace: "nowrap",
 };
 
-export function OneRepMaxCell({ one }: { one: { date: Date; weight: number } | undefined }) {
+export function OneRepMaxCell({
+  one,
+  unit = "lbs",
+}: {
+  one: { date: Date; weight: number } | undefined;
+  unit?: "lbs" | "kg";
+}) {
   if (!one) return <>—</>;
   return (
     <>
       <span style={muted}>{one.date.toLocaleDateString()}</span>
       <br />
-      {one.weight} lbs
+      {one.weight} {unit}
     </>
   );
 }
 
-export function PredictedE1RMCell({ predicted }: { predicted: number | null | undefined }) {
+export function PredictedE1RMCell({
+  predicted,
+  unit = "lbs",
+}: {
+  predicted: number | null | undefined;
+  unit?: "lbs" | "kg";
+}) {
   if (predicted == null) return <>—</>;
-  return <>{Math.round(predicted)} lbs</>;
+  return (
+    <>
+      {Math.round(predicted)} {unit}
+    </>
+  );
 }
 
 export function AddlWtOffsetCell({
   addlWtOffset,
+  unit = "lbs",
 }: {
   addlWtOffset: { offset: number; sampleCount: number } | undefined;
+  unit?: "lbs" | "kg";
 }) {
   if (addlWtOffset === undefined) return <>—</>;
   const { offset, sampleCount } = addlWtOffset;
@@ -32,7 +50,7 @@ export function AddlWtOffsetCell({
   return (
     <>
       {sign}
-      {Math.round(offset)} lbs
+      {Math.round(offset)} {unit}
       <br />
       <span style={muted}>
         est. from {sampleCount} session{sampleCount !== 1 ? "s" : ""}
@@ -68,10 +86,12 @@ export function LastSessionCell({
   sessionE1RM,
   lastDate,
   setsReps,
+  unit = "lbs",
 }: {
   sessionE1RM: number | undefined;
   lastDate: Date | undefined;
   setsReps: string | null;
+  unit?: "lbs" | "kg";
 }) {
   if (sessionE1RM === undefined || !lastDate || !setsReps) return <>—</>;
   return (
@@ -80,7 +100,7 @@ export function LastSessionCell({
         {lastDate.toLocaleDateString()} · {setsReps}
       </span>
       <br />
-      {Math.round(sessionE1RM)} lbs
+      {Math.round(sessionE1RM)} {unit}
     </>
   );
 }

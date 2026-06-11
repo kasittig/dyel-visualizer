@@ -53,6 +53,7 @@ export interface TrainingSession {
   reps: number;
   weight: number;
   e1rm: number;
+  unit: "lbs" | "kg";
 }
 
 export interface ConjugateExercise {
