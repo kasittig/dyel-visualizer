@@ -58,7 +58,7 @@ export function ExerciseList({
 
   return (
     <section>
-      <h2>{heading}</h2>
+      <h2 style={{ textAlign: "center" }}>{heading}</h2>
       {showSearch && (
         <input
           type="search"
@@ -73,7 +73,7 @@ export function ExerciseList({
           }}
         />
       )}
-      <table style={{ borderCollapse: "collapse", width: "100%" }}>
+      <table style={{ borderCollapse: "collapse", width: "100%", textAlign: "center" }}>
         <thead>
           <tr>
             <th style={th}>{columnHeader}</th>

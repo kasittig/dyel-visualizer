@@ -125,45 +125,51 @@ function App() {
   }
 
   return (
-    <main style={{ padding: "2rem", fontFamily: "sans-serif" }}>
-      <h1>DYEL Visualizer</h1>
-      <p style={{ fontSize: "0.85rem", color: "var(--text)", marginTop: "-0.5rem" }}>
-        <a href="?page=conjugate" style={{ color: "var(--accent)" }}>
-          What is the conjugate method?
-        </a>
-      </p>
-      <label htmlFor="sheet-url" style={{ display: "block", marginBottom: "0.5rem" }}>
-        Google Sheet URL
-      </label>
-      <input
-        id="sheet-url"
-        type="text"
-        value={url}
-        onChange={(e) => {
-          setUrl(e.target.value);
-          setHiddenVariations({ squat: new Set(), bench: new Set(), deadlift: new Set() });
-          setFilterState({
-            squat: emptyFilters(),
-            bench: emptyFilters(),
-            deadlift: emptyFilters(),
-          });
-          setBaselineNames({});
-        }}
-        placeholder="https://docs.google.com/spreadsheets/d/…"
-        style={{ width: "100%", padding: "0.5rem", boxSizing: "border-box" }}
-      />
-      {invalidUrl && (
-        <p style={{ color: "red", marginTop: "0.5rem" }}>
-          That doesn't look like a Google Sheet URL.
+    <main style={{ padding: "2rem", fontFamily: "sans-serif", textAlign: "left" }}>
+      <div style={{ textAlign: "center" }}>
+        <h1>DYEL Visualizer</h1>
+        <p style={{ fontSize: "0.85rem", color: "var(--text)", marginTop: "-0.5rem" }}>
+          <a href="?page=conjugate" style={{ color: "var(--accent)" }}>
+            What is the conjugate method?
+          </a>
         </p>
-      )}
-      <p style={{ fontSize: "0.85rem", color: "var(--text)", marginTop: "0.5rem" }}>
-        Don't have a sheet? <a href={EXAMPLE_VISUALIZER_URL}>View an example in the visualizer</a>
-        {" · "}
-        <a href={EXAMPLE_SHEET_URL} target="_blank" rel="noreferrer">
-          View the example spreadsheet
-        </a>
-      </p>
+        <div
+          style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.5rem" }}
+        >
+          <label htmlFor="sheet-url" style={{ whiteSpace: "nowrap" }}>
+            Your Google Sheet
+          </label>
+          <input
+            id="sheet-url"
+            type="text"
+            value={url}
+            onChange={(e) => {
+              setUrl(e.target.value);
+              setHiddenVariations({ squat: new Set(), bench: new Set(), deadlift: new Set() });
+              setFilterState({
+                squat: emptyFilters(),
+                bench: emptyFilters(),
+                deadlift: emptyFilters(),
+              });
+              setBaselineNames({});
+            }}
+            placeholder="https://docs.google.com/spreadsheets/d/…"
+            style={{ flex: 1, padding: "0.5rem", boxSizing: "border-box" }}
+          />
+        </div>
+        {invalidUrl && (
+          <p style={{ color: "red", marginTop: "0.5rem" }}>
+            That doesn't look like a Google Sheet URL.
+          </p>
+        )}
+        <p style={{ fontSize: "0.85rem", color: "var(--text)", marginTop: "0.5rem" }}>
+          Don't have a sheet? <a href={EXAMPLE_VISUALIZER_URL}>View an example in the visualizer</a>
+          {" · "}
+          <a href={EXAMPLE_SHEET_URL} target="_blank" rel="noreferrer">
+            View the example spreadsheet
+          </a>
+        </p>
+      </div>
 
       <div style={{ marginTop: "1rem" }}>
         {state.status === "loading" && <p>Loading…</p>}
