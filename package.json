@@ -22,9 +22,11 @@
     ]
   },
   "dependencies": {
+    "@radix-ui/react-popover": "^1.1.16",
     "@tanstack/react-virtual": "^3.14.2",
     "papaparse": "^5.5.3",
     "react": "^19.2.6",
+    "react-day-picker": "^10.0.1",
     "react-dom": "^19.2.6",
     "react-markdown": "^10.1.0",
     "recharts": "^3.8.1"

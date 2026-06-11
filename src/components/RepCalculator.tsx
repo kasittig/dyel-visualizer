@@ -1,4 +1,6 @@
 import { useState, useMemo, useEffect, useRef } from "react";
+import type { DateRange } from "react-day-picker";
+import { DateRangePicker } from "./DateRangePicker";
 import { useLastSessionStats } from "../hooks/useLastSessionStats";
 import { findBestE1RM, predictWeightForReps, predictRepsForWeight } from "../utils/repCalculator";
 import type { ConjugateDataPair } from "../hooks/useConjugateData";
@@ -39,6 +41,10 @@ export function RepCalculator({
   const [selectedName, setSelectedName] = useState("");
   const [reps, setReps] = useState("");
   const [weight, setWeight] = useState("");
+  const [dateRange, setDateRange] = useState<DateRange>(() => ({
+    from: new Date(Date.now() - 28 * 24 * 60 * 60 * 1000),
+    to: new Date(),
+  }));
 
   const liftPairs = useMemo(() => pairs.filter(([ex]) => ex.type !== "accessory"), [pairs]);
 
@@ -64,15 +70,36 @@ export function RepCalculator({
     setWeight("");
   }, [liftType, exercisesForType]);
 
+  const sessionDates = useMemo(() => {
+    const seen = new Set<string>();
+    const dates: Date[] = [];
+    for (const [ex, session] of liftPairs) {
+      if (ex.type !== liftType) continue;
+      const key = session.date.toDateString();
+      if (!seen.has(key)) {
+        seen.add(key);
+        dates.push(session.date);
+      }
+    }
+    return dates;
+  }, [liftPairs, liftType]);
+
   const selectedExercise = useMemo(
     () => liftPairs.find(([ex]) => ex.displayName === selectedName)?.[0] ?? null,
     [liftPairs, selectedName]
   );
 
   const estimate = useMemo(() => {
-    if (!selectedExercise) return null;
-    return findBestE1RM(liftPairs, selectedExercise, stats, baselineNames[liftType]);
-  }, [liftPairs, selectedExercise, stats, baselineNames, liftType]);
+    if (!selectedExercise || !dateRange.from || !dateRange.to) return null;
+    return findBestE1RM(
+      liftPairs,
+      selectedExercise,
+      stats,
+      baselineNames[liftType],
+      dateRange.from,
+      dateRange.to
+    );
+  }, [liftPairs, selectedExercise, stats, baselineNames, liftType, dateRange]);
 
   // Keep a ref so the exercise-change effect always reads the current reps value
   // without reps being a dependency (which would cause circular updates when typing weight).
@@ -144,7 +171,7 @@ export function RepCalculator({
           </select>
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flex: 1 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
           <label htmlFor="calc-exercise" style={muted}>
             Exercise
           </label>
@@ -154,7 +181,7 @@ export function RepCalculator({
             onChange={(e) => {
               setSelectedName(e.target.value);
             }}
-            style={{ fontSize: "1rem", flex: 1 }}
+            style={{ fontSize: "1rem" }}
           >
             {exercisesForType.map((name) => (
               <option key={name} value={name}>
@@ -168,7 +195,9 @@ export function RepCalculator({
       {exercisesForType.length === 0 ? (
         <p style={muted}>No {LIFT_LABELS[liftType].toLowerCase()} exercises found in your data.</p>
       ) : estimate === null ? (
-        <p style={muted}>No session history found for this exercise or any close variant.</p>
+        <p style={muted}>
+          No session data found in the selected window — try widening the date range.
+        </p>
       ) : (
         <>
           <div
@@ -244,6 +273,11 @@ export function RepCalculator({
           <p style={{ ...muted, marginTop: 0 }}>{sourceNote(estimate)}</p>
         </>
       )}
+
+      <div style={{ marginTop: "1.5rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+        <span style={muted}>Data window</span>
+        <DateRangePicker value={dateRange} onChange={setDateRange} sessionDates={sessionDates} />
+      </div>
     </section>
   );
 }

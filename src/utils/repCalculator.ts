@@ -14,9 +14,6 @@ export type E1RMEstimate = {
 };
 
 export type RepCalcStats = {
-  lastPerformed: Map<string, Date>;
-  lastSessionE1RM: Map<string, number>;
-  lastSessionBestSet: Map<string, { weight: number; reps: number }>;
   addlWtOffset: Map<string, { offset: number; sampleCount: number }>;
   variantFactor: Map<
     string,
@@ -38,9 +35,11 @@ export function findBestE1RM(
   pairs: ConjugateDataPair[],
   target: ConjugateExercise,
   stats: RepCalcStats,
-  baselineNameForType: string | undefined
+  baselineNameForType: string | undefined,
+  windowStart: Date,
+  windowEnd: Date
 ): E1RMEstimate | null {
-  const { lastPerformed, lastSessionE1RM, lastSessionBestSet, addlWtOffset, variantFactor } = stats;
+  const { addlWtOffset, variantFactor } = stats;
 
   const exerciseByName = new Map<string, ConjugateExercise>();
   for (const [ex] of pairs) {
@@ -48,6 +47,24 @@ export function findBestE1RM(
   }
 
   const targetFamily = familyKey(target);
+
+  // Pre-scan: for each exercise name find the most recent session within the window,
+  // and within that date the best (highest e1rm) set.
+  type WindowBest = { date: Date; e1rm: number; set: { weight: number; reps: number } };
+  const windowBestByName = new Map<string, WindowBest>();
+  for (const [ex, session] of pairs) {
+    if (session.date < windowStart || session.date > windowEnd) continue;
+    const prev = windowBestByName.get(ex.displayName);
+    const t = session.date.getTime();
+    const prevT = prev?.date.getTime() ?? -Infinity;
+    if (t > prevT || (t === prevT && session.e1rm > (prev?.e1rm ?? 0))) {
+      windowBestByName.set(ex.displayName, {
+        date: session.date,
+        e1rm: session.e1rm,
+        set: { weight: session.weight, reps: Math.round(session.reps) },
+      });
+    }
+  }
 
   // Phase 1: most recently performed exercise in the same family (same bar/stance/equipment).
   // Covers exact matches and addlWt variants (chains/bands on the same setup).
@@ -57,18 +74,19 @@ export function findBestE1RM(
   for (const [name, ex] of exerciseByName) {
     if (ex.type !== target.type) continue;
     if (familyKey(ex) !== targetFamily) continue;
-    const date = lastPerformed.get(name);
-    if (!date) continue;
-    if (!bestDate || date > bestDate) {
-      bestDate = date;
+    const data = windowBestByName.get(name);
+    if (!data) continue;
+    if (!bestDate || data.date > bestDate) {
+      bestDate = data.date;
       bestName = name;
     }
   }
 
   if (bestName && bestDate) {
     const sourceEx = exerciseByName.get(bestName)!;
-    const sourceE1RM = lastSessionE1RM.get(bestName)!;
-    const sourceBestSet = lastSessionBestSet.get(bestName)!;
+    const sourceData = windowBestByName.get(bestName)!;
+    const sourceE1RM = sourceData.e1rm;
+    const sourceBestSet = sourceData.set;
     const sourceHasAddl = sourceEx.addlWts.length > 0;
     const targetHasAddl = target.addlWts.length > 0;
 
@@ -135,13 +153,12 @@ export function findBestE1RM(
   let bestVFE1RM: number | null = null;
 
   function tryVFSource(name: string, sourceFactor: number) {
-    const date = lastPerformed.get(name);
-    const e1rm = lastSessionE1RM.get(name);
-    if (!date || e1rm === undefined) return;
-    if (!bestVFDate || date > bestVFDate) {
-      bestVFDate = date;
+    const data = windowBestByName.get(name);
+    if (!data) return;
+    if (!bestVFDate || data.date > bestVFDate) {
+      bestVFDate = data.date;
       bestVFName = name;
-      bestVFE1RM = (e1rm / sourceFactor) * targetFactor!;
+      bestVFE1RM = (data.e1rm / sourceFactor) * targetFactor!;
     }
   }
 
