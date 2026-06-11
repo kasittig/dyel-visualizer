@@ -1,5 +1,5 @@
 export const LINE_COLORS = [
-  "#6366f1",
+  "var(--accent)",
   "#10b981",
   "#f59e0b",
   "#ef4444",

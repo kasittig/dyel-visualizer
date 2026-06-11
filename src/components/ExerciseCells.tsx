@@ -1,4 +1,8 @@
-const muted: React.CSSProperties = { color: "#6b7280", fontSize: "0.85rem", whiteSpace: "nowrap" };
+const muted: React.CSSProperties = {
+  color: "var(--text)",
+  fontSize: "0.85rem",
+  whiteSpace: "nowrap",
+};
 
 export function OneRepMaxCell({ one }: { one: { date: Date; weight: number } | undefined }) {
   if (!one) return <>—</>;

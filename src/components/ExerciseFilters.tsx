@@ -55,7 +55,7 @@ export function ExerciseFilters({
           padding: 0,
           cursor: "pointer",
           fontSize: "0.8rem",
-          color: "#6b7280",
+          color: "var(--text)",
           marginBottom: open ? "0.75rem" : 0,
         }}
       >
@@ -64,7 +64,7 @@ export function ExerciseFilters({
       {open &&
         activeFacets.map((facet) => (
           <div key={facet} style={{ marginBottom: "0.5rem" }}>
-            <span style={{ fontSize: "0.75rem", color: "#6b7280", marginRight: "0.5rem" }}>
+            <span style={{ fontSize: "0.75rem", color: "var(--text)", marginRight: "0.5rem" }}>
               {FACET_LABELS[facet]}:
             </span>
             {[...available[facet]].sort().map((value) => {
@@ -81,9 +81,9 @@ export function ExerciseFilters({
                     border: "1px solid",
                     borderRadius: "999px",
                     cursor: "pointer",
-                    background: active ? "#6366f1" : "transparent",
-                    borderColor: active ? "#6366f1" : "#d1d5db",
-                    color: active ? "#fff" : "#374151",
+                    background: active ? "var(--accent)" : "transparent",
+                    borderColor: active ? "var(--accent)" : "var(--border)",
+                    color: active ? "var(--bg)" : "var(--text-h)",
                   }}
                 >
                   {value}

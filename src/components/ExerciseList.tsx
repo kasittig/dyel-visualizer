@@ -96,7 +96,7 @@ export function ExerciseList({
                 <tr key={label} onClick={() => onToggle(label)} style={{ cursor: "pointer" }}>
                   <td
                     colSpan={4 + (hasAddlWtExercises ? 1 : 0) + (hasVariantExercises ? 1 : 0)}
-                    style={{ ...td, color: "#9ca3af", fontSize: "0.85rem" }}
+                    style={{ ...td, color: "var(--text)", fontSize: "0.85rem" }}
                   >
                     {label}
                   </td>
