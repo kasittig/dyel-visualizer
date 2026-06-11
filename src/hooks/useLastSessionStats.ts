@@ -1,5 +1,6 @@
 import { useMemo } from "react";
-import { calcE1RM, predictE1RM } from "../utils/e1rm";
+import { predictE1RM } from "../utils/e1rm";
+import type { TrainingSession } from "../types/conjugate";
 import type { ConjugateDataPair } from "./useConjugateData";
 
 export function useLastSessionStats(pairs: ConjugateDataPair[]) {
@@ -9,56 +10,48 @@ export function useLastSessionStats(pairs: ConjugateDataPair[]) {
     const lastSessionE1RM = new Map<string, number>();
     const lastSessionBestSet = new Map<string, { weight: number; reps: number }>();
     const lastSessionAllSets = new Map<string, { weight: number; reps: number }[]>();
-    const e1rmHistory = new Map<string, Map<string, number>>();
+    const sessionsByKey = new Map<string, TrainingSession[]>();
 
-    // Pass 1: find the most-recent date for each key, and build full e1RM history.
+    // Pass 1: find the most-recent date for each key, and collect all sessions.
     // This must complete before pass 2 so we know which rows belong to the "last session."
     for (const [exercise, session] of pairs) {
       const key = exercise.displayName;
-      const { date, weight, reps } = session;
-      const dateStr = date.toISOString();
 
       const existing = lastPerformed.get(key);
-      if (!existing || date > existing) lastPerformed.set(key, date);
+      if (!existing || session.date > existing) lastPerformed.set(key, session.date);
 
-      if (reps === 1) {
+      if (session.reps === 1) {
         const prev = last1RepSet.get(key);
-        if (!prev || date > prev.date) last1RepSet.set(key, { date, weight });
+        if (!prev || session.date > prev.date)
+          last1RepSet.set(key, { date: session.date, weight: session.weight });
       }
-      if (reps > 0) {
-        const e1rm = calcE1RM(weight, reps);
-        if (!e1rmHistory.has(key)) e1rmHistory.set(key, new Map());
-        const dateMap = e1rmHistory.get(key)!;
-        const prevBest = dateMap.get(dateStr);
-        if (prevBest === undefined || e1rm > prevBest) dateMap.set(dateStr, e1rm);
-      }
+
+      const all = sessionsByKey.get(key) ?? [];
+      all.push(session);
+      sessionsByKey.set(key, all);
     }
 
-    // Pass 2: compute e1RM and set stats for the last session only.
+    // Pass 2: compute stats for the last session only.
     for (const [exercise, session] of pairs) {
       const key = exercise.displayName;
-      const { date, weight, reps } = session;
 
       const lastDate = lastPerformed.get(key);
-      if (!lastDate || date.getTime() !== lastDate.getTime()) continue;
+      if (!lastDate || session.date.getTime() !== lastDate.getTime()) continue;
 
-      if (reps > 0) {
-        const roundedReps = Math.round(reps);
-        const e1rm = calcE1RM(weight, reps);
-        const prev = lastSessionE1RM.get(key);
-        if (prev === undefined || e1rm > prev) {
-          lastSessionE1RM.set(key, e1rm);
-          lastSessionBestSet.set(key, { weight, reps: roundedReps });
-        }
-        const all = lastSessionAllSets.get(key) ?? [];
-        all.push({ weight, reps: roundedReps });
-        lastSessionAllSets.set(key, all);
+      const prev = lastSessionE1RM.get(key);
+      if (prev === undefined || session.e1rm > prev) {
+        lastSessionE1RM.set(key, session.e1rm);
+        lastSessionBestSet.set(key, { weight: session.weight, reps: Math.round(session.reps) });
       }
+      const all = lastSessionAllSets.get(key) ?? [];
+      all.push({ weight: session.weight, reps: Math.round(session.reps) });
+      lastSessionAllSets.set(key, all);
     }
 
     const today = new Date();
     const predictedE1RM = new Map<string, number | null>();
-    for (const [key, dateMap] of e1rmHistory) predictedE1RM.set(key, predictE1RM(dateMap, today));
+    for (const [key, sessions] of sessionsByKey)
+      predictedE1RM.set(key, predictE1RM(sessions, today));
 
     return {
       lastPerformed,

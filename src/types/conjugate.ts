@@ -50,6 +50,7 @@ export interface TrainingSession {
   sets: number;
   reps: number;
   weight: number;
+  e1rm: number;
 }
 
 export interface ConjugateExercise {

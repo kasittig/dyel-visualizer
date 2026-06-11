@@ -1,13 +1,22 @@
+import type { TrainingSession } from "../types/conjugate";
+
 export function calcE1RM(weight: number, reps: number): number {
   if (reps === 1) return weight;
   // Epley formula
   return weight * (1 + reps / 30);
 }
 
-export function predictE1RM(sessionsByDate: Map<string, number>, targetDate: Date): number | null {
-  if (sessionsByDate.size === 0) return null;
+export function predictE1RM(sessions: TrainingSession[], targetDate: Date): number | null {
+  if (sessions.length === 0) return null;
 
-  const sorted = [...sessionsByDate.entries()]
+  const bestByDate = new Map<string, number>();
+  for (const { date, e1rm } of sessions) {
+    const key = date.toISOString();
+    const prev = bestByDate.get(key);
+    if (prev === undefined || e1rm > prev) bestByDate.set(key, e1rm);
+  }
+
+  const sorted = [...bestByDate.entries()]
     .map(([dateStr, e1rm]) => ({ t: new Date(dateStr).getTime(), e1rm }))
     .sort((a, b) => a.t - b.t);
 
