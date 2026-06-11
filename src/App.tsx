@@ -125,7 +125,7 @@ function App() {
   }
 
   return (
-    <main style={{ padding: "2rem", fontFamily: "sans-serif", maxWidth: "700px" }}>
+    <main style={{ padding: "2rem", fontFamily: "sans-serif" }}>
       <h1>DYEL Visualizer</h1>
       <p style={{ fontSize: "0.85rem", color: "var(--text)", marginTop: "-0.5rem" }}>
         <a href="?page=conjugate" style={{ color: "var(--accent)" }}>
