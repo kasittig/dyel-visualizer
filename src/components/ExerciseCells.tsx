@@ -16,13 +16,13 @@ export function PredictedE1RMCell({ predicted }: { predicted: number | null | un
   return <>{Math.round(predicted)} lbs</>;
 }
 
-export function ChainOffsetCell({
-  chainOffset,
+export function AddlWtOffsetCell({
+  addlWtOffset,
 }: {
-  chainOffset: { offset: number; sampleCount: number } | undefined;
+  addlWtOffset: { offset: number; sampleCount: number } | undefined;
 }) {
-  if (chainOffset === undefined) return <>—</>;
-  const { offset, sampleCount } = chainOffset;
+  if (addlWtOffset === undefined) return <>—</>;
+  const { offset, sampleCount } = addlWtOffset;
   if (sampleCount === 0) return <span style={muted}>no baseline</span>;
   const sign = offset >= 0 ? "+" : "";
   return (

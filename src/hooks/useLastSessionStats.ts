@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { predictE1RM, fitChainOffset } from "../utils/e1rm";
+import { predictE1RM, fitAddlWtOffset } from "../utils/e1rm";
 import type { ConjugateExercise, TrainingSession } from "../types/conjugate";
 import type { ConjugateDataPair } from "./useConjugateData";
 
@@ -57,20 +57,21 @@ export function useLastSessionStats(pairs: ConjugateDataPair[]) {
     for (const [key, sessions] of sessionsByKey)
       predictedE1RM.set(key, predictE1RM(sessions, today));
 
-    // Pass 3: fit chain offset per chain exercise display name.
-    // Groups sessions by family (type|bar|stance|equipment), then for each chain variant
-    // calls fitChainOffset against the straight sessions in the same family.
+    // Pass 3: fit resistance offset per addlWt exercise display name.
+    // Groups sessions by family (type|bar|stance|equipment), then for each variant
+    // (any exercise with addlWts) calls fitAddlWtOffset against the straight sessions
+    // (addlWts = []) in the same family.
     const straightByFamily = new Map<string, TrainingSession[]>();
-    const chainSessionsByName = new Map<string, TrainingSession[]>();
-    const chainNameToFamily = new Map<string, string>();
+    const variantSessionsByName = new Map<string, TrainingSession[]>();
+    const variantNameToFamily = new Map<string, string>();
 
     for (const [exercise, session] of pairs) {
       const key = familyKey(exercise);
-      if (exercise.addlWts.includes("chains")) {
-        const sessions = chainSessionsByName.get(exercise.displayName) ?? [];
+      if (exercise.addlWts.length > 0) {
+        const sessions = variantSessionsByName.get(exercise.displayName) ?? [];
         sessions.push(session);
-        chainSessionsByName.set(exercise.displayName, sessions);
-        chainNameToFamily.set(exercise.displayName, key);
+        variantSessionsByName.set(exercise.displayName, sessions);
+        variantNameToFamily.set(exercise.displayName, key);
       } else {
         const sessions = straightByFamily.get(key) ?? [];
         sessions.push(session);
@@ -78,10 +79,10 @@ export function useLastSessionStats(pairs: ConjugateDataPair[]) {
       }
     }
 
-    const chainOffset = new Map<string, { offset: number; sampleCount: number }>();
-    for (const [name, chainSessions] of chainSessionsByName) {
-      const key = chainNameToFamily.get(name)!;
-      chainOffset.set(name, fitChainOffset(straightByFamily.get(key) ?? [], chainSessions));
+    const addlWtOffset = new Map<string, { offset: number; sampleCount: number }>();
+    for (const [name, variantSessions] of variantSessionsByName) {
+      const key = variantNameToFamily.get(name)!;
+      addlWtOffset.set(name, fitAddlWtOffset(straightByFamily.get(key) ?? [], variantSessions));
     }
 
     return {
@@ -91,7 +92,7 @@ export function useLastSessionStats(pairs: ConjugateDataPair[]) {
       lastSessionBestSet,
       lastSessionAllSets,
       predictedE1RM,
-      chainOffset,
+      addlWtOffset,
     };
   }, [pairs]);
 }

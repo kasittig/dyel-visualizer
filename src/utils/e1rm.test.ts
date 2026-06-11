@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { calcE1RM, predictE1RM, fitChainOffset } from "./e1rm";
+import { calcE1RM, predictE1RM, fitAddlWtOffset } from "./e1rm";
 import type { TrainingSession } from "../types/conjugate";
 
 const d = (dateStr: string) => new Date(dateStr);
@@ -133,13 +133,13 @@ describe("predictE1RM", () => {
   });
 });
 
-describe("fitChainOffset", () => {
+describe("fitAddlWtOffset", () => {
   it("returns sampleCount 0 when straight sessions are empty", () => {
-    expect(fitChainOffset([], [w("2024-01-10", 220, 5)])).toEqual({ offset: 0, sampleCount: 0 });
+    expect(fitAddlWtOffset([], [w("2024-01-10", 220, 5)])).toEqual({ offset: 0, sampleCount: 0 });
   });
 
   it("returns sampleCount 0 when chain sessions are empty", () => {
-    expect(fitChainOffset([s("2024-01-01", 200)], [])).toEqual({ offset: 0, sampleCount: 0 });
+    expect(fitAddlWtOffset([s("2024-01-01", 200)], [])).toEqual({ offset: 0, sampleCount: 0 });
   });
 
   it("computes the offset from a single-rep chain session", () => {
@@ -147,7 +147,7 @@ describe("fitChainOffset", () => {
     // Straight e1rm is constant at 200. Chain session: 220 lbs × 1 rep.
     // effectiveWeight = 200, offset = 200 - 220 = -20 lbs
     const straight = [s("2024-01-01", 200), s("2024-01-10", 200)];
-    const result = fitChainOffset(straight, [w("2024-01-05", 220, 1)]);
+    const result = fitAddlWtOffset(straight, [w("2024-01-05", 220, 1)]);
     expect(result.sampleCount).toBe(1);
     expect(result.offset).toBeCloseTo(-20, 1);
   });
@@ -158,7 +158,7 @@ describe("fitChainOffset", () => {
     // effectiveWeight = 200 / (1 + 5/30) ≈ 171.43 lbs
     // offset = 171.43 - 220 ≈ -48.57 lbs
     const straight = [s("2024-01-01", 200), s("2024-01-10", 200)];
-    const result = fitChainOffset(straight, [w("2024-01-05", 220, 5)]);
+    const result = fitAddlWtOffset(straight, [w("2024-01-05", 220, 5)]);
     expect(result.sampleCount).toBe(1);
     expect(result.offset).toBeCloseTo(-48.57, 1);
   });
@@ -167,7 +167,7 @@ describe("fitChainOffset", () => {
     // Straight e1rm is constant at 200, so both chain sessions yield the same offset.
     const straight = [s("2024-01-01", 200), s("2024-01-20", 200)];
     const chain = [w("2024-01-05", 220, 5), w("2024-01-15", 220, 5)];
-    const result = fitChainOffset(straight, chain);
+    const result = fitAddlWtOffset(straight, chain);
     expect(result.sampleCount).toBe(2);
     expect(result.offset).toBeCloseTo(-48.57, 1);
   });
@@ -178,7 +178,7 @@ describe("fitChainOffset", () => {
     // mean ≈ -34.28
     const straight = [s("2024-01-01", 200), s("2024-01-10", 200)];
     const chain = [w("2024-01-05", 220, 1), w("2024-01-07", 220, 5)];
-    const result = fitChainOffset(straight, chain);
+    const result = fitAddlWtOffset(straight, chain);
     expect(result.sampleCount).toBe(2);
     expect(result.offset).toBeCloseTo(-34.28, 1);
   });

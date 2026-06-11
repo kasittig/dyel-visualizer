@@ -59,12 +59,12 @@ function invertE1RM(e1rm: number, reps: number): number {
   return e1rm / (1 + reps / 30);
 }
 
-export function fitChainOffset(
+export function fitAddlWtOffset(
   straightSessions: TrainingSession[],
-  chainSessions: TrainingSession[]
+  variantSessions: TrainingSession[]
 ): { offset: number; sampleCount: number } {
   const offsets: number[] = [];
-  for (const session of chainSessions) {
+  for (const session of variantSessions) {
     if (session.reps <= 0) continue;
     const predicted = predictE1RM(straightSessions, session.date);
     if (predicted === null) continue;

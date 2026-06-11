@@ -2,7 +2,7 @@ import { useState } from "react";
 import type { ConjugateDataPair } from "../hooks/useConjugateData";
 import { useLastSessionStats } from "../hooks/useLastSessionStats";
 import {
-  ChainOffsetCell,
+  AddlWtOffsetCell,
   LastSessionCell,
   OneRepMaxCell,
   PredictedE1RMCell,
@@ -34,10 +34,10 @@ export function ExerciseList({
     lastSessionBestSet,
     lastSessionAllSets,
     predictedE1RM,
-    chainOffset,
+    addlWtOffset,
   } = useLastSessionStats(rows);
 
-  const hasChainExercises = chainOffset.size > 0;
+  const hasAddlWtExercises = addlWtOffset.size > 0;
 
   const allLabels = [...lastPerformed.keys()].sort();
   if (allLabels.length === 0) return <p>No data found.</p>;
@@ -75,7 +75,7 @@ export function ExerciseList({
             <th style={th}>Last 1RM</th>
             <th style={th}>Latest Session</th>
             <th style={th}>Predicted e1RM</th>
-            {hasChainExercises && <th style={th}>Effective Weights</th>}
+            {hasAddlWtExercises && <th style={th}>Resistance Offset</th>}
           </tr>
         </thead>
         <tbody>
@@ -91,7 +91,7 @@ export function ExerciseList({
               return (
                 <tr key={label} onClick={() => onToggle(label)} style={{ cursor: "pointer" }}>
                   <td
-                    colSpan={hasChainExercises ? 5 : 4}
+                    colSpan={hasAddlWtExercises ? 5 : 4}
                     style={{ ...td, color: "#9ca3af", fontSize: "0.85rem" }}
                   >
                     {label}
@@ -115,9 +115,9 @@ export function ExerciseList({
                 <td style={td}>
                   <PredictedE1RMCell predicted={predictedE1RM.get(label)} />
                 </td>
-                {hasChainExercises && (
+                {hasAddlWtExercises && (
                   <td style={td}>
-                    <ChainOffsetCell chainOffset={chainOffset.get(label)} />
+                    <AddlWtOffsetCell addlWtOffset={addlWtOffset.get(label)} />
                   </td>
                 )}
               </tr>
