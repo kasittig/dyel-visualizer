@@ -33,12 +33,15 @@ const BAR_DETECTORS: Detector<ConjugateBar> = [
   ["duffalo", (l) => l.includes("duffalo")],
   ["dumbbell", (l, t) => l.includes("dumbbell") || t.has("db")],
   ["bamboo", (l) => l.includes("bamboo")],
+  ["belt", (l) => l.includes("belt")],
+  ["goblet", (l) => l.includes("goblet")],
 ];
 
 const STANCE_DETECTORS: Detector<ConjugateStance> = [
   ["slingshot", (l) => l.includes("slingshot")],
   ["builder", (l) => l.includes("builder")],
   ["close", (l, t) => l.includes("close grip") || t.has("close") || t.has("cg")],
+  ["narrow", (l) => l.includes("narrow")],
   ["wide", (l, t) => l.includes("wide grip") || t.has("wide")],
   ["medium", (l, t) => l.includes("medium grip") || t.has("medium")],
   ["romanian", (l) => l.includes("romanian")],
@@ -58,16 +61,22 @@ const EQUIPMENT_DETECTORS: Detector<ConjugateEquipment> = [
   ["pause", (l) => l.includes("command") || l.includes("pause")],
   ["floor", (l) => l.includes("floor")],
   ["box", (l) => l.includes("box")],
+  ["rack", (l) => l.includes("rack")],
 ];
 
 const TYPE_DETECTORS: Detector<ConjugateExercise["type"]> = [
-  ["squat", (l) => l.includes("squat") || l.includes("ssb")],
+  ["squat", (l) => l.includes("squat") || l.includes("ssb") || l.includes("safety")],
   [
     "bench",
     (l) =>
-      l.includes("floor") || l.includes("bench") || l.includes("incline") || l.includes("decline"),
+      l.includes("floor") ||
+      l.includes("bench") ||
+      l.includes("incline") ||
+      l.includes("decline") ||
+      l.includes("board") ||
+      l.includes("slingshot"),
   ],
-  ["deadlift", (l) => l.includes("deadlift")],
+  ["deadlift", (l) => l.includes("deadlift") || l.includes("rack")],
 ];
 
 const parseBar = makeParser(BAR_DETECTORS);
@@ -93,7 +102,7 @@ export function nameToExercise(name: string): ConjugateExercise | null {
   const has = (phrase: string) => lower.includes(phrase);
   const tokens = new Set([...base.split(/\s+/), ...modifiers.flatMap((m) => m.split(/\s+/))]);
 
-  const hasReverseBands = has("reverse band");
+  const hasReverseBands = has("reverse band") || has("rev. band") || has("rev band");
   const hasChains = has("chain");
   const hasBands = !hasReverseBands && has("band");
   const addlWts: ConjugateAddlWt[] = [

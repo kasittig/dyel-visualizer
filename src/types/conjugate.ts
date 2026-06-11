@@ -10,12 +10,15 @@ export type ConjugateBar =
   | "zercher"
   | "duffalo"
   | "dumbbell"
-  | "bamboo";
+  | "bamboo"
+  | "belt"
+  | "goblet";
 
 // Different stances go here.
 // We expect the stance type to impact the lifter's leverages which impacts the amount of force that they can transfer to the weight lifted
 export type ConjugateStance =
   | "close"
+  | "narrow"
   | "sumo"
   | "conventional"
   | "competition"
@@ -37,7 +40,8 @@ export type ConjugateEquipment =
   | "board"
   | "pause"
   | "floor"
-  | "box";
+  | "box"
+  | "rack";
 
 // This is where ways of adding additional weight to the bar go.
 // Additional weights can impact the stability of the bar and the effective amount of weight lifted.
