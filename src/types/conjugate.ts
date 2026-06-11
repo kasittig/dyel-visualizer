@@ -58,3 +58,12 @@ export interface ConjugateExercise {
   equipment: ConjugateEquipment | null;
   displayName: string;
 }
+
+export function variantLabel(ex: ConjugateExercise): string {
+  const parts: string[] = [];
+  if (ex.bar !== "standard" && ex.bar !== null) parts.push(ex.bar);
+  if (ex.stance !== "competition" && ex.stance !== null) parts.push(ex.stance);
+  if (ex.equipment !== null) parts.push(ex.equipment);
+  parts.push(...ex.addlWts);
+  return parts.join(" + ");
+}
