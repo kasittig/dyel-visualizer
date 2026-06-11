@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { FilterState } from "../utils/exerciseFilters";
 import type { ConjugateDataPair } from "../hooks/useConjugateData";
 
@@ -17,6 +18,8 @@ export function ExerciseFilters({
   filters: FilterState;
   onToggle: (facet: keyof FilterState, value: string) => void;
 }) {
+  const [open, setOpen] = useState(false);
+
   const available: Record<keyof FilterState, Set<string>> = {
     bar: new Set(),
     stance: new Set(),
@@ -37,38 +40,58 @@ export function ExerciseFilters({
 
   if (activeFacets.length === 0) return null;
 
+  const activeCount = (Object.keys(filters) as (keyof FilterState)[]).reduce(
+    (n, k) => n + filters[k].size,
+    0
+  );
+
   return (
     <div style={{ marginBottom: "1rem" }}>
-      {activeFacets.map((facet) => (
-        <div key={facet} style={{ marginBottom: "0.5rem" }}>
-          <span style={{ fontSize: "0.75rem", color: "#6b7280", marginRight: "0.5rem" }}>
-            {FACET_LABELS[facet]}:
-          </span>
-          {[...available[facet]].sort().map((value) => {
-            const active = filters[facet].has(value);
-            return (
-              <button
-                key={value}
-                onClick={() => onToggle(facet, value)}
-                style={{
-                  marginRight: "0.35rem",
-                  marginBottom: "0.25rem",
-                  padding: "0.2rem 0.6rem",
-                  fontSize: "0.75rem",
-                  border: "1px solid",
-                  borderRadius: "999px",
-                  cursor: "pointer",
-                  background: active ? "#6366f1" : "transparent",
-                  borderColor: active ? "#6366f1" : "#d1d5db",
-                  color: active ? "#fff" : "#374151",
-                }}
-              >
-                {value}
-              </button>
-            );
-          })}
-        </div>
-      ))}
+      <button
+        onClick={() => setOpen((v) => !v)}
+        style={{
+          background: "none",
+          border: "none",
+          padding: 0,
+          cursor: "pointer",
+          fontSize: "0.8rem",
+          color: "#6b7280",
+          marginBottom: open ? "0.75rem" : 0,
+        }}
+      >
+        {open ? "▲" : "▼"} Filters{activeCount > 0 ? ` (${activeCount} active)` : ""}
+      </button>
+      {open &&
+        activeFacets.map((facet) => (
+          <div key={facet} style={{ marginBottom: "0.5rem" }}>
+            <span style={{ fontSize: "0.75rem", color: "#6b7280", marginRight: "0.5rem" }}>
+              {FACET_LABELS[facet]}:
+            </span>
+            {[...available[facet]].sort().map((value) => {
+              const active = filters[facet].has(value);
+              return (
+                <button
+                  key={value}
+                  onClick={() => onToggle(facet, value)}
+                  style={{
+                    marginRight: "0.35rem",
+                    marginBottom: "0.25rem",
+                    padding: "0.2rem 0.6rem",
+                    fontSize: "0.75rem",
+                    border: "1px solid",
+                    borderRadius: "999px",
+                    cursor: "pointer",
+                    background: active ? "#6366f1" : "transparent",
+                    borderColor: active ? "#6366f1" : "#d1d5db",
+                    color: active ? "#fff" : "#374151",
+                  }}
+                >
+                  {value}
+                </button>
+              );
+            })}
+          </div>
+        ))}
     </div>
   );
 }
