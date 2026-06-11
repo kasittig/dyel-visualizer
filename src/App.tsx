@@ -2,6 +2,9 @@ import { useState, useMemo } from "react";
 import { useConjugateData } from "./hooks/useConjugateData";
 import { ConjugateCharts } from "./components/ConjugateCharts";
 import { ExerciseList } from "./components/ExerciseList";
+import { ExerciseFilters } from "./components/ExerciseFilters";
+import { applyFilters, emptyFilters } from "./utils/exerciseFilters";
+import type { FilterState } from "./utils/exerciseFilters";
 
 type SheetRef = { id: string; published: boolean };
 type LiftTab = "squat" | "bench" | "deadlift";
@@ -39,6 +42,11 @@ function App() {
     bench: new Set(),
     deadlift: new Set(),
   });
+  const [filterState, setFilterState] = useState<Record<LiftTab, FilterState>>({
+    squat: emptyFilters(),
+    bench: emptyFilters(),
+    deadlift: emptyFilters(),
+  });
   const sheetRef = extractSheetRef(url);
   const invalidUrl = url.length > 0 && !sheetRef;
 
@@ -53,6 +61,11 @@ function App() {
   const activeRows =
     activeTab === "squat" ? squatRows : activeTab === "bench" ? benchRows : deadliftRows;
 
+  const filteredRows = useMemo(
+    () => applyFilters(activeRows, filterState[activeTab]),
+    [activeRows, filterState, activeTab]
+  );
+
   const effectiveHidden = hiddenVariations[activeTab];
 
   function toggleInSet<T>(set: Set<T>, item: T): Set<T> {
@@ -64,6 +77,16 @@ function App() {
 
   function toggleVariation(label: string) {
     setHiddenVariations((prev) => ({ ...prev, [activeTab]: toggleInSet(prev[activeTab], label) }));
+  }
+
+  function toggleFilter(facet: keyof FilterState, value: string) {
+    setFilterState((prev) => {
+      const current = prev[activeTab];
+      const next = new Set(current[facet]);
+      if (next.has(value)) next.delete(value);
+      else next.add(value);
+      return { ...prev, [activeTab]: { ...current, [facet]: next } };
+    });
   }
 
   return (
@@ -84,6 +107,11 @@ function App() {
         onChange={(e) => {
           setUrl(e.target.value);
           setHiddenVariations({ squat: new Set(), bench: new Set(), deadlift: new Set() });
+          setFilterState({
+            squat: emptyFilters(),
+            bench: emptyFilters(),
+            deadlift: emptyFilters(),
+          });
         }}
         placeholder="https://docs.google.com/spreadsheets/d/…"
         style={{ width: "100%", padding: "0.5rem", boxSizing: "border-box" }}
@@ -134,9 +162,14 @@ function App() {
                 </button>
               ))}
             </div>
-            <ConjugateCharts rows={activeRows} hidden={effectiveHidden} />
-            <ExerciseList
+            <ExerciseFilters
               rows={activeRows}
+              filters={filterState[activeTab]}
+              onToggle={toggleFilter}
+            />
+            <ConjugateCharts rows={filteredRows} hidden={effectiveHidden} />
+            <ExerciseList
+              rows={filteredRows}
               hidden={effectiveHidden}
               onToggle={toggleVariation}
               heading="Variations"
