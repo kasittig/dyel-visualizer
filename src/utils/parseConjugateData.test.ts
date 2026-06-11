@@ -5,6 +5,14 @@ function csv(...rows: string[]): string {
   return ["Date,Exercise,Sets,Reps,Weight (lbs)", ...rows].join("\n");
 }
 
+function csvKg(...rows: string[]): string {
+  return ["Date,Exercise,Sets,Reps,Weight (kg)", ...rows].join("\n");
+}
+
+function csvBareWeight(...rows: string[]): string {
+  return ["Date,Exercise,Sets,Reps,Weight", ...rows].join("\n");
+}
+
 describe("parseConjugateData", () => {
   it("returns empty array for empty CSV", () => {
     expect(parseConjugateData("")).toEqual([]);
@@ -43,6 +51,7 @@ describe("parseConjugateData", () => {
     expect(session.reps).toBe(5);
     expect(session.sets).toBe(3);
     expect(session.date).toBeInstanceOf(Date);
+    expect(session.unit).toBe("lbs");
   });
 
   it("parses an SSB box squat with chains", () => {
@@ -86,10 +95,27 @@ describe("parseConjugateData", () => {
     expect(parseConjugateData(withTitle)).toHaveLength(1);
   });
 
-  it("handles weight column variants (weight (lbs), weight (kg))", () => {
-    const withKg = ["Date,Exercise,Sets,Reps,Weight (kg)", "2024-01-15,Squat,3,5,140"].join("\n");
-    const result = parseConjugateData(withKg);
+  it("reads unit from Weight (kg) column header", () => {
+    const result = parseConjugateData(csvKg("2024-01-15,Squat,3,5,140"));
     expect(result[0][1].weight).toBe(140);
+    expect(result[0][1].unit).toBe("kg");
+  });
+
+  it("reads unit from Weight (lbs) column header", () => {
+    const result = parseConjugateData(csv("2024-01-15,Squat,3,5,315"));
+    expect(result[0][1].unit).toBe("lbs");
+  });
+
+  it("defaults to lbs when weight column has no unit annotation", () => {
+    const result = parseConjugateData(csvBareWeight("2024-01-15,Squat,3,5,315"));
+    expect(result[0][1].unit).toBe("lbs");
+  });
+
+  it("does not default to lbs when any session has an explicit unit", () => {
+    const result = parseConjugateData(
+      csvKg("2024-01-15,Squat,3,5,140", "2024-01-22,Bench,4,3,100")
+    );
+    expect(result.every(([, s]) => s.unit === "kg")).toBe(true);
   });
 
   it("defaults sets to 1 when sets column is absent", () => {

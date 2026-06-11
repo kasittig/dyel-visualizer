@@ -20,6 +20,8 @@ export function ConjugateCharts({
 }) {
   const [legendOpen, setLegendOpen] = useState(false);
 
+  const unit = rows[0]?.[1].unit ?? "lbs";
+
   // label → date → best e1RM, plus derived chart data — recomputed only when rows changes
   const { variations, data } = useMemo(() => {
     const e1rmByLabelAndDate = new Map<string, Map<string, number>>();
@@ -54,7 +56,7 @@ export function ConjugateCharts({
   // Shared by both the legend and <Line> elements — recomputed only when variations or hidden changes
   const visibleVariations = useMemo(
     () => variations.map((label, i) => ({ label, i })).filter(({ label }) => !hidden.has(label)),
-    [variations, hidden],
+    [variations, hidden]
   );
 
   if (variations.length === 0) {
@@ -106,9 +108,7 @@ export function ConjugateCharts({
                   flexShrink: 0,
                 }}
               />
-              <span
-                style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
-              >
+              <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {label}
               </span>
             </div>
@@ -126,8 +126,8 @@ export function ConjugateCharts({
               interval="preserveStartEnd"
               tick={{ fontSize: 11 }}
             />
-            <YAxis tick={{ fontSize: 11 }} width={45} unit=" lbs" />
-            <Tooltip formatter={(v, name) => [`${v} lbs`, String(name)]} />
+            <YAxis tick={{ fontSize: 11 }} width={45} unit={` ${unit}`} />
+            <Tooltip formatter={(v, name) => [`${v} ${unit}`, String(name)]} />
             {visibleVariations.map(({ label, i }) => (
               <Line
                 key={label}
