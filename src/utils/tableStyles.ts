@@ -1,7 +1,6 @@
 import React from "react";
 
 export const th: React.CSSProperties = {
-  textAlign: "center",
   padding: "0.5rem 1rem",
   borderBottom: "2px solid #ccc",
 };

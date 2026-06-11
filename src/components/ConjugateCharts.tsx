@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   CartesianGrid,
   Line,
@@ -17,6 +18,8 @@ export function ConjugateCharts({
   rows: ConjugateDataPair[];
   hidden: Set<string>;
 }) {
+  const [legendOpen, setLegendOpen] = useState(false);
+
   // label → date → best e1RM
   const e1rmByLabelAndDate = new Map<string, Map<string, number>>();
 
@@ -36,7 +39,6 @@ export function ConjugateCharts({
       </section>
     );
   }
-
   const variations = [...e1rmByLabelAndDate.keys()].sort();
 
   const allDates = [
@@ -54,67 +56,87 @@ export function ConjugateCharts({
 
   return (
     <section>
-      <div
+      <button
+        onClick={() => setLegendOpen((v) => !v)}
         style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(2, 1fr)",
-          gap: "0.2rem 1.5rem",
+          background: "none",
+          border: "none",
+          padding: 0,
+          cursor: "pointer",
           fontSize: "0.8rem",
-          marginBottom: "0.75rem",
+          color: "var(--text)",
+          marginBottom: legendOpen ? "0.5rem" : "0.75rem",
         }}
       >
-        {variations
-          .map((label, i) => ({ label, i }))
-          .filter(({ label }) => !hidden.has(label))
-          .map(({ label, i }) => (
-            <div
-              key={label}
-              style={{ display: "flex", alignItems: "center", gap: "0.4rem", minWidth: 0 }}
-            >
-              <span
-                style={{
-                  display: "inline-block",
-                  width: 16,
-                  height: 3,
-                  background: LINE_COLORS[i % LINE_COLORS.length],
-                  borderRadius: 2,
-                  flexShrink: 0,
-                }}
-              />
-              <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                {label}
-              </span>
-            </div>
-          ))}
-      </div>
-      <ResponsiveContainer width="100%" height={300}>
-        <LineChart data={data} margin={{ top: 4, right: 16, bottom: 40, left: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis
-            dataKey="label"
-            angle={-45}
-            textAnchor="end"
-            interval="preserveStartEnd"
-            tick={{ fontSize: 11 }}
-          />
-          <YAxis tick={{ fontSize: 11 }} width={45} unit=" lbs" />
-          <Tooltip formatter={(v, name) => [`${v} lbs`, String(name)]} />
+        {legendOpen ? "▲" : "▼"} Legend
+      </button>
+      {legendOpen && (
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(2, 1fr)",
+            gap: "0.2rem 1.5rem",
+            fontSize: "0.8rem",
+            marginBottom: "0.75rem",
+          }}
+        >
           {variations
             .map((label, i) => ({ label, i }))
             .filter(({ label }) => !hidden.has(label))
             .map(({ label, i }) => (
-              <Line
+              <div
                 key={label}
-                type="monotone"
-                dataKey={label}
-                stroke={LINE_COLORS[i % LINE_COLORS.length]}
-                dot={{ r: 3 }}
-                activeDot={{ r: 5 }}
-                connectNulls
-              />
+                style={{ display: "flex", alignItems: "center", gap: "0.4rem", minWidth: 0 }}
+              >
+                <span
+                  style={{
+                    display: "inline-block",
+                    width: 16,
+                    height: 3,
+                    background: LINE_COLORS[i % LINE_COLORS.length],
+                    borderRadius: 2,
+                    flexShrink: 0,
+                  }}
+                />
+                <span
+                  style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+                >
+                  {label}
+                </span>
+              </div>
             ))}
-        </LineChart>
-      </ResponsiveContainer>
+        </div>
+      )}
+      <div style={{ width: "80%", margin: "0 auto" }}>
+        <ResponsiveContainer width="100%" height={300}>
+          <LineChart data={data} margin={{ top: 4, right: 16, bottom: 40, left: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis
+              dataKey="label"
+              angle={-45}
+              textAnchor="end"
+              interval="preserveStartEnd"
+              tick={{ fontSize: 11 }}
+            />
+            <YAxis tick={{ fontSize: 11 }} width={45} unit=" lbs" />
+            <Tooltip formatter={(v, name) => [`${v} lbs`, String(name)]} />
+            {variations
+              .map((label, i) => ({ label, i }))
+              .filter(({ label }) => !hidden.has(label))
+              .map(({ label, i }) => (
+                <Line
+                  key={label}
+                  type="monotone"
+                  dataKey={label}
+                  stroke={LINE_COLORS[i % LINE_COLORS.length]}
+                  dot={{ r: 3 }}
+                  activeDot={{ r: 5 }}
+                  connectNulls
+                />
+              ))}
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
     </section>
   );
 }
