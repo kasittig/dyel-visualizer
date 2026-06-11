@@ -7,7 +7,6 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { calcE1RM } from "../utils/e1rm";
 import { formatDate, LINE_COLORS } from "../utils/chartUtils";
 import type { ConjugateDataPair } from "../hooks/useConjugateData";
 
@@ -24,14 +23,10 @@ export function ConjugateCharts({
   for (const [exercise, session] of rows) {
     const label = exercise.displayName;
     const date = session.date.toISOString().slice(0, 10);
-    const { weight, reps } = session;
-    if (reps <= 0) continue;
-
-    const e1rm = calcE1RM(weight, reps);
     if (!e1rmByLabelAndDate.has(label)) e1rmByLabelAndDate.set(label, new Map());
     const byDate = e1rmByLabelAndDate.get(label)!;
     const prev = byDate.get(date);
-    if (prev === undefined || e1rm > prev) byDate.set(date, e1rm);
+    if (prev === undefined || session.e1rm > prev) byDate.set(date, session.e1rm);
   }
 
   if (e1rmByLabelAndDate.size === 0) {

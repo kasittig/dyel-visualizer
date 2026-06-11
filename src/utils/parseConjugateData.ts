@@ -7,6 +7,7 @@ import {
   type ConjugateStance,
   type TrainingSession,
 } from "../types/conjugate";
+import { calcE1RM } from "./e1rm";
 
 type RawRow = Record<string, string>;
 
@@ -159,7 +160,7 @@ function parseSession(row: RawRow): TrainingSession | null {
   if (isNaN(weight) || isNaN(reps) || reps <= 0) return null;
 
   const sets = parseInt(findCol(row, "sets") ?? "") || 1;
-  return { date, sets, reps, weight };
+  return { date, sets, reps, weight, e1rm: calcE1RM(weight, reps) };
 }
 
 export function parseConjugateData(csv: string): Array<[ConjugateExercise, TrainingSession]> {
