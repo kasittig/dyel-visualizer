@@ -1,12 +1,8 @@
 import { useMemo } from "react";
 import { predictE1RM, fitAddlWtOffset, fitVariantFactor } from "../utils/e1rm";
-import { variantLabel } from "../types/conjugate";
+import { familyKey, variantLabel } from "../types/conjugate";
 import type { ConjugateExercise, TrainingSession } from "../types/conjugate";
 import type { ConjugateDataPair } from "./useConjugateData";
-
-function familyKey(ex: ConjugateExercise): string {
-  return [ex.type, ex.bar ?? "", ex.stance ?? "", ex.equipment ?? ""].join("|");
-}
 
 export function useLastSessionStats(
   pairs: ConjugateDataPair[],

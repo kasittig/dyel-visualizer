@@ -49,10 +49,12 @@ export function DateRangePicker({
   const [calendarMonth, setCalendarMonth] = useState<Date>(() => value.from ?? new Date());
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Sync text from external value changes, but only for the field that isn't focused.
+  // Sync text and calendar month from external value changes, but only for the field
+  // that isn't focused (avoid overwriting what the user is currently typing).
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     if (focused !== "start") setStartText(formatDate(value.from));
+    if (focused !== "start" && value.from) setCalendarMonth(value.from);
   }, [value.from]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {

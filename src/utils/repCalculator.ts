@@ -1,10 +1,7 @@
 import { calcE1RM, invertE1RM } from "./e1rm";
+import { familyKey } from "../types/conjugate";
 import type { ConjugateExercise } from "../types/conjugate";
 import type { ConjugateDataPair } from "../hooks/useConjugateData";
-
-function familyKey(ex: ConjugateExercise): string {
-  return [ex.type, ex.bar ?? "", ex.stance ?? "", ex.equipment ?? ""].join("|");
-}
 
 export type E1RMEstimate = {
   e1rm: number;
@@ -41,6 +38,24 @@ export function findBestE1RM(
 ): E1RMEstimate | null {
   const { addlWtOffset, variantFactor } = stats;
 
+  // Normalize to local day boundaries so sessions on the start/end dates are always included.
+  // CSV dates are UTC midnight (new Date("YYYY-MM-DD")); DayPicker dates are local midnight.
+  // Without this, UTC+ users lose end-date sessions and UTC- users lose start-date sessions.
+  const dayStart = new Date(
+    windowStart.getFullYear(),
+    windowStart.getMonth(),
+    windowStart.getDate()
+  );
+  const dayEnd = new Date(
+    windowEnd.getFullYear(),
+    windowEnd.getMonth(),
+    windowEnd.getDate(),
+    23,
+    59,
+    59,
+    999
+  );
+
   const exerciseByName = new Map<string, ConjugateExercise>();
   for (const [ex] of pairs) {
     if (!exerciseByName.has(ex.displayName)) exerciseByName.set(ex.displayName, ex);
@@ -53,7 +68,7 @@ export function findBestE1RM(
   type WindowBest = { date: Date; e1rm: number; set: { weight: number; reps: number } };
   const windowBestByName = new Map<string, WindowBest>();
   for (const [ex, session] of pairs) {
-    if (session.date < windowStart || session.date > windowEnd) continue;
+    if (session.date < dayStart || session.date > dayEnd) continue;
     const prev = windowBestByName.get(ex.displayName);
     const t = session.date.getTime();
     const prevT = prev?.date.getTime() ?? -Infinity;
@@ -137,9 +152,6 @@ export function findBestE1RM(
         };
       }
     }
-
-    // Source e1rm is the best we have even without a clean offset adjustment.
-    return { e1rm: sourceE1RM, date: bestDate, sourceName: bestName, method: "exact" };
   }
 
   if (target.type === "accessory") return null;

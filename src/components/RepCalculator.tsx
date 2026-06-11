@@ -47,16 +47,14 @@ export function RepCalculator({
     to: new Date(),
   }));
 
-  const liftPairs = pairs;
-
   const hasAccessories = useMemo(() => pairs.some(([ex]) => ex.type === "accessory"), [pairs]);
 
-  const stats = useLastSessionStats(liftPairs, baselineNames);
+  const stats = useLastSessionStats(pairs, baselineNames);
 
   const exercisesForType = useMemo(() => {
     const seen = new Set<string>();
     const result: string[] = [];
-    for (const [ex] of liftPairs) {
+    for (const [ex] of pairs) {
       if (ex.type !== liftType) continue;
       if (!seen.has(ex.displayName)) {
         seen.add(ex.displayName);
@@ -64,7 +62,7 @@ export function RepCalculator({
       }
     }
     return result;
-  }, [liftPairs, liftType]);
+  }, [pairs, liftType]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -76,7 +74,7 @@ export function RepCalculator({
   const sessionDates = useMemo(() => {
     const seen = new Set<string>();
     const dates: Date[] = [];
-    for (const [ex, session] of liftPairs) {
+    for (const [ex, session] of pairs) {
       if (ex.type !== liftType) continue;
       const key = session.date.toDateString();
       if (!seen.has(key)) {
@@ -85,24 +83,24 @@ export function RepCalculator({
       }
     }
     return dates;
-  }, [liftPairs, liftType]);
+  }, [pairs, liftType]);
 
   const selectedExercise = useMemo(
-    () => liftPairs.find(([ex]) => ex.displayName === selectedName)?.[0] ?? null,
-    [liftPairs, selectedName]
+    () => pairs.find(([ex]) => ex.displayName === selectedName)?.[0] ?? null,
+    [pairs, selectedName]
   );
 
   const estimate = useMemo(() => {
     if (!selectedExercise || !dateRange.from || !dateRange.to) return null;
     return findBestE1RM(
-      liftPairs,
+      pairs,
       selectedExercise,
       stats,
       baselineNames[liftType],
       dateRange.from,
       dateRange.to
     );
-  }, [liftPairs, selectedExercise, stats, baselineNames, liftType, dateRange]);
+  }, [pairs, selectedExercise, stats, baselineNames, liftType, dateRange]);
 
   // Keep a ref so the exercise-change effect always reads the current reps value
   // without reps being a dependency (which would cause circular updates when typing weight).
