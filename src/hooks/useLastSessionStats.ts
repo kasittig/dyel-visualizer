@@ -132,7 +132,22 @@ export function useLastSessionStats(
       }
       const label = variantFactorNameToLabel.get(name)!;
       const baselineName = baselineExByType.get(type)?.displayName ?? "baseline";
-      const { factor, sampleCount } = fitVariantFactor(baselineByType.get(type) ?? [], sessions);
+
+      // For exercises with additional weights (chains/bands), adjust session weights
+      // by the fitted addlWtOffset so the resulting factor reflects only the
+      // biomechanical variation, not the weight contribution of the chains/bands.
+      // Fall back to unadjusted sessions if no offset is available (no straight-bar
+      // sessions in the same family to fit from).
+      const offsetEntry = addlWtOffset.get(name);
+      const adjustedSessions =
+        offsetEntry && offsetEntry.sampleCount > 0
+          ? sessions.map((s) => ({ ...s, weight: s.weight + offsetEntry.offset }))
+          : sessions;
+
+      const { factor, sampleCount } = fitVariantFactor(
+        baselineByType.get(type) ?? [],
+        adjustedSessions
+      );
       variantFactor.set(name, { factor, sampleCount, label, baselineName });
     }
 
