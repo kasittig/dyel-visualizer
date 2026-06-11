@@ -73,7 +73,8 @@ export function findBestE1RM(
 
   for (const [name, ex] of exerciseByName) {
     if (ex.type !== target.type) continue;
-    if (familyKey(ex) !== targetFamily) continue;
+    if (target.type === "accessory" ? name !== target.displayName : familyKey(ex) !== targetFamily)
+      continue;
     const data = windowBestByName.get(name);
     if (!data) continue;
     if (!bestDate || data.date > bestDate) {
@@ -89,6 +90,11 @@ export function findBestE1RM(
     const sourceBestSet = sourceData.set;
     const sourceHasAddl = sourceEx.addlWts.length > 0;
     const targetHasAddl = target.addlWts.length > 0;
+
+    // Accessories: exact match only, no variant adjustments.
+    if (target.type === "accessory") {
+      return { e1rm: sourceE1RM, date: bestDate, sourceName: bestName, method: "exact" };
+    }
 
     if (sourceEx.displayName === target.displayName || (!sourceHasAddl && !targetHasAddl)) {
       return { e1rm: sourceE1RM, date: bestDate, sourceName: bestName, method: "exact" };
@@ -135,6 +141,8 @@ export function findBestE1RM(
     // Source e1rm is the best we have even without a clean offset adjustment.
     return { e1rm: sourceE1RM, date: bestDate, sourceName: bestName, method: "exact" };
   }
+
+  if (target.type === "accessory") return null;
 
   // Phase 2: no same-family history. Cross-estimate through baseline via variantFactor.
   // variantFactor[name].factor = e1rm_variant / e1rm_baseline

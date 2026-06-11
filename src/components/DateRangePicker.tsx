@@ -46,6 +46,7 @@ export function DateRangePicker({
   const [startText, setStartText] = useState(() => formatDate(value.from));
   const [endText, setEndText] = useState(() => formatDate(value.to));
   const [focused, setFocused] = useState<"start" | "end" | null>(null);
+  const [calendarMonth, setCalendarMonth] = useState<Date>(() => value.from ?? new Date());
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Sync text from external value changes, but only for the field that isn't focused.
@@ -98,6 +99,7 @@ export function DateRangePicker({
             onChange={(e) => handleStartChange(e.target.value)}
             onFocus={() => {
               setFocused("start");
+              if (value.from) setCalendarMonth(value.from);
               setOpen(true);
             }}
             onBlur={handleStartBlur}
@@ -111,6 +113,7 @@ export function DateRangePicker({
             onChange={(e) => handleEndChange(e.target.value)}
             onFocus={() => {
               setFocused("end");
+              if (value.to) setCalendarMonth(value.to);
               setOpen(true);
             }}
             onBlur={handleEndBlur}
@@ -140,6 +143,8 @@ export function DateRangePicker({
             onSelect={(r) => {
               onChange(r ?? { from: undefined, to: undefined });
             }}
+            month={calendarMonth}
+            onMonthChange={setCalendarMonth}
             disabled={{ after: new Date() }}
             numberOfMonths={1}
             modifiers={{ hasSession: sessionDates ?? [] }}

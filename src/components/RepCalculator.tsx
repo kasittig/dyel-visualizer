@@ -6,12 +6,13 @@ import { findBestE1RM, predictWeightForReps, predictRepsForWeight } from "../uti
 import type { ConjugateDataPair } from "../hooks/useConjugateData";
 import type { E1RMEstimate } from "../utils/repCalculator";
 
-type LiftType = "squat" | "bench" | "deadlift";
+type LiftType = "squat" | "bench" | "deadlift" | "accessory";
 
 const LIFT_LABELS: Record<LiftType, string> = {
   squat: "Squat",
   bench: "Bench",
   deadlift: "Deadlift",
+  accessory: "Accessory",
 };
 
 function roundTo5(n: number): number {
@@ -46,7 +47,9 @@ export function RepCalculator({
     to: new Date(),
   }));
 
-  const liftPairs = useMemo(() => pairs.filter(([ex]) => ex.type !== "accessory"), [pairs]);
+  const liftPairs = pairs;
+
+  const hasAccessories = useMemo(() => pairs.some(([ex]) => ex.type === "accessory"), [pairs]);
 
   const stats = useLastSessionStats(liftPairs, baselineNames);
 
@@ -163,11 +166,13 @@ export function RepCalculator({
             onChange={(e) => setLiftType(e.target.value as LiftType)}
             style={{ fontSize: "1rem" }}
           >
-            {(Object.keys(LIFT_LABELS) as LiftType[]).map((t) => (
-              <option key={t} value={t}>
-                {LIFT_LABELS[t]}
-              </option>
-            ))}
+            {(Object.keys(LIFT_LABELS) as LiftType[])
+              .filter((t) => t !== "accessory" || hasAccessories)
+              .map((t) => (
+                <option key={t} value={t}>
+                  {LIFT_LABELS[t]}
+                </option>
+              ))}
           </select>
         </div>
 
