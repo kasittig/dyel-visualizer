@@ -29,11 +29,45 @@ function defaultBaselineName(rows: ConjugateDataPair[]): string | null {
 type SheetRef = { id: string; published: boolean };
 type LiftTab = "squat" | "bench" | "deadlift" | "accessory";
 
-const MAIN_TABS: { id: LiftTab; label: string }[] = [
-  { id: "squat", label: "Squat" },
-  { id: "bench", label: "Bench" },
-  { id: "deadlift", label: "Deadlift" },
+type TabConfig = {
+  id: LiftTab;
+  label: string;
+  heading: string;
+  columnHeader: string;
+  showSearch: boolean;
+};
+
+const MAIN_TABS: TabConfig[] = [
+  {
+    id: "squat",
+    label: "Squat",
+    heading: "Variations",
+    columnHeader: "Variation",
+    showSearch: false,
+  },
+  {
+    id: "bench",
+    label: "Bench",
+    heading: "Variations",
+    columnHeader: "Variation",
+    showSearch: false,
+  },
+  {
+    id: "deadlift",
+    label: "Deadlift",
+    heading: "Variations",
+    columnHeader: "Variation",
+    showSearch: false,
+  },
 ];
+
+const ACCESSORY_TAB: TabConfig = {
+  id: "accessory",
+  label: "Accessories",
+  heading: "Accessories",
+  columnHeader: "Exercise",
+  showSearch: true,
+};
 
 function extractSheetRef(input: string): SheetRef | null {
   // Published web URL: .../d/e/PUBLISHED_ID/pubhtml (may have /u/N/ before /d/)
@@ -87,15 +121,18 @@ function App() {
       squat: squatRows,
       bench: benchRows,
       deadlift: deadliftRows,
-      accessory: [],
+      accessory: accessoryRows,
     };
     const result: Partial<Record<LiftTab, string>> = {};
-    for (const tab of ["squat", "bench", "deadlift"] as LiftTab[]) {
+    for (const tab of ["squat", "bench", "deadlift", "accessory"] as LiftTab[]) {
       const name = baselineNames[tab] ?? defaultBaselineName(tabRows[tab]);
       if (name) result[tab] = name;
     }
     return result;
-  }, [squatRows, benchRows, deadliftRows, baselineNames]);
+  }, [squatRows, benchRows, deadliftRows, accessoryRows, baselineNames]);
+
+  const tabs = [...MAIN_TABS, ...(accessoryRows.length > 0 ? [ACCESSORY_TAB] : [])];
+  const activeTabConfig = tabs.find((t) => t.id === activeTab) ?? MAIN_TABS[0];
 
   const activeRows =
     activeTab === "squat"
@@ -200,12 +237,7 @@ function App() {
                 marginBottom: "1rem",
               }}
             >
-              {[
-                ...MAIN_TABS,
-                ...(accessoryRows.length > 0
-                  ? [{ id: "accessory" as LiftTab, label: "Accessories" }]
-                  : []),
-              ].map(({ id, label }) => (
+              {tabs.map(({ id, label }) => (
                 <button
                   key={id}
                   onClick={() => setActiveTab(id)}
@@ -226,29 +258,25 @@ function App() {
                 </button>
               ))}
             </div>
-            {activeTab !== "accessory" && (
-              <>
-                <BaselineSelect
-                  rows={activeRows}
-                  selectedName={effectiveBaselineNames[activeTab] ?? null}
-                  onSelect={(name) => setBaselineNames((prev) => ({ ...prev, [activeTab]: name }))}
-                />
-                <ExerciseFilters
-                  rows={activeRows}
-                  filters={filterState[activeTab]}
-                  onToggle={toggleFilter}
-                />
-                <ConjugateCharts rows={filteredRows} hidden={effectiveHidden} />
-              </>
-            )}
+            <BaselineSelect
+              rows={activeRows}
+              selectedName={effectiveBaselineNames[activeTab] ?? null}
+              onSelect={(name) => setBaselineNames((prev) => ({ ...prev, [activeTab]: name }))}
+            />
+            <ExerciseFilters
+              rows={activeRows}
+              filters={filterState[activeTab]}
+              onToggle={toggleFilter}
+            />
+            <ConjugateCharts rows={filteredRows} hidden={effectiveHidden} />
             <ExerciseList
-              rows={activeTab === "accessory" ? activeRows : filteredRows}
+              rows={filteredRows}
               hidden={effectiveHidden}
               onToggle={toggleVariation}
-              baselineNames={activeTab === "accessory" ? {} : effectiveBaselineNames}
-              heading={activeTab === "accessory" ? "Accessories" : "Variations"}
-              columnHeader={activeTab === "accessory" ? "Exercise" : "Variation"}
-              showSearch={activeTab === "accessory"}
+              baselineNames={effectiveBaselineNames}
+              heading={activeTabConfig.heading}
+              columnHeader={activeTabConfig.columnHeader}
+              showSearch={activeTabConfig.showSearch}
             />
           </>
         )}

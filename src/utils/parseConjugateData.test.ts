@@ -394,8 +394,8 @@ describe("nameToExercise", () => {
     it("classifies Lat Pulldown as accessory", () => {
       expect(nameToExercise("Lat Pulldown")).toEqual({
         type: "accessory",
-        bar: null,
-        stance: null,
+        bar: "standard",
+        stance: "competition",
         addlWts: [],
         equipment: null,
         displayName: "Lat Pulldown",
@@ -405,8 +405,8 @@ describe("nameToExercise", () => {
     it("classifies Overhead Press as accessory", () => {
       expect(nameToExercise("Overhead Press")).toEqual({
         type: "accessory",
-        bar: null,
-        stance: null,
+        bar: "standard",
+        stance: "competition",
         addlWts: [],
         equipment: null,
         displayName: "Overhead Press",
