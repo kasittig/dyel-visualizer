@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
+import { useWindowVirtualizer } from "@tanstack/react-virtual";
 import type { ConjugateDataPair } from "../hooks/useConjugateData";
 import { useLastSessionStats } from "../hooks/useLastSessionStats";
 import {
@@ -43,18 +44,38 @@ export function ExerciseList({
 
   const hasAddlWtExercises = addlWtOffset.size > 0;
   const hasVariantExercises = variantFactor.size > 0;
+  const colSpan = 4 + (hasAddlWtExercises ? 1 : 0) + (hasVariantExercises ? 1 : 0);
 
   const allLabels = [...lastPerformed.keys()].sort();
-  if (allLabels.length === 0) return <p>No data found.</p>;
-
   const visible = allLabels.filter((l) => !hidden.has(l));
   const minimized = allLabels.filter((l) => hidden.has(l));
   const labels = [...visible, ...minimized];
-
   const displayed =
     showSearch && query
       ? visible.filter((l) => l.toLowerCase().includes(query.toLowerCase()))
       : labels;
+
+  const tbodyRef = useRef<HTMLTableSectionElement>(null);
+  const [scrollMargin, setScrollMargin] = useState(0);
+  useLayoutEffect(() => {
+    if (tbodyRef.current) setScrollMargin(tbodyRef.current.offsetTop);
+  }, []);
+
+  const rowVirtualizer = useWindowVirtualizer({
+    count: displayed.length,
+    estimateSize: (i) => (hidden.has(displayed[i]) ? 36 : 64),
+    overscan: 5,
+    scrollMargin,
+  });
+
+  if (allLabels.length === 0) return <p>No data found.</p>;
+
+  const virtualItems = rowVirtualizer.getVirtualItems();
+  const totalSize = rowVirtualizer.getTotalSize();
+  const paddingTop =
+    virtualItems.length > 0 ? virtualItems[0].start - rowVirtualizer.options.scrollMargin : 0;
+  const paddingBottom =
+    virtualItems.length > 0 ? totalSize - virtualItems[virtualItems.length - 1].end : 0;
 
   return (
     <section>
@@ -84,8 +105,14 @@ export function ExerciseList({
             {hasVariantExercises && <th style={th}>Variant Factor</th>}
           </tr>
         </thead>
-        <tbody>
-          {displayed.map((label) => {
+        <tbody ref={tbodyRef}>
+          {paddingTop > 0 && (
+            <tr>
+              <td style={{ height: paddingTop, padding: 0, border: 0 }} colSpan={colSpan} />
+            </tr>
+          )}
+          {virtualItems.map((virtualRow) => {
+            const label = displayed[virtualRow.index];
             const one = last1RepSet.get(label);
             const sessionE1RM = lastSessionE1RM.get(label);
             const lastDate = lastPerformed.get(label);
@@ -97,7 +124,7 @@ export function ExerciseList({
               return (
                 <tr key={label} onClick={() => onToggle(label)} style={{ cursor: "pointer" }}>
                   <td
-                    colSpan={4 + (hasAddlWtExercises ? 1 : 0) + (hasVariantExercises ? 1 : 0)}
+                    colSpan={colSpan}
                     style={{ ...td, color: "var(--text)", fontSize: "0.85rem" }}
                   >
                     {label}
@@ -134,6 +161,11 @@ export function ExerciseList({
               </tr>
             );
           })}
+          {paddingBottom > 0 && (
+            <tr>
+              <td style={{ height: paddingBottom, padding: 0, border: 0 }} colSpan={colSpan} />
+            </tr>
+          )}
         </tbody>
       </table>
     </section>
