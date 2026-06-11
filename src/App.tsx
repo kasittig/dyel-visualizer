@@ -4,6 +4,7 @@ import { ConjugateCharts } from "./components/ConjugateCharts";
 import { ExerciseList } from "./components/ExerciseList";
 import { ExerciseFilters } from "./components/ExerciseFilters";
 import { BaselineSelect } from "./components/BaselineSelect";
+import { RepCalculator } from "./components/RepCalculator";
 import { applyFilters, emptyFilters } from "./utils/exerciseFilters";
 import type { ConjugateDataPair } from "./hooks/useConjugateData";
 import type { FilterState } from "./utils/exerciseFilters";
@@ -28,6 +29,7 @@ function defaultBaselineName(rows: ConjugateDataPair[]): string | null {
 
 type SheetRef = { id: string; published: boolean };
 type LiftTab = "squat" | "bench" | "deadlift" | "accessory";
+type PageTab = LiftTab | "calculator";
 
 type TabConfig = {
   id: LiftTab;
@@ -90,7 +92,7 @@ const EXAMPLE_VISUALIZER_URL = `?sheet=${encodeURIComponent(EXAMPLE_CSV_URL)}`;
 function App() {
   const params = new URLSearchParams(window.location.search);
   const [url, setUrl] = useState(params.get("sheet") ?? import.meta.env.VITE_SHEET_URL ?? "");
-  const [activeTab, setActiveTab] = useState<LiftTab>("squat");
+  const [activeTab, setActiveTab] = useState<PageTab>("squat");
   const [hiddenVariations, setHiddenVariations] = useState<Record<LiftTab, Set<string>>>({
     squat: new Set(),
     bench: new Set(),
@@ -144,11 +146,13 @@ function App() {
           : accessoryRows;
 
   const filteredRows = useMemo(
-    () => applyFilters(activeRows, filterState[activeTab]),
+    () =>
+      activeTab === "calculator" ? [] : applyFilters(activeRows, filterState[activeTab as LiftTab]),
     [activeRows, filterState, activeTab]
   );
 
-  const effectiveHidden = hiddenVariations[activeTab];
+  const effectiveHidden =
+    activeTab === "calculator" ? new Set<string>() : hiddenVariations[activeTab as LiftTab];
 
   function toggleInSet<T>(set: Set<T>, item: T): Set<T> {
     const next = new Set(set);
@@ -158,16 +162,18 @@ function App() {
   }
 
   function toggleVariation(label: string) {
-    setHiddenVariations((prev) => ({ ...prev, [activeTab]: toggleInSet(prev[activeTab], label) }));
+    const tab = activeTab as LiftTab;
+    setHiddenVariations((prev) => ({ ...prev, [tab]: toggleInSet(prev[tab], label) }));
   }
 
   function toggleFilter(facet: keyof FilterState, value: string) {
+    const tab = activeTab as LiftTab;
     setFilterState((prev) => {
-      const current = prev[activeTab];
+      const current = prev[tab];
       const next = new Set(current[facet]);
       if (next.has(value)) next.delete(value);
       else next.add(value);
-      return { ...prev, [activeTab]: { ...current, [facet]: next } };
+      return { ...prev, [tab]: { ...current, [facet]: next } };
     });
   }
 
@@ -237,47 +243,55 @@ function App() {
                 marginBottom: "1rem",
               }}
             >
-              {tabs.map(({ id, label }) => (
-                <button
-                  key={id}
-                  onClick={() => setActiveTab(id)}
-                  style={{
-                    background: "none",
-                    border: "none",
-                    borderBottom:
-                      activeTab === id ? "2px solid var(--accent)" : "2px solid transparent",
-                    marginBottom: "-2px",
-                    padding: "0.4rem 0",
-                    cursor: "pointer",
-                    fontWeight: activeTab === id ? 700 : 400,
-                    fontSize: "1rem",
-                    color: activeTab === id ? "var(--accent)" : "var(--text-h)",
-                  }}
-                >
-                  {label}
-                </button>
-              ))}
+              {[...tabs, { id: "calculator" as const, label: "Calculator" }].map(
+                ({ id, label }) => (
+                  <button
+                    key={id}
+                    onClick={() => setActiveTab(id)}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      borderBottom:
+                        activeTab === id ? "2px solid var(--accent)" : "2px solid transparent",
+                      marginBottom: "-2px",
+                      padding: "0.4rem 0",
+                      cursor: "pointer",
+                      fontWeight: activeTab === id ? 700 : 400,
+                      fontSize: "1rem",
+                      color: activeTab === id ? "var(--accent)" : "var(--text-h)",
+                    }}
+                  >
+                    {label}
+                  </button>
+                )
+              )}
             </div>
-            <BaselineSelect
-              rows={activeRows}
-              selectedName={effectiveBaselineNames[activeTab] ?? null}
-              onSelect={(name) => setBaselineNames((prev) => ({ ...prev, [activeTab]: name }))}
-            />
-            <ExerciseFilters
-              rows={activeRows}
-              filters={filterState[activeTab]}
-              onToggle={toggleFilter}
-            />
-            <ConjugateCharts rows={filteredRows} hidden={effectiveHidden} />
-            <ExerciseList
-              rows={filteredRows}
-              hidden={effectiveHidden}
-              onToggle={toggleVariation}
-              baselineNames={effectiveBaselineNames}
-              heading={activeTabConfig.heading}
-              columnHeader={activeTabConfig.columnHeader}
-              showSearch={activeTabConfig.showSearch}
-            />
+            {activeTab === "calculator" ? (
+              <RepCalculator pairs={pairs} baselineNames={effectiveBaselineNames} />
+            ) : (
+              <>
+                <BaselineSelect
+                  rows={activeRows}
+                  selectedName={effectiveBaselineNames[activeTab] ?? null}
+                  onSelect={(name) => setBaselineNames((prev) => ({ ...prev, [activeTab]: name }))}
+                />
+                <ExerciseFilters
+                  rows={activeRows}
+                  filters={filterState[activeTab as LiftTab]}
+                  onToggle={toggleFilter}
+                />
+                <ConjugateCharts rows={filteredRows} hidden={effectiveHidden} />
+                <ExerciseList
+                  rows={filteredRows}
+                  hidden={effectiveHidden}
+                  onToggle={toggleVariation}
+                  baselineNames={effectiveBaselineNames}
+                  heading={activeTabConfig.heading}
+                  columnHeader={activeTabConfig.columnHeader}
+                  showSearch={activeTabConfig.showSearch}
+                />
+              </>
+            )}
           </>
         )}
       </div>

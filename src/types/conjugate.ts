@@ -72,3 +72,7 @@ export function variantLabel(ex: ConjugateExercise): string {
   parts.push(...ex.addlWts);
   return parts.join(" + ");
 }
+
+export function familyKey(ex: ConjugateExercise): string {
+  return [ex.type, ex.bar ?? "", ex.stance ?? "", ex.equipment ?? ""].join("|");
+}
