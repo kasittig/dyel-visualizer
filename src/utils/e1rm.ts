@@ -54,16 +54,21 @@ export function predictE1RM(sessions: TrainingSession[], targetDate: Date): numb
   return a.e1rm + (b.e1rm - a.e1rm) * ((target - a.t) / dt);
 }
 
+function invertE1RM(e1rm: number, reps: number): number {
+  if (reps === 1) return e1rm;
+  return e1rm / (1 + reps / 30);
+}
+
 export function fitChainOffset(
   straightSessions: TrainingSession[],
   chainSessions: TrainingSession[]
 ): { offset: number; sampleCount: number } {
   const offsets: number[] = [];
   for (const session of chainSessions) {
-    if (session.reps <= 1) continue;
+    if (session.reps <= 0) continue;
     const predicted = predictE1RM(straightSessions, session.date);
     if (predicted === null) continue;
-    const effectiveWeight = predicted / (1 + session.reps / 30);
+    const effectiveWeight = invertE1RM(predicted, session.reps);
     offsets.push(effectiveWeight - session.weight);
   }
   if (offsets.length === 0) return { offset: 0, sampleCount: 0 };

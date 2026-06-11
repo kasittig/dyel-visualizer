@@ -142,15 +142,17 @@ describe("fitChainOffset", () => {
     expect(fitChainOffset([s("2024-01-01", 200)], [])).toEqual({ offset: 0, sampleCount: 0 });
   });
 
-  it("returns sampleCount 0 when all chain sessions are single-rep", () => {
+  it("computes the offset from a single-rep chain session", () => {
+    // For reps=1, calcE1RM returns weight unchanged, so effectiveWeight = predicted directly.
+    // Straight e1rm is constant at 200. Chain session: 220 lbs × 1 rep.
+    // effectiveWeight = 200, offset = 200 - 220 = -20 lbs
     const straight = [s("2024-01-01", 200), s("2024-01-10", 200)];
-    expect(fitChainOffset(straight, [w("2024-01-05", 220, 1)])).toEqual({
-      offset: 0,
-      sampleCount: 0,
-    });
+    const result = fitChainOffset(straight, [w("2024-01-05", 220, 1)]);
+    expect(result.sampleCount).toBe(1);
+    expect(result.offset).toBeCloseTo(-20, 1);
   });
 
-  it("computes the offset from a single chain session", () => {
+  it("computes the offset from a multi-rep chain session", () => {
     // Straight e1rm is constant at 200 lbs.
     // Chain session: 220 lbs × 5 reps.
     // effectiveWeight = 200 / (1 + 5/30) ≈ 171.43 lbs
@@ -170,11 +172,14 @@ describe("fitChainOffset", () => {
     expect(result.offset).toBeCloseTo(-48.57, 1);
   });
 
-  it("skips single-rep chain sessions but counts multi-rep ones", () => {
+  it("includes single-rep sessions alongside multi-rep ones", () => {
+    // 1-rep: effectiveWeight = 200, offset = 200 - 220 = -20
+    // 5-rep: effectiveWeight ≈ 171.43, offset ≈ -48.57
+    // mean ≈ -34.28
     const straight = [s("2024-01-01", 200), s("2024-01-10", 200)];
     const chain = [w("2024-01-05", 220, 1), w("2024-01-07", 220, 5)];
     const result = fitChainOffset(straight, chain);
-    expect(result.sampleCount).toBe(1);
-    expect(result.offset).toBeCloseTo(-48.57, 1);
+    expect(result.sampleCount).toBe(2);
+    expect(result.offset).toBeCloseTo(-34.28, 1);
   });
 });

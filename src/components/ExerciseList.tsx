@@ -75,7 +75,7 @@ export function ExerciseList({
             <th style={th}>Last 1RM</th>
             <th style={th}>Latest Session</th>
             <th style={th}>Predicted e1RM</th>
-            {hasChainExercises && <th style={th}>Chain Offset</th>}
+            {hasChainExercises && <th style={th}>Effective Weights</th>}
           </tr>
         </thead>
         <tbody>
