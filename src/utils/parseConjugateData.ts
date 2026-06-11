@@ -17,6 +17,63 @@ export function findCol(row: RawRow, keyword: string): string | undefined {
   return key !== undefined ? row[key] : undefined;
 }
 
+type Detector<T> = Array<[T, (lower: string, tokens: Set<string>) => boolean]>;
+
+function makeParser<T>(detectors: Detector<T>): (lower: string, tokens: Set<string>) => T | null {
+  return (lower, tokens) => detectors.find(([, detect]) => detect(lower, tokens))?.[0] ?? null;
+}
+
+const BAR_DETECTORS: Detector<ConjugateBar> = [
+  ["ssb", (l) => l.includes("ssb") || l.includes("safety")],
+  ["trap", (l) => l.includes("trap")],
+  ["american", (l) => l.includes("american")],
+  ["swiss", (l) => l.includes("swiss")],
+  ["cambered", (l) => l.includes("cambered")],
+  ["zercher", (l) => l.includes("zercher")],
+  ["duffalo", (l) => l.includes("duffalo")],
+  ["dumbbell", (l, t) => l.includes("dumbbell") || t.has("db")],
+  ["bamboo", (l) => l.includes("bamboo")],
+];
+
+const STANCE_DETECTORS: Detector<ConjugateStance> = [
+  ["slingshot", (l) => l.includes("slingshot")],
+  ["builder", (l) => l.includes("builder")],
+  ["close", (l, t) => l.includes("close grip") || t.has("close") || t.has("cg")],
+  ["wide", (l, t) => l.includes("wide grip") || t.has("wide")],
+  ["medium", (l, t) => l.includes("medium grip") || t.has("medium")],
+  ["romanian", (l) => l.includes("romanian")],
+  ["sumo", (l) => l.includes("sumo")],
+  ["conventional", (l) => l.includes("conventional")],
+  ["opposite", (l) => l.includes("opposite")],
+  ["competition", (l) => l.includes("competition")],
+];
+
+const EQUIPMENT_DETECTORS: Detector<ConjugateEquipment> = [
+  ["incline", (l) => l.includes("incline")],
+  ["decline", (l) => l.includes("decline")],
+  ["blocks", (l) => l.includes("block")],
+  ["deficit", (l) => l.includes("deficit")],
+  ["board", (l) => l.includes("board")],
+  ["pause", (l) => l.includes("command") || l.includes("pause")],
+  ["floor", (l) => l.includes("floor")],
+  ["box", (l) => l.includes("box")],
+];
+
+const TYPE_DETECTORS: Detector<ConjugateExercise["type"]> = [
+  ["squat", (l) => l.includes("squat") || l.includes("ssb")],
+  [
+    "bench",
+    (l) =>
+      l.includes("floor") || l.includes("bench") || l.includes("incline") || l.includes("decline"),
+  ],
+  ["deadlift", (l) => l.includes("deadlift")],
+];
+
+const parseBar = makeParser(BAR_DETECTORS);
+const parseStance = makeParser(STANCE_DETECTORS);
+const parseEquipment = makeParser(EQUIPMENT_DETECTORS);
+const parseLiftType = makeParser(TYPE_DETECTORS);
+
 export function nameToExercise(name: string): ConjugateExercise | null {
   const displayName = name;
 
@@ -34,18 +91,6 @@ export function nameToExercise(name: string): ConjugateExercise | null {
 
   const has = (phrase: string) => lower.includes(phrase);
   const tokens = new Set([...base.split(/\s+/), ...modifiers.flatMap((m) => m.split(/\s+/))]);
-  const hasToken = (t: string) => tokens.has(t);
-
-  function extractHeight(keyword: string): number | null {
-    // Matches "2" keyword" or "2 keyword" (with or without inch mark)
-    const re = new RegExp(
-      `(\\d+(?:\\.\\d+)?)(?:\\s*")?\\s*${keyword}|${keyword}\\s*(\\d+(?:\\.\\d+)?)`,
-      "i"
-    );
-    const m = lower.match(re);
-    if (m) return parseFloat(m[1] ?? m[2]);
-    return null;
-  }
 
   const hasReverseBands = has("reverse band");
   const hasChains = has("chain");
@@ -56,98 +101,17 @@ export function nameToExercise(name: string): ConjugateExercise | null {
     ...(hasReverseBands ? (["rev. bands"] as const) : []),
   ];
 
-  if (base.includes("squat") || base.includes("ssb")) {
-    const bar = has("ssb") || has("safety") ? "ssb" : "standard";
-    return {
-      type: "squat",
-      bar,
-      stance: null,
-      addlWts,
-      equipment: has("box") ? "box" : null,
-      displayName,
-      sessions: [],
-    };
-  }
+  const type = parseLiftType(base, tokens);
+  if (!type) return null;
 
-  if (
-    base.includes("floor") ||
-    base.includes("bench") ||
-    base.includes("incline") ||
-    base.includes("decline")
-  ) {
-    let bar: ConjugateBar = "standard";
-    if (has("swiss")) bar = "swiss";
-    else if (has("american")) bar = "american";
-    else if (has("bamboo")) bar = "bamboo";
-    else if (has("duffalo")) bar = "duffalo";
-    else if (has("dumbbell") || hasToken("db")) bar = "dumbbell";
-
-    const grip =
-      hasToken("cg") || has("close grip") ? "close" : hasToken("medium") ? "medium" : "competition";
-
-    const stance: ConjugateStance = has("slingshot")
-      ? "slingshot"
-      : has("builder")
-        ? "builder"
-        : grip === "close"
-          ? "close grip"
-          : grip === "medium"
-            ? "medium grip"
-            : "competition grip";
-
-    let equipment: ConjugateEquipment | null = null;
-    const boardCount = extractHeight("board");
-
-    if (has("incline")) equipment = "incline";
-    else if (has("decline")) equipment = "decline";
-    else if (has("floor")) equipment = "floor";
-    else if (boardCount === 1) equipment = "1 board";
-    else if (boardCount === 2) equipment = "2 board";
-    else if (boardCount === 3) equipment = "3 board";
-    else if (has("command")) equipment = "pause";
-
-    const addlWts: ConjugateAddlWt[] = [
-      ...(hasChains ? (["chains"] as const) : []),
-      ...(hasBands ? (["bands"] as const) : []),
-    ];
-
-    return {
-      type: "bench",
-      bar: bar,
-      stance,
-      addlWts,
-      equipment,
-      displayName,
-      sessions: [],
-    };
-  }
-
-  if (base.includes("deadlift")) {
-    const stanceTerms = ["romanian", "sumo", "conventional", "opposite"] as const;
-    const stance = stanceTerms.find((t) => has(t)) ?? "competition";
-
-    const isTrapBar = has("trap bar");
-    const addlWts: ConjugateAddlWt[] = [
-      ...(hasChains ? (["chains"] as const) : []),
-      ...(hasReverseBands ? (["rev. bands"] as const) : []),
-      ...(hasBands ? (["bands"] as const) : []),
-    ];
-    return {
-      type: "deadlift",
-      bar: isTrapBar ? "trap bar" : "standard",
-      stance: stance as ConjugateStance,
-      addlWts,
-      equipment:
-        extractHeight("block") !== null
-          ? "blocks"
-          : extractHeight("deficit") !== null
-            ? "deficit"
-            : null,
-      displayName,
-      sessions: [],
-    };
-  }
-  return null;
+  return {
+    type,
+    bar: parseBar(lower, tokens) ?? "standard",
+    stance: parseStance(lower, tokens) ?? "competition",
+    addlWts,
+    equipment: parseEquipment(lower, tokens),
+    displayName,
+  };
 }
 
 function parseSession(row: RawRow): TrainingSession | null {
