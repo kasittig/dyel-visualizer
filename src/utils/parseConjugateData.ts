@@ -100,7 +100,7 @@ export function nameToExercise(name: string): ConjugateExercise | null {
 
     if (has("incline")) equipment = "incline";
     else if (has("decline")) equipment = "decline";
-    else if (base.includes("floor")) equipment = "floor";
+    else if (has("floor")) equipment = "floor";
     else if (boardCount === 1) equipment = "1 board";
     else if (boardCount === 2) equipment = "2 board";
     else if (boardCount === 3) equipment = "3 board";
