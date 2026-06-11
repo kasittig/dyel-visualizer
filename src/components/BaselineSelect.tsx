@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import type { ConjugateDataPair } from "../hooks/useConjugateData";
 
 const DEFAULT_BAR = "standard";
@@ -28,13 +29,21 @@ export function BaselineSelect({
     }
   }
 
-  if (exercises.length <= 1) return null;
-
+  const hasMultiple = exercises.length > 1;
   const defaultExercise = exercises.find((e) => e.isDefault) ?? exercises[0];
-  const effective =
-    selectedName && exercises.some((e) => e.displayName === selectedName)
+  const effective = hasMultiple
+    ? selectedName && exercises.some((e) => e.displayName === selectedName)
       ? selectedName
-      : defaultExercise.displayName;
+      : (defaultExercise?.displayName ?? null)
+    : null;
+
+  // Sync the effective selection back to the parent so the hook always has the
+  // correct baseline name, even before the user makes an explicit change.
+  useEffect(() => {
+    if (effective !== null && selectedName !== effective) onSelect(effective);
+  }, [effective]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (!hasMultiple || effective === null) return null;
 
   return (
     <div style={{ marginBottom: "0.75rem", fontSize: "0.75rem", color: "#6b7280" }}>
