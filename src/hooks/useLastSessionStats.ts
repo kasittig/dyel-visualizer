@@ -1,7 +1,11 @@
 import { useMemo } from "react";
-import { predictE1RM } from "../utils/e1rm";
-import type { TrainingSession } from "../types/conjugate";
+import { predictE1RM, fitAddlWtOffset } from "../utils/e1rm";
+import type { ConjugateExercise, TrainingSession } from "../types/conjugate";
 import type { ConjugateDataPair } from "./useConjugateData";
+
+function familyKey(ex: ConjugateExercise): string {
+  return [ex.type, ex.bar ?? "", ex.stance ?? "", ex.equipment ?? ""].join("|");
+}
 
 export function useLastSessionStats(pairs: ConjugateDataPair[]) {
   return useMemo(() => {
@@ -53,6 +57,34 @@ export function useLastSessionStats(pairs: ConjugateDataPair[]) {
     for (const [key, sessions] of sessionsByKey)
       predictedE1RM.set(key, predictE1RM(sessions, today));
 
+    // Pass 3: fit resistance offset per addlWt exercise display name.
+    // Groups sessions by family (type|bar|stance|equipment), then for each variant
+    // (any exercise with addlWts) calls fitAddlWtOffset against the straight sessions
+    // (addlWts = []) in the same family.
+    const straightByFamily = new Map<string, TrainingSession[]>();
+    const variantSessionsByName = new Map<string, TrainingSession[]>();
+    const variantNameToFamily = new Map<string, string>();
+
+    for (const [exercise, session] of pairs) {
+      const key = familyKey(exercise);
+      if (exercise.addlWts.length > 0) {
+        const sessions = variantSessionsByName.get(exercise.displayName) ?? [];
+        sessions.push(session);
+        variantSessionsByName.set(exercise.displayName, sessions);
+        variantNameToFamily.set(exercise.displayName, key);
+      } else {
+        const sessions = straightByFamily.get(key) ?? [];
+        sessions.push(session);
+        straightByFamily.set(key, sessions);
+      }
+    }
+
+    const addlWtOffset = new Map<string, { offset: number; sampleCount: number }>();
+    for (const [name, variantSessions] of variantSessionsByName) {
+      const key = variantNameToFamily.get(name)!;
+      addlWtOffset.set(name, fitAddlWtOffset(straightByFamily.get(key) ?? [], variantSessions));
+    }
+
     return {
       lastPerformed,
       last1RepSet,
@@ -60,6 +92,7 @@ export function useLastSessionStats(pairs: ConjugateDataPair[]) {
       lastSessionBestSet,
       lastSessionAllSets,
       predictedE1RM,
+      addlWtOffset,
     };
   }, [pairs]);
 }

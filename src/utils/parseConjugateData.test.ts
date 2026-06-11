@@ -273,6 +273,14 @@ describe("nameToExercise", () => {
       });
     });
 
+    it("parses Bench Press (floor) with floor equipment so it matches Floor Press family key", () => {
+      expect(nameToExercise("Bench Press (floor)")).toMatchObject({
+        type: "bench",
+        equipment: "floor",
+        addlWts: [],
+      });
+    });
+
     it("parses Bench Builder as standard bar", () => {
       expect(nameToExercise("Bench Builder")).toMatchObject({
         type: "bench",

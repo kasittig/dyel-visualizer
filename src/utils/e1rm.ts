@@ -53,3 +53,25 @@ export function predictE1RM(sessions: TrainingSession[], targetDate: Date): numb
   if (dt === 0) return a.e1rm;
   return a.e1rm + (b.e1rm - a.e1rm) * ((target - a.t) / dt);
 }
+
+function invertE1RM(e1rm: number, reps: number): number {
+  if (reps === 1) return e1rm;
+  return e1rm / (1 + reps / 30);
+}
+
+export function fitAddlWtOffset(
+  straightSessions: TrainingSession[],
+  variantSessions: TrainingSession[]
+): { offset: number; sampleCount: number } {
+  const offsets: number[] = [];
+  for (const session of variantSessions) {
+    if (session.reps <= 0) continue;
+    const predicted = predictE1RM(straightSessions, session.date);
+    if (predicted === null) continue;
+    const effectiveWeight = invertE1RM(predicted, session.reps);
+    offsets.push(effectiveWeight - session.weight);
+  }
+  if (offsets.length === 0) return { offset: 0, sampleCount: 0 };
+  const mean = offsets.reduce((a, b) => a + b, 0) / offsets.length;
+  return { offset: mean, sampleCount: offsets.length };
+}
