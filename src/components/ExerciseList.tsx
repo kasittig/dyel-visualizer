@@ -58,8 +58,10 @@ export function ExerciseList({
   const tbodyRef = useRef<HTMLTableSectionElement>(null);
   const [scrollMargin, setScrollMargin] = useState(0);
   useLayoutEffect(() => {
-    if (tbodyRef.current) setScrollMargin(tbodyRef.current.offsetTop);
-  }, []);
+    if (tbodyRef.current) {
+      setScrollMargin(tbodyRef.current.getBoundingClientRect().top + window.scrollY);
+    }
+  }, [showSearch]);
 
   const rowVirtualizer = useWindowVirtualizer({
     count: displayed.length,
@@ -122,7 +124,13 @@ export function ExerciseList({
             const isHidden = hidden.has(label);
             if (isHidden) {
               return (
-                <tr key={label} onClick={() => onToggle(label)} style={{ cursor: "pointer" }}>
+                <tr
+                  key={label}
+                  data-index={virtualRow.index}
+                  ref={rowVirtualizer.measureElement}
+                  onClick={() => onToggle(label)}
+                  style={{ cursor: "pointer" }}
+                >
                   <td
                     colSpan={colSpan}
                     style={{ ...td, color: "var(--text)", fontSize: "0.85rem" }}
@@ -133,7 +141,13 @@ export function ExerciseList({
               );
             }
             return (
-              <tr key={label} onClick={() => onToggle(label)} style={{ cursor: "pointer" }}>
+              <tr
+                key={label}
+                data-index={virtualRow.index}
+                ref={rowVirtualizer.measureElement}
+                onClick={() => onToggle(label)}
+                style={{ cursor: "pointer" }}
+              >
                 <td style={td}>{label}</td>
                 <td style={td}>
                   <OneRepMaxCell one={one} />
