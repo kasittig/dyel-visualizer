@@ -92,8 +92,8 @@ function App() {
   return (
     <main style={{ padding: "2rem", fontFamily: "sans-serif", maxWidth: "700px" }}>
       <h1>DYEL Visualizer</h1>
-      <p style={{ fontSize: "0.85rem", color: "#6b7280", marginTop: "-0.5rem" }}>
-        <a href="?page=conjugate" style={{ color: "#6366f1" }}>
+      <p style={{ fontSize: "0.85rem", color: "var(--text)", marginTop: "-0.5rem" }}>
+        <a href="?page=conjugate" style={{ color: "var(--accent)" }}>
           What is the conjugate method?
         </a>
       </p>
@@ -121,7 +121,7 @@ function App() {
           That doesn't look like a Google Sheet URL.
         </p>
       )}
-      <p style={{ fontSize: "0.85rem", color: "#6b7280", marginTop: "0.5rem" }}>
+      <p style={{ fontSize: "0.85rem", color: "var(--text)", marginTop: "0.5rem" }}>
         Don't have a sheet? <a href={EXAMPLE_VISUALIZER_URL}>View an example in the visualizer</a>
         {" · "}
         <a href={EXAMPLE_SHEET_URL} target="_blank" rel="noreferrer">
@@ -138,7 +138,7 @@ function App() {
               style={{
                 display: "flex",
                 gap: "1.5rem",
-                borderBottom: "2px solid #e5e7eb",
+                borderBottom: "2px solid var(--border)",
                 marginBottom: "1rem",
               }}
             >
@@ -149,13 +149,14 @@ function App() {
                   style={{
                     background: "none",
                     border: "none",
-                    borderBottom: activeTab === id ? "2px solid #6366f1" : "2px solid transparent",
+                    borderBottom:
+                      activeTab === id ? "2px solid var(--accent)" : "2px solid transparent",
                     marginBottom: "-2px",
                     padding: "0.4rem 0",
                     cursor: "pointer",
                     fontWeight: activeTab === id ? 700 : 400,
                     fontSize: "1rem",
-                    color: activeTab === id ? "#6366f1" : "#374151",
+                    color: activeTab === id ? "var(--accent)" : "var(--text-h)",
                   }}
                 >
                   {label}

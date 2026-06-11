@@ -32,7 +32,7 @@ export function ConjugateCharts({
   if (e1rmByLabelAndDate.size === 0) {
     return (
       <section>
-        <p style={{ color: "#6b7280" }}>No data found.</p>
+        <p style={{ color: "var(--text)" }}>No data found.</p>
       </section>
     );
   }
