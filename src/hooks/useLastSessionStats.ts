@@ -1,5 +1,6 @@
 import { useMemo } from "react";
-import { predictE1RM, fitAddlWtOffset } from "../utils/e1rm";
+import { predictE1RM, fitAddlWtOffset, fitVariantFactor } from "../utils/e1rm";
+import { variantLabel } from "../types/conjugate";
 import type { ConjugateExercise, TrainingSession } from "../types/conjugate";
 import type { ConjugateDataPair } from "./useConjugateData";
 
@@ -85,6 +86,47 @@ export function useLastSessionStats(pairs: ConjugateDataPair[]) {
       addlWtOffset.set(name, fitAddlWtOffset(straightByFamily.get(key) ?? [], variantSessions));
     }
 
+    // Pass 4: fit variant factor per bar/stance/equipment exercise.
+    // Baseline: bar=standard, stance=competition, equipment=null, addlWts=[].
+    // Variant: any exercise where bar≠standard, stance≠competition, or equipment≠null.
+    // Exercises with addlWts are also included here when they have a non-baseline
+    // bar/stance/equipment — they get both a Pass 3 offset and a Pass 4 factor.
+    const baselineByType = new Map<string, TrainingSession[]>();
+    const variantFactorSessionsByName = new Map<string, TrainingSession[]>();
+    const variantFactorNameToLabel = new Map<string, string>();
+    const variantFactorNameToType = new Map<string, string>();
+
+    for (const [exercise, session] of pairs) {
+      const isBaseline =
+        exercise.bar === "standard" &&
+        exercise.stance === "competition" &&
+        exercise.equipment === null &&
+        exercise.addlWts.length === 0;
+      const isVariant =
+        exercise.bar !== "standard" ||
+        exercise.stance !== "competition" ||
+        exercise.equipment !== null;
+      if (isBaseline) {
+        const sessions = baselineByType.get(exercise.type) ?? [];
+        sessions.push(session);
+        baselineByType.set(exercise.type, sessions);
+      } else if (isVariant) {
+        const sessions = variantFactorSessionsByName.get(exercise.displayName) ?? [];
+        sessions.push(session);
+        variantFactorSessionsByName.set(exercise.displayName, sessions);
+        variantFactorNameToLabel.set(exercise.displayName, variantLabel(exercise));
+        variantFactorNameToType.set(exercise.displayName, exercise.type);
+      }
+    }
+
+    const variantFactor = new Map<string, { factor: number; sampleCount: number; label: string }>();
+    for (const [name, sessions] of variantFactorSessionsByName) {
+      const type = variantFactorNameToType.get(name)!;
+      const label = variantFactorNameToLabel.get(name)!;
+      const { factor, sampleCount } = fitVariantFactor(baselineByType.get(type) ?? [], sessions);
+      variantFactor.set(name, { factor, sampleCount, label });
+    }
+
     return {
       lastPerformed,
       last1RepSet,
@@ -93,6 +135,7 @@ export function useLastSessionStats(pairs: ConjugateDataPair[]) {
       lastSessionAllSets,
       predictedE1RM,
       addlWtOffset,
+      variantFactor,
     };
   }, [pairs]);
 }

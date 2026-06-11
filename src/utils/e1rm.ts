@@ -59,6 +59,22 @@ function invertE1RM(e1rm: number, reps: number): number {
   return e1rm / (1 + reps / 30);
 }
 
+export function fitVariantFactor(
+  baselineSessions: TrainingSession[],
+  variantSessions: TrainingSession[]
+): { factor: number; sampleCount: number } {
+  const factors: number[] = [];
+  for (const session of variantSessions) {
+    if (session.reps <= 0) continue;
+    const predicted = predictE1RM(baselineSessions, session.date);
+    if (predicted === null || predicted === 0) continue;
+    factors.push(calcE1RM(session.weight, session.reps) / predicted);
+  }
+  if (factors.length === 0) return { factor: 0, sampleCount: 0 };
+  const mean = factors.reduce((a, b) => a + b, 0) / factors.length;
+  return { factor: mean, sampleCount: factors.length };
+}
+
 export function fitAddlWtOffset(
   straightSessions: TrainingSession[],
   variantSessions: TrainingSession[]

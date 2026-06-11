@@ -6,6 +6,7 @@ import {
   LastSessionCell,
   OneRepMaxCell,
   PredictedE1RMCell,
+  VariantFactorCell,
 } from "./ExerciseCells";
 import { setsRepsLabel } from "../utils/setsRepsLabel";
 import { th, td } from "../utils/tableStyles";
@@ -35,9 +36,11 @@ export function ExerciseList({
     lastSessionAllSets,
     predictedE1RM,
     addlWtOffset,
+    variantFactor,
   } = useLastSessionStats(rows);
 
   const hasAddlWtExercises = addlWtOffset.size > 0;
+  const hasVariantExercises = variantFactor.size > 0;
 
   const allLabels = [...lastPerformed.keys()].sort();
   if (allLabels.length === 0) return <p>No data found.</p>;
@@ -76,6 +79,7 @@ export function ExerciseList({
             <th style={th}>Latest Session</th>
             <th style={th}>Predicted e1RM</th>
             {hasAddlWtExercises && <th style={th}>Resistance Offset</th>}
+            {hasVariantExercises && <th style={th}>Variant Factor</th>}
           </tr>
         </thead>
         <tbody>
@@ -91,7 +95,7 @@ export function ExerciseList({
               return (
                 <tr key={label} onClick={() => onToggle(label)} style={{ cursor: "pointer" }}>
                   <td
-                    colSpan={hasAddlWtExercises ? 5 : 4}
+                    colSpan={4 + (hasAddlWtExercises ? 1 : 0) + (hasVariantExercises ? 1 : 0)}
                     style={{ ...td, color: "#9ca3af", fontSize: "0.85rem" }}
                   >
                     {label}
@@ -118,6 +122,11 @@ export function ExerciseList({
                 {hasAddlWtExercises && (
                   <td style={td}>
                     <AddlWtOffsetCell addlWtOffset={addlWtOffset.get(label)} />
+                  </td>
+                )}
+                {hasVariantExercises && (
+                  <td style={td}>
+                    <VariantFactorCell variantFactor={variantFactor.get(label)} />
                   </td>
                 )}
               </tr>

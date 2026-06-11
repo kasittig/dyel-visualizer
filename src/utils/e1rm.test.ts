@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { calcE1RM, predictE1RM, fitAddlWtOffset } from "./e1rm";
+import { calcE1RM, predictE1RM, fitAddlWtOffset, fitVariantFactor } from "./e1rm";
 import type { TrainingSession } from "../types/conjugate";
 
 const d = (dateStr: string) => new Date(dateStr);
@@ -130,6 +130,54 @@ describe("predictE1RM", () => {
       s("2024-01-10", 130),
     ];
     expect(predictE1RM(sessions, d("2024-01-01"))).toBe(120);
+  });
+});
+
+describe("fitVariantFactor", () => {
+  it("returns sampleCount 0 when baseline sessions are empty", () => {
+    expect(fitVariantFactor([], [w("2024-01-10", 180, 1)])).toEqual({ factor: 0, sampleCount: 0 });
+  });
+
+  it("returns sampleCount 0 when variant sessions are empty", () => {
+    expect(fitVariantFactor([s("2024-01-01", 200)], [])).toEqual({ factor: 0, sampleCount: 0 });
+  });
+
+  it("computes the factor from a single-rep variant session", () => {
+    // Baseline e1RM constant at 200. Variant: 180 × 1 → e1RM = 180.
+    // factor = 180 / 200 = 0.90
+    const baseline = [s("2024-01-01", 200), s("2024-01-10", 200)];
+    const result = fitVariantFactor(baseline, [w("2024-01-05", 180, 1)]);
+    expect(result.sampleCount).toBe(1);
+    expect(result.factor).toBeCloseTo(0.9, 2);
+  });
+
+  it("computes the factor from a multi-rep variant session", () => {
+    // Baseline e1RM constant at 200. Variant: 150 × 5 → e1RM = 150 * (1 + 5/30) = 175.
+    // factor = 175 / 200 = 0.875
+    const baseline = [s("2024-01-01", 200), s("2024-01-10", 200)];
+    const result = fitVariantFactor(baseline, [w("2024-01-05", 150, 5)]);
+    expect(result.sampleCount).toBe(1);
+    expect(result.factor).toBeCloseTo(0.875, 3);
+  });
+
+  it("averages the factor across multiple variant sessions", () => {
+    // Baseline constant at 200. Both sessions yield factor 0.90.
+    const baseline = [s("2024-01-01", 200), s("2024-01-20", 200)];
+    const variant = [w("2024-01-05", 180, 1), w("2024-01-15", 180, 1)];
+    const result = fitVariantFactor(baseline, variant);
+    expect(result.sampleCount).toBe(2);
+    expect(result.factor).toBeCloseTo(0.9, 2);
+  });
+
+  it("includes single-rep and multi-rep sessions together", () => {
+    // 1-rep: factor = 180/200 = 0.90
+    // 5-rep: factor = 175/200 = 0.875
+    // mean = 0.8875
+    const baseline = [s("2024-01-01", 200), s("2024-01-10", 200)];
+    const variant = [w("2024-01-05", 180, 1), w("2024-01-07", 150, 5)];
+    const result = fitVariantFactor(baseline, variant);
+    expect(result.sampleCount).toBe(2);
+    expect(result.factor).toBeCloseTo(0.8875, 3);
   });
 });
 
