@@ -63,7 +63,7 @@ export function RepCalculator({
         result.push(ex.displayName);
       }
     }
-    return result;
+    return result.sort((a, b) => a.localeCompare(b));
   }, [pairs, liftType]);
 
   useEffect(() => {
