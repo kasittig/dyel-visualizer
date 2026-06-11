@@ -124,12 +124,16 @@ export function useLastSessionStats(
       }
     }
 
-    const variantFactor = new Map<string, { factor: number; sampleCount: number; label: string }>();
+    const variantFactor = new Map<
+      string,
+      { factor: number; sampleCount: number; label: string; baselineName: string }
+    >();
     for (const [name, sessions] of variantFactorSessionsByName) {
       const type = variantFactorNameToType.get(name)!;
       const label = variantFactorNameToLabel.get(name)!;
+      const baselineName = baselineExByType.get(type)?.displayName ?? "baseline";
       const { factor, sampleCount } = fitVariantFactor(baselineByType.get(type) ?? [], sessions);
-      variantFactor.set(name, { factor, sampleCount, label });
+      variantFactor.set(name, { factor, sampleCount, label, baselineName });
     }
 
     return {

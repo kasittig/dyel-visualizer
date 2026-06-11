@@ -44,16 +44,18 @@ export function AddlWtOffsetCell({
 export function VariantFactorCell({
   variantFactor,
 }: {
-  variantFactor: { factor: number; sampleCount: number; label: string } | undefined;
+  variantFactor:
+    | { factor: number; sampleCount: number; label: string; baselineName: string }
+    | undefined;
 }) {
   if (variantFactor === undefined) return <>—</>;
-  const { factor, sampleCount, label } = variantFactor;
+  const { factor, sampleCount, label, baselineName } = variantFactor;
   if (sampleCount === 0) return <span style={muted}>no baseline</span>;
   return (
     <>
       <span style={muted}>{label}</span>
       <br />
-      {Math.round(factor * 100)}% of baseline
+      {Math.round(factor * 100)}% of {baselineName}
       <br />
       <span style={muted}>
         est. from {sampleCount} session{sampleCount !== 1 ? "s" : ""}
