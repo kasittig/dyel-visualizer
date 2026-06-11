@@ -54,7 +54,7 @@ export function predictE1RM(sessions: TrainingSession[], targetDate: Date): numb
   return a.e1rm + (b.e1rm - a.e1rm) * ((target - a.t) / dt);
 }
 
-function invertE1RM(e1rm: number, reps: number): number {
+export function invertE1RM(e1rm: number, reps: number): number {
   if (reps === 1) return e1rm;
   return e1rm / (1 + reps / 30);
 }
