@@ -109,7 +109,7 @@ function App() {
 
   const state = useConjugateData(sheetRef);
 
-  const pairs = state.status === "success" ? state.pairs : [];
+  const pairs = useMemo(() => (state.status === "success" ? state.pairs : []), [state]);
 
   const squatRows = useMemo(() => pairs.filter(([ex]) => ex.type === "squat"), [pairs]);
   const benchRows = useMemo(() => pairs.filter(([ex]) => ex.type === "bench"), [pairs]);
