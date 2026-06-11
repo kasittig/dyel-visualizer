@@ -37,7 +37,6 @@ describe("parseConjugateData", () => {
     expect(exercise.bar).toBe("standard");
     expect(exercise.equipment).toBeNull();
     expect(exercise.addlWts).toEqual([]);
-    expect(exercise.sessions).toEqual([]);
     expect(session.weight).toBe(315);
     expect(session.reps).toBe(5);
     expect(session.sets).toBe(3);
@@ -56,7 +55,7 @@ describe("parseConjugateData", () => {
     const result = parseConjugateData(csv("2024-01-15,Bench (2 Board),4,3,275"));
     const [exercise, session] = result[0];
     expect(exercise.type).toBe("bench");
-    expect(exercise.equipment).toBe("2 board");
+    expect(exercise.equipment).toBe("board");
     expect(session.sets).toBe(4);
   });
 
@@ -71,7 +70,7 @@ describe("parseConjugateData", () => {
   it("parses a trap bar deadlift", () => {
     const result = parseConjugateData(csv("2024-01-15,Trap Bar Deadlift,4,6,275"));
     const [exercise] = result[0];
-    expect(exercise.bar).toBe("trap bar");
+    expect(exercise.bar).toBe("trap");
     expect(exercise.stance).toBe("competition");
   });
 
@@ -122,11 +121,10 @@ describe("nameToExercise", () => {
       expect(nameToExercise("Squat")).toEqual({
         type: "squat",
         bar: "standard",
-        stance: null,
+        stance: "competition",
         addlWts: [],
         equipment: null,
         displayName: "Squat",
-        sessions: [],
       });
     });
 
@@ -161,11 +159,10 @@ describe("nameToExercise", () => {
       expect(nameToExercise("Bench")).toEqual({
         type: "bench",
         bar: "standard",
-        stance: "competition grip",
+        stance: "competition",
         addlWts: [],
         equipment: null,
         displayName: "Bench",
-        sessions: [],
       });
     });
 
@@ -180,14 +177,14 @@ describe("nameToExercise", () => {
       expect(nameToExercise("Bench (American Bar, CG)")).toMatchObject({
         type: "bench",
         bar: "american",
-        stance: "close grip",
+        stance: "close",
       });
     });
 
     it("parses Bench (CG)", () => {
       expect(nameToExercise("Bench (CG)")).toMatchObject({
         type: "bench",
-        stance: "close grip",
+        stance: "close",
       });
     });
 
@@ -232,7 +229,7 @@ describe("nameToExercise", () => {
     it("parses Bench (2 Board)", () => {
       expect(nameToExercise("Bench (2 Board)")).toMatchObject({
         type: "bench",
-        equipment: "2 board",
+        equipment: "board",
       });
     });
 
@@ -313,7 +310,6 @@ describe("nameToExercise", () => {
         addlWts: [],
         equipment: null,
         displayName: "Deadlift",
-        sessions: [],
       });
     });
 
@@ -348,7 +344,7 @@ describe("nameToExercise", () => {
     it("parses Trap Bar Deadlift", () => {
       expect(nameToExercise("Trap Bar Deadlift")).toMatchObject({
         type: "deadlift",
-        bar: "trap bar",
+        bar: "trap",
         stance: "competition",
       });
     });
@@ -356,7 +352,7 @@ describe("nameToExercise", () => {
     it("parses Deadlift (trap bar)", () => {
       expect(nameToExercise("Deadlift (trap bar)")).toMatchObject({
         type: "deadlift",
-        bar: "trap bar",
+        bar: "trap",
         stance: "competition",
       });
     });
