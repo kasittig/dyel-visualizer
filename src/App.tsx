@@ -27,13 +27,47 @@ function defaultBaselineName(rows: ConjugateDataPair[]): string | null {
 }
 
 type SheetRef = { id: string; published: boolean };
-type LiftTab = "squat" | "bench" | "deadlift";
+type LiftTab = "squat" | "bench" | "deadlift" | "accessory";
 
-const TABS: { id: LiftTab; label: string }[] = [
-  { id: "squat", label: "Squat" },
-  { id: "bench", label: "Bench" },
-  { id: "deadlift", label: "Deadlift" },
+type TabConfig = {
+  id: LiftTab;
+  label: string;
+  heading: string;
+  columnHeader: string;
+  showSearch: boolean;
+};
+
+const MAIN_TABS: TabConfig[] = [
+  {
+    id: "squat",
+    label: "Squat",
+    heading: "Variations",
+    columnHeader: "Variation",
+    showSearch: false,
+  },
+  {
+    id: "bench",
+    label: "Bench",
+    heading: "Variations",
+    columnHeader: "Variation",
+    showSearch: false,
+  },
+  {
+    id: "deadlift",
+    label: "Deadlift",
+    heading: "Variations",
+    columnHeader: "Variation",
+    showSearch: false,
+  },
 ];
+
+const ACCESSORY_TAB: TabConfig = {
+  id: "accessory",
+  label: "Accessories",
+  heading: "Accessories",
+  columnHeader: "Exercise",
+  showSearch: true,
+};
 
 function extractSheetRef(input: string): SheetRef | null {
   // Published web URL: .../d/e/PUBLISHED_ID/pubhtml (may have /u/N/ before /d/)
@@ -61,11 +95,13 @@ function App() {
     squat: new Set(),
     bench: new Set(),
     deadlift: new Set(),
+    accessory: new Set(),
   });
   const [filterState, setFilterState] = useState<Record<LiftTab, FilterState>>({
     squat: emptyFilters(),
     bench: emptyFilters(),
     deadlift: emptyFilters(),
+    accessory: emptyFilters(),
   });
   const [baselineNames, setBaselineNames] = useState<Partial<Record<LiftTab, string>>>({});
   const sheetRef = extractSheetRef(url);
@@ -78,23 +114,34 @@ function App() {
   const squatRows = useMemo(() => pairs.filter(([ex]) => ex.type === "squat"), [pairs]);
   const benchRows = useMemo(() => pairs.filter(([ex]) => ex.type === "bench"), [pairs]);
   const deadliftRows = useMemo(() => pairs.filter(([ex]) => ex.type === "deadlift"), [pairs]);
+  const accessoryRows = useMemo(() => pairs.filter(([ex]) => ex.type === "accessory"), [pairs]);
 
   const effectiveBaselineNames = useMemo(() => {
     const tabRows: Record<LiftTab, ConjugateDataPair[]> = {
       squat: squatRows,
       bench: benchRows,
       deadlift: deadliftRows,
+      accessory: accessoryRows,
     };
     const result: Partial<Record<LiftTab, string>> = {};
-    for (const tab of ["squat", "bench", "deadlift"] as LiftTab[]) {
+    for (const tab of ["squat", "bench", "deadlift", "accessory"] as LiftTab[]) {
       const name = baselineNames[tab] ?? defaultBaselineName(tabRows[tab]);
       if (name) result[tab] = name;
     }
     return result;
-  }, [squatRows, benchRows, deadliftRows, baselineNames]);
+  }, [squatRows, benchRows, deadliftRows, accessoryRows, baselineNames]);
+
+  const tabs = [...MAIN_TABS, ...(accessoryRows.length > 0 ? [ACCESSORY_TAB] : [])];
+  const activeTabConfig = tabs.find((t) => t.id === activeTab) ?? MAIN_TABS[0];
 
   const activeRows =
-    activeTab === "squat" ? squatRows : activeTab === "bench" ? benchRows : deadliftRows;
+    activeTab === "squat"
+      ? squatRows
+      : activeTab === "bench"
+        ? benchRows
+        : activeTab === "deadlift"
+          ? deadliftRows
+          : accessoryRows;
 
   const filteredRows = useMemo(
     () => applyFilters(activeRows, filterState[activeTab]),
@@ -145,11 +192,17 @@ function App() {
             value={url}
             onChange={(e) => {
               setUrl(e.target.value);
-              setHiddenVariations({ squat: new Set(), bench: new Set(), deadlift: new Set() });
+              setHiddenVariations({
+                squat: new Set(),
+                bench: new Set(),
+                deadlift: new Set(),
+                accessory: new Set(),
+              });
               setFilterState({
                 squat: emptyFilters(),
                 bench: emptyFilters(),
                 deadlift: emptyFilters(),
+                accessory: emptyFilters(),
               });
               setBaselineNames({});
             }}
@@ -184,7 +237,7 @@ function App() {
                 marginBottom: "1rem",
               }}
             >
-              {TABS.map(({ id, label }) => (
+              {tabs.map(({ id, label }) => (
                 <button
                   key={id}
                   onClick={() => setActiveTab(id)}
@@ -221,8 +274,9 @@ function App() {
               hidden={effectiveHidden}
               onToggle={toggleVariation}
               baselineNames={effectiveBaselineNames}
-              heading="Variations"
-              columnHeader="Variation"
+              heading={activeTabConfig.heading}
+              columnHeader={activeTabConfig.columnHeader}
+              showSearch={activeTabConfig.showSearch}
             />
           </>
         )}

@@ -14,9 +14,11 @@ describe("parseConjugateData", () => {
     expect(parseConjugateData("foo,bar\n1,2")).toEqual([]);
   });
 
-  it("skips rows with unrecognized exercise names", () => {
+  it("parses unrecognized exercise names as accessories", () => {
     const result = parseConjugateData(csv("2024-01-01,Lat Pulldown,3,10,100"));
-    expect(result).toHaveLength(0);
+    expect(result).toHaveLength(1);
+    expect(result[0][0].type).toBe("accessory");
+    expect(result[0][0].displayName).toBe("Lat Pulldown");
   });
 
   it("skips rows with missing or invalid date", () => {
@@ -95,7 +97,7 @@ describe("parseConjugateData", () => {
     expect(parseConjugateData(noSets)[0][1].sets).toBe(1);
   });
 
-  it("parses multiple rows and skips non-conjugate ones", () => {
+  it("parses all rows, classifying non-conjugate ones as accessories", () => {
     const result = parseConjugateData(
       csv(
         "2024-01-15,Squat,3,5,315",
@@ -104,9 +106,11 @@ describe("parseConjugateData", () => {
         "2024-01-15,Bicep Curl,3,12,40"
       )
     );
-    expect(result).toHaveLength(2);
+    expect(result).toHaveLength(4);
     expect(result[0][0].type).toBe("squat");
-    expect(result[1][0].type).toBe("bench");
+    expect(result[1][0].type).toBe("accessory");
+    expect(result[2][0].type).toBe("bench");
+    expect(result[3][0].type).toBe("accessory");
   });
 
   it("sets displayName from input", () => {
@@ -386,13 +390,27 @@ describe("nameToExercise", () => {
     });
   });
 
-  describe("non-conjugate exercises", () => {
-    it("returns null for Lat Pulldown", () => {
-      expect(nameToExercise("Lat Pulldown")).toBeNull();
+  describe("accessory exercises", () => {
+    it("classifies Lat Pulldown as accessory", () => {
+      expect(nameToExercise("Lat Pulldown")).toEqual({
+        type: "accessory",
+        bar: null,
+        stance: null,
+        addlWts: [],
+        equipment: null,
+        displayName: "Lat Pulldown",
+      });
     });
 
-    it("returns null for Overhead Press", () => {
-      expect(nameToExercise("Overhead Press")).toBeNull();
+    it("classifies Overhead Press as accessory", () => {
+      expect(nameToExercise("Overhead Press")).toEqual({
+        type: "accessory",
+        bar: null,
+        stance: null,
+        addlWts: [],
+        equipment: null,
+        displayName: "Overhead Press",
+      });
     });
   });
 });

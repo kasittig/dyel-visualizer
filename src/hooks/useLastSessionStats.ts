@@ -130,6 +130,10 @@ export function useLastSessionStats(
     >();
     for (const [name, sessions] of variantFactorSessionsByName) {
       const type = variantFactorNameToType.get(name)!;
+      // don't calculate variant factors for accessories
+      if (type === "accessory") {
+        continue;
+      }
       const label = variantFactorNameToLabel.get(name)!;
       const baselineName = baselineExByType.get(type)?.displayName ?? "baseline";
       const { factor, sampleCount } = fitVariantFactor(baselineByType.get(type) ?? [], sessions);
