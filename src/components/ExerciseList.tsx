@@ -1,5 +1,5 @@
-import { useCallback, useMemo, useState } from "react";
-import type { SheetRow } from "../hooks/useSheetData";
+import { useState } from "react";
+import type { ConjugateDataPair } from "../hooks/useConjugateData";
 import { useLastSessionStats } from "../hooks/useLastSessionStats";
 import { LastSessionCell, OneRepMaxCell, PredictedE1RMCell } from "./ExerciseCells";
 import { setsRepsLabel } from "../utils/setsRepsLabel";
@@ -13,7 +13,7 @@ export function ExerciseList({
   columnHeader = "Movement",
   showSearch = false,
 }: {
-  rows: { row: SheetRow; label: string | null }[];
+  rows: ConjugateDataPair[];
   hidden: Set<string>;
   onToggle: (label: string) => void;
   heading?: string;
@@ -22,10 +22,6 @@ export function ExerciseList({
 }) {
   const [query, setQuery] = useState("");
 
-  const sheetRows = useMemo(() => rows.map((r) => r.row), [rows]);
-  const rowLabelMap = useMemo(() => new Map(rows.map((r) => [r.row, r.label])), [rows]);
-  const keyFn = useCallback((row: SheetRow) => rowLabelMap.get(row) ?? null, [rowLabelMap]);
-
   const {
     lastPerformed,
     last1RepSet,
@@ -33,7 +29,7 @@ export function ExerciseList({
     lastSessionBestSet,
     lastSessionAllSets,
     predictedE1RM,
-  } = useLastSessionStats(sheetRows, keyFn);
+  } = useLastSessionStats(rows);
 
   const allLabels = [...lastPerformed.keys()].sort();
   if (allLabels.length === 0) return <p>No data found.</p>;

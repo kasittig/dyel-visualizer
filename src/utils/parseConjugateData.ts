@@ -1,5 +1,4 @@
 import Papa from "papaparse";
-import { findCol } from "../hooks/useSheetData";
 import {
   type ConjugateAddlWt,
   type ConjugateBar,
@@ -10,6 +9,12 @@ import {
 } from "../types/conjugate";
 
 type RawRow = Record<string, string>;
+
+export function findCol(row: RawRow, keyword: string): string | undefined {
+  const re = new RegExp(`^${keyword}(\\W|$)`);
+  const key = Object.keys(row).find((k) => re.test(k));
+  return key !== undefined ? row[key] : undefined;
+}
 
 export function nameToExercise(name: string): ConjugateExercise | null {
   const displayName = name;
