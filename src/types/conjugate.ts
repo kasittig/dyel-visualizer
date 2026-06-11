@@ -52,7 +52,7 @@ export interface TrainingSession {
 }
 
 export interface ConjugateExercise {
-  type: "squat" | "bench" | "deadlift";
+  type: "squat" | "bench" | "deadlift" | "accessory";
   bar: ConjugateBar | null;
   stance: ConjugateStance | null;
   addlWts: ConjugateAddlWt[];

@@ -102,13 +102,12 @@ export function nameToExercise(name: string): ConjugateExercise | null {
     ...(hasReverseBands ? (["rev. bands"] as const) : []),
   ];
 
-  const type = parseLiftType(base, tokens);
-  if (!type) return null;
+  const type = parseLiftType(base, tokens) ?? "accessory";
 
   return {
     type,
-    bar: parseBar(lower, tokens) ?? "standard",
-    stance: parseStance(lower, tokens) ?? "competition",
+    bar: parseBar(lower, tokens) ?? (type === "accessory" ? null : "standard"),
+    stance: parseStance(lower, tokens) ?? (type === "accessory" ? null : "competition"),
     addlWts,
     equipment: parseEquipment(lower, tokens),
     displayName,

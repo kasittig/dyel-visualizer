@@ -27,9 +27,9 @@ function defaultBaselineName(rows: ConjugateDataPair[]): string | null {
 }
 
 type SheetRef = { id: string; published: boolean };
-type LiftTab = "squat" | "bench" | "deadlift";
+type LiftTab = "squat" | "bench" | "deadlift" | "accessory";
 
-const TABS: { id: LiftTab; label: string }[] = [
+const MAIN_TABS: { id: LiftTab; label: string }[] = [
   { id: "squat", label: "Squat" },
   { id: "bench", label: "Bench" },
   { id: "deadlift", label: "Deadlift" },
@@ -61,11 +61,13 @@ function App() {
     squat: new Set(),
     bench: new Set(),
     deadlift: new Set(),
+    accessory: new Set(),
   });
   const [filterState, setFilterState] = useState<Record<LiftTab, FilterState>>({
     squat: emptyFilters(),
     bench: emptyFilters(),
     deadlift: emptyFilters(),
+    accessory: emptyFilters(),
   });
   const [baselineNames, setBaselineNames] = useState<Partial<Record<LiftTab, string>>>({});
   const sheetRef = extractSheetRef(url);
@@ -78,12 +80,14 @@ function App() {
   const squatRows = useMemo(() => pairs.filter(([ex]) => ex.type === "squat"), [pairs]);
   const benchRows = useMemo(() => pairs.filter(([ex]) => ex.type === "bench"), [pairs]);
   const deadliftRows = useMemo(() => pairs.filter(([ex]) => ex.type === "deadlift"), [pairs]);
+  const accessoryRows = useMemo(() => pairs.filter(([ex]) => ex.type === "accessory"), [pairs]);
 
   const effectiveBaselineNames = useMemo(() => {
     const tabRows: Record<LiftTab, ConjugateDataPair[]> = {
       squat: squatRows,
       bench: benchRows,
       deadlift: deadliftRows,
+      accessory: [],
     };
     const result: Partial<Record<LiftTab, string>> = {};
     for (const tab of ["squat", "bench", "deadlift"] as LiftTab[]) {
@@ -94,7 +98,13 @@ function App() {
   }, [squatRows, benchRows, deadliftRows, baselineNames]);
 
   const activeRows =
-    activeTab === "squat" ? squatRows : activeTab === "bench" ? benchRows : deadliftRows;
+    activeTab === "squat"
+      ? squatRows
+      : activeTab === "bench"
+        ? benchRows
+        : activeTab === "deadlift"
+          ? deadliftRows
+          : accessoryRows;
 
   const filteredRows = useMemo(
     () => applyFilters(activeRows, filterState[activeTab]),
@@ -145,11 +155,17 @@ function App() {
             value={url}
             onChange={(e) => {
               setUrl(e.target.value);
-              setHiddenVariations({ squat: new Set(), bench: new Set(), deadlift: new Set() });
+              setHiddenVariations({
+                squat: new Set(),
+                bench: new Set(),
+                deadlift: new Set(),
+                accessory: new Set(),
+              });
               setFilterState({
                 squat: emptyFilters(),
                 bench: emptyFilters(),
                 deadlift: emptyFilters(),
+                accessory: emptyFilters(),
               });
               setBaselineNames({});
             }}
@@ -184,7 +200,12 @@ function App() {
                 marginBottom: "1rem",
               }}
             >
-              {TABS.map(({ id, label }) => (
+              {[
+                ...MAIN_TABS,
+                ...(accessoryRows.length > 0
+                  ? [{ id: "accessory" as LiftTab, label: "Accessories" }]
+                  : []),
+              ].map(({ id, label }) => (
                 <button
                   key={id}
                   onClick={() => setActiveTab(id)}
@@ -205,24 +226,29 @@ function App() {
                 </button>
               ))}
             </div>
-            <BaselineSelect
-              rows={activeRows}
-              selectedName={effectiveBaselineNames[activeTab] ?? null}
-              onSelect={(name) => setBaselineNames((prev) => ({ ...prev, [activeTab]: name }))}
-            />
-            <ExerciseFilters
-              rows={activeRows}
-              filters={filterState[activeTab]}
-              onToggle={toggleFilter}
-            />
-            <ConjugateCharts rows={filteredRows} hidden={effectiveHidden} />
+            {activeTab !== "accessory" && (
+              <>
+                <BaselineSelect
+                  rows={activeRows}
+                  selectedName={effectiveBaselineNames[activeTab] ?? null}
+                  onSelect={(name) => setBaselineNames((prev) => ({ ...prev, [activeTab]: name }))}
+                />
+                <ExerciseFilters
+                  rows={activeRows}
+                  filters={filterState[activeTab]}
+                  onToggle={toggleFilter}
+                />
+                <ConjugateCharts rows={filteredRows} hidden={effectiveHidden} />
+              </>
+            )}
             <ExerciseList
-              rows={filteredRows}
+              rows={activeTab === "accessory" ? activeRows : filteredRows}
               hidden={effectiveHidden}
               onToggle={toggleVariation}
-              baselineNames={effectiveBaselineNames}
-              heading="Variations"
-              columnHeader="Variation"
+              baselineNames={activeTab === "accessory" ? {} : effectiveBaselineNames}
+              heading={activeTab === "accessory" ? "Accessories" : "Variations"}
+              columnHeader={activeTab === "accessory" ? "Exercise" : "Variation"}
+              showSearch={activeTab === "accessory"}
             />
           </>
         )}
