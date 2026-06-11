@@ -17,6 +17,7 @@ export function BaselineSelect({
       exercises.push(ex.displayName);
     }
   }
+  exercises.sort((a, b) => a.localeCompare(b));
 
   if (exercises.length <= 1 || selectedName === null) return null;
 
