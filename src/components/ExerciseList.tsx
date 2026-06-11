@@ -1,7 +1,12 @@
 import { useState } from "react";
 import type { ConjugateDataPair } from "../hooks/useConjugateData";
 import { useLastSessionStats } from "../hooks/useLastSessionStats";
-import { LastSessionCell, OneRepMaxCell, PredictedE1RMCell } from "./ExerciseCells";
+import {
+  ChainOffsetCell,
+  LastSessionCell,
+  OneRepMaxCell,
+  PredictedE1RMCell,
+} from "./ExerciseCells";
 import { setsRepsLabel } from "../utils/setsRepsLabel";
 import { th, td } from "../utils/tableStyles";
 
@@ -29,7 +34,10 @@ export function ExerciseList({
     lastSessionBestSet,
     lastSessionAllSets,
     predictedE1RM,
+    chainOffset,
   } = useLastSessionStats(rows);
+
+  const hasChainExercises = chainOffset.size > 0;
 
   const allLabels = [...lastPerformed.keys()].sort();
   if (allLabels.length === 0) return <p>No data found.</p>;
@@ -67,6 +75,7 @@ export function ExerciseList({
             <th style={th}>Last 1RM</th>
             <th style={th}>Latest Session</th>
             <th style={th}>Predicted e1RM</th>
+            {hasChainExercises && <th style={th}>Chain Offset</th>}
           </tr>
         </thead>
         <tbody>
@@ -81,7 +90,10 @@ export function ExerciseList({
             if (isHidden) {
               return (
                 <tr key={label} onClick={() => onToggle(label)} style={{ cursor: "pointer" }}>
-                  <td colSpan={4} style={{ ...td, color: "#9ca3af", fontSize: "0.85rem" }}>
+                  <td
+                    colSpan={hasChainExercises ? 5 : 4}
+                    style={{ ...td, color: "#9ca3af", fontSize: "0.85rem" }}
+                  >
                     {label}
                   </td>
                 </tr>
@@ -103,6 +115,11 @@ export function ExerciseList({
                 <td style={td}>
                   <PredictedE1RMCell predicted={predictedE1RM.get(label)} />
                 </td>
+                {hasChainExercises && (
+                  <td style={td}>
+                    <ChainOffsetCell chainOffset={chainOffset.get(label)} />
+                  </td>
+                )}
               </tr>
             );
           })}
