@@ -3,6 +3,7 @@ import { useConjugateData } from "./hooks/useConjugateData";
 import { ConjugateCharts } from "./components/ConjugateCharts";
 import { ExerciseList } from "./components/ExerciseList";
 import { ExerciseFilters } from "./components/ExerciseFilters";
+import { BaselineSelect } from "./components/BaselineSelect";
 import { applyFilters, emptyFilters } from "./utils/exerciseFilters";
 import type { FilterState } from "./utils/exerciseFilters";
 
@@ -47,6 +48,7 @@ function App() {
     bench: emptyFilters(),
     deadlift: emptyFilters(),
   });
+  const [baselineNames, setBaselineNames] = useState<Partial<Record<LiftTab, string>>>({});
   const sheetRef = extractSheetRef(url);
   const invalidUrl = url.length > 0 && !sheetRef;
 
@@ -112,6 +114,7 @@ function App() {
             bench: emptyFilters(),
             deadlift: emptyFilters(),
           });
+          setBaselineNames({});
         }}
         placeholder="https://docs.google.com/spreadsheets/d/…"
         style={{ width: "100%", padding: "0.5rem", boxSizing: "border-box" }}
@@ -163,6 +166,11 @@ function App() {
                 </button>
               ))}
             </div>
+            <BaselineSelect
+              rows={activeRows}
+              selectedName={baselineNames[activeTab] ?? null}
+              onSelect={(name) => setBaselineNames((prev) => ({ ...prev, [activeTab]: name }))}
+            />
             <ExerciseFilters
               rows={activeRows}
               filters={filterState[activeTab]}
@@ -173,6 +181,7 @@ function App() {
               rows={filteredRows}
               hidden={effectiveHidden}
               onToggle={toggleVariation}
+              baselineNames={baselineNames}
               heading="Variations"
               columnHeader="Variation"
             />

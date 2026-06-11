@@ -15,6 +15,7 @@ export function ExerciseList({
   rows,
   hidden,
   onToggle,
+  baselineNames = {},
   heading = "Exercises",
   columnHeader = "Movement",
   showSearch = false,
@@ -22,6 +23,7 @@ export function ExerciseList({
   rows: ConjugateDataPair[];
   hidden: Set<string>;
   onToggle: (label: string) => void;
+  baselineNames?: Partial<Record<string, string>>;
   heading?: string;
   columnHeader?: string;
   showSearch?: boolean;
@@ -37,7 +39,7 @@ export function ExerciseList({
     predictedE1RM,
     addlWtOffset,
     variantFactor,
-  } = useLastSessionStats(rows);
+  } = useLastSessionStats(rows, baselineNames);
 
   const hasAddlWtExercises = addlWtOffset.size > 0;
   const hasVariantExercises = variantFactor.size > 0;

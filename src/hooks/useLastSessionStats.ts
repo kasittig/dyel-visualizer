@@ -8,8 +8,23 @@ function familyKey(ex: ConjugateExercise): string {
   return [ex.type, ex.bar ?? "", ex.stance ?? "", ex.equipment ?? ""].join("|");
 }
 
-export function useLastSessionStats(pairs: ConjugateDataPair[]) {
+export function useLastSessionStats(
+  pairs: ConjugateDataPair[],
+  baselineNames: Partial<Record<string, string>> = {}
+) {
   return useMemo(() => {
+    // Build a map of baseline exercise per lift type from the provided display names.
+    const baselineExByType = new Map<string, ConjugateExercise>();
+    for (const [exercise] of pairs) {
+      const targetName = baselineNames[exercise.type];
+      if (
+        targetName &&
+        exercise.displayName === targetName &&
+        !baselineExByType.has(exercise.type)
+      ) {
+        baselineExByType.set(exercise.type, exercise);
+      }
+    }
     const lastPerformed = new Map<string, Date>();
     const last1RepSet = new Map<string, { date: Date; weight: number }>();
     const lastSessionE1RM = new Map<string, number>();
@@ -97,15 +112,20 @@ export function useLastSessionStats(pairs: ConjugateDataPair[]) {
     const variantFactorNameToType = new Map<string, string>();
 
     for (const [exercise, session] of pairs) {
-      const isBaseline =
-        exercise.bar === "standard" &&
-        exercise.stance === "competition" &&
-        exercise.equipment === null &&
-        exercise.addlWts.length === 0;
-      const isVariant =
-        exercise.bar !== "standard" ||
-        exercise.stance !== "competition" ||
-        exercise.equipment !== null;
+      const baselineEx = baselineExByType.get(exercise.type);
+      const isBaseline = baselineEx
+        ? exercise.displayName === baselineEx.displayName
+        : exercise.bar === "standard" &&
+          exercise.stance === "competition" &&
+          exercise.equipment === null &&
+          exercise.addlWts.length === 0;
+      const isVariant = baselineEx
+        ? exercise.bar !== baselineEx.bar ||
+          exercise.stance !== baselineEx.stance ||
+          exercise.equipment !== baselineEx.equipment
+        : exercise.bar !== "standard" ||
+          exercise.stance !== "competition" ||
+          exercise.equipment !== null;
       if (isBaseline) {
         const sessions = baselineByType.get(exercise.type) ?? [];
         sessions.push(session);
@@ -137,5 +157,5 @@ export function useLastSessionStats(pairs: ConjugateDataPair[]) {
       addlWtOffset,
       variantFactor,
     };
-  }, [pairs]);
+  }, [pairs, baselineNames]);
 }
