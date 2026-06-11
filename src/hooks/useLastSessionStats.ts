@@ -8,8 +8,23 @@ function familyKey(ex: ConjugateExercise): string {
   return [ex.type, ex.bar ?? "", ex.stance ?? "", ex.equipment ?? ""].join("|");
 }
 
-export function useLastSessionStats(pairs: ConjugateDataPair[]) {
+export function useLastSessionStats(
+  pairs: ConjugateDataPair[],
+  baselineNames: Partial<Record<string, string>> = {}
+) {
   return useMemo(() => {
+    // Build a map of baseline exercise per lift type from the provided display names.
+    const baselineExByType = new Map<string, ConjugateExercise>();
+    for (const [exercise] of pairs) {
+      const targetName = baselineNames[exercise.type];
+      if (
+        targetName &&
+        exercise.displayName === targetName &&
+        !baselineExByType.has(exercise.type)
+      ) {
+        baselineExByType.set(exercise.type, exercise);
+      }
+    }
     const lastPerformed = new Map<string, Date>();
     const last1RepSet = new Map<string, { date: Date; weight: number }>();
     const lastSessionE1RM = new Map<string, number>();
@@ -87,25 +102,15 @@ export function useLastSessionStats(pairs: ConjugateDataPair[]) {
     }
 
     // Pass 4: fit variant factor per bar/stance/equipment exercise.
-    // Baseline: bar=standard, stance=competition, equipment=null, addlWts=[].
-    // Variant: any exercise where bar≠standard, stance≠competition, or equipment≠null.
-    // Exercises with addlWts are also included here when they have a non-baseline
-    // bar/stance/equipment — they get both a Pass 3 offset and a Pass 4 factor.
     const baselineByType = new Map<string, TrainingSession[]>();
     const variantFactorSessionsByName = new Map<string, TrainingSession[]>();
     const variantFactorNameToLabel = new Map<string, string>();
     const variantFactorNameToType = new Map<string, string>();
 
     for (const [exercise, session] of pairs) {
-      const isBaseline =
-        exercise.bar === "standard" &&
-        exercise.stance === "competition" &&
-        exercise.equipment === null &&
-        exercise.addlWts.length === 0;
-      const isVariant =
-        exercise.bar !== "standard" ||
-        exercise.stance !== "competition" ||
-        exercise.equipment !== null;
+      const baselineEx = baselineExByType.get(exercise.type);
+      const isBaseline = exercise.displayName === baselineEx?.displayName;
+      const isVariant = !isBaseline;
       if (isBaseline) {
         const sessions = baselineByType.get(exercise.type) ?? [];
         sessions.push(session);
@@ -119,12 +124,16 @@ export function useLastSessionStats(pairs: ConjugateDataPair[]) {
       }
     }
 
-    const variantFactor = new Map<string, { factor: number; sampleCount: number; label: string }>();
+    const variantFactor = new Map<
+      string,
+      { factor: number; sampleCount: number; label: string; baselineName: string }
+    >();
     for (const [name, sessions] of variantFactorSessionsByName) {
       const type = variantFactorNameToType.get(name)!;
       const label = variantFactorNameToLabel.get(name)!;
+      const baselineName = baselineExByType.get(type)?.displayName ?? "baseline";
       const { factor, sampleCount } = fitVariantFactor(baselineByType.get(type) ?? [], sessions);
-      variantFactor.set(name, { factor, sampleCount, label });
+      variantFactor.set(name, { factor, sampleCount, label, baselineName });
     }
 
     return {
@@ -137,5 +146,5 @@ export function useLastSessionStats(pairs: ConjugateDataPair[]) {
       addlWtOffset,
       variantFactor,
     };
-  }, [pairs]);
+  }, [pairs, baselineNames]);
 }

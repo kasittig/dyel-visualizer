@@ -44,6 +44,7 @@ const STANCE_DETECTORS: Detector<ConjugateStance> = [
   ["romanian", (l) => l.includes("romanian")],
   ["sumo", (l) => l.includes("sumo")],
   ["conventional", (l) => l.includes("conventional")],
+  ["front", (l) => l.includes("front")],
   ["opposite", (l) => l.includes("opposite")],
   ["competition", (l) => l.includes("competition")],
 ];

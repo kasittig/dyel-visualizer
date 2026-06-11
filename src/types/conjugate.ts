@@ -19,6 +19,7 @@ export type ConjugateStance =
   | "sumo"
   | "conventional"
   | "competition"
+  | "front"
   | "opposite"
   | "medium"
   | "wide"

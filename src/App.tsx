@@ -3,8 +3,28 @@ import { useConjugateData } from "./hooks/useConjugateData";
 import { ConjugateCharts } from "./components/ConjugateCharts";
 import { ExerciseList } from "./components/ExerciseList";
 import { ExerciseFilters } from "./components/ExerciseFilters";
+import { BaselineSelect } from "./components/BaselineSelect";
 import { applyFilters, emptyFilters } from "./utils/exerciseFilters";
+import type { ConjugateDataPair } from "./hooks/useConjugateData";
 import type { FilterState } from "./utils/exerciseFilters";
+
+function defaultBaselineName(rows: ConjugateDataPair[]): string | null {
+  let first: string | null = null;
+  const seen = new Set<string>();
+  for (const [ex] of rows) {
+    if (seen.has(ex.displayName)) continue;
+    seen.add(ex.displayName);
+    if (first === null) first = ex.displayName;
+    if (
+      ex.bar === "standard" &&
+      ex.stance === "competition" &&
+      ex.equipment === null &&
+      ex.addlWts.length === 0
+    )
+      return ex.displayName;
+  }
+  return first;
+}
 
 type SheetRef = { id: string; published: boolean };
 type LiftTab = "squat" | "bench" | "deadlift";
@@ -47,6 +67,7 @@ function App() {
     bench: emptyFilters(),
     deadlift: emptyFilters(),
   });
+  const [baselineNames, setBaselineNames] = useState<Partial<Record<LiftTab, string>>>({});
   const sheetRef = extractSheetRef(url);
   const invalidUrl = url.length > 0 && !sheetRef;
 
@@ -57,6 +78,20 @@ function App() {
   const squatRows = useMemo(() => pairs.filter(([ex]) => ex.type === "squat"), [pairs]);
   const benchRows = useMemo(() => pairs.filter(([ex]) => ex.type === "bench"), [pairs]);
   const deadliftRows = useMemo(() => pairs.filter(([ex]) => ex.type === "deadlift"), [pairs]);
+
+  const effectiveBaselineNames = useMemo(() => {
+    const tabRows: Record<LiftTab, ConjugateDataPair[]> = {
+      squat: squatRows,
+      bench: benchRows,
+      deadlift: deadliftRows,
+    };
+    const result: Partial<Record<LiftTab, string>> = {};
+    for (const tab of ["squat", "bench", "deadlift"] as LiftTab[]) {
+      const name = baselineNames[tab] ?? defaultBaselineName(tabRows[tab]);
+      if (name) result[tab] = name;
+    }
+    return result;
+  }, [squatRows, benchRows, deadliftRows, baselineNames]);
 
   const activeRows =
     activeTab === "squat" ? squatRows : activeTab === "bench" ? benchRows : deadliftRows;
@@ -112,6 +147,7 @@ function App() {
             bench: emptyFilters(),
             deadlift: emptyFilters(),
           });
+          setBaselineNames({});
         }}
         placeholder="https://docs.google.com/spreadsheets/d/…"
         style={{ width: "100%", padding: "0.5rem", boxSizing: "border-box" }}
@@ -163,6 +199,11 @@ function App() {
                 </button>
               ))}
             </div>
+            <BaselineSelect
+              rows={activeRows}
+              selectedName={effectiveBaselineNames[activeTab] ?? null}
+              onSelect={(name) => setBaselineNames((prev) => ({ ...prev, [activeTab]: name }))}
+            />
             <ExerciseFilters
               rows={activeRows}
               filters={filterState[activeTab]}
@@ -173,6 +214,7 @@ function App() {
               rows={filteredRows}
               hidden={effectiveHidden}
               onToggle={toggleVariation}
+              baselineNames={effectiveBaselineNames}
               heading="Variations"
               columnHeader="Variation"
             />
