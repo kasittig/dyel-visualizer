@@ -162,16 +162,18 @@ function App() {
   }
 
   function toggleVariation(label: string) {
-    setHiddenVariations((prev) => ({ ...prev, [activeTab]: toggleInSet(prev[activeTab], label) }));
+    const tab = activeTab as LiftTab;
+    setHiddenVariations((prev) => ({ ...prev, [tab]: toggleInSet(prev[tab], label) }));
   }
 
   function toggleFilter(facet: keyof FilterState, value: string) {
+    const tab = activeTab as LiftTab;
     setFilterState((prev) => {
-      const current = prev[activeTab];
+      const current = prev[tab];
       const next = new Set(current[facet]);
       if (next.has(value)) next.delete(value);
       else next.add(value);
-      return { ...prev, [activeTab]: { ...current, [facet]: next } };
+      return { ...prev, [tab]: { ...current, [facet]: next } };
     });
   }
 
