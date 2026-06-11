@@ -104,10 +104,21 @@ export function nameToExercise(name: string): ConjugateExercise | null {
 
   const type = parseLiftType(base, tokens) ?? "accessory";
 
+  if (type === "accessory") {
+    return {
+      type,
+      bar: null,
+      stance: null,
+      addlWts: [],
+      equipment: null,
+      displayName,
+    };
+  }
+
   return {
     type,
-    bar: parseBar(lower, tokens) ?? (type === "accessory" ? null : "standard"),
-    stance: parseStance(lower, tokens) ?? (type === "accessory" ? null : "competition"),
+    bar: parseBar(lower, tokens) ?? "standard",
+    stance: parseStance(lower, tokens) ?? "competition",
     addlWts,
     equipment: parseEquipment(lower, tokens),
     displayName,
