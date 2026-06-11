@@ -1,8 +1,4 @@
-import { useEffect } from "react";
 import type { ConjugateDataPair } from "../hooks/useConjugateData";
-
-const DEFAULT_BAR = "standard";
-const DEFAULT_STANCE = "competition";
 
 export function BaselineSelect({
   rows,
@@ -14,51 +10,30 @@ export function BaselineSelect({
   onSelect: (displayName: string) => void;
 }) {
   const seen = new Set<string>();
-  const exercises: { displayName: string; isDefault: boolean }[] = [];
+  const exercises: string[] = [];
   for (const [ex] of rows) {
     if (!seen.has(ex.displayName)) {
       seen.add(ex.displayName);
-      exercises.push({
-        displayName: ex.displayName,
-        isDefault:
-          ex.bar === DEFAULT_BAR &&
-          ex.stance === DEFAULT_STANCE &&
-          ex.equipment === null &&
-          ex.addlWts.length === 0,
-      });
+      exercises.push(ex.displayName);
     }
   }
 
-  const hasMultiple = exercises.length > 1;
-  const defaultExercise = exercises.find((e) => e.isDefault) ?? exercises[0];
-  const effective = hasMultiple
-    ? selectedName && exercises.some((e) => e.displayName === selectedName)
-      ? selectedName
-      : (defaultExercise?.displayName ?? null)
-    : null;
-
-  // Sync the effective selection back to the parent so the hook always has the
-  // correct baseline name, even before the user makes an explicit change.
-  useEffect(() => {
-    if (effective !== null && selectedName !== effective) onSelect(effective);
-  }, [effective]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  if (!hasMultiple || effective === null) return null;
+  if (exercises.length <= 1 || selectedName === null) return null;
 
   return (
-    <div style={{ marginBottom: "0.75rem", fontSize: "0.75rem", color: "#6b7280" }}>
-      <label htmlFor="baseline-select" style={{ marginRight: "0.5rem" }}>
+    <div style={{ marginBottom: "0.75rem", fontSize: "0.75rem" }}>
+      <label htmlFor="baseline-select" style={{ marginRight: "0.5rem", color: "var(--text)" }}>
         Baseline:
       </label>
       <select
         id="baseline-select"
-        value={effective}
+        value={selectedName}
         onChange={(e) => onSelect(e.target.value)}
-        style={{ fontSize: "0.75rem", color: "#374151" }}
+        style={{ fontSize: "0.75rem", width: "auto" }}
       >
-        {exercises.map((ex) => (
-          <option key={ex.displayName} value={ex.displayName}>
-            {ex.displayName}
+        {exercises.map((name) => (
+          <option key={name} value={name}>
+            {name}
           </option>
         ))}
       </select>

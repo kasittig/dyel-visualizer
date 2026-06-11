@@ -102,10 +102,6 @@ export function useLastSessionStats(
     }
 
     // Pass 4: fit variant factor per bar/stance/equipment exercise.
-    // Baseline: bar=standard, stance=competition, equipment=null, addlWts=[].
-    // Variant: any exercise where bar≠standard, stance≠competition, or equipment≠null.
-    // Exercises with addlWts are also included here when they have a non-baseline
-    // bar/stance/equipment — they get both a Pass 3 offset and a Pass 4 factor.
     const baselineByType = new Map<string, TrainingSession[]>();
     const variantFactorSessionsByName = new Map<string, TrainingSession[]>();
     const variantFactorNameToLabel = new Map<string, string>();
@@ -113,19 +109,8 @@ export function useLastSessionStats(
 
     for (const [exercise, session] of pairs) {
       const baselineEx = baselineExByType.get(exercise.type);
-      const isBaseline = baselineEx
-        ? exercise.displayName === baselineEx.displayName
-        : exercise.bar === "standard" &&
-          exercise.stance === "competition" &&
-          exercise.equipment === null &&
-          exercise.addlWts.length === 0;
-      const isVariant = baselineEx
-        ? exercise.bar !== baselineEx.bar ||
-          exercise.stance !== baselineEx.stance ||
-          exercise.equipment !== baselineEx.equipment
-        : exercise.bar !== "standard" ||
-          exercise.stance !== "competition" ||
-          exercise.equipment !== null;
+      const isBaseline = exercise.displayName === baselineEx?.displayName;
+      const isVariant = !isBaseline;
       if (isBaseline) {
         const sessions = baselineByType.get(exercise.type) ?? [];
         sessions.push(session);
