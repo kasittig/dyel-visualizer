@@ -1,7 +1,12 @@
 import { useMemo } from "react";
-import { predictE1RM, fitAddlWtOffset, fitVariantFactor } from "../utils/e1rm";
-import { familyKey, variantLabel } from "../types/conjugate";
-import type { ConjugateExercise, TrainingSession } from "../types/conjugate";
+import {
+  predictE1RM,
+  fitAddlWtOffset,
+  fitVariantFactor,
+  familyKey,
+  variantLabel,
+} from "@dyel/core";
+import type { ConjugateExercise, TrainingSession } from "@dyel/core";
 import type { ConjugateDataPair } from "./useConjugateData";
 
 export function useLastSessionStats(

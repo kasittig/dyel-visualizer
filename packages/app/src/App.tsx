@@ -5,9 +5,9 @@ import { ExerciseList } from "./components/ExerciseList";
 import { ExerciseFilters } from "./components/ExerciseFilters";
 import { BaselineSelect } from "./components/BaselineSelect";
 import { RepCalculator } from "./components/RepCalculator";
-import { applyFilters, emptyFilters } from "./utils/exerciseFilters";
+import { applyFilters, emptyFilters } from "@dyel/core";
 import type { ConjugateDataPair } from "./hooks/useConjugateData";
-import type { FilterState } from "./utils/exerciseFilters";
+import type { FilterState } from "@dyel/core";
 
 function defaultBaselineName(rows: ConjugateDataPair[]): string | null {
   let first: string | null = null;

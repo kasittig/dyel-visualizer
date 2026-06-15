@@ -1,5 +1,5 @@
 import { memo, useMemo, useState } from "react";
-import type { FilterState } from "../utils/exerciseFilters";
+import type { FilterState } from "@dyel/core";
 import type { ConjugateDataPair } from "../hooks/useConjugateData";
 
 const FACET_LABELS: Record<keyof FilterState, string> = {

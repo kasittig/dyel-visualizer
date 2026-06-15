@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
-import { parseConjugateData } from "../utils/parseConjugateData";
-import type { ConjugateExercise, TrainingSession } from "../types/conjugate";
+import { parseConjugateData } from "@dyel/core";
+import type { ConjugateDataPair } from "@dyel/core";
 
-export type ConjugateDataPair = [ConjugateExercise, TrainingSession];
+export type { ConjugateDataPair } from "@dyel/core";
 
 type SheetRef = { id: string; published: boolean };
 

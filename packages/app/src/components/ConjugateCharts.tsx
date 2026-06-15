@@ -8,7 +8,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { formatDate, LINE_COLORS } from "../utils/chartUtils";
+import { formatDate, LINE_COLORS } from "@dyel/core";
 import type { ConjugateDataPair } from "../hooks/useConjugateData";
 
 export function ConjugateCharts({

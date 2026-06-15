@@ -1,5 +1,6 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
+import { fileURLToPath } from "node:url";
 import type { Plugin } from "vite";
 
 function sheetsProxyPlugin(): Plugin {
@@ -28,4 +29,9 @@ function sheetsProxyPlugin(): Plugin {
 export default defineConfig({
   plugins: [react(), sheetsProxyPlugin()],
   base: "./",
+  resolve: {
+    alias: {
+      "@dyel/core": fileURLToPath(new URL("../core/src/index.ts", import.meta.url)),
+    },
+  },
 });

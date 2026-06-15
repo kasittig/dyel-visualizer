@@ -65,6 +65,8 @@ export interface ConjugateExercise {
   displayName: string;
 }
 
+export type ConjugateDataPair = [ConjugateExercise, TrainingSession];
+
 export function variantLabel(ex: ConjugateExercise): string {
   const parts: string[] = [];
   if (ex.bar !== "standard" && ex.bar !== null) parts.push(ex.bar);
