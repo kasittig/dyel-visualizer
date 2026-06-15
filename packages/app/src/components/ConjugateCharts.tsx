@@ -8,22 +8,33 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { formatDate, LINE_COLORS } from "@dyel/core";
+import { formatDate, LINE_COLORS, normalizeToBaseE1RM } from "@dyel/core";
+import type { ConjugateExercise } from "@dyel/core";
 import type { ConjugateDataPair } from "../hooks/useConjugateData";
+import { useLastSessionStats } from "../hooks/useLastSessionStats";
+
+const NORMALIZED_KEY = "__normalized__";
+const NORMALIZED_COLOR = "#3b82f6";
+const NORMALIZED_LABEL = "Normalized e1RM";
 
 export function ConjugateCharts({
   rows,
-  hidden,
+  shown,
+  baselineNames = {},
 }: {
   rows: ConjugateDataPair[];
-  hidden: Set<string>;
+  shown: Set<string>;
+  baselineNames?: Partial<Record<string, string>>;
 }) {
   const [legendOpen, setLegendOpen] = useState(false);
+  const [targetName, setTargetName] = useState<string | null>(null);
 
   const unit = rows[0]?.[1].unit ?? "lbs";
 
-  // label → date → best e1RM, plus derived chart data — recomputed only when rows changes
-  const { variations, data } = useMemo(() => {
+  const { addlWtOffset, variantFactor } = useLastSessionStats(rows, baselineNames);
+
+  // label → date → best e1RM — recomputed only when rows changes
+  const { variations, e1rmByLabelAndDate, allDates } = useMemo(() => {
     const e1rmByLabelAndDate = new Map<string, Map<string, number>>();
 
     for (const [exercise, session] of rows) {
@@ -41,23 +52,70 @@ export function ConjugateCharts({
       ...new Set([...e1rmByLabelAndDate.values()].flatMap((m) => [...m.keys()])),
     ].sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
 
-    const data = allDates.map((date) => {
+    return { variations, e1rmByLabelAndDate, allDates };
+  }, [rows]);
+
+  const exerciseType = rows[0]?.[0].type;
+  const baselineName = exerciseType ? (baselineNames[exerciseType] ?? null) : null;
+
+  const exerciseByName = useMemo<Map<string, ConjugateExercise>>(() => {
+    const m = new Map<string, ConjugateExercise>();
+    for (const [ex] of rows) if (!m.has(ex.displayName)) m.set(ex.displayName, ex);
+    return m;
+  }, [rows]);
+
+  const baselineExercise = baselineName ? (exerciseByName.get(baselineName) ?? null) : null;
+
+  // Fall back to baseline when targetName isn't present in the current rows
+  const effectiveTargetName =
+    targetName !== null && variations.includes(targetName) ? targetName : baselineName;
+  const targetExercise = effectiveTargetName
+    ? (exerciseByName.get(effectiveTargetName) ?? null)
+    : null;
+
+  // Best normalized e1RM per date across all sessions (not filtered by shown)
+  const normalizedByDate = useMemo<Map<string, number>>(() => {
+    if (!targetExercise) return new Map();
+    const stats = { addlWtOffset, variantFactor };
+    const result = new Map<string, number>();
+    for (const [exercise, session] of rows) {
+      const date = session.date.toISOString().slice(0, 10);
+      const normalized = normalizeToBaseE1RM(
+        session.weight,
+        session.reps,
+        exercise,
+        targetExercise,
+        stats,
+        baselineExercise ?? undefined
+      );
+      if (normalized !== null) {
+        const prev = result.get(date);
+        if (prev === undefined || normalized > prev) result.set(date, Math.round(normalized));
+      }
+    }
+    return result;
+  }, [rows, targetExercise, baselineExercise, addlWtOffset, variantFactor]);
+
+  const data = useMemo(() => {
+    return allDates.map((date) => {
       const point: Record<string, string | number> = { date, label: formatDate(date) };
       for (const variation of variations) {
         const e1rm = e1rmByLabelAndDate.get(variation)?.get(date);
         if (e1rm !== undefined) point[variation] = Math.round(e1rm);
       }
+      const normalized = normalizedByDate.get(date);
+      if (normalized !== undefined) point[NORMALIZED_KEY] = normalized;
       return point;
     });
+  }, [allDates, variations, e1rmByLabelAndDate, normalizedByDate]);
 
-    return { variations, data };
-  }, [rows]);
-
-  // Shared by both the legend and <Line> elements — recomputed only when variations or hidden changes
+  // Shared by both the legend and <Line> elements — recomputed only when variations or shown changes
   const visibleVariations = useMemo(
-    () => variations.map((label, i) => ({ label, i })).filter(({ label }) => !hidden.has(label)),
-    [variations, hidden]
+    () => variations.map((label, i) => ({ label, i })).filter(({ label }) => shown.has(label)),
+    [variations, shown]
   );
+
+  const showNormalized = normalizedByDate.size > 0;
 
   if (variations.length === 0) {
     return (
@@ -93,6 +151,24 @@ export function ConjugateCharts({
             marginBottom: "0.75rem",
           }}
         >
+          {showNormalized && (
+            <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", minWidth: 0 }}>
+              <svg width={16} height={8} style={{ flexShrink: 0 }}>
+                <line
+                  x1={0}
+                  y1={4}
+                  x2={16}
+                  y2={4}
+                  stroke={NORMALIZED_COLOR}
+                  strokeWidth={2}
+                  strokeDasharray="5 3"
+                />
+              </svg>
+              <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {NORMALIZED_LABEL}
+              </span>
+            </div>
+          )}
           {visibleVariations.map(({ label, i }) => (
             <div
               key={label}
@@ -115,6 +191,31 @@ export function ConjugateCharts({
           ))}
         </div>
       )}
+      {baselineExercise && (
+        <div
+          style={{
+            fontSize: "0.8rem",
+            color: "var(--text)",
+            marginBottom: "0.5rem",
+            textAlign: "center",
+          }}
+        >
+          <label>
+            Normalize to:{" "}
+            <select
+              value={effectiveTargetName ?? ""}
+              onChange={(e) => setTargetName(e.target.value)}
+              style={{ fontSize: "0.8rem" }}
+            >
+              {variations.map((v) => (
+                <option key={v} value={v}>
+                  {v}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+      )}
       <div style={{ width: "80%", margin: "0 auto" }}>
         <ResponsiveContainer width="100%" height={300}>
           <LineChart data={data} margin={{ top: 4, right: 16, bottom: 40, left: 0 }}>
@@ -128,6 +229,20 @@ export function ConjugateCharts({
             />
             <YAxis tick={{ fontSize: 11 }} width={45} unit={` ${unit}`} />
             <Tooltip formatter={(v, name) => [`${v} ${unit}`, String(name)]} />
+            {showNormalized && (
+              <Line
+                key={NORMALIZED_KEY}
+                type="monotone"
+                dataKey={NORMALIZED_KEY}
+                name={NORMALIZED_LABEL}
+                stroke={NORMALIZED_COLOR}
+                strokeWidth={2}
+                strokeDasharray="6 3"
+                dot={{ r: 3 }}
+                activeDot={{ r: 5 }}
+                connectNulls
+              />
+            )}
             {visibleVariations.map(({ label, i }) => (
               <Line
                 key={label}

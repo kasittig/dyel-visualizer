@@ -93,7 +93,7 @@ function App() {
   const params = new URLSearchParams(window.location.search);
   const [url, setUrl] = useState(params.get("sheet") ?? import.meta.env.VITE_SHEET_URL ?? "");
   const [activeTab, setActiveTab] = useState<PageTab>("squat");
-  const [hiddenVariations, setHiddenVariations] = useState<Record<LiftTab, Set<string>>>({
+  const [shownVariations, setShownVariations] = useState<Record<LiftTab, Set<string>>>({
     squat: new Set(),
     bench: new Set(),
     deadlift: new Set(),
@@ -151,8 +151,8 @@ function App() {
     [activeRows, filterState, activeTab]
   );
 
-  const effectiveHidden =
-    activeTab === "calculator" ? new Set<string>() : hiddenVariations[activeTab as LiftTab];
+  const effectiveShown =
+    activeTab === "calculator" ? new Set<string>() : shownVariations[activeTab as LiftTab];
 
   function toggleInSet<T>(set: Set<T>, item: T): Set<T> {
     const next = new Set(set);
@@ -163,7 +163,7 @@ function App() {
 
   function toggleVariation(label: string) {
     const tab = activeTab as LiftTab;
-    setHiddenVariations((prev) => ({ ...prev, [tab]: toggleInSet(prev[tab], label) }));
+    setShownVariations((prev) => ({ ...prev, [tab]: toggleInSet(prev[tab], label) }));
   }
 
   function toggleFilter(facet: keyof FilterState, value: string) {
@@ -198,7 +198,7 @@ function App() {
             value={url}
             onChange={(e) => {
               setUrl(e.target.value);
-              setHiddenVariations({
+              setShownVariations({
                 squat: new Set(),
                 bench: new Set(),
                 deadlift: new Set(),
@@ -280,10 +280,14 @@ function App() {
                   filters={filterState[activeTab as LiftTab]}
                   onToggle={toggleFilter}
                 />
-                <ConjugateCharts rows={filteredRows} hidden={effectiveHidden} />
+                <ConjugateCharts
+                  rows={filteredRows}
+                  shown={effectiveShown}
+                  baselineNames={effectiveBaselineNames}
+                />
                 <ExerciseList
                   rows={filteredRows}
-                  hidden={effectiveHidden}
+                  shown={effectiveShown}
                   onToggle={toggleVariation}
                   baselineNames={effectiveBaselineNames}
                   heading={activeTabConfig.heading}
