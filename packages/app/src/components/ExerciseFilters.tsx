@@ -2,7 +2,9 @@ import { memo, useMemo, useState } from "react";
 import type { FilterState } from "@dyel/core";
 import type { ConjugateDataPair } from "../hooks/useConjugateData";
 
-const FACET_LABELS: Record<keyof FilterState, string> = {
+type SetFacet = Exclude<keyof FilterState, "excludeVolumeWork">;
+
+const FACET_LABELS: Record<SetFacet, string> = {
   bar: "Bar",
   stance: "Stance",
   addlWts: "Additional Weight",
@@ -43,15 +45,19 @@ export function ExerciseFilters({
   rows,
   filters,
   onToggle,
+  excludeVolumeWork,
+  onToggleVolumeWork,
 }: {
   rows: ConjugateDataPair[];
   filters: FilterState;
-  onToggle: (facet: keyof FilterState, value: string) => void;
+  onToggle: (facet: SetFacet, value: string) => void;
+  excludeVolumeWork?: boolean;
+  onToggleVolumeWork?: () => void;
 }) {
   const [open, setOpen] = useState(false);
 
-  const available = useMemo<Record<keyof FilterState, Set<string>>>(() => {
-    const result: Record<keyof FilterState, Set<string>> = {
+  const available = useMemo<Record<SetFacet, Set<string>>>(() => {
+    const result: Record<SetFacet, Set<string>> = {
       bar: new Set(),
       stance: new Set(),
       addlWts: new Set(),
@@ -67,16 +73,17 @@ export function ExerciseFilters({
   }, [rows]);
 
   const activeFacets = useMemo(
-    () => (Object.keys(available) as (keyof FilterState)[]).filter((k) => available[k].size > 0),
+    () => (Object.keys(available) as SetFacet[]).filter((k) => available[k].size > 0),
     [available]
   );
 
-  if (activeFacets.length === 0) return null;
+  const showVolumeToggle = excludeVolumeWork !== undefined && onToggleVolumeWork !== undefined;
 
-  const activeCount = (Object.keys(filters) as (keyof FilterState)[]).reduce(
-    (n, k) => n + filters[k].size,
-    0
-  );
+  if (activeFacets.length === 0 && !showVolumeToggle) return null;
+
+  const activeCount =
+    (Object.keys(FACET_LABELS) as SetFacet[]).reduce((n, k) => n + filters[k].size, 0) +
+    (excludeVolumeWork ? 1 : 0);
 
   return (
     <div style={{ marginBottom: "1rem" }}>
@@ -94,22 +101,38 @@ export function ExerciseFilters({
       >
         {open ? "▲" : "▼"} Filters{activeCount > 0 ? ` (${activeCount} active)` : ""}
       </button>
-      {open &&
-        activeFacets.map((facet) => (
-          <div key={facet} style={{ marginBottom: "0.5rem" }}>
-            <span style={{ fontSize: "0.75rem", color: "var(--text)", marginRight: "0.5rem" }}>
-              {FACET_LABELS[facet]}:
-            </span>
-            {[...available[facet]].sort().map((value) => (
-              <FilterButton
-                key={value}
-                value={value}
-                active={filters[facet].has(value)}
-                onClick={() => onToggle(facet, value)}
-              />
-            ))}
-          </div>
-        ))}
+      {open && (
+        <>
+          {showVolumeToggle && (
+            <div style={{ marginBottom: "0.5rem" }}>
+              <label style={{ fontSize: "0.75rem", color: "var(--text)", cursor: "pointer" }}>
+                <input
+                  type="checkbox"
+                  checked={excludeVolumeWork}
+                  onChange={onToggleVolumeWork}
+                  style={{ marginRight: "0.4rem" }}
+                />
+                Exclude volume work (sets &gt; 1)
+              </label>
+            </div>
+          )}
+          {activeFacets.map((facet) => (
+            <div key={facet} style={{ marginBottom: "0.5rem" }}>
+              <span style={{ fontSize: "0.75rem", color: "var(--text)", marginRight: "0.5rem" }}>
+                {FACET_LABELS[facet]}:
+              </span>
+              {[...available[facet]].sort().map((value) => (
+                <FilterButton
+                  key={value}
+                  value={value}
+                  active={filters[facet].has(value)}
+                  onClick={() => onToggle(facet, value)}
+                />
+              ))}
+            </div>
+          ))}
+        </>
+      )}
     </div>
   );
 }

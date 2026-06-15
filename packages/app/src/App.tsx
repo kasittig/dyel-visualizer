@@ -106,6 +106,7 @@ function App() {
     deadlift: emptyFilters(),
     accessory: emptyFilters(),
   });
+  const [excludeVolumeWork, setExcludeVolumeWork] = useState(false);
   const [baselineNames, setBaselineNames] = useState<Partial<Record<LiftTab, string>>>({});
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -157,8 +158,19 @@ function App() {
     () =>
       activeTab === "calculator" || activeTab === "sigma"
         ? []
-        : applyFilters(activeRows, filterState[activeTab as LiftTab]),
-    [activeRows, filterState, activeTab]
+        : applyFilters(activeRows, {
+            ...filterState[activeTab as LiftTab],
+            excludeVolumeWork: activeTab !== "accessory" ? excludeVolumeWork : false,
+          }),
+    [activeRows, filterState, activeTab, excludeVolumeWork]
+  );
+
+  const sigmaPairs = useMemo(
+    () =>
+      excludeVolumeWork
+        ? pairs.filter(([ex, session]) => ex.type === "accessory" || session.sets <= 1)
+        : pairs,
+    [pairs, excludeVolumeWork]
   );
 
   const effectiveShown =
@@ -178,7 +190,7 @@ function App() {
     setShownVariations((prev) => ({ ...prev, [tab]: toggleInSet(prev[tab], label) }));
   }
 
-  function toggleFilter(facet: keyof FilterState, value: string) {
+  function toggleFilter(facet: Exclude<keyof FilterState, "excludeVolumeWork">, value: string) {
     const tab = activeTab as LiftTab;
     setFilterState((prev) => {
       const current = prev[tab];
@@ -187,6 +199,10 @@ function App() {
       else next.add(value);
       return { ...prev, [tab]: { ...current, [facet]: next } };
     });
+  }
+
+  function toggleVolumeWork() {
+    setExcludeVolumeWork((prev) => !prev);
   }
 
   return (
@@ -222,6 +238,7 @@ function App() {
                 deadlift: emptyFilters(),
                 accessory: emptyFilters(),
               });
+              setExcludeVolumeWork(false);
               setBaselineNames({});
             }}
             placeholder="https://docs.google.com/spreadsheets/d/…"
@@ -283,7 +300,7 @@ function App() {
             {activeTab === "calculator" ? (
               <RepCalculator pairs={pairs} baselineNames={effectiveBaselineNames} />
             ) : activeTab === "sigma" ? (
-              <TotalChart pairs={pairs} />
+              <TotalChart pairs={sigmaPairs} />
             ) : (
               <>
                 <BaselineSelect
@@ -295,6 +312,8 @@ function App() {
                   rows={activeRows}
                   filters={filterState[activeTab as LiftTab]}
                   onToggle={toggleFilter}
+                  excludeVolumeWork={activeTab !== "accessory" ? excludeVolumeWork : undefined}
+                  onToggleVolumeWork={activeTab !== "accessory" ? toggleVolumeWork : undefined}
                 />
                 <ConjugateCharts
                   rows={filteredRows}
