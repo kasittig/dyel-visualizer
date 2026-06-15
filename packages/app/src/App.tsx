@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useConjugateData } from "./hooks/useConjugateData";
 import { ConjugateCharts } from "./components/ConjugateCharts";
 import { ExerciseList } from "./components/ExerciseList";
@@ -107,6 +107,13 @@ function App() {
     accessory: emptyFilters(),
   });
   const [baselineNames, setBaselineNames] = useState<Partial<Record<LiftTab, string>>>({});
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (url) params.set("sheet", url);
+    else params.delete("sheet");
+    history.replaceState(null, "", "?" + params.toString());
+  }, [url]);
+
   const sheetRef = extractSheetRef(url);
   const invalidUrl = url.length > 0 && !sheetRef;
 
