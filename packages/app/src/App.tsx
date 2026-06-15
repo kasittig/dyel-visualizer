@@ -5,6 +5,7 @@ import { ExerciseList } from "./components/ExerciseList";
 import { ExerciseFilters } from "./components/ExerciseFilters";
 import { BaselineSelect } from "./components/BaselineSelect";
 import { RepCalculator } from "./components/RepCalculator";
+import { TotalChart } from "./components/TotalChart";
 import { applyFilters, emptyFilters } from "@dyel/core";
 import type { ConjugateDataPair } from "./hooks/useConjugateData";
 import type { FilterState } from "@dyel/core";
@@ -29,7 +30,7 @@ function defaultBaselineName(rows: ConjugateDataPair[]): string | null {
 
 type SheetRef = { id: string; published: boolean };
 type LiftTab = "squat" | "bench" | "deadlift" | "accessory";
-type PageTab = LiftTab | "calculator";
+type PageTab = LiftTab | "calculator" | "sigma";
 
 type TabConfig = {
   id: LiftTab;
@@ -92,7 +93,7 @@ const EXAMPLE_VISUALIZER_URL = `?sheet=${encodeURIComponent(EXAMPLE_CSV_URL)}`;
 function App() {
   const params = new URLSearchParams(window.location.search);
   const [url, setUrl] = useState(params.get("sheet") ?? import.meta.env.VITE_SHEET_URL ?? "");
-  const [activeTab, setActiveTab] = useState<PageTab>("squat");
+  const [activeTab, setActiveTab] = useState<PageTab>("sigma");
   const [shownVariations, setShownVariations] = useState<Record<LiftTab, Set<string>>>({
     squat: new Set(),
     bench: new Set(),
@@ -147,12 +148,16 @@ function App() {
 
   const filteredRows = useMemo(
     () =>
-      activeTab === "calculator" ? [] : applyFilters(activeRows, filterState[activeTab as LiftTab]),
+      activeTab === "calculator" || activeTab === "sigma"
+        ? []
+        : applyFilters(activeRows, filterState[activeTab as LiftTab]),
     [activeRows, filterState, activeTab]
   );
 
   const effectiveShown =
-    activeTab === "calculator" ? new Set<string>() : shownVariations[activeTab as LiftTab];
+    activeTab === "calculator" || activeTab === "sigma"
+      ? new Set<string>()
+      : shownVariations[activeTab as LiftTab];
 
   function toggleInSet<T>(set: Set<T>, item: T): Set<T> {
     const next = new Set(set);
@@ -243,31 +248,35 @@ function App() {
                 marginBottom: "1rem",
               }}
             >
-              {[...tabs, { id: "calculator" as const, label: "Calculator" }].map(
-                ({ id, label }) => (
-                  <button
-                    key={id}
-                    onClick={() => setActiveTab(id)}
-                    style={{
-                      background: "none",
-                      border: "none",
-                      borderBottom:
-                        activeTab === id ? "2px solid var(--accent)" : "2px solid transparent",
-                      marginBottom: "-2px",
-                      padding: "0.4rem 0",
-                      cursor: "pointer",
-                      fontWeight: activeTab === id ? 700 : 400,
-                      fontSize: "1rem",
-                      color: activeTab === id ? "var(--accent)" : "var(--text-h)",
-                    }}
-                  >
-                    {label}
-                  </button>
-                )
-              )}
+              {[
+                { id: "sigma" as const, label: "Σ" },
+                ...tabs,
+                { id: "calculator" as const, label: "Calculator" },
+              ].map(({ id, label }) => (
+                <button
+                  key={id}
+                  onClick={() => setActiveTab(id)}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    borderBottom:
+                      activeTab === id ? "2px solid var(--accent)" : "2px solid transparent",
+                    marginBottom: "-2px",
+                    padding: "0.4rem 0",
+                    cursor: "pointer",
+                    fontWeight: activeTab === id ? 700 : 400,
+                    fontSize: "1rem",
+                    color: activeTab === id ? "var(--accent)" : "var(--text-h)",
+                  }}
+                >
+                  {label}
+                </button>
+              ))}
             </div>
             {activeTab === "calculator" ? (
               <RepCalculator pairs={pairs} baselineNames={effectiveBaselineNames} />
+            ) : activeTab === "sigma" ? (
+              <TotalChart pairs={pairs} />
             ) : (
               <>
                 <BaselineSelect
