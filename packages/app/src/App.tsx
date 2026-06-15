@@ -336,6 +336,7 @@ function App() {
                 <TotalChart
                   pairs={sigmaPairs}
                   baselineNames={effectiveBaselineNames}
+                  targetNames={targetNames}
                   stats={sigmaStats}
                 />
               </>
