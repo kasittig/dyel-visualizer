@@ -28,3 +28,19 @@ To build `@dyel/core` for npm publishing (emits `dist/` with `.d.ts` declaration
 ```bash
 npm run build -w packages/core
 ```
+## Working Preferences
+
+**Git workflow**
+
+- Never commit directly to `main`. Always create a feature branch first (`feat/short-description` or `issue-NNN-short-description`). If new work depends on unmerged changes, branch off the relevant feature branch, not `main`.
+- Before deleting any local branch that has a remote, run `gh pr list --state open --json headRefName` first and confirm no open PR points to it. A `git branch -d` "merged to refs/remotes/origin/..." warning does NOT mean the PR was merged — three branches in this repo were lost this way (fix/merge-exercise-lists, feat/conjugate-weight-calculator, feature/issue-62-chain-coefficient).
+- Never use `--admin` or any flag to bypass branch protection rules on `gh pr merge`. If a merge is blocked, surface the specific blocker to the user.
+- Never cherry pick changes. If work depends on changes on a different feature branch, rebase your branch on top of that feature branch.
+
+**Pull requests**
+
+- Always include a **"What the user will see"** section in PR descriptions for observable, user-facing changes. If no user-visible changes, note that explicitly ("No user-visible changes."). Update the description whenever new commits are pushed.
+
+**Code style**
+
+- Extract generic factories/helpers proactively whenever two or more implementations share the same shape. Don't wait to be asked.
