@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { useConjugateData } from "./hooks/useConjugateData";
+import { useLastSessionStats } from "./hooks/useLastSessionStats";
 import { ConjugateCharts } from "./components/ConjugateCharts";
 import { ExerciseList } from "./components/ExerciseList";
 import { ExerciseFilters } from "./components/ExerciseFilters";
@@ -124,6 +125,7 @@ function App() {
   });
   const [excludeVolumeWork, setExcludeVolumeWork] = useState(true);
   const [baselineNames, setBaselineNames] = useState<Partial<Record<LiftTab, string>>>({});
+  const [targetNames, setTargetNames] = useState<Partial<Record<LiftTab, string>>>({});
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (url) params.set("sheet", url);
@@ -158,6 +160,8 @@ function App() {
     return result;
   }, [squatRows, benchRows, deadliftRows, accessoryRows, baselineNames]);
 
+  const stats = useLastSessionStats(pairs, effectiveBaselineNames);
+
   const tabs = [...MAIN_TABS, ...(accessoryRows.length > 0 ? [ACCESSORY_TAB] : [])];
   const activeTabConfig = tabs.find((t) => t.id === activeTab) ?? MAIN_TABS[0];
 
@@ -188,6 +192,8 @@ function App() {
         : pairs,
     [pairs, excludeVolumeWork]
   );
+  const sigmaStats = useLastSessionStats(sigmaPairs, effectiveBaselineNames);
+  const chartStats = useLastSessionStats(filteredRows, effectiveBaselineNames);
 
   const effectiveShown =
     activeTab === "calculator" || activeTab === "sigma"
@@ -203,7 +209,16 @@ function App() {
 
   function toggleVariation(label: string) {
     const tab = activeTab as LiftTab;
-    setShownVariations((prev) => ({ ...prev, [tab]: toggleInSet(prev[tab], label) }));
+    setShownVariations((prev) => {
+      const current = prev[tab];
+      if (current.size === 0) {
+        // empty means "show all" — materialize full set minus the hidden item
+        const all = new Set(activeRows.map(([ex]) => ex.displayName));
+        all.delete(label);
+        return { ...prev, [tab]: all };
+      }
+      return { ...prev, [tab]: toggleInSet(current, label) };
+    });
   }
 
   function toggleFilter(facet: Exclude<keyof FilterState, "excludeVolumeWork">, value: string) {
@@ -314,11 +329,16 @@ function App() {
               ))}
             </div>
             {activeTab === "calculator" ? (
-              <RepCalculator pairs={pairs} baselineNames={effectiveBaselineNames} />
+              <RepCalculator pairs={pairs} baselineNames={effectiveBaselineNames} stats={stats} />
             ) : activeTab === "sigma" ? (
               <>
                 <VolumeWorkToggle checked={excludeVolumeWork} onChange={toggleVolumeWork} />
-                <TotalChart pairs={sigmaPairs} baselineNames={effectiveBaselineNames} />
+                <TotalChart
+                  pairs={sigmaPairs}
+                  baselineNames={effectiveBaselineNames}
+                  targetNames={targetNames}
+                  stats={sigmaStats}
+                />
               </>
             ) : (
               <>
@@ -339,12 +359,17 @@ function App() {
                   rows={filteredRows}
                   shown={effectiveShown}
                   baselineNames={effectiveBaselineNames}
+                  stats={chartStats}
+                  targetName={targetNames[activeTab as LiftTab] ?? null}
+                  onTargetChange={(name) =>
+                    setTargetNames((prev) => ({ ...prev, [activeTab]: name }))
+                  }
                 />
                 <ExerciseList
-                  rows={filteredRows}
+                  rows={activeRows}
                   shown={effectiveShown}
                   onToggle={toggleVariation}
-                  baselineNames={effectiveBaselineNames}
+                  stats={stats}
                   heading={activeTabConfig.heading}
                   columnHeader={activeTabConfig.columnHeader}
                   showSearch={activeTabConfig.showSearch}

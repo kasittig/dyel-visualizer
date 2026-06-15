@@ -1,10 +1,9 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import type { DateRange } from "react-day-picker";
 import { DateRangePicker } from "./DateRangePicker";
-import { useLastSessionStats } from "../hooks/useLastSessionStats";
 import { findBestE1RM, predictWeightForReps, predictRepsForWeight } from "@dyel/core";
 import type { ConjugateDataPair } from "../hooks/useConjugateData";
-import type { E1RMEstimate } from "@dyel/core";
+import type { E1RMEstimate, RepCalcStats } from "@dyel/core";
 
 type LiftType = "squat" | "bench" | "deadlift" | "accessory";
 
@@ -34,9 +33,11 @@ function sourceNote(estimate: E1RMEstimate): string {
 export function RepCalculator({
   pairs,
   baselineNames,
+  stats,
 }: {
   pairs: ConjugateDataPair[];
   baselineNames: Partial<Record<string, string>>;
+  stats: RepCalcStats;
 }) {
   const [liftType, setLiftType] = useState<LiftType>("squat");
   const [selectedName, setSelectedName] = useState("");
@@ -50,8 +51,6 @@ export function RepCalculator({
   const unit = pairs[0]?.[1].unit ?? "lbs";
 
   const hasAccessories = useMemo(() => pairs.some(([ex]) => ex.type === "accessory"), [pairs]);
-
-  const stats = useLastSessionStats(pairs, baselineNames);
 
   const exercisesForType = useMemo(() => {
     const seen = new Set<string>();

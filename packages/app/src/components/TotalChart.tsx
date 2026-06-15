@@ -11,7 +11,6 @@ import {
 import { formatDate, normalizeToBaseE1RM } from "@dyel/core";
 import type { ConjugateExercise, RepCalcStats } from "@dyel/core";
 import type { ConjugateDataPair } from "../hooks/useConjugateData";
-import { useLastSessionStats } from "../hooks/useLastSessionStats";
 
 const SQUAT_COLOR = "#e67e22";
 const BENCH_COLOR = "#3498db";
@@ -23,6 +22,7 @@ type ChartPoint = Record<string, string | number>;
 function buildChartData(
   pairs: ConjugateDataPair[],
   baselineExByType: Map<string, ConjugateExercise>,
+  targetExByType: Map<string, ConjugateExercise>,
   stats: RepCalcStats
 ): ChartPoint[] {
   const squatByDate = new Map<string, number>();
@@ -38,13 +38,14 @@ function buildChartData(
     else continue;
 
     const baselineEx = baselineExByType.get(exercise.type);
+    const targetEx = targetExByType.get(exercise.type) ?? baselineEx;
     let e1rm: number;
-    if (baselineEx) {
+    if (targetEx) {
       const normalized = normalizeToBaseE1RM(
         session.weight,
         session.reps,
         exercise,
-        baselineEx,
+        targetEx,
         stats,
         baselineEx
       );
@@ -94,13 +95,15 @@ function buildChartData(
 export function TotalChart({
   pairs,
   baselineNames = {},
+  targetNames = {},
+  stats,
 }: {
   pairs: ConjugateDataPair[];
   baselineNames?: Partial<Record<string, string>>;
+  targetNames?: Partial<Record<string, string>>;
+  stats: RepCalcStats;
 }) {
   const unit = pairs[0]?.[1].unit ?? "lbs";
-
-  const { addlWtOffset, variantFactor } = useLastSessionStats(pairs, baselineNames);
 
   const baselineExByType = useMemo(() => {
     const m = new Map<string, ConjugateExercise>();
@@ -112,9 +115,19 @@ export function TotalChart({
     return m;
   }, [pairs, baselineNames]);
 
+  const targetExByType = useMemo(() => {
+    const m = new Map<string, ConjugateExercise>();
+    for (const [ex] of pairs) {
+      if (ex.type === "accessory") continue;
+      const name = targetNames[ex.type];
+      if (name && ex.displayName === name && !m.has(ex.type)) m.set(ex.type, ex);
+    }
+    return m;
+  }, [pairs, targetNames]);
+
   const data = useMemo(
-    () => buildChartData(pairs, baselineExByType, { addlWtOffset, variantFactor }),
-    [pairs, baselineExByType, addlWtOffset, variantFactor]
+    () => buildChartData(pairs, baselineExByType, targetExByType, stats),
+    [pairs, baselineExByType, targetExByType, stats]
   );
 
   if (data.length === 0) {

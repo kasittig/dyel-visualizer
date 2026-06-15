@@ -9,9 +9,8 @@ import {
   YAxis,
 } from "recharts";
 import { formatDate, LINE_COLORS, normalizeToBaseE1RM } from "@dyel/core";
-import type { ConjugateExercise } from "@dyel/core";
+import type { ConjugateExercise, RepCalcStats } from "@dyel/core";
 import type { ConjugateDataPair } from "../hooks/useConjugateData";
-import { useLastSessionStats } from "../hooks/useLastSessionStats";
 
 const NORMALIZED_KEY = "__normalized__";
 const NORMALIZED_COLOR = "#3b82f6";
@@ -21,17 +20,22 @@ export function ConjugateCharts({
   rows,
   shown,
   baselineNames = {},
+  stats,
+  targetName,
+  onTargetChange,
 }: {
   rows: ConjugateDataPair[];
   shown: Set<string>;
   baselineNames?: Partial<Record<string, string>>;
+  stats: RepCalcStats;
+  targetName: string | null;
+  onTargetChange: (name: string) => void;
 }) {
   const [legendOpen, setLegendOpen] = useState(false);
-  const [targetName, setTargetName] = useState<string | null>(null);
 
   const unit = rows[0]?.[1].unit ?? "lbs";
 
-  const { addlWtOffset, variantFactor } = useLastSessionStats(rows, baselineNames);
+  const { addlWtOffset, variantFactor } = stats;
 
   // label → date → best e1RM — recomputed only when rows changes
   const { variations, e1rmByLabelAndDate, allDates } = useMemo(() => {
@@ -111,7 +115,10 @@ export function ConjugateCharts({
 
   // Shared by both the legend and <Line> elements — recomputed only when variations or shown changes
   const visibleVariations = useMemo(
-    () => variations.map((label, i) => ({ label, i })).filter(({ label }) => shown.has(label)),
+    () =>
+      variations
+        .map((label, i) => ({ label, i }))
+        .filter(({ label }) => shown.size === 0 || shown.has(label)),
     [variations, shown]
   );
 
@@ -204,7 +211,7 @@ export function ConjugateCharts({
             Normalize to:{" "}
             <select
               value={effectiveTargetName ?? ""}
-              onChange={(e) => setTargetName(e.target.value)}
+              onChange={(e) => onTargetChange(e.target.value)}
               style={{ fontSize: "0.8rem" }}
             >
               {variations.map((v) => (

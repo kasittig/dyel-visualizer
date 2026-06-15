@@ -1,7 +1,7 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import { useWindowVirtualizer } from "@tanstack/react-virtual";
 import type { ConjugateDataPair } from "../hooks/useConjugateData";
-import { useLastSessionStats } from "../hooks/useLastSessionStats";
+import type { SessionStats } from "../hooks/useLastSessionStats";
 import {
   AddlWtOffsetCell,
   LastSessionCell,
@@ -16,7 +16,7 @@ export function ExerciseList({
   rows,
   shown,
   onToggle,
-  baselineNames = {},
+  stats,
   heading = "Exercises",
   columnHeader = "Movement",
   showSearch = false,
@@ -24,7 +24,7 @@ export function ExerciseList({
   rows: ConjugateDataPair[];
   shown: Set<string>;
   onToggle: (label: string) => void;
-  baselineNames?: Partial<Record<string, string>>;
+  stats: SessionStats;
   heading?: string;
   columnHeader?: string;
   showSearch?: boolean;
@@ -42,15 +42,16 @@ export function ExerciseList({
     predictedE1RM,
     addlWtOffset,
     variantFactor,
-  } = useLastSessionStats(rows, baselineNames);
+  } = stats;
 
   const hasAddlWtExercises = addlWtOffset.size > 0;
   const hasVariantExercises = variantFactor.size > 0;
   const colSpan = 4 + (hasAddlWtExercises ? 1 : 0) + (hasVariantExercises ? 1 : 0);
 
-  const allLabels = [...lastPerformed.keys()].sort();
-  const inChart = allLabels.filter((l) => shown.has(l));
-  const notInChart = allLabels.filter((l) => !shown.has(l));
+  const allLabels = [...new Set(rows.map(([ex]) => ex.displayName))].sort();
+  const allShown = shown.size === 0;
+  const inChart = allLabels.filter((l) => allShown || shown.has(l));
+  const notInChart = allLabels.filter((l) => !allShown && !shown.has(l));
   const labels = [...inChart, ...notInChart];
   const displayed =
     showSearch && query
