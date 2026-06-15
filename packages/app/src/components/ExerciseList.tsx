@@ -49,8 +49,9 @@ export function ExerciseList({
   const colSpan = 4 + (hasAddlWtExercises ? 1 : 0) + (hasVariantExercises ? 1 : 0);
 
   const allLabels = [...new Set(rows.map(([ex]) => ex.displayName))].sort();
-  const inChart = allLabels.filter((l) => shown.has(l));
-  const notInChart = allLabels.filter((l) => !shown.has(l));
+  const allShown = shown.size === 0;
+  const inChart = allLabels.filter((l) => allShown || shown.has(l));
+  const notInChart = allLabels.filter((l) => !allShown && !shown.has(l));
   const labels = [...inChart, ...notInChart];
   const displayed =
     showSearch && query

@@ -112,7 +112,10 @@ export function ConjugateCharts({
 
   // Shared by both the legend and <Line> elements — recomputed only when variations or shown changes
   const visibleVariations = useMemo(
-    () => variations.map((label, i) => ({ label, i })).filter(({ label }) => shown.has(label)),
+    () =>
+      variations
+        .map((label, i) => ({ label, i }))
+        .filter(({ label }) => shown.size === 0 || shown.has(label)),
     [variations, shown]
   );
 

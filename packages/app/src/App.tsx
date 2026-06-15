@@ -191,6 +191,8 @@ function App() {
         : pairs,
     [pairs, excludeVolumeWork]
   );
+  const sigmaStats = useLastSessionStats(sigmaPairs, effectiveBaselineNames);
+  const chartStats = useLastSessionStats(filteredRows, effectiveBaselineNames);
 
   const effectiveShown =
     activeTab === "calculator" || activeTab === "sigma"
@@ -206,7 +208,16 @@ function App() {
 
   function toggleVariation(label: string) {
     const tab = activeTab as LiftTab;
-    setShownVariations((prev) => ({ ...prev, [tab]: toggleInSet(prev[tab], label) }));
+    setShownVariations((prev) => {
+      const current = prev[tab];
+      if (current.size === 0) {
+        // empty means "show all" — materialize full set minus the hidden item
+        const all = new Set(activeRows.map(([ex]) => ex.displayName));
+        all.delete(label);
+        return { ...prev, [tab]: all };
+      }
+      return { ...prev, [tab]: toggleInSet(current, label) };
+    });
   }
 
   function toggleFilter(facet: Exclude<keyof FilterState, "excludeVolumeWork">, value: string) {
@@ -324,7 +335,7 @@ function App() {
                 <TotalChart
                   pairs={sigmaPairs}
                   baselineNames={effectiveBaselineNames}
-                  stats={stats}
+                  stats={sigmaStats}
                 />
               </>
             ) : (
@@ -346,7 +357,7 @@ function App() {
                   rows={filteredRows}
                   shown={effectiveShown}
                   baselineNames={effectiveBaselineNames}
-                  stats={stats}
+                  stats={chartStats}
                 />
                 <ExerciseList
                   rows={activeRows}
