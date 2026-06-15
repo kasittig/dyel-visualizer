@@ -14,7 +14,7 @@ import { th, td } from "../utils/tableStyles";
 
 export function ExerciseList({
   rows,
-  hidden,
+  shown,
   onToggle,
   baselineNames = {},
   heading = "Exercises",
@@ -22,7 +22,7 @@ export function ExerciseList({
   showSearch = false,
 }: {
   rows: ConjugateDataPair[];
-  hidden: Set<string>;
+  shown: Set<string>;
   onToggle: (label: string) => void;
   baselineNames?: Partial<Record<string, string>>;
   heading?: string;
@@ -49,12 +49,12 @@ export function ExerciseList({
   const colSpan = 4 + (hasAddlWtExercises ? 1 : 0) + (hasVariantExercises ? 1 : 0);
 
   const allLabels = [...lastPerformed.keys()].sort();
-  const visible = allLabels.filter((l) => !hidden.has(l));
-  const minimized = allLabels.filter((l) => hidden.has(l));
-  const labels = [...visible, ...minimized];
+  const inChart = allLabels.filter((l) => shown.has(l));
+  const notInChart = allLabels.filter((l) => !shown.has(l));
+  const labels = [...inChart, ...notInChart];
   const displayed =
     showSearch && query
-      ? visible.filter((l) => l.toLowerCase().includes(query.toLowerCase()))
+      ? labels.filter((l) => l.toLowerCase().includes(query.toLowerCase()))
       : labels;
 
   const tbodyRef = useRef<HTMLTableSectionElement>(null);
@@ -67,7 +67,7 @@ export function ExerciseList({
 
   const rowVirtualizer = useWindowVirtualizer({
     count: displayed.length,
-    estimateSize: (i) => (hidden.has(displayed[i]) ? 36 : 64),
+    estimateSize: (i) => (shown.has(displayed[i]) ? 64 : 36),
     overscan: 5,
     scrollMargin,
   });
@@ -123,8 +123,8 @@ export function ExerciseList({
             const bestSet = lastSessionBestSet.get(label);
             const allSets = lastSessionAllSets.get(label) ?? [];
             const setsReps = setsRepsLabel(bestSet, allSets, unit);
-            const isHidden = hidden.has(label);
-            if (isHidden) {
+            const isInChart = shown.has(label);
+            if (!isInChart) {
               return (
                 <tr
                   key={label}

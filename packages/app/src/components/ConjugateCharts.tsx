@@ -13,10 +13,10 @@ import type { ConjugateDataPair } from "../hooks/useConjugateData";
 
 export function ConjugateCharts({
   rows,
-  hidden,
+  shown,
 }: {
   rows: ConjugateDataPair[];
-  hidden: Set<string>;
+  shown: Set<string>;
 }) {
   const [legendOpen, setLegendOpen] = useState(false);
 
@@ -53,10 +53,10 @@ export function ConjugateCharts({
     return { variations, data };
   }, [rows]);
 
-  // Shared by both the legend and <Line> elements — recomputed only when variations or hidden changes
+  // Shared by both the legend and <Line> elements — recomputed only when variations or shown changes
   const visibleVariations = useMemo(
-    () => variations.map((label, i) => ({ label, i })).filter(({ label }) => !hidden.has(label)),
-    [variations, hidden]
+    () => variations.map((label, i) => ({ label, i })).filter(({ label }) => shown.has(label)),
+    [variations, shown]
   );
 
   if (variations.length === 0) {
