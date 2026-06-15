@@ -27,6 +27,7 @@ export function ConjugateCharts({
   baselineNames?: Partial<Record<string, string>>;
 }) {
   const [legendOpen, setLegendOpen] = useState(false);
+  const [targetName, setTargetName] = useState<string | null>(null);
 
   const unit = rows[0]?.[1].unit ?? "lbs";
 
@@ -57,17 +58,24 @@ export function ConjugateCharts({
   const exerciseType = rows[0]?.[0].type;
   const baselineName = exerciseType ? (baselineNames[exerciseType] ?? null) : null;
 
-  const baselineExercise = useMemo<ConjugateExercise | null>(() => {
-    if (!baselineName) return null;
-    for (const [ex] of rows) {
-      if (ex.displayName === baselineName) return ex;
-    }
-    return null;
-  }, [rows, baselineName]);
+  const exerciseByName = useMemo<Map<string, ConjugateExercise>>(() => {
+    const m = new Map<string, ConjugateExercise>();
+    for (const [ex] of rows) if (!m.has(ex.displayName)) m.set(ex.displayName, ex);
+    return m;
+  }, [rows]);
+
+  const baselineExercise = baselineName ? (exerciseByName.get(baselineName) ?? null) : null;
+
+  // Fall back to baseline when targetName isn't present in the current rows
+  const effectiveTargetName =
+    targetName !== null && variations.includes(targetName) ? targetName : baselineName;
+  const targetExercise = effectiveTargetName
+    ? (exerciseByName.get(effectiveTargetName) ?? null)
+    : null;
 
   // Best normalized e1RM per date across all sessions (not filtered by shown)
   const normalizedByDate = useMemo<Map<string, number>>(() => {
-    if (!baselineExercise) return new Map();
+    if (!targetExercise) return new Map();
     const stats = { addlWtOffset, variantFactor };
     const result = new Map<string, number>();
     for (const [exercise, session] of rows) {
@@ -76,9 +84,9 @@ export function ConjugateCharts({
         session.weight,
         session.reps,
         exercise,
-        baselineExercise,
+        targetExercise,
         stats,
-        baselineExercise
+        baselineExercise ?? undefined
       );
       if (normalized !== null) {
         const prev = result.get(date);
@@ -86,7 +94,7 @@ export function ConjugateCharts({
       }
     }
     return result;
-  }, [rows, baselineExercise, addlWtOffset, variantFactor]);
+  }, [rows, targetExercise, baselineExercise, addlWtOffset, variantFactor]);
 
   const data = useMemo(() => {
     return allDates.map((date) => {
@@ -181,6 +189,31 @@ export function ConjugateCharts({
               </span>
             </div>
           ))}
+        </div>
+      )}
+      {baselineExercise && (
+        <div
+          style={{
+            fontSize: "0.8rem",
+            color: "var(--text)",
+            marginBottom: "0.5rem",
+            textAlign: "center",
+          }}
+        >
+          <label>
+            Normalize to:{" "}
+            <select
+              value={effectiveTargetName ?? ""}
+              onChange={(e) => setTargetName(e.target.value)}
+              style={{ fontSize: "0.8rem" }}
+            >
+              {variations.map((v) => (
+                <option key={v} value={v}>
+                  {v}
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
       )}
       <div style={{ width: "80%", margin: "0 auto" }}>
