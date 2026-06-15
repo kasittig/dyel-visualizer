@@ -202,3 +202,53 @@ export function findBestE1RM(
 
   return null;
 }
+
+export function normalizeToBaseE1RM(
+  weight: number,
+  reps: number,
+  source: ConjugateExercise,
+  target: ConjugateExercise,
+  stats: RepCalcStats,
+  baseline?: ConjugateExercise
+): number | null {
+  const { addlWtOffset, variantFactor } = stats;
+
+  if (source.displayName === target.displayName) {
+    return calcE1RM(weight, reps);
+  }
+
+  if (familyKey(source) === familyKey(target)) {
+    const sourceHasAddl = source.addlWts.length > 0;
+    const targetHasAddl = target.addlWts.length > 0;
+
+    if (sourceHasAddl && !targetHasAddl) {
+      const off = addlWtOffset.get(source.displayName);
+      if (off && off.sampleCount > 0) return calcE1RM(weight + off.offset, reps);
+    } else if (!sourceHasAddl && targetHasAddl) {
+      const off = addlWtOffset.get(target.displayName);
+      if (off && off.sampleCount > 0) return calcE1RM(Math.max(0, weight - off.offset), reps);
+    }
+    return null;
+  }
+
+  // For cross-family normalization, variantFactors for addlWt exercises are fitted
+  // against chain-stripped weights (see useLastSessionStats pass 4), so the source
+  // weight must be adjusted by the same offset before dividing by the factor.
+  let sourceE1RM = calcE1RM(weight, reps);
+  if (source.addlWts.length > 0) {
+    const off = addlWtOffset.get(source.displayName);
+    if (off && off.sampleCount > 0) sourceE1RM = calcE1RM(weight + off.offset, reps);
+  }
+
+  const lookupFactor = (name: string): number | null => {
+    if (name === baseline?.displayName) return 1.0;
+    const vf = variantFactor.get(name);
+    return vf && vf.sampleCount > 0 && vf.factor > 0 ? vf.factor : null;
+  };
+
+  const sourceFactor = lookupFactor(source.displayName);
+  const targetFactor = lookupFactor(target.displayName);
+  if (sourceFactor === null || targetFactor === null) return null;
+
+  return (sourceE1RM / sourceFactor) * targetFactor;
+}

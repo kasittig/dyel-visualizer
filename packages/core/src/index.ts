@@ -17,7 +17,12 @@ export type { FilterState } from "./utils/exerciseFilters";
 export { emptyFilters, applyFilters } from "./utils/exerciseFilters";
 
 export type { E1RMEstimate, RepCalcStats } from "./utils/repCalculator";
-export { predictWeightForReps, predictRepsForWeight, findBestE1RM } from "./utils/repCalculator";
+export {
+  predictWeightForReps,
+  predictRepsForWeight,
+  findBestE1RM,
+  normalizeToBaseE1RM,
+} from "./utils/repCalculator";
 
 export { setsRepsLabel } from "./utils/setsRepsLabel";
 
