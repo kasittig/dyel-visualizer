@@ -34,4 +34,18 @@ export default defineConfig({
       "@dyel/core": fileURLToPath(new URL("../core/src/index.ts", import.meta.url)),
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes("node_modules/recharts") || id.includes("node_modules/victory-vendor")) {
+            return "vendor-recharts";
+          }
+          if (id.includes("node_modules/react-dom") || id.includes("node_modules/react/")) {
+            return "vendor-react";
+          }
+        },
+      },
+    },
+  },
 });
