@@ -28,7 +28,7 @@ jobs:
         if: github.ref == 'refs/heads/main'
         with:
           name: dist
-          path: dist
+          path: packages/app/dist
 
   deploy:
     needs: build-and-test
