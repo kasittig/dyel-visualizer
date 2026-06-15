@@ -280,7 +280,11 @@ function App() {
                   filters={filterState[activeTab as LiftTab]}
                   onToggle={toggleFilter}
                 />
-                <ConjugateCharts rows={filteredRows} shown={effectiveShown} />
+                <ConjugateCharts
+                  rows={filteredRows}
+                  shown={effectiveShown}
+                  baselineNames={effectiveBaselineNames}
+                />
                 <ExerciseList
                   rows={filteredRows}
                   shown={effectiveShown}
