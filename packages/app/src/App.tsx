@@ -192,6 +192,7 @@ function App() {
         : pairs,
     [pairs, excludeVolumeWork]
   );
+  const sigmaStats = useLastSessionStats(sigmaPairs, effectiveBaselineNames);
   const chartStats = useLastSessionStats(filteredRows, effectiveBaselineNames);
 
   const effectiveShown =
@@ -335,7 +336,7 @@ function App() {
                 <TotalChart
                   pairs={sigmaPairs}
                   baselineNames={effectiveBaselineNames}
-                  stats={stats}
+                  stats={sigmaStats}
                 />
               </>
             ) : (
