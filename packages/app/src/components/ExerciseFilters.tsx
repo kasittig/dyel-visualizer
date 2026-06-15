@@ -2,7 +2,9 @@ import { memo, useMemo, useState } from "react";
 import type { FilterState } from "@dyel/core";
 import type { ConjugateDataPair } from "../hooks/useConjugateData";
 
-const FACET_LABELS: Record<keyof FilterState, string> = {
+type SetFacet = Exclude<keyof FilterState, "excludeVolumeWork">;
+
+const FACET_LABELS: Record<SetFacet, string> = {
   bar: "Bar",
   stance: "Stance",
   addlWts: "Additional Weight",
@@ -46,12 +48,12 @@ export function ExerciseFilters({
 }: {
   rows: ConjugateDataPair[];
   filters: FilterState;
-  onToggle: (facet: keyof FilterState, value: string) => void;
+  onToggle: (facet: SetFacet, value: string) => void;
 }) {
   const [open, setOpen] = useState(false);
 
-  const available = useMemo<Record<keyof FilterState, Set<string>>>(() => {
-    const result: Record<keyof FilterState, Set<string>> = {
+  const available = useMemo<Record<SetFacet, Set<string>>>(() => {
+    const result: Record<SetFacet, Set<string>> = {
       bar: new Set(),
       stance: new Set(),
       addlWts: new Set(),
@@ -67,13 +69,13 @@ export function ExerciseFilters({
   }, [rows]);
 
   const activeFacets = useMemo(
-    () => (Object.keys(available) as (keyof FilterState)[]).filter((k) => available[k].size > 0),
+    () => (Object.keys(available) as SetFacet[]).filter((k) => available[k].size > 0),
     [available]
   );
 
   if (activeFacets.length === 0) return null;
 
-  const activeCount = (Object.keys(filters) as (keyof FilterState)[]).reduce(
+  const activeCount = (Object.keys(FACET_LABELS) as SetFacet[]).reduce(
     (n, k) => n + filters[k].size,
     0
   );

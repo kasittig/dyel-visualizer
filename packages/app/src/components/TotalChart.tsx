@@ -8,8 +8,10 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { formatDate } from "@dyel/core";
+import { formatDate, normalizeToBaseE1RM } from "@dyel/core";
+import type { ConjugateExercise, RepCalcStats } from "@dyel/core";
 import type { ConjugateDataPair } from "../hooks/useConjugateData";
+import { useLastSessionStats } from "../hooks/useLastSessionStats";
 
 const SQUAT_COLOR = "#e67e22";
 const BENCH_COLOR = "#3498db";
@@ -18,19 +20,40 @@ const TOTAL_COLOR = "#9b59b6";
 
 type ChartPoint = Record<string, string | number>;
 
-function buildChartData(pairs: ConjugateDataPair[]): ChartPoint[] {
+function buildChartData(
+  pairs: ConjugateDataPair[],
+  baselineExByType: Map<string, ConjugateExercise>,
+  stats: RepCalcStats
+): ChartPoint[] {
   const squatByDate = new Map<string, number>();
   const benchByDate = new Map<string, number>();
   const deadliftByDate = new Map<string, number>();
 
   for (const [exercise, session] of pairs) {
     const date = session.date.toISOString().slice(0, 10);
-    const e1rm = session.e1rm;
     let map: Map<string, number>;
     if (exercise.type === "squat") map = squatByDate;
     else if (exercise.type === "bench") map = benchByDate;
     else if (exercise.type === "deadlift") map = deadliftByDate;
     else continue;
+
+    const baselineEx = baselineExByType.get(exercise.type);
+    let e1rm: number;
+    if (baselineEx) {
+      const normalized = normalizeToBaseE1RM(
+        session.weight,
+        session.reps,
+        exercise,
+        baselineEx,
+        stats,
+        baselineEx
+      );
+      if (normalized === null) continue;
+      e1rm = normalized;
+    } else {
+      e1rm = session.e1rm;
+    }
+
     const prev = map.get(date);
     if (prev === undefined || e1rm > prev) map.set(date, e1rm);
   }
@@ -68,9 +91,31 @@ function buildChartData(pairs: ConjugateDataPair[]): ChartPoint[] {
   ).rows;
 }
 
-export function TotalChart({ pairs }: { pairs: ConjugateDataPair[] }) {
+export function TotalChart({
+  pairs,
+  baselineNames = {},
+}: {
+  pairs: ConjugateDataPair[];
+  baselineNames?: Partial<Record<string, string>>;
+}) {
   const unit = pairs[0]?.[1].unit ?? "lbs";
-  const data = useMemo(() => buildChartData(pairs), [pairs]);
+
+  const { addlWtOffset, variantFactor } = useLastSessionStats(pairs, baselineNames);
+
+  const baselineExByType = useMemo(() => {
+    const m = new Map<string, ConjugateExercise>();
+    for (const [ex] of pairs) {
+      if (ex.type === "accessory") continue;
+      const name = baselineNames[ex.type];
+      if (name && ex.displayName === name && !m.has(ex.type)) m.set(ex.type, ex);
+    }
+    return m;
+  }, [pairs, baselineNames]);
+
+  const data = useMemo(
+    () => buildChartData(pairs, baselineExByType, { addlWtOffset, variantFactor }),
+    [pairs, baselineExByType, addlWtOffset, variantFactor]
+  );
 
   if (data.length === 0) {
     return (

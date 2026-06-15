@@ -90,6 +90,22 @@ const EXAMPLE_SHEET_URL =
   "https://docs.google.com/spreadsheets/d/1Uwfzrb4wjYcBisTPdNEUGJyvfKRLwpN0tm8ciRPHB0c/edit?gid=1297658251#gid=1297658251";
 const EXAMPLE_VISUALIZER_URL = `?sheet=${encodeURIComponent(EXAMPLE_CSV_URL)}`;
 
+function VolumeWorkToggle({ checked, onChange }: { checked: boolean; onChange: () => void }) {
+  return (
+    <div style={{ marginBottom: "1rem", fontSize: "0.8rem", color: "var(--text)" }}>
+      <label style={{ cursor: "pointer" }}>
+        <input
+          type="checkbox"
+          checked={checked}
+          onChange={onChange}
+          style={{ marginRight: "0.4rem" }}
+        />
+        Exclude volume work (sets &gt; 1)
+      </label>
+    </div>
+  );
+}
+
 function App() {
   const params = new URLSearchParams(window.location.search);
   const [url, setUrl] = useState(params.get("sheet") ?? import.meta.env.VITE_SHEET_URL ?? "");
@@ -106,6 +122,7 @@ function App() {
     deadlift: emptyFilters(),
     accessory: emptyFilters(),
   });
+  const [excludeVolumeWork, setExcludeVolumeWork] = useState(true);
   const [baselineNames, setBaselineNames] = useState<Partial<Record<LiftTab, string>>>({});
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -157,8 +174,19 @@ function App() {
     () =>
       activeTab === "calculator" || activeTab === "sigma"
         ? []
-        : applyFilters(activeRows, filterState[activeTab as LiftTab]),
-    [activeRows, filterState, activeTab]
+        : applyFilters(activeRows, {
+            ...filterState[activeTab as LiftTab],
+            excludeVolumeWork: activeTab !== "accessory" ? excludeVolumeWork : false,
+          }),
+    [activeRows, filterState, activeTab, excludeVolumeWork]
+  );
+
+  const sigmaPairs = useMemo(
+    () =>
+      excludeVolumeWork
+        ? pairs.filter(([ex, session]) => ex.type === "accessory" || session.sets <= 1)
+        : pairs,
+    [pairs, excludeVolumeWork]
   );
 
   const effectiveShown =
@@ -178,7 +206,7 @@ function App() {
     setShownVariations((prev) => ({ ...prev, [tab]: toggleInSet(prev[tab], label) }));
   }
 
-  function toggleFilter(facet: keyof FilterState, value: string) {
+  function toggleFilter(facet: Exclude<keyof FilterState, "excludeVolumeWork">, value: string) {
     const tab = activeTab as LiftTab;
     setFilterState((prev) => {
       const current = prev[tab];
@@ -187,6 +215,10 @@ function App() {
       else next.add(value);
       return { ...prev, [tab]: { ...current, [facet]: next } };
     });
+  }
+
+  function toggleVolumeWork() {
+    setExcludeVolumeWork((prev) => !prev);
   }
 
   return (
@@ -222,6 +254,7 @@ function App() {
                 deadlift: emptyFilters(),
                 accessory: emptyFilters(),
               });
+              setExcludeVolumeWork(false);
               setBaselineNames({});
             }}
             placeholder="https://docs.google.com/spreadsheets/d/…"
@@ -283,7 +316,10 @@ function App() {
             {activeTab === "calculator" ? (
               <RepCalculator pairs={pairs} baselineNames={effectiveBaselineNames} />
             ) : activeTab === "sigma" ? (
-              <TotalChart pairs={pairs} />
+              <>
+                <VolumeWorkToggle checked={excludeVolumeWork} onChange={toggleVolumeWork} />
+                <TotalChart pairs={sigmaPairs} baselineNames={effectiveBaselineNames} />
+              </>
             ) : (
               <>
                 <BaselineSelect
@@ -291,6 +327,9 @@ function App() {
                   selectedName={effectiveBaselineNames[activeTab] ?? null}
                   onSelect={(name) => setBaselineNames((prev) => ({ ...prev, [activeTab]: name }))}
                 />
+                {activeTab !== "accessory" && (
+                  <VolumeWorkToggle checked={excludeVolumeWork} onChange={toggleVolumeWork} />
+                )}
                 <ExerciseFilters
                   rows={activeRows}
                   filters={filterState[activeTab as LiftTab]}
