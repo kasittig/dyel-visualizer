@@ -90,6 +90,22 @@ const EXAMPLE_SHEET_URL =
   "https://docs.google.com/spreadsheets/d/1Uwfzrb4wjYcBisTPdNEUGJyvfKRLwpN0tm8ciRPHB0c/edit?gid=1297658251#gid=1297658251";
 const EXAMPLE_VISUALIZER_URL = `?sheet=${encodeURIComponent(EXAMPLE_CSV_URL)}`;
 
+function VolumeWorkToggle({ checked, onChange }: { checked: boolean; onChange: () => void }) {
+  return (
+    <div style={{ marginBottom: "1rem", fontSize: "0.8rem", color: "var(--text)" }}>
+      <label style={{ cursor: "pointer" }}>
+        <input
+          type="checkbox"
+          checked={checked}
+          onChange={onChange}
+          style={{ marginRight: "0.4rem" }}
+        />
+        Exclude volume work (sets &gt; 1)
+      </label>
+    </div>
+  );
+}
+
 function App() {
   const params = new URLSearchParams(window.location.search);
   const [url, setUrl] = useState(params.get("sheet") ?? import.meta.env.VITE_SHEET_URL ?? "");
@@ -106,7 +122,7 @@ function App() {
     deadlift: emptyFilters(),
     accessory: emptyFilters(),
   });
-  const [excludeVolumeWork, setExcludeVolumeWork] = useState(false);
+  const [excludeVolumeWork, setExcludeVolumeWork] = useState(true);
   const [baselineNames, setBaselineNames] = useState<Partial<Record<LiftTab, string>>>({});
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -300,7 +316,10 @@ function App() {
             {activeTab === "calculator" ? (
               <RepCalculator pairs={pairs} baselineNames={effectiveBaselineNames} />
             ) : activeTab === "sigma" ? (
-              <TotalChart pairs={sigmaPairs} />
+              <>
+                <VolumeWorkToggle checked={excludeVolumeWork} onChange={toggleVolumeWork} />
+                <TotalChart pairs={sigmaPairs} />
+              </>
             ) : (
               <>
                 <BaselineSelect
@@ -308,12 +327,13 @@ function App() {
                   selectedName={effectiveBaselineNames[activeTab] ?? null}
                   onSelect={(name) => setBaselineNames((prev) => ({ ...prev, [activeTab]: name }))}
                 />
+                {activeTab !== "accessory" && (
+                  <VolumeWorkToggle checked={excludeVolumeWork} onChange={toggleVolumeWork} />
+                )}
                 <ExerciseFilters
                   rows={activeRows}
                   filters={filterState[activeTab as LiftTab]}
                   onToggle={toggleFilter}
-                  excludeVolumeWork={activeTab !== "accessory" ? excludeVolumeWork : undefined}
-                  onToggleVolumeWork={activeTab !== "accessory" ? toggleVolumeWork : undefined}
                 />
                 <ConjugateCharts
                   rows={filteredRows}

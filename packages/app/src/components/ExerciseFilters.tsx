@@ -45,14 +45,10 @@ export function ExerciseFilters({
   rows,
   filters,
   onToggle,
-  excludeVolumeWork,
-  onToggleVolumeWork,
 }: {
   rows: ConjugateDataPair[];
   filters: FilterState;
   onToggle: (facet: SetFacet, value: string) => void;
-  excludeVolumeWork?: boolean;
-  onToggleVolumeWork?: () => void;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -77,13 +73,12 @@ export function ExerciseFilters({
     [available]
   );
 
-  const showVolumeToggle = excludeVolumeWork !== undefined && onToggleVolumeWork !== undefined;
+  if (activeFacets.length === 0) return null;
 
-  if (activeFacets.length === 0 && !showVolumeToggle) return null;
-
-  const activeCount =
-    (Object.keys(FACET_LABELS) as SetFacet[]).reduce((n, k) => n + filters[k].size, 0) +
-    (excludeVolumeWork ? 1 : 0);
+  const activeCount = (Object.keys(FACET_LABELS) as SetFacet[]).reduce(
+    (n, k) => n + filters[k].size,
+    0
+  );
 
   return (
     <div style={{ marginBottom: "1rem" }}>
@@ -101,38 +96,22 @@ export function ExerciseFilters({
       >
         {open ? "▲" : "▼"} Filters{activeCount > 0 ? ` (${activeCount} active)` : ""}
       </button>
-      {open && (
-        <>
-          {showVolumeToggle && (
-            <div style={{ marginBottom: "0.5rem" }}>
-              <label style={{ fontSize: "0.75rem", color: "var(--text)", cursor: "pointer" }}>
-                <input
-                  type="checkbox"
-                  checked={excludeVolumeWork}
-                  onChange={onToggleVolumeWork}
-                  style={{ marginRight: "0.4rem" }}
-                />
-                Exclude volume work (sets &gt; 1)
-              </label>
-            </div>
-          )}
-          {activeFacets.map((facet) => (
-            <div key={facet} style={{ marginBottom: "0.5rem" }}>
-              <span style={{ fontSize: "0.75rem", color: "var(--text)", marginRight: "0.5rem" }}>
-                {FACET_LABELS[facet]}:
-              </span>
-              {[...available[facet]].sort().map((value) => (
-                <FilterButton
-                  key={value}
-                  value={value}
-                  active={filters[facet].has(value)}
-                  onClick={() => onToggle(facet, value)}
-                />
-              ))}
-            </div>
-          ))}
-        </>
-      )}
+      {open &&
+        activeFacets.map((facet) => (
+          <div key={facet} style={{ marginBottom: "0.5rem" }}>
+            <span style={{ fontSize: "0.75rem", color: "var(--text)", marginRight: "0.5rem" }}>
+              {FACET_LABELS[facet]}:
+            </span>
+            {[...available[facet]].sort().map((value) => (
+              <FilterButton
+                key={value}
+                value={value}
+                active={filters[facet].has(value)}
+                onClick={() => onToggle(facet, value)}
+              />
+            ))}
+          </div>
+        ))}
     </div>
   );
 }
