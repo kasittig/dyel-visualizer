@@ -1,0 +1,30 @@
+{
+  "name": "dyel-visualizer",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "preview": "vite preview",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "@dyel/core": "*",
+    "@radix-ui/react-popover": "^1.1.16",
+    "@tanstack/react-virtual": "^3.14.2",
+    "react": "^19.2.6",
+    "react-day-picker": "^10.0.1",
+    "react-dom": "^19.2.6",
+    "react-markdown": "^10.1.0",
+    "recharts": "^3.8.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^6.0.1",
+    "typescript": "~6.0.2",
+    "vite": "^8.0.12",
+    "vitest": "^3.2.6"
+  }
+}

@@ -1,15 +1,15 @@
 {
-  "name": "dyel-visualizer",
+  "name": "dyel",
   "private": true,
-  "version": "0.0.0",
-  "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
+    "dev": "npm run dev -w packages/app",
+    "build": "npm run build -w packages/core && npm run build -w packages/app",
+    "test": "npm run test --workspaces --if-present",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "preview": "vite preview",
-    "test": "vitest run --passWithNoTests",
     "prepare": "husky"
   },
   "lint-staged": {
@@ -21,23 +21,11 @@
       "prettier --write"
     ]
   },
-  "dependencies": {
-    "@radix-ui/react-popover": "^1.1.16",
-    "@tanstack/react-virtual": "^3.14.2",
-    "papaparse": "^5.5.3",
-    "react": "^19.2.6",
-    "react-day-picker": "^10.0.1",
-    "react-dom": "^19.2.6",
-    "react-markdown": "^10.1.0",
-    "recharts": "^3.8.1"
-  },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@types/node": "^24.12.3",
-    "@types/papaparse": "^5.5.2",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
-    "@vitejs/plugin-react": "^6.0.1",
     "eslint": "^10.3.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-react-hooks": "^7.1.1",
@@ -47,8 +35,6 @@
     "lint-staged": "^17.0.7",
     "prettier": "^3.8.3",
     "typescript": "~6.0.2",
-    "typescript-eslint": "^8.59.2",
-    "vite": "^8.0.12",
-    "vitest": "^3.2.6"
+    "typescript-eslint": "^8.59.2"
   }
 }

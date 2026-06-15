@@ -9,7 +9,7 @@ import {
   PredictedE1RMCell,
   VariantFactorCell,
 } from "./ExerciseCells";
-import { setsRepsLabel } from "../utils/setsRepsLabel";
+import { setsRepsLabel } from "@dyel/core";
 import { th, td } from "../utils/tableStyles";
 
 export function ExerciseList({

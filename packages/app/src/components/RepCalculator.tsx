@@ -2,9 +2,9 @@ import { useState, useMemo, useEffect, useRef } from "react";
 import type { DateRange } from "react-day-picker";
 import { DateRangePicker } from "./DateRangePicker";
 import { useLastSessionStats } from "../hooks/useLastSessionStats";
-import { findBestE1RM, predictWeightForReps, predictRepsForWeight } from "../utils/repCalculator";
+import { findBestE1RM, predictWeightForReps, predictRepsForWeight } from "@dyel/core";
 import type { ConjugateDataPair } from "../hooks/useConjugateData";
-import type { E1RMEstimate } from "../utils/repCalculator";
+import type { E1RMEstimate } from "@dyel/core";
 
 type LiftType = "squat" | "bench" | "deadlift" | "accessory";
 
