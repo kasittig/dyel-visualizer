@@ -28,6 +28,7 @@ To build `@dyel/core` for npm publishing (emits `dist/` with `.d.ts` declaration
 ```bash
 npm run build -w packages/core
 ```
+
 ## Working Preferences
 
 **Git workflow**
@@ -40,6 +41,10 @@ npm run build -w packages/core
 **Pull requests**
 
 - Always include a **"What the user will see"** section in PR descriptions for observable, user-facing changes. If no user-visible changes, note that explicitly ("No user-visible changes."). Update the description whenever new commits are pushed.
+- `gh pr edit --body` silently fails on this repo due to a Projects (classic) deprecation warning. Use the API directly instead:
+  ```bash
+  gh api repos/kasittig/dyel-visualizer/pulls/<number> --method PATCH --field body="<body>" --jq .number
+  ```
 
 **Code style**
 
