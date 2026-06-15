@@ -9,9 +9,8 @@ import {
   YAxis,
 } from "recharts";
 import { formatDate, LINE_COLORS, normalizeToBaseE1RM } from "@dyel/core";
-import type { ConjugateExercise } from "@dyel/core";
+import type { ConjugateExercise, RepCalcStats } from "@dyel/core";
 import type { ConjugateDataPair } from "../hooks/useConjugateData";
-import { useLastSessionStats } from "../hooks/useLastSessionStats";
 
 const NORMALIZED_KEY = "__normalized__";
 const NORMALIZED_COLOR = "#3b82f6";
@@ -21,17 +20,19 @@ export function ConjugateCharts({
   rows,
   shown,
   baselineNames = {},
+  stats,
 }: {
   rows: ConjugateDataPair[];
   shown: Set<string>;
   baselineNames?: Partial<Record<string, string>>;
+  stats: RepCalcStats;
 }) {
   const [legendOpen, setLegendOpen] = useState(false);
   const [targetName, setTargetName] = useState<string | null>(null);
 
   const unit = rows[0]?.[1].unit ?? "lbs";
 
-  const { addlWtOffset, variantFactor } = useLastSessionStats(rows, baselineNames);
+  const { addlWtOffset, variantFactor } = stats;
 
   // label → date → best e1RM — recomputed only when rows changes
   const { variations, e1rmByLabelAndDate, allDates } = useMemo(() => {

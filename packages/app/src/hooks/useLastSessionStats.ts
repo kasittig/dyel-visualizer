@@ -168,3 +168,5 @@ export function useLastSessionStats(
     };
   }, [pairs, baselineNames]);
 }
+
+export type SessionStats = ReturnType<typeof useLastSessionStats>;

@@ -11,7 +11,6 @@ import {
 import { formatDate, normalizeToBaseE1RM } from "@dyel/core";
 import type { ConjugateExercise, RepCalcStats } from "@dyel/core";
 import type { ConjugateDataPair } from "../hooks/useConjugateData";
-import { useLastSessionStats } from "../hooks/useLastSessionStats";
 
 const SQUAT_COLOR = "#e67e22";
 const BENCH_COLOR = "#3498db";
@@ -94,13 +93,13 @@ function buildChartData(
 export function TotalChart({
   pairs,
   baselineNames = {},
+  stats,
 }: {
   pairs: ConjugateDataPair[];
   baselineNames?: Partial<Record<string, string>>;
+  stats: RepCalcStats;
 }) {
   const unit = pairs[0]?.[1].unit ?? "lbs";
-
-  const { addlWtOffset, variantFactor } = useLastSessionStats(pairs, baselineNames);
 
   const baselineExByType = useMemo(() => {
     const m = new Map<string, ConjugateExercise>();
@@ -113,8 +112,8 @@ export function TotalChart({
   }, [pairs, baselineNames]);
 
   const data = useMemo(
-    () => buildChartData(pairs, baselineExByType, { addlWtOffset, variantFactor }),
-    [pairs, baselineExByType, addlWtOffset, variantFactor]
+    () => buildChartData(pairs, baselineExByType, stats),
+    [pairs, baselineExByType, stats]
   );
 
   if (data.length === 0) {

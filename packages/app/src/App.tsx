@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { useConjugateData } from "./hooks/useConjugateData";
+import { useLastSessionStats } from "./hooks/useLastSessionStats";
 import { ConjugateCharts } from "./components/ConjugateCharts";
 import { ExerciseList } from "./components/ExerciseList";
 import { ExerciseFilters } from "./components/ExerciseFilters";
@@ -158,6 +159,8 @@ function App() {
     return result;
   }, [squatRows, benchRows, deadliftRows, accessoryRows, baselineNames]);
 
+  const stats = useLastSessionStats(pairs, effectiveBaselineNames);
+
   const tabs = [...MAIN_TABS, ...(accessoryRows.length > 0 ? [ACCESSORY_TAB] : [])];
   const activeTabConfig = tabs.find((t) => t.id === activeTab) ?? MAIN_TABS[0];
 
@@ -314,11 +317,15 @@ function App() {
               ))}
             </div>
             {activeTab === "calculator" ? (
-              <RepCalculator pairs={pairs} baselineNames={effectiveBaselineNames} />
+              <RepCalculator pairs={pairs} baselineNames={effectiveBaselineNames} stats={stats} />
             ) : activeTab === "sigma" ? (
               <>
                 <VolumeWorkToggle checked={excludeVolumeWork} onChange={toggleVolumeWork} />
-                <TotalChart pairs={sigmaPairs} baselineNames={effectiveBaselineNames} />
+                <TotalChart
+                  pairs={sigmaPairs}
+                  baselineNames={effectiveBaselineNames}
+                  stats={stats}
+                />
               </>
             ) : (
               <>
@@ -339,12 +346,13 @@ function App() {
                   rows={filteredRows}
                   shown={effectiveShown}
                   baselineNames={effectiveBaselineNames}
+                  stats={stats}
                 />
                 <ExerciseList
-                  rows={filteredRows}
+                  rows={activeRows}
                   shown={effectiveShown}
                   onToggle={toggleVariation}
-                  baselineNames={effectiveBaselineNames}
+                  stats={stats}
                   heading={activeTabConfig.heading}
                   columnHeader={activeTabConfig.columnHeader}
                   showSearch={activeTabConfig.showSearch}
