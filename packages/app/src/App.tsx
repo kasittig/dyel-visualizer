@@ -318,7 +318,7 @@ function App() {
             ) : activeTab === "sigma" ? (
               <>
                 <VolumeWorkToggle checked={excludeVolumeWork} onChange={toggleVolumeWork} />
-                <TotalChart pairs={sigmaPairs} />
+                <TotalChart pairs={sigmaPairs} baselineNames={effectiveBaselineNames} />
               </>
             ) : (
               <>
