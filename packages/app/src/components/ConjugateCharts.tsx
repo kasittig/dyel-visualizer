@@ -21,14 +21,17 @@ export function ConjugateCharts({
   shown,
   baselineNames = {},
   stats,
+  targetName,
+  onTargetChange,
 }: {
   rows: ConjugateDataPair[];
   shown: Set<string>;
   baselineNames?: Partial<Record<string, string>>;
   stats: RepCalcStats;
+  targetName: string | null;
+  onTargetChange: (name: string) => void;
 }) {
   const [legendOpen, setLegendOpen] = useState(false);
-  const [targetName, setTargetName] = useState<string | null>(null);
 
   const unit = rows[0]?.[1].unit ?? "lbs";
 
@@ -208,7 +211,7 @@ export function ConjugateCharts({
             Normalize to:{" "}
             <select
               value={effectiveTargetName ?? ""}
-              onChange={(e) => setTargetName(e.target.value)}
+              onChange={(e) => onTargetChange(e.target.value)}
               style={{ fontSize: "0.8rem" }}
             >
               {variations.map((v) => (

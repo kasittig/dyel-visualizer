@@ -125,6 +125,7 @@ function App() {
   });
   const [excludeVolumeWork, setExcludeVolumeWork] = useState(true);
   const [baselineNames, setBaselineNames] = useState<Partial<Record<LiftTab, string>>>({});
+  const [targetNames, setTargetNames] = useState<Partial<Record<LiftTab, string>>>({});
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (url) params.set("sheet", url);
@@ -358,6 +359,10 @@ function App() {
                   shown={effectiveShown}
                   baselineNames={effectiveBaselineNames}
                   stats={chartStats}
+                  targetName={targetNames[activeTab as LiftTab] ?? null}
+                  onTargetChange={(name) =>
+                    setTargetNames((prev) => ({ ...prev, [activeTab]: name }))
+                  }
                 />
                 <ExerciseList
                   rows={activeRows}
