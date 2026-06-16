@@ -240,10 +240,8 @@ function App() {
                 <SigmaRadarChart chartData={sigmaChartData} unit={sigmaUnit} />
                 <CrossLiftCorrelationPanel
                   rows={sigmaMainPairs}
-                  baselineNames={
-                    effectiveBaselineNames as Partial<
-                      Record<"squat" | "bench" | "deadlift", string>
-                    >
+                  targetNames={
+                    effectiveTargetNames as Partial<Record<"squat" | "bench" | "deadlift", string>>
                   }
                 />
               </>
