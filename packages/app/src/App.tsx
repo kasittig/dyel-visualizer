@@ -21,6 +21,40 @@ function toggleInSet<T>(set: Set<T>, item: T): Set<T> {
 
 function defaultBaselineName(rows: ConjugateDataPair[]): string | null {
   let first: string | null = null;
+  const lastDate = new Map<string, Date>();
+  const lastE1RM = new Map<string, number>();
+  for (const [ex, session] of rows) {
+    if (first === null) first = ex.displayName;
+    const prev = lastDate.get(ex.displayName);
+    if (!prev || session.date > prev) {
+      lastDate.set(ex.displayName, session.date);
+      lastE1RM.set(ex.displayName, session.e1rm);
+    } else if (session.date.getTime() === prev.getTime()) {
+      const prevE1RM = lastE1RM.get(ex.displayName) ?? 0;
+      if (session.e1rm > prevE1RM) lastE1RM.set(ex.displayName, session.e1rm);
+    }
+  }
+
+  let bestName: string | null = null;
+  let bestDate: Date | null = null;
+  let bestE1RM = -Infinity;
+  for (const [name, date] of lastDate) {
+    const e1rm = lastE1RM.get(name) ?? 0;
+    if (
+      !bestDate ||
+      date > bestDate ||
+      (date.getTime() === bestDate.getTime() && e1rm > bestE1RM)
+    ) {
+      bestName = name;
+      bestDate = date;
+      bestE1RM = e1rm;
+    }
+  }
+  return bestName ?? first;
+}
+
+function defaultTargetName(rows: ConjugateDataPair[]): string | null {
+  let first: string | null = null;
   const seen = new Set<string>();
   for (const [ex] of rows) {
     if (seen.has(ex.displayName)) continue;
@@ -174,6 +208,15 @@ function App() {
     return result;
   }, [tabRows, baselineNames]);
 
+  const effectiveTargetNames = useMemo(() => {
+    const result: Partial<Record<LiftTab, string>> = {};
+    for (const tab of LIFT_TABS) {
+      const name = targetNames[tab] ?? defaultTargetName(tabRows[tab]);
+      if (name) result[tab] = name;
+    }
+    return result;
+  }, [tabRows, targetNames]);
+
   const stats = useLastSessionStats(pairs, effectiveBaselineNames);
 
   const tabs = [...MAIN_TABS, ...(tabRows.accessory.length > 0 ? [ACCESSORY_TAB] : [])];
@@ -320,7 +363,7 @@ function App() {
                 <TotalChart
                   pairs={sigmaPairs}
                   baselineNames={effectiveBaselineNames}
-                  targetNames={targetNames}
+                  targetNames={effectiveTargetNames}
                   stats={sigmaStats}
                 />
               </>
@@ -344,7 +387,7 @@ function App() {
                   filteredRows={filteredRows}
                   effectiveBaselineNames={effectiveBaselineNames}
                   chartStats={chartStats}
-                  targetName={targetNames[activeTab as LiftTab] ?? null}
+                  targetName={effectiveTargetNames[activeTab as LiftTab] ?? null}
                   onTargetChange={(name) =>
                     setTargetNames((prev) => ({ ...prev, [activeTab]: name }))
                   }
