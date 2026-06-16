@@ -13,25 +13,6 @@ import type { SessionStats } from "../hooks/useLastSessionStats";
 
 const MIN_VARIATIONS = 3;
 
-function AxisTick({
-  x,
-  y,
-  payload,
-  textAnchor,
-}: {
-  x?: number | string;
-  y?: number | string;
-  payload?: { value: string };
-  textAnchor?: "inherit" | "end" | "start" | "middle";
-}) {
-  if (!payload || x === undefined || y === undefined) return null;
-  return (
-    <text x={x} y={y} fontSize={11} textAnchor={textAnchor ?? "middle"} fill="currentColor">
-      {payload.value}
-    </text>
-  );
-}
-
 export function VariationRadarChart({
   rows,
   stats,
@@ -73,7 +54,7 @@ export function VariationRadarChart({
         <ResponsiveContainer width="100%" height={340}>
           <RadarChart data={data}>
             <PolarGrid />
-            <PolarAngleAxis dataKey="variation" tick={(props) => <AxisTick {...props} />} />
+            <PolarAngleAxis dataKey="variation" tick={{ fontSize: 11 }} />
             <PolarRadiusAxis tick={{ fontSize: 10 }} unit={` ${unit}`} />
             <Radar dataKey="e1rm" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.25} />
             <Tooltip
