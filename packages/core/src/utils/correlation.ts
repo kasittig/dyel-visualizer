@@ -50,18 +50,18 @@ function dateRange(sessions: TrainingSession[]): { first: Date; last: Date } | n
 function correlateVariants(
   sessionsA: TrainingSession[],
   sessionsB: TrainingSession[],
-  minOverlap = 5
-): number {
+  minOverlap = 3
+): { r: number; n: number } {
   const rangeA = dateRange(sessionsA);
   const rangeB = dateRange(sessionsB);
-  if (!rangeA || !rangeB) return NaN;
+  if (!rangeA || !rangeB) return { r: NaN, n: 0 };
 
   // Intersect training windows: only use dates where both variants have real
   // session history. Extrapolating beyond either window produces a constant
   // slope, which inflates r toward 1.0 spuriously.
   const overlapStart = rangeA.first > rangeB.first ? rangeA.first : rangeB.first;
   const overlapEnd = rangeA.last < rangeB.last ? rangeA.last : rangeB.last;
-  if (overlapStart > overlapEnd) return NaN;
+  if (overlapStart > overlapEnd) return { r: NaN, n: 0 };
 
   const xs: number[] = [];
   const ys: number[] = [];
@@ -81,15 +81,15 @@ function correlateVariants(
   // a good week on variant A tends to coincide with a good week on variant B.
   const dxs = xs.slice(1).map((x, i) => x - xs[i]);
   const dys = ys.slice(1).map((y, i) => y - ys[i]);
-  if (dxs.length < minOverlap) return NaN;
-  return pearsonCorrelation(dxs, dys);
+  if (dxs.length < minOverlap) return { r: NaN, n: dxs.length };
+  return { r: pearsonCorrelation(dxs, dys), n: dxs.length };
 }
 
 export function computeCorrelationMatrix(
   pairs: ConjugateDataPair[],
   variantNames: string[],
-  minOverlap = 5
-): number[][] {
+  minOverlap = 3
+): { matrix: number[][]; sampleMatrix: number[][] } {
   const sessionsByName = new Map<string, TrainingSession[]>();
   for (const name of variantNames) {
     sessionsByName.set(name, sessionsForVariant(pairs, name));
@@ -98,18 +98,23 @@ export function computeCorrelationMatrix(
   const matrix: number[][] = Array.from({ length: n }, (_, i) =>
     Array.from({ length: n }, (_, j) => (i === j ? 1.0 : NaN))
   );
+  const sampleMatrix: number[][] = Array.from({ length: n }, (_, i) =>
+    Array.from({ length: n }, (_, j) => (i === j ? Infinity : 0))
+  );
   for (let i = 0; i < n; i++) {
     for (let j = i + 1; j < n; j++) {
-      const r = correlateVariants(
+      const { r, n: overlap } = correlateVariants(
         sessionsByName.get(variantNames[i])!,
         sessionsByName.get(variantNames[j])!,
         minOverlap
       );
       matrix[i][j] = r;
       matrix[j][i] = r;
+      sampleMatrix[i][j] = overlap;
+      sampleMatrix[j][i] = overlap;
     }
   }
-  return matrix;
+  return { matrix, sampleMatrix };
 }
 
 export function selectTopCrossLiftVariants(
@@ -129,7 +134,7 @@ export function selectTopCrossLiftVariants(
   }
 
   function correlate(a: string, b: string): number {
-    return correlateVariants(sessionsByName.get(a)!, sessionsByName.get(b)!);
+    return correlateVariants(sessionsByName.get(a)!, sessionsByName.get(b)!).r;
   }
 
   function pickTop(candidates: string[], others: string[], baseline: string | undefined): string[] {

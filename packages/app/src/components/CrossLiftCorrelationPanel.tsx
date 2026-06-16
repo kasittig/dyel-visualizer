@@ -5,17 +5,17 @@ import { CorrelationMatrix } from "./CorrelationMatrix";
 
 export function CrossLiftCorrelationPanel({
   rows,
-  baselineNames,
+  targetNames,
 }: {
   rows: ConjugateDataPair[];
-  baselineNames: Partial<Record<LiftTypeKey, string>>;
+  targetNames: Partial<Record<LiftTypeKey, string>>;
 }) {
-  const { matrix, labels, liftTypes } = useCrossLiftCorrelation(rows, baselineNames);
+  const { matrix, sampleMatrix, labels, liftTypes } = useCrossLiftCorrelation(rows, targetNames);
 
   if (labels.length < 2) return null;
 
   const competitionLabels = new Set(
-    [baselineNames.squat, baselineNames.bench, baselineNames.deadlift].filter(
+    [targetNames.squat, targetNames.bench, targetNames.deadlift].filter(
       (n): n is string => n !== undefined
     )
   );
@@ -23,6 +23,7 @@ export function CrossLiftCorrelationPanel({
   return (
     <CorrelationMatrix
       matrix={matrix}
+      sampleMatrix={sampleMatrix}
       labels={labels}
       competitionLabels={competitionLabels}
       liftTypes={liftTypes}

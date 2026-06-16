@@ -25,14 +25,18 @@ function cellTextColor(r: number): string {
   return !isNaN(r) && Math.abs(r) > 0.5 ? "#fff" : "#333";
 }
 
+const CONFIDENT_WEEKS = 5;
+
 export function CorrelationMatrix({
   matrix,
+  sampleMatrix,
   labels,
   competitionLabels,
   liftTypes,
   title,
 }: {
   matrix: number[][];
+  sampleMatrix?: number[][];
   labels: string[];
   competitionLabels?: Set<string>;
   liftTypes?: Record<string, string>;
@@ -48,8 +52,8 @@ export function CorrelationMatrix({
       <p
         style={{ fontSize: "0.75rem", color: "var(--text)", marginBottom: "0.75rem", marginTop: 0 }}
       >
-        Pearson r between weekly interpolated e1RM. Cells marked — have fewer than 5 weeks of shared
-        training history.
+        Pearson r between weekly e1RM first differences. — = no shared training window. ~ = fewer
+        than {CONFIDENT_WEEKS} weeks of overlap (treat with caution).
       </p>
       <div style={{ overflowX: "auto" }}>
         <div style={{ display: "inline-block", minWidth: "max-content" }}>
@@ -111,12 +115,16 @@ export function CorrelationMatrix({
                 {labels.map((colLabel, j) => {
                   const r = matrix[i]?.[j];
                   const rVal = r ?? NaN;
+                  const n = sampleMatrix?.[i]?.[j] ?? Infinity;
+                  const lowConfidence = !isNaN(rVal) && i !== j && n < CONFIDENT_WEEKS;
                   const isCompetitionCol = competitionLabels?.has(colLabel);
                   const highlight = isCompetitionRow || isCompetitionCol;
                   const tooltipText =
                     i === j
                       ? rowLabel
-                      : `${rowLabel} ↔ ${colLabel}: r = ${isNaN(rVal) ? "insufficient data" : rVal.toFixed(2)}`;
+                      : isNaN(rVal)
+                        ? `${rowLabel} ↔ ${colLabel}: no shared training window`
+                        : `${rowLabel} ↔ ${colLabel}: r = ${rVal.toFixed(2)}${lowConfidence ? ` (${n} weeks — low confidence)` : ""}`;
                   return (
                     <div
                       key={colLabel}
@@ -125,6 +133,7 @@ export function CorrelationMatrix({
                         width: CELL_SIZE,
                         height: CELL_SIZE,
                         background: correlationColor(rVal),
+                        opacity: lowConfidence ? 0.55 : 1,
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
@@ -138,7 +147,11 @@ export function CorrelationMatrix({
                         flexShrink: 0,
                       }}
                     >
-                      {i === j ? "1.00" : isNaN(rVal) ? "—" : rVal.toFixed(2)}
+                      {i === j
+                        ? "1.00"
+                        : isNaN(rVal)
+                          ? "—"
+                          : `${lowConfidence ? "~" : ""}${rVal.toFixed(2)}`}
                     </div>
                   );
                 })}

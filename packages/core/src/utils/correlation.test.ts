@@ -86,7 +86,7 @@ describe("computeCorrelationMatrix", () => {
   const variants = ["Comp Squat", "SSB Squat", "Box Squat"];
 
   it("produces a symmetric matrix", () => {
-    const matrix = computeCorrelationMatrix(pairs, variants, 2);
+    const { matrix } = computeCorrelationMatrix(pairs, variants, 2);
     for (let i = 0; i < variants.length; i++) {
       for (let j = 0; j < variants.length; j++) {
         if (isNaN(matrix[i][j])) {
@@ -99,21 +99,21 @@ describe("computeCorrelationMatrix", () => {
   });
 
   it("has 1.0 on the diagonal", () => {
-    const matrix = computeCorrelationMatrix(pairs, variants, 2);
+    const { matrix } = computeCorrelationMatrix(pairs, variants, 2);
     for (let i = 0; i < variants.length; i++) {
       expect(matrix[i][i]).toBe(1.0);
     }
   });
 
   it("Comp Squat and SSB Squat are highly correlated (same weekly pattern)", () => {
-    const matrix = computeCorrelationMatrix(pairs, variants, 2);
+    const { matrix } = computeCorrelationMatrix(pairs, variants, 2);
     const r = matrix[0][1];
     expect(isNaN(r)).toBe(false);
     expect(r).toBeGreaterThan(0.8);
   });
 
   it("Comp Squat and Box Squat are anti-correlated (opposite weekly pattern)", () => {
-    const matrix = computeCorrelationMatrix(pairs, variants, 2);
+    const { matrix } = computeCorrelationMatrix(pairs, variants, 2);
     const r = matrix[0][2];
     expect(isNaN(r)).toBe(false);
     expect(r).toBeLessThan(-0.8);
@@ -124,7 +124,7 @@ describe("computeCorrelationMatrix", () => {
       pair("squat", "Comp Squat", "2024-01-01", 300),
       pair("squat", "SSB Squat", "2024-01-01", 250),
     ];
-    const matrix = computeCorrelationMatrix(sparse, ["Comp Squat", "SSB Squat"], 5);
+    const { matrix } = computeCorrelationMatrix(sparse, ["Comp Squat", "SSB Squat"], 5);
     expect(isNaN(matrix[0][1])).toBe(true);
   });
 
@@ -135,7 +135,7 @@ describe("computeCorrelationMatrix", () => {
       pair("squat", "SSB Squat", "2024-06-01", 250),
       pair("squat", "SSB Squat", "2024-07-01", 260),
     ];
-    const matrix = computeCorrelationMatrix(noOverlap, ["Comp Squat", "SSB Squat"], 2);
+    const { matrix } = computeCorrelationMatrix(noOverlap, ["Comp Squat", "SSB Squat"], 2);
     expect(isNaN(matrix[0][1])).toBe(true);
   });
 });

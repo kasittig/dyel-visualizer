@@ -21,7 +21,7 @@ export function LiftTabPanel({
   onTargetChange: (name: string | null) => void;
 }) {
   const [selectedVariation, setSelectedVariation] = useState<string | null>(null);
-  const { matrix, variantNames } = usePerLiftCorrelation(filteredRows);
+  const { matrix, sampleMatrix, variantNames } = usePerLiftCorrelation(filteredRows);
 
   const liftType = filteredRows[0]?.[0].type as LiftType | undefined;
   const baselineName = liftType ? effectiveBaselineNames[liftType] : undefined;
@@ -49,6 +49,7 @@ export function LiftTabPanel({
       />
       <CorrelationMatrix
         matrix={matrix}
+        sampleMatrix={sampleMatrix}
         labels={variantNames}
         competitionLabels={competitionLabels}
       />

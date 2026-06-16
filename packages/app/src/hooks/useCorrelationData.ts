@@ -17,13 +17,13 @@ function uniqueVariantNames(rows: ConjugateDataPair[], type?: string): string[] 
 
 export function usePerLiftCorrelation(
   rows: ConjugateDataPair[],
-  minOverlap = 5
-): { matrix: number[][]; variantNames: string[] } {
+  minOverlap = 3
+): { matrix: number[][]; sampleMatrix: number[][]; variantNames: string[] } {
   return useMemo(() => {
     const variantNames = uniqueVariantNames(rows);
-    if (variantNames.length < 2) return { matrix: [], variantNames: [] };
-    const matrix = computeCorrelationMatrix(rows, variantNames, minOverlap);
-    return { matrix, variantNames };
+    if (variantNames.length < 2) return { matrix: [], sampleMatrix: [], variantNames: [] };
+    const { matrix, sampleMatrix } = computeCorrelationMatrix(rows, variantNames, minOverlap);
+    return { matrix, sampleMatrix, variantNames };
   }, [rows, minOverlap]);
 }
 
@@ -31,9 +31,14 @@ export type LiftTypeKey = "squat" | "bench" | "deadlift";
 
 export function useCrossLiftCorrelation(
   rows: ConjugateDataPair[],
-  baselineNames: Partial<Record<LiftTypeKey, string>>,
+  targetNames: Partial<Record<LiftTypeKey, string>>,
   topPerLift = 3
-): { matrix: number[][]; labels: string[]; liftTypes: Record<string, LiftTypeKey> } {
+): {
+  matrix: number[][];
+  sampleMatrix: number[][];
+  labels: string[];
+  liftTypes: Record<string, LiftTypeKey>;
+} {
   return useMemo(() => {
     const sqVariants = uniqueVariantNames(rows, "squat");
     const bpVariants = uniqueVariantNames(rows, "bench");
@@ -48,21 +53,21 @@ export function useCrossLiftCorrelation(
       sqVariants,
       bpVariants,
       dlVariants,
-      baselineNames.squat,
-      baselineNames.bench,
-      baselineNames.deadlift,
+      targetNames.squat,
+      targetNames.bench,
+      targetNames.deadlift,
       topPerLift
     );
 
     const labels = [...topSq, ...topBp, ...topDl];
-    if (labels.length < 2) return { matrix: [], labels: [], liftTypes: {} };
+    if (labels.length < 2) return { matrix: [], sampleMatrix: [], labels: [], liftTypes: {} };
 
     const liftTypes: Record<string, LiftTypeKey> = {};
     for (const n of topSq) liftTypes[n] = "squat";
     for (const n of topBp) liftTypes[n] = "bench";
     for (const n of topDl) liftTypes[n] = "deadlift";
 
-    const matrix = computeCorrelationMatrix(rows, labels);
-    return { matrix, labels, liftTypes };
-  }, [rows, baselineNames, topPerLift]);
+    const { matrix, sampleMatrix } = computeCorrelationMatrix(rows, labels);
+    return { matrix, sampleMatrix, labels, liftTypes };
+  }, [rows, targetNames, topPerLift]);
 }
