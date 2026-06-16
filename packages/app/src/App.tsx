@@ -10,6 +10,7 @@ import { SigmaRadarChart } from "./components/SigmaRadarChart";
 import { LiftTabPanel } from "./components/LiftTabPanel";
 import { VolumeWorkToggle } from "./components/VolumeWorkToggle";
 import { applyFilters } from "@dyel/core";
+import type { DeadliftStancePreference } from "@dyel/core";
 import { buildChartData } from "./utils/buildChartData";
 import type { ConjugateDataPair } from "./hooks/useConjugateData";
 import type { FilterState } from "@dyel/core";
@@ -27,6 +28,32 @@ import {
 } from "./utils/appUtils";
 import type { LiftType, PageTab, TabState } from "./utils/appUtils";
 
+function DeadliftStanceToggle({
+  stance,
+  onChange,
+}: {
+  stance: DeadliftStancePreference | undefined;
+  onChange: (s: DeadliftStancePreference) => void;
+}) {
+  return (
+    <div style={{ marginBottom: "0.75rem", fontSize: "0.8rem", color: "var(--text)" }}>
+      <span>Primary pull: </span>
+      {(["conventional", "sumo"] as const).map((s) => (
+        <label key={s} style={{ marginRight: "1rem", cursor: "pointer" }}>
+          <input
+            type="radio"
+            name="deadlift-stance"
+            checked={(stance ?? "conventional") === s}
+            onChange={() => onChange(s)}
+            style={{ marginRight: "0.3rem" }}
+          />
+          {s[0].toUpperCase() + s.slice(1)}
+        </label>
+      ))}
+    </div>
+  );
+}
+
 function App() {
   const [url, setUrl] = useState(
     () =>
@@ -38,6 +65,9 @@ function App() {
   const [shownResetToken, setShownResetToken] = useState(0);
   const [tabState, setTabState] = useState<Record<LiftType, TabState>>(initialTabState);
   const [excludeVolumeWork, setExcludeVolumeWork] = useState(true);
+  const [deadliftStance, setDeadliftStance] = useState<DeadliftStancePreference | undefined>(
+    undefined
+  );
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -122,6 +152,7 @@ function App() {
     setShownResetToken((t) => t + 1);
     setTabState(initialTabState());
     setExcludeVolumeWork(true);
+    setDeadliftStance(undefined);
   }
 
   function toggleFilter(facet: Exclude<keyof FilterState, "excludeVolumeWork">, value: string) {
@@ -230,11 +261,17 @@ function App() {
             ) : activeTab === "sigma" ? (
               <>
                 <VolumeWorkToggle checked={excludeVolumeWork} onChange={toggleVolumeWork} />
+                {tabRows.deadlift.length > 0 && (
+                  <DeadliftStanceToggle stance={deadliftStance} onChange={setDeadliftStance} />
+                )}
                 <TotalChart chartData={sigmaChartData} unit={sigmaUnit} />
                 <SigmaRadarChart chartData={sigmaChartData} unit={sigmaUnit} />
               </>
             ) : liftTab !== null ? (
               <>
+                {liftTab === "deadlift" && (
+                  <DeadliftStanceToggle stance={deadliftStance} onChange={setDeadliftStance} />
+                )}
                 <BaselineSelect
                   rows={activeRows}
                   selectedName={effectiveBaselineNames[liftTab] ?? null}
@@ -265,6 +302,7 @@ function App() {
                       [liftTab]: { ...prev[liftTab], targetName: name ?? undefined },
                     }))
                   }
+                  deadliftStance={deadliftStance}
                 />
               </>
             ) : null}
