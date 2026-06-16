@@ -11,6 +11,13 @@ import { applyFilters, emptyFilters } from "@dyel/core";
 import type { ConjugateDataPair } from "./hooks/useConjugateData";
 import type { FilterState } from "@dyel/core";
 
+function toggleInSet<T>(set: Set<T>, item: T): Set<T> {
+  const next = new Set(set);
+  if (next.has(item)) next.delete(item);
+  else next.add(item);
+  return next;
+}
+
 function defaultBaselineName(rows: ConjugateDataPair[]): string | null {
   let first: string | null = null;
   const seen = new Set<string>();
@@ -40,6 +47,8 @@ type TabConfig = {
   columnHeader: string;
   showSearch: boolean;
 };
+
+const LIFT_TABS: LiftTab[] = ["squat", "bench", "deadlift", "accessory"];
 
 const MAIN_TABS: TabConfig[] = [
   {
@@ -85,6 +94,20 @@ function extractSheetRef(input: string): SheetRef | null {
   return null;
 }
 
+function initialVariations(): Record<LiftTab, Set<string>> {
+  return Object.fromEntries(LIFT_TABS.map((t) => [t, new Set<string>()])) as Record<
+    LiftTab,
+    Set<string>
+  >;
+}
+
+function initialFilters(): Record<LiftTab, FilterState> {
+  return Object.fromEntries(LIFT_TABS.map((t) => [t, emptyFilters()])) as Record<
+    LiftTab,
+    FilterState
+  >;
+}
+
 const EXAMPLE_CSV_URL =
   "https://docs.google.com/spreadsheets/d/e/2PACX-1vRPu7N-kHeJeUVhjbL0Q9xDLXEPeC3GsvnAE4HXj2-q9pIjM25BxUwUVxHYqxVR-9uQvW9MKM4l9xNI/pub?gid=1297658251&single=true&output=csv";
 const EXAMPLE_SHEET_URL =
@@ -111,21 +134,13 @@ function App() {
   const params = new URLSearchParams(window.location.search);
   const [url, setUrl] = useState(params.get("sheet") ?? import.meta.env.VITE_SHEET_URL ?? "");
   const [activeTab, setActiveTab] = useState<PageTab>("sigma");
-  const [shownVariations, setShownVariations] = useState<Record<LiftTab, Set<string>>>({
-    squat: new Set(),
-    bench: new Set(),
-    deadlift: new Set(),
-    accessory: new Set(),
-  });
-  const [filterState, setFilterState] = useState<Record<LiftTab, FilterState>>({
-    squat: emptyFilters(),
-    bench: emptyFilters(),
-    deadlift: emptyFilters(),
-    accessory: emptyFilters(),
-  });
+  const [shownVariations, setShownVariations] =
+    useState<Record<LiftTab, Set<string>>>(initialVariations);
+  const [filterState, setFilterState] = useState<Record<LiftTab, FilterState>>(initialFilters);
   const [excludeVolumeWork, setExcludeVolumeWork] = useState(true);
   const [baselineNames, setBaselineNames] = useState<Partial<Record<LiftTab, string>>>({});
   const [targetNames, setTargetNames] = useState<Partial<Record<LiftTab, string>>>({});
+
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (url) params.set("sheet", url);
@@ -140,39 +155,32 @@ function App() {
 
   const pairs = useMemo(() => (state.status === "success" ? state.pairs : []), [state]);
 
-  const squatRows = useMemo(() => pairs.filter(([ex]) => ex.type === "squat"), [pairs]);
-  const benchRows = useMemo(() => pairs.filter(([ex]) => ex.type === "bench"), [pairs]);
-  const deadliftRows = useMemo(() => pairs.filter(([ex]) => ex.type === "deadlift"), [pairs]);
-  const accessoryRows = useMemo(() => pairs.filter(([ex]) => ex.type === "accessory"), [pairs]);
+  const tabRows = useMemo<Record<LiftTab, ConjugateDataPair[]>>(
+    () => ({
+      squat: pairs.filter(([ex]) => ex.type === "squat"),
+      bench: pairs.filter(([ex]) => ex.type === "bench"),
+      deadlift: pairs.filter(([ex]) => ex.type === "deadlift"),
+      accessory: pairs.filter(([ex]) => ex.type === "accessory"),
+    }),
+    [pairs]
+  );
 
   const effectiveBaselineNames = useMemo(() => {
-    const tabRows: Record<LiftTab, ConjugateDataPair[]> = {
-      squat: squatRows,
-      bench: benchRows,
-      deadlift: deadliftRows,
-      accessory: accessoryRows,
-    };
     const result: Partial<Record<LiftTab, string>> = {};
-    for (const tab of ["squat", "bench", "deadlift", "accessory"] as LiftTab[]) {
+    for (const tab of LIFT_TABS) {
       const name = baselineNames[tab] ?? defaultBaselineName(tabRows[tab]);
       if (name) result[tab] = name;
     }
     return result;
-  }, [squatRows, benchRows, deadliftRows, accessoryRows, baselineNames]);
+  }, [tabRows, baselineNames]);
 
   const stats = useLastSessionStats(pairs, effectiveBaselineNames);
 
-  const tabs = [...MAIN_TABS, ...(accessoryRows.length > 0 ? [ACCESSORY_TAB] : [])];
+  const tabs = [...MAIN_TABS, ...(tabRows.accessory.length > 0 ? [ACCESSORY_TAB] : [])];
   const activeTabConfig = tabs.find((t) => t.id === activeTab) ?? MAIN_TABS[0];
 
-  const activeRows =
-    activeTab === "squat"
-      ? squatRows
-      : activeTab === "bench"
-        ? benchRows
-        : activeTab === "deadlift"
-          ? deadliftRows
-          : accessoryRows;
+  const activeRows: ConjugateDataPair[] =
+    activeTab === "calculator" || activeTab === "sigma" ? [] : tabRows[activeTab];
 
   const filteredRows = useMemo(
     () =>
@@ -200,11 +208,12 @@ function App() {
       ? new Set<string>()
       : shownVariations[activeTab as LiftTab];
 
-  function toggleInSet<T>(set: Set<T>, item: T): Set<T> {
-    const next = new Set(set);
-    if (next.has(item)) next.delete(item);
-    else next.add(item);
-    return next;
+  function handleUrlChange(newUrl: string) {
+    setUrl(newUrl);
+    setShownVariations(initialVariations());
+    setFilterState(initialFilters());
+    setExcludeVolumeWork(false);
+    setBaselineNames({});
   }
 
   function toggleVariation(label: string) {
@@ -225,10 +234,7 @@ function App() {
     const tab = activeTab as LiftTab;
     setFilterState((prev) => {
       const current = prev[tab];
-      const next = new Set(current[facet]);
-      if (next.has(value)) next.delete(value);
-      else next.add(value);
-      return { ...prev, [tab]: { ...current, [facet]: next } };
+      return { ...prev, [tab]: { ...current, [facet]: toggleInSet(current[facet], value) } };
     });
   }
 
@@ -255,23 +261,7 @@ function App() {
             id="sheet-url"
             type="text"
             value={url}
-            onChange={(e) => {
-              setUrl(e.target.value);
-              setShownVariations({
-                squat: new Set(),
-                bench: new Set(),
-                deadlift: new Set(),
-                accessory: new Set(),
-              });
-              setFilterState({
-                squat: emptyFilters(),
-                bench: emptyFilters(),
-                deadlift: emptyFilters(),
-                accessory: emptyFilters(),
-              });
-              setExcludeVolumeWork(false);
-              setBaselineNames({});
-            }}
+            onChange={(e) => handleUrlChange(e.target.value)}
             placeholder="https://docs.google.com/spreadsheets/d/…"
             style={{ flex: 1, padding: "0.5rem", boxSizing: "border-box" }}
           />
