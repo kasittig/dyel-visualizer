@@ -63,9 +63,18 @@ export interface ConjugateExercise {
   addlWts: ConjugateAddlWt[];
   equipment: ConjugateEquipment | null;
   displayName: string;
+  movementCategory: MovementCategory;
 }
 
 export type ConjugateDataPair = [ConjugateExercise, TrainingSession];
+
+export type MovementCategory =
+  | "anchor"
+  | "lockout"
+  | "bottom_range"
+  | "quad_dominant"
+  | "posterior_chain"
+  | "unclassified";
 
 export function variantLabel(ex: ConjugateExercise): string {
   const parts: string[] = [];

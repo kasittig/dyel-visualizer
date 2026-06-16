@@ -6,6 +6,7 @@ export type {
   TrainingSession,
   ConjugateExercise,
   ConjugateDataPair,
+  MovementCategory,
 } from "./types/conjugate";
 export { variantLabel, familyKey } from "./types/conjugate";
 
