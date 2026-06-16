@@ -8,6 +8,7 @@ export type {
   ConjugateDataPair,
   MovementCategory,
   DiagnosticResult,
+  PrimaryLift,
 } from "./types/conjugate";
 export { variantLabel, familyKey } from "./types/conjugate";
 
@@ -29,3 +30,8 @@ export {
 export { setsRepsLabel } from "./utils/setsRepsLabel";
 
 export { LINE_COLORS, formatDate } from "./utils/chartUtils";
+
+export {
+  BIOMECHANICAL_BASELINES,
+  ACCOMMODATING_RESISTANCE_BASELINES,
+} from "./utils/diagnostics";

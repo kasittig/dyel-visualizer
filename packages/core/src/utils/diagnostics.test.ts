@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { toMovementCategory } from "./diagnostics";
+import { toMovementCategory, BIOMECHANICAL_BASELINES } from "./diagnostics";
 import type { ConjugateExercise } from "../types/conjugate";
 
 function ex(overrides: Partial<ConjugateExercise> = {}): ConjugateExercise {
@@ -84,5 +84,42 @@ describe("toMovementCategory", () => {
 
   it("competition stance beats board equipment (priority check)", () => {
     expect(toMovementCategory(ex({ stance: "competition", equipment: "board" }))).toBe("anchor");
+  });
+});
+
+describe("BIOMECHANICAL_BASELINES", () => {
+  it("has entries for all three primary lifts", () => {
+    expect(BIOMECHANICAL_BASELINES).toHaveProperty("bench");
+    expect(BIOMECHANICAL_BASELINES).toHaveProperty("squat");
+    expect(BIOMECHANICAL_BASELINES).toHaveProperty("deadlift");
+  });
+
+  it("bench lockout non-floor baseline is 90–95%", () => {
+    const entry = BIOMECHANICAL_BASELINES.bench.lockout!;
+    expect(entry.min).toBe(90);
+    expect(entry.max).toBe(95);
+  });
+
+  it("bench lockout floor press override is 85–90%", () => {
+    const override = BIOMECHANICAL_BASELINES.bench.lockout!.equipmentOverrides?.floor!;
+    expect(override.min).toBe(85);
+    expect(override.max).toBe(90);
+  });
+
+  it("squat quad_dominant baseline is 80–85%", () => {
+    const entry = BIOMECHANICAL_BASELINES.squat.quad_dominant!;
+    expect(entry.min).toBe(80);
+    expect(entry.max).toBe(85);
+  });
+
+  it("deadlift bottom_range baseline is 85–90%", () => {
+    const entry = BIOMECHANICAL_BASELINES.deadlift.bottom_range!;
+    expect(entry.min).toBe(85);
+    expect(entry.max).toBe(90);
+  });
+
+  it("categories not in the table are absent", () => {
+    expect(BIOMECHANICAL_BASELINES.bench.quad_dominant).toBeUndefined();
+    expect(BIOMECHANICAL_BASELINES.squat.lockout).toBeUndefined();
   });
 });
