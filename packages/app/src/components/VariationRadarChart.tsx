@@ -18,36 +18,16 @@ function AxisTick({
   y,
   payload,
   textAnchor,
-  stats,
-  unit,
 }: {
   x?: number | string;
   y?: number | string;
   payload?: { value: string };
   textAnchor?: "inherit" | "end" | "start" | "middle";
-  stats: SessionStats;
-  unit: string;
 }) {
   if (!payload || x === undefined || y === undefined) return null;
-  const name = payload.value;
-  const lastDate = stats.lastPerformed.get(name);
-  const bestSet = stats.lastSessionBestSet.get(name);
-
-  const anchor = textAnchor ?? "middle";
-  const dateStr = lastDate
-    ? lastDate.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })
-    : "Never";
-  const setStr = bestSet ? `${bestSet.weight} ${unit} × ${bestSet.reps}` : "";
-
   return (
-    <text x={x} y={y} fontSize={11} textAnchor={anchor} fill="currentColor">
-      <tspan x={x} dy="0">
-        {name}
-      </tspan>
-      <tspan x={x} dy="1.3em" fontSize={9} opacity={0.7}>
-        {dateStr}
-        {setStr ? ` · ${setStr}` : ""}
-      </tspan>
+    <text x={x} y={y} fontSize={11} textAnchor={textAnchor ?? "middle"} fill="currentColor">
+      {payload.value}
     </text>
   );
 }
@@ -93,10 +73,7 @@ export function VariationRadarChart({
         <ResponsiveContainer width="100%" height={340}>
           <RadarChart data={data}>
             <PolarGrid />
-            <PolarAngleAxis
-              dataKey="variation"
-              tick={(props) => <AxisTick {...props} stats={stats} unit={unit} />}
-            />
+            <PolarAngleAxis dataKey="variation" tick={(props) => <AxisTick {...props} />} />
             <PolarRadiusAxis tick={{ fontSize: 10 }} unit={` ${unit}`} />
             <Radar dataKey="e1rm" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.25} />
             <Tooltip
@@ -126,7 +103,7 @@ export function VariationRadarChart({
                   >
                     <div style={{ fontWeight: 600 }}>{name}</div>
                     <div>
-                      e1RM: {item.value} {unit}
+                      e1RM: {Number(item.value).toFixed(2)} {unit}
                     </div>
                     <div style={{ opacity: 0.7 }}>
                       {dateStr}
