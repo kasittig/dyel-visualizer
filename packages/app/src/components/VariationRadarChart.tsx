@@ -31,20 +31,24 @@ function AxisTick({
   if (!payload || x === undefined || y === undefined) return null;
   const name = payload.value;
   const lastDate = stats.lastPerformed.get(name);
-  const sets = stats.lastSessionAllSets.get(name) ?? [];
+  const bestSet = stats.lastSessionBestSet.get(name);
 
+  const anchor = textAnchor ?? "middle";
   const dateStr = lastDate
-    ? lastDate.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })
+    ? lastDate.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })
     : "Never";
-  const setsStr = sets.map((s) => `${s.weight} ${unit} × ${s.reps}`).join("\n");
+  const setStr = bestSet ? `${bestSet.weight} ${unit} × ${bestSet.reps}` : "";
 
   return (
-    <g>
-      <title>{`${dateStr}\n${setsStr}`}</title>
-      <text x={x} y={y} fontSize={11} textAnchor={textAnchor ?? "middle"} fill="currentColor">
+    <text x={x} y={y} fontSize={11} textAnchor={anchor} fill="currentColor">
+      <tspan x={x} dy="0">
         {name}
-      </text>
-    </g>
+      </tspan>
+      <tspan x={x} dy="1.3em" fontSize={9} opacity={0.7}>
+        {dateStr}
+        {setStr ? ` · ${setStr}` : ""}
+      </tspan>
+    </text>
   );
 }
 
