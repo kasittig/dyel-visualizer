@@ -13,6 +13,41 @@ import type { SessionStats } from "../hooks/useLastSessionStats";
 
 const MIN_VARIATIONS = 3;
 
+function AxisTick({
+  x,
+  y,
+  payload,
+  textAnchor,
+  stats,
+  unit,
+}: {
+  x?: number | string;
+  y?: number | string;
+  payload?: { value: string };
+  textAnchor?: "inherit" | "end" | "start" | "middle";
+  stats: SessionStats;
+  unit: string;
+}) {
+  if (!payload || x === undefined || y === undefined) return null;
+  const name = payload.value;
+  const lastDate = stats.lastPerformed.get(name);
+  const sets = stats.lastSessionAllSets.get(name) ?? [];
+
+  const dateStr = lastDate
+    ? lastDate.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })
+    : "Never";
+  const setsStr = sets.map((s) => `${s.weight} ${unit} × ${s.reps}`).join("\n");
+
+  return (
+    <g>
+      <title>{`${dateStr}\n${setsStr}`}</title>
+      <text x={x} y={y} fontSize={11} textAnchor={textAnchor ?? "middle"} fill="currentColor">
+        {name}
+      </text>
+    </g>
+  );
+}
+
 export function VariationRadarChart({
   rows,
   stats,
@@ -54,7 +89,10 @@ export function VariationRadarChart({
         <ResponsiveContainer width="100%" height={340}>
           <RadarChart data={data}>
             <PolarGrid />
-            <PolarAngleAxis dataKey="variation" tick={{ fontSize: 11 }} />
+            <PolarAngleAxis
+              dataKey="variation"
+              tick={(props) => <AxisTick {...props} stats={stats} unit={unit} />}
+            />
             <PolarRadiusAxis tick={{ fontSize: 10 }} unit={` ${unit}`} />
             <Radar dataKey="e1rm" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.25} />
             <Tooltip formatter={(v) => [`${v} ${unit}`, "e1RM"]} />
