@@ -302,7 +302,7 @@ export function ConjugateCharts({
             {visibleVariations.map(({ label, i }) => {
               const isHighlighted = highlightedVariation === label;
               const dimmed = highlightedVariation !== null && !isHighlighted;
-              const stroke = isHighlighted ? "#0f172a" : LINE_COLORS[i % LINE_COLORS.length];
+              const stroke = isHighlighted ? "var(--text-h)" : LINE_COLORS[i % LINE_COLORS.length];
               return (
                 <Line
                   key={label}
