@@ -42,10 +42,10 @@ npm run build -w packages/core
 **Pull requests**
 
 - Always include a **"What the user will see"** section in PR descriptions for observable, user-facing changes. If no user-visible changes, note that explicitly ("No user-visible changes."). Update the description whenever new commits are pushed.
-- `gh pr edit --body` silently fails on this repo due to a Projects (classic) deprecation warning. Use the API directly instead:
-  ```bash
-  gh api repos/kasittig/dyel-visualizer/pulls/<number> --method PATCH --field body="<body>" --jq .number
-  ```
+- Several `gh` CLI commands are broken on this repo due to GitHub's Projects (classic) GraphQL deprecation. Use `gh api` (REST) instead:
+  - `gh pr edit --body` silently fails — use `gh api repos/kasittig/dyel-visualizer/pulls/<number> --method PATCH --field body="<body>" --jq .number`
+  - `gh issue view <number>` exits with a GraphQL error — use `gh api repos/kasittig/dyel-visualizer/issues/<number>`
+  - `gh issue create` does not support `--jq` (only `gh api` does); omit it — the URL is printed to stdout on success
 
 **Code style**
 
