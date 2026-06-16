@@ -88,7 +88,9 @@ export function VariationRadarChart({
                     </div>
                     <div style={{ opacity: 0.7 }}>
                       {dateStr}
-                      {bestSet ? ` · ${bestSet.weight} ${unit} × ${bestSet.reps}` : ""}
+                      {bestSet
+                        ? ` · ${bestSet.sets}×${bestSet.reps} @ ${bestSet.weight} ${unit}`
+                        : ""}
                     </div>
                   </div>
                 );
