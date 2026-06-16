@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useWindowVirtualizer } from "@tanstack/react-virtual";
 import type { ConjugateDataPair } from "../hooks/useConjugateData";
 import type { SessionStats } from "../hooks/useLastSessionStats";
@@ -48,15 +48,22 @@ export function ExerciseList({
   const hasVariantExercises = variantFactor.size > 0;
   const colSpan = 4 + (hasAddlWtExercises ? 1 : 0) + (hasVariantExercises ? 1 : 0);
 
-  const allLabels = [...new Set(rows.map(([ex]) => ex.displayName))].sort();
-  const allShown = shown.size === 0;
-  const inChart = allLabels.filter((l) => allShown || shown.has(l));
-  const notInChart = allLabels.filter((l) => !allShown && !shown.has(l));
-  const labels = [...inChart, ...notInChart];
-  const displayed =
-    showSearch && query
-      ? labels.filter((l) => l.toLowerCase().includes(query.toLowerCase()))
-      : labels;
+  const allLabels = useMemo(() => [...new Set(rows.map(([ex]) => ex.displayName))].sort(), [rows]);
+
+  const labels = useMemo(() => {
+    const allShown = shown.size === 0;
+    const inChart = allLabels.filter((l) => allShown || shown.has(l));
+    const notInChart = allLabels.filter((l) => !allShown && !shown.has(l));
+    return [...inChart, ...notInChart];
+  }, [allLabels, shown]);
+
+  const displayed = useMemo(
+    () =>
+      showSearch && query
+        ? labels.filter((l) => l.toLowerCase().includes(query.toLowerCase()))
+        : labels,
+    [labels, showSearch, query]
+  );
 
   const tbodyRef = useRef<HTMLTableSectionElement>(null);
   const [scrollMargin, setScrollMargin] = useState(0);
