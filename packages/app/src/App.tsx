@@ -118,10 +118,10 @@ function App() {
 
   const sigmaUnit = sigmaPairs[0]?.[1].unit ?? "lbs";
 
-  const sigmaMainPairs = useMemo(
-    () => sigmaPairs.filter(([ex]) => ex.type !== "accessory"),
-    [sigmaPairs]
-  );
+  // Use all pairs (not volume-filtered) for the cross-lift correlation so the
+  // competition/baseline exercises are always present regardless of how their
+  // sessions are tagged.
+  const sigmaMainPairs = useMemo(() => pairs.filter(([ex]) => ex.type !== "accessory"), [pairs]);
 
   function handleUrlChange(newUrl: string) {
     setUrl(newUrl);
