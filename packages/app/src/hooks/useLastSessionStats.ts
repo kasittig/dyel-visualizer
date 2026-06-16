@@ -1,11 +1,18 @@
 import { useMemo } from "react";
-import { fitAddlWtOffset, fitVariantFactor, familyKey, variantLabel } from "@dyel/core";
+import {
+  fitAddlWtOffset,
+  fitVariantFactor,
+  familyKey,
+  variantLabel,
+  predictE1RM,
+} from "@dyel/core";
 import type { ConjugateExercise, TrainingSession } from "@dyel/core";
 import type { ConjugateDataPair } from "./useConjugateData";
 
 export function useLastSessionStats(
   pairs: ConjugateDataPair[],
-  baselineNames: Partial<Record<string, string>> = {}
+  baselineNames: Partial<Record<string, string>> = {},
+  today: Date = new Date()
 ) {
   return useMemo(() => {
     // Build a map of baseline exercise per lift type from the provided display names.
@@ -23,6 +30,7 @@ export function useLastSessionStats(
     const lastPerformed = new Map<string, Date>();
     const lastSessionE1RM = new Map<string, number>();
     const lastSessionBestSet = new Map<string, { weight: number; reps: number; sets: number }>();
+    const sessionsByVariation = new Map<string, TrainingSession[]>();
 
     // Pass 1: find the most-recent date for each key.
     // This must complete before pass 2 so we know which rows belong to the "last session."
@@ -30,6 +38,10 @@ export function useLastSessionStats(
       const key = exercise.displayName;
       const existing = lastPerformed.get(key);
       if (!existing || session.date > existing) lastPerformed.set(key, session.date);
+
+      const sessions = sessionsByVariation.get(key) ?? [];
+      sessions.push(session);
+      sessionsByVariation.set(key, sessions);
     }
 
     // Pass 2: compute stats for the last session only.
@@ -132,14 +144,21 @@ export function useLastSessionStats(
       variantFactor.set(name, { factor, sampleCount, label, baselineName });
     }
 
+    const projectedE1RM = new Map<string, number>();
+    for (const [name, sessions] of sessionsByVariation) {
+      const projected = predictE1RM(sessions, today);
+      if (projected !== null) projectedE1RM.set(name, projected);
+    }
+
     return {
       lastPerformed,
       lastSessionE1RM,
       lastSessionBestSet,
       addlWtOffset,
       variantFactor,
+      projectedE1RM,
     };
-  }, [pairs, baselineNames]);
+  }, [pairs, baselineNames, today]);
 }
 
 export type SessionStats = ReturnType<typeof useLastSessionStats>;
