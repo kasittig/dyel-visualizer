@@ -263,18 +263,15 @@ describe("nameToExercise", () => {
       });
     });
 
-    it("parses Bench (Dumbbell)", () => {
+    it("parses Bench (Dumbbell) as accessory", () => {
       expect(nameToExercise("Bench (Dumbbell)")).toMatchObject({
-        type: "bench",
-        bar: "dumbbell",
+        type: "accessory",
       });
     });
 
-    it("parses Bench (Dumbbell, Decline)", () => {
+    it("parses Bench (Dumbbell, Decline) as accessory", () => {
       expect(nameToExercise("Bench (Dumbbell, Decline)")).toMatchObject({
-        type: "bench",
-        bar: "dumbbell",
-        equipment: "decline",
+        type: "accessory",
       });
     });
 
@@ -413,6 +410,20 @@ describe("nameToExercise", () => {
         type: "deadlift",
         addlWts: ["rev. bands"],
       });
+    });
+  });
+
+  describe("dumbbell exercises", () => {
+    it("classifies Dumbbell Press as accessory", () => {
+      expect(nameToExercise("Dumbbell Press")).toMatchObject({ type: "accessory" });
+    });
+
+    it("classifies Dumbbell Bench Press as accessory even though it contains bench", () => {
+      expect(nameToExercise("Dumbbell Bench Press")).toMatchObject({ type: "accessory" });
+    });
+
+    it("classifies DB RDL (token) as accessory", () => {
+      expect(nameToExercise("DB RDL")).toMatchObject({ type: "accessory" });
     });
   });
 

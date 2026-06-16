@@ -111,7 +111,8 @@ export function nameToExercise(name: string): ConjugateExercise | null {
     ...(hasReverseBands ? (["rev. bands"] as const) : []),
   ];
 
-  const type = parseLiftType(base, tokens) ?? "accessory";
+  const isDumbbell = lower.includes("dumbbell") || tokens.has("db");
+  const type = isDumbbell ? "accessory" : (parseLiftType(base, tokens) ?? "accessory");
 
   if (type === "accessory") {
     return {
