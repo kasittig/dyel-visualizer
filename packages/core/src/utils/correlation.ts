@@ -56,15 +56,16 @@ function correlateVariants(
   const rangeB = dateRange(sessionsB);
   if (!rangeA || !rangeB) return NaN;
 
-  // Use the union of both training windows so predictE1RM can estimate e1RM
-  // for dates where only one variant has sessions (linear extrapolation from
-  // its nearest endpoint).
-  const unionStart = rangeA.first < rangeB.first ? rangeA.first : rangeB.first;
-  const unionEnd = rangeA.last > rangeB.last ? rangeA.last : rangeB.last;
+  // Intersect training windows: only use dates where both variants have real
+  // session history. Extrapolating beyond either window produces a constant
+  // slope, which inflates r toward 1.0 spuriously.
+  const overlapStart = rangeA.first > rangeB.first ? rangeA.first : rangeB.first;
+  const overlapEnd = rangeA.last < rangeB.last ? rangeA.last : rangeB.last;
+  if (overlapStart > overlapEnd) return NaN;
 
   const xs: number[] = [];
   const ys: number[] = [];
-  for (const date of buildWeeklyGrid(unionStart, unionEnd)) {
+  for (const date of buildWeeklyGrid(overlapStart, overlapEnd)) {
     const a = predictE1RM(sessionsA, date);
     const b = predictE1RM(sessionsB, date);
     if (a !== null && b !== null) {
@@ -72,8 +73,16 @@ function correlateVariants(
       ys.push(b);
     }
   }
-  if (xs.length < minOverlap) return NaN;
-  return pearsonCorrelation(xs, ys);
+
+  // Correlate first differences (week-over-week change) rather than absolute
+  // e1RM values. Both series trend upward over time; correlating levels would
+  // give r ≈ 1.0 for almost every pair just because you're getting stronger.
+  // Differencing removes that shared trend so the correlation captures whether
+  // a good week on variant A tends to coincide with a good week on variant B.
+  const dxs = xs.slice(1).map((x, i) => x - xs[i]);
+  const dys = ys.slice(1).map((y, i) => y - ys[i]);
+  if (dxs.length < minOverlap) return NaN;
+  return pearsonCorrelation(dxs, dys);
 }
 
 export function computeCorrelationMatrix(

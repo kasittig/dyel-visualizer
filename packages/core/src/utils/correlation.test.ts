@@ -29,6 +29,31 @@ function pair(
   ];
 }
 
+// Weekly sessions with genuine week-to-week variation so first differences
+// have non-zero variance (pure linear progressions would give NaN after
+// differencing because variance = 0).
+const WEEKLY_DATES = [
+  "2024-01-01",
+  "2024-01-08",
+  "2024-01-15",
+  "2024-01-22",
+  "2024-01-29",
+  "2024-02-05",
+  "2024-02-12",
+  "2024-02-19",
+  "2024-02-26",
+  "2024-03-04",
+  "2024-03-11",
+  "2024-03-18",
+];
+
+// Comp Squat: general uptrend with weekly variation
+const COMP_SQ = [300, 308, 305, 315, 312, 322, 318, 328, 325, 335, 330, 340];
+// SSB Squat: mirrors Comp Squat's ups/downs (correlated)
+const SSB_SQ = [250, 257, 254, 263, 260, 269, 265, 274, 271, 280, 276, 285];
+// Box Squat: opposite weekly swings (anti-correlated)
+const BOX_SQ = [280, 273, 276, 267, 270, 261, 265, 256, 259, 250, 254, 245];
+
 describe("pearsonCorrelation", () => {
   it("returns 1 for perfectly correlated series", () => {
     const xs = [1, 2, 3, 4, 5];
@@ -52,19 +77,10 @@ describe("pearsonCorrelation", () => {
 });
 
 describe("computeCorrelationMatrix", () => {
-  const dates = [
-    "2024-01-01",
-    "2024-02-01",
-    "2024-03-01",
-    "2024-04-01",
-    "2024-05-01",
-    "2024-06-01",
-  ];
-
   const pairs: ConjugateDataPair[] = [
-    ...dates.map((d, i) => pair("squat", "Comp Squat", d, 300 + i * 10)),
-    ...dates.map((d, i) => pair("squat", "SSB Squat", d, 250 + i * 8)),
-    ...dates.map((d, i) => pair("squat", "Box Squat", d, 280 - i * 5)),
+    ...WEEKLY_DATES.map((d, i) => pair("squat", "Comp Squat", d, COMP_SQ[i])),
+    ...WEEKLY_DATES.map((d, i) => pair("squat", "SSB Squat", d, SSB_SQ[i])),
+    ...WEEKLY_DATES.map((d, i) => pair("squat", "Box Squat", d, BOX_SQ[i])),
   ];
 
   const variants = ["Comp Squat", "SSB Squat", "Box Squat"];
@@ -89,59 +105,58 @@ describe("computeCorrelationMatrix", () => {
     }
   });
 
-  it("Comp Squat and SSB Squat are highly correlated (both trend up)", () => {
+  it("Comp Squat and SSB Squat are highly correlated (same weekly pattern)", () => {
     const matrix = computeCorrelationMatrix(pairs, variants, 2);
     const r = matrix[0][1];
     expect(isNaN(r)).toBe(false);
-    expect(r).toBeGreaterThan(0.9);
+    expect(r).toBeGreaterThan(0.8);
   });
 
-  it("Comp Squat and Box Squat are anti-correlated (one up, other down)", () => {
+  it("Comp Squat and Box Squat are anti-correlated (opposite weekly pattern)", () => {
     const matrix = computeCorrelationMatrix(pairs, variants, 2);
     const r = matrix[0][2];
     expect(isNaN(r)).toBe(false);
-    expect(r).toBeLessThan(-0.9);
+    expect(r).toBeLessThan(-0.8);
   });
 
   it("returns NaN for pairs with insufficient overlap", () => {
-    const sparseCompSq: ConjugateDataPair[] = [pair("squat", "Comp Squat", "2024-01-01", 300)];
-    const sparseSSB: ConjugateDataPair[] = [pair("squat", "SSB Squat", "2024-01-01", 250)];
-    const matrix = computeCorrelationMatrix(
-      [...sparseCompSq, ...sparseSSB],
-      ["Comp Squat", "SSB Squat"],
-      5
-    );
+    const sparse: ConjugateDataPair[] = [
+      pair("squat", "Comp Squat", "2024-01-01", 300),
+      pair("squat", "SSB Squat", "2024-01-01", 250),
+    ];
+    const matrix = computeCorrelationMatrix(sparse, ["Comp Squat", "SSB Squat"], 5);
+    expect(isNaN(matrix[0][1])).toBe(true);
+  });
+
+  it("returns NaN for non-overlapping training windows", () => {
+    const noOverlap: ConjugateDataPair[] = [
+      pair("squat", "Comp Squat", "2024-01-01", 300),
+      pair("squat", "Comp Squat", "2024-02-01", 310),
+      pair("squat", "SSB Squat", "2024-06-01", 250),
+      pair("squat", "SSB Squat", "2024-07-01", 260),
+    ];
+    const matrix = computeCorrelationMatrix(noOverlap, ["Comp Squat", "SSB Squat"], 2);
     expect(isNaN(matrix[0][1])).toBe(true);
   });
 });
 
 describe("selectTopCrossLiftVariants", () => {
-  const sqDates = [
-    "2024-01-01",
-    "2024-02-01",
-    "2024-03-01",
-    "2024-04-01",
-    "2024-05-01",
-    "2024-06-01",
-  ];
-  const bpDates = [
-    "2024-01-15",
-    "2024-02-15",
-    "2024-03-15",
-    "2024-04-15",
-    "2024-05-15",
-    "2024-06-15",
-  ];
+  const bpDates = WEEKLY_DATES.map((d) => {
+    // Offset bench dates by 3 days so windows overlap but aren't identical
+    const dt = new Date(d);
+    dt.setDate(dt.getDate() + 3);
+    return dt.toISOString().slice(0, 10);
+  });
 
   const pairs: ConjugateDataPair[] = [
-    ...sqDates.map((d, i) => pair("squat", "Comp Squat", d, 300 + i * 10)),
-    ...sqDates.map((d, i) => pair("squat", "SSB Squat", d, 250 + i * 10)),
-    ...sqDates.map((d, i) => pair("squat", "Box Squat", d, 260 + i * 10)),
-    ...sqDates.map((d, i) => pair("squat", "Front Squat", d, 200 + i * 10)),
-    ...bpDates.map((d, i) => pair("bench", "Comp Bench", d, 200 + i * 8)),
-    ...bpDates.map((d, i) => pair("bench", "Close Grip", d, 180 + i * 8)),
-    ...sqDates.map((d, i) => pair("deadlift", "Comp Deadlift", d, 350 + i * 12)),
-    ...sqDates.map((d, i) => pair("deadlift", "Sumo DL", d, 320 + i * 12)),
+    ...WEEKLY_DATES.map((d, i) => pair("squat", "Comp Squat", d, COMP_SQ[i])),
+    ...WEEKLY_DATES.map((d, i) => pair("squat", "SSB Squat", d, SSB_SQ[i])),
+    ...WEEKLY_DATES.map((d, i) => pair("squat", "Box Squat", d, BOX_SQ[i])),
+    ...WEEKLY_DATES.map((d, i) => pair("squat", "Front Squat", d, BOX_SQ[i])),
+    ...bpDates.map((d, i) => pair("bench", "Comp Bench", d, COMP_SQ[i])),
+    ...bpDates.map((d, i) => pair("bench", "Close Grip", d, SSB_SQ[i])),
+    ...WEEKLY_DATES.map((d, i) => pair("deadlift", "Comp Deadlift", d, COMP_SQ[i])),
+    ...WEEKLY_DATES.map((d, i) => pair("deadlift", "Sumo DL", d, SSB_SQ[i])),
   ];
 
   it("always includes the baseline exercises", () => {
