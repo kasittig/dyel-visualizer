@@ -120,6 +120,7 @@ function LiftTabPanel({
         targetName={targetName}
         onTargetChange={onTargetChange}
         highlightedVariation={selectedVariation}
+        onVariationClick={handleVariationClick}
       />
       <VariationRadarChart
         rows={filteredRows}

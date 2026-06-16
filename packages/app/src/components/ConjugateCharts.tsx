@@ -23,6 +23,7 @@ export function ConjugateCharts({
   targetName,
   onTargetChange,
   highlightedVariation = null,
+  onVariationClick,
 }: {
   rows: ConjugateDataPair[];
   baselineNames?: Partial<Record<string, string>>;
@@ -30,6 +31,7 @@ export function ConjugateCharts({
   targetName: string | null;
   onTargetChange: (name: string) => void;
   highlightedVariation?: string | null;
+  onVariationClick?: (variation: string) => void;
 }) {
   const [legendOpen, setLegendOpen] = useState(false);
 
@@ -302,6 +304,7 @@ export function ConjugateCharts({
             {visibleVariations.map(({ label, i }) => {
               const isHighlighted = highlightedVariation === label;
               const stroke = isHighlighted ? "var(--text-h)" : LINE_COLORS[i % LINE_COLORS.length];
+              const handleClick = onVariationClick ? () => onVariationClick(label) : undefined;
               return (
                 <Line
                   key={label}
@@ -310,7 +313,13 @@ export function ConjugateCharts({
                   stroke={stroke}
                   strokeWidth={isHighlighted ? 3 : 1.5}
                   dot={{ r: isHighlighted ? 4 : 3 }}
-                  activeDot={{ r: 5 }}
+                  activeDot={{
+                    r: 5,
+                    onClick: handleClick,
+                    style: { cursor: onVariationClick ? "pointer" : undefined },
+                  }}
+                  onClick={handleClick}
+                  style={{ cursor: onVariationClick ? "pointer" : undefined }}
                   connectNulls
                 />
               );
