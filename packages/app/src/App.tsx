@@ -180,7 +180,7 @@ function LiftTabPanel({
         targetName={targetName}
         onTargetChange={onTargetChange}
       />
-      {activeTab !== "accessory" && <VariationRadarChart rows={activeRows} stats={stats} />}
+      {activeTab !== "accessory" && <VariationRadarChart rows={filteredRows} stats={chartStats} />}
       <ExerciseList
         rows={activeRows}
         shown={shown}
