@@ -183,15 +183,20 @@ function App() {
     [activeTab, tabRows]
   );
 
+  const calcPairs = useMemo(
+    () =>
+      LIFT_TABS.flatMap((tab) =>
+        applyFilters(tabRows[tab], { ...filterState[tab], excludeVolumeWork })
+      ),
+    [tabRows, filterState, excludeVolumeWork]
+  );
+
   const filteredRows = useMemo(
     () =>
       activeTab === "calculator" || activeTab === "sigma"
         ? []
-        : applyFilters(activeRows, {
-            ...filterState[activeTab as LiftTab],
-            excludeVolumeWork: activeTab !== "accessory" ? excludeVolumeWork : false,
-          }),
-    [activeRows, filterState, activeTab, excludeVolumeWork]
+        : calcPairs.filter(([ex]) => ex.type === activeTab),
+    [calcPairs, activeTab]
   );
 
   const sigmaPairs = useMemo(
@@ -208,7 +213,7 @@ function App() {
     setUrl(newUrl);
     setShownResetToken((t) => t + 1);
     setFilterState(initialFilters());
-    setExcludeVolumeWork(false);
+    setExcludeVolumeWork(true);
     setBaselineNames({});
   }
 
@@ -301,7 +306,14 @@ function App() {
               ))}
             </div>
             {activeTab === "calculator" ? (
-              <RepCalculator pairs={pairs} baselineNames={effectiveBaselineNames} stats={stats} />
+              <>
+                <VolumeWorkToggle checked={excludeVolumeWork} onChange={toggleVolumeWork} />
+                <RepCalculator
+                  pairs={calcPairs}
+                  baselineNames={effectiveBaselineNames}
+                  stats={stats}
+                />
+              </>
             ) : activeTab === "sigma" ? (
               <>
                 <VolumeWorkToggle checked={excludeVolumeWork} onChange={toggleVolumeWork} />
