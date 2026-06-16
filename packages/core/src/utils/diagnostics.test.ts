@@ -1,6 +1,11 @@
-import { describe, it, expect } from "vitest";
-import { toMovementCategory, BIOMECHANICAL_BASELINES } from "./diagnostics";
-import type { ConjugateExercise } from "../types/conjugate";
+import { describe, it, expect, afterEach } from "vitest";
+import {
+  toMovementCategory,
+  BIOMECHANICAL_BASELINES,
+  ACCOMMODATING_RESISTANCE_BASELINES,
+  generateDiagnostics,
+} from "./diagnostics";
+import type { ConjugateDataPair, ConjugateExercise, TrainingSession } from "../types/conjugate";
 
 function ex(overrides: Partial<ConjugateExercise> = {}): ConjugateExercise {
   return {
@@ -121,5 +126,185 @@ describe("BIOMECHANICAL_BASELINES", () => {
   it("categories not in the table are absent", () => {
     expect(BIOMECHANICAL_BASELINES.bench.quad_dominant).toBeUndefined();
     expect(BIOMECHANICAL_BASELINES.squat.lockout).toBeUndefined();
+  });
+});
+
+function session(date: string, weight: number, reps = 1): TrainingSession {
+  const e1rm = reps === 1 ? weight : weight * (1 + reps / 30);
+  return { date: new Date(date), sets: 1, reps, weight, e1rm, unit: "lbs" };
+}
+
+function pair(overrides: Partial<ConjugateExercise>, s: TrainingSession): ConjugateDataPair {
+  const base: ConjugateExercise = {
+    type: "bench",
+    bar: "standard",
+    stance: null,
+    addlWts: [],
+    equipment: null,
+    displayName: "bench press",
+    movementCategory: "anchor",
+    ...overrides,
+  };
+  return [base, s];
+}
+
+describe("generateDiagnostics", () => {
+  afterEach(() => {
+    // Clean up any entries added to ACCOMMODATING_RESISTANCE_BASELINES during tests
+    for (const key of Object.keys(ACCOMMODATING_RESISTANCE_BASELINES)) {
+      delete ACCOMMODATING_RESISTANCE_BASELINES[key];
+    }
+  });
+
+  it("emits an Optimal result when factor meets the baseline floor", () => {
+    const pairs: ConjugateDataPair[] = [
+      pair({ movementCategory: "anchor", displayName: "bench press" }, session("2024-01-01", 300)),
+      pair({ movementCategory: "anchor", displayName: "bench press" }, session("2024-01-08", 305)),
+      pair(
+        { movementCategory: "lockout", displayName: "board press", equipment: "board" },
+        session("2024-01-04", 280)
+      ),
+    ];
+    const results = generateDiagnostics(pairs);
+    expect(results).toHaveLength(1);
+    const r = results[0];
+    expect(r.primaryLift).toBe("bench");
+    expect(r.name).toBe("board press");
+    expect(r.category).toBe("lockout");
+    expect(r.expectedBaseline).toBe("90–95%");
+    expect(r.diagnostic).toMatch(/^(Optimal|Weakness): board press at \d+%$/);
+  });
+
+  it("emits a Weakness result when factor falls below the baseline floor", () => {
+    const pairs: ConjugateDataPair[] = [
+      pair({ movementCategory: "anchor", displayName: "bench press" }, session("2024-01-01", 300)),
+      // board press at only 80% of anchor → below 90% floor
+      pair(
+        { movementCategory: "lockout", displayName: "board press", equipment: "board" },
+        session("2024-01-01", 240)
+      ),
+    ];
+    const results = generateDiagnostics(pairs);
+    expect(results).toHaveLength(1);
+    expect(results[0].diagnostic).toMatch(/^Weakness:/);
+  });
+
+  it("emits an Optimal result when factor meets the baseline floor (exact boundary)", () => {
+    const pairs: ConjugateDataPair[] = [
+      pair({ movementCategory: "anchor", displayName: "bench press" }, session("2024-01-01", 100)),
+      // board press at exactly 90% of anchor → meets 90% floor
+      pair(
+        { movementCategory: "lockout", displayName: "board press", equipment: "board" },
+        session("2024-01-01", 90)
+      ),
+    ];
+    const results = generateDiagnostics(pairs);
+    expect(results[0].diagnostic).toMatch(/^Optimal:/);
+  });
+
+  it("applies floor press equipment override (85–90% instead of 90–95%)", () => {
+    const pairs: ConjugateDataPair[] = [
+      pair({ movementCategory: "anchor", displayName: "bench press" }, session("2024-01-01", 300)),
+      pair(
+        { movementCategory: "lockout", displayName: "floor press", equipment: "floor" },
+        session("2024-01-01", 260)
+      ),
+    ];
+    const results = generateDiagnostics(pairs);
+    expect(results).toHaveLength(1);
+    expect(results[0].expectedBaseline).toBe("85–90%");
+  });
+
+  it("skips variations with sampleCount === 0 (no date overlap with anchor)", () => {
+    const pairs: ConjugateDataPair[] = [
+      pair({ movementCategory: "anchor", displayName: "bench press" }, session("2024-01-01", 300)),
+      // Variation with reps: 0 → fitVariantFactor skips it → sampleCount 0
+      pair(
+        { movementCategory: "lockout", displayName: "board press", equipment: "board" },
+        { ...session("2024-06-01", 280), reps: 0 }
+      ),
+    ];
+    const results = generateDiagnostics(pairs);
+    expect(results).toHaveLength(0);
+  });
+
+  it("skips unclassified movement categories", () => {
+    const pairs: ConjugateDataPair[] = [
+      pair({ movementCategory: "anchor", displayName: "bench press" }, session("2024-01-01", 300)),
+      pair(
+        { movementCategory: "unclassified", displayName: "dumbbell fly" },
+        session("2024-01-01", 100)
+      ),
+    ];
+    expect(generateDiagnostics(pairs)).toHaveLength(0);
+  });
+
+  it("skips accessory exercises entirely", () => {
+    const pairs: ConjugateDataPair[] = [
+      pair(
+        { type: "accessory", movementCategory: "unclassified", displayName: "tricep pushdown" },
+        session("2024-01-01", 100)
+      ),
+    ];
+    expect(generateDiagnostics(pairs)).toHaveLength(0);
+  });
+
+  it("skips variations with no baseline in the table (e.g., bench quad_dominant)", () => {
+    const pairs: ConjugateDataPair[] = [
+      pair({ movementCategory: "anchor", displayName: "bench press" }, session("2024-01-01", 300)),
+      // quad_dominant is not in bench baseline table
+      pair(
+        { movementCategory: "quad_dominant", displayName: "wide grip bench" },
+        session("2024-01-01", 260)
+      ),
+    ];
+    expect(generateDiagnostics(pairs)).toHaveLength(0);
+  });
+
+  it("uses ACCOMMODATING_RESISTANCE_BASELINES when name matches", () => {
+    ACCOMMODATING_RESISTANCE_BASELINES["band squat"] = { range: "105–115%", floor: 105 };
+    const sqPair = (cat: ConjugateExercise["movementCategory"], name: string, w: number) =>
+      pair(
+        { type: "squat", movementCategory: cat, displayName: name, equipment: null },
+        session("2024-01-01", w)
+      );
+
+    const pairs: ConjugateDataPair[] = [
+      sqPair("anchor", "squat", 400),
+      // band squat at 108% → above floor of 105 → Optimal
+      sqPair("lockout", "band squat", 432),
+    ];
+    const results = generateDiagnostics(pairs);
+    expect(results).toHaveLength(1);
+    expect(results[0].expectedBaseline).toBe("105–115%");
+    expect(results[0].diagnostic).toMatch(/^Optimal:/);
+  });
+
+  it("handles multiple lifts and returns results for each", () => {
+    const benchPairs: ConjugateDataPair[] = [
+      pair({ movementCategory: "anchor", displayName: "bench press" }, session("2024-01-01", 300)),
+      pair(
+        { movementCategory: "lockout", displayName: "board press", equipment: "board" },
+        session("2024-01-01", 270)
+      ),
+    ];
+    const deadPairs: ConjugateDataPair[] = [
+      pair(
+        { type: "deadlift", movementCategory: "anchor", displayName: "deadlift" },
+        session("2024-01-01", 500)
+      ),
+      pair(
+        {
+          type: "deadlift",
+          movementCategory: "lockout",
+          displayName: "rack pull",
+          equipment: "rack",
+        },
+        session("2024-01-01", 460)
+      ),
+    ];
+    const results = generateDiagnostics([...benchPairs, ...deadPairs]);
+    expect(results).toHaveLength(2);
+    expect(results.map((r) => r.primaryLift).sort()).toEqual(["bench", "deadlift"]);
   });
 });
