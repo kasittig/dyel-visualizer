@@ -301,7 +301,6 @@ export function ConjugateCharts({
             )}
             {visibleVariations.map(({ label, i }) => {
               const isHighlighted = highlightedVariation === label;
-              const dimmed = highlightedVariation !== null && !isHighlighted;
               const stroke = isHighlighted ? "var(--text-h)" : LINE_COLORS[i % LINE_COLORS.length];
               return (
                 <Line
@@ -309,13 +308,8 @@ export function ConjugateCharts({
                   type="monotone"
                   dataKey={label}
                   stroke={stroke}
-                  strokeOpacity={dimmed ? 0.15 : 1}
                   strokeWidth={isHighlighted ? 3 : 1.5}
-                  dot={{
-                    r: isHighlighted ? 4 : 3,
-                    fillOpacity: dimmed ? 0.15 : 1,
-                    strokeOpacity: dimmed ? 0.15 : 1,
-                  }}
+                  dot={{ r: isHighlighted ? 4 : 3 }}
                   activeDot={{ r: 5 }}
                   connectNulls
                 />
