@@ -8,6 +8,7 @@ import { BaselineSelect } from "./components/BaselineSelect";
 import { RepCalculator } from "./components/RepCalculator";
 import { TotalChart } from "./components/TotalChart";
 import { VariationRadarChart } from "./components/VariationRadarChart";
+import { SigmaRadarChart } from "./components/SigmaRadarChart";
 import { applyFilters, emptyFilters } from "@dyel/core";
 import type { ConjugateDataPair } from "./hooks/useConjugateData";
 import type { FilterState } from "@dyel/core";
@@ -252,16 +253,6 @@ function App() {
   const sigmaStats = useLastSessionStats(sigmaPairs, effectiveBaselineNames);
   const chartStats = useLastSessionStats(filteredRows, effectiveBaselineNames);
 
-  const sigmaRadarRows = useMemo(
-    () =>
-      (["squat", "bench", "deadlift"] as const).flatMap((type) => {
-        const baselineName = effectiveBaselineNames[type];
-        if (!baselineName) return [];
-        return sigmaPairs.filter(([ex]) => ex.type === type && ex.displayName === baselineName);
-      }),
-    [sigmaPairs, effectiveBaselineNames]
-  );
-
   function handleUrlChange(newUrl: string) {
     setUrl(newUrl);
     setShownResetToken((t) => t + 1);
@@ -376,7 +367,12 @@ function App() {
                   targetNames={effectiveTargetNames}
                   stats={sigmaStats}
                 />
-                <VariationRadarChart rows={sigmaRadarRows} stats={sigmaStats} />
+                <SigmaRadarChart
+                  pairs={sigmaPairs}
+                  baselineNames={effectiveBaselineNames}
+                  targetNames={effectiveTargetNames}
+                  stats={sigmaStats}
+                />
               </>
             ) : (
               <>
