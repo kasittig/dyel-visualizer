@@ -40,15 +40,19 @@ export function SigmaRadarChart({
     const chartData = buildChartData(pairs, baselineExByType, targetExByType, stats);
     if (chartData.length === 0) return null;
 
-    const last = chartData[chartData.length - 1];
-    const squat = last.squat as number | undefined;
-    const bench = last.bench as number | undefined;
-    const deadlift = last.deadlift as number | undefined;
+    let lastSquat: number | undefined;
+    let lastBench: number | undefined;
+    let lastDeadlift: number | undefined;
+    for (const point of chartData) {
+      if (point.squat !== undefined) lastSquat = point.squat as number;
+      if (point.bench !== undefined) lastBench = point.bench as number;
+      if (point.deadlift !== undefined) lastDeadlift = point.deadlift as number;
+    }
 
     const points = [
-      squat !== undefined ? { lift: "Squat", e1rm: squat } : null,
-      bench !== undefined ? { lift: "Bench", e1rm: bench } : null,
-      deadlift !== undefined ? { lift: "Deadlift", e1rm: deadlift } : null,
+      lastSquat !== undefined ? { lift: "Squat", e1rm: lastSquat } : null,
+      lastBench !== undefined ? { lift: "Bench", e1rm: lastBench } : null,
+      lastDeadlift !== undefined ? { lift: "Deadlift", e1rm: lastDeadlift } : null,
     ].filter((p): p is { lift: string; e1rm: number } => p !== null);
 
     return points.length === 3 ? points : null;
