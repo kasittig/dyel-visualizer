@@ -9,6 +9,10 @@ const ConjugateInfoPage = lazy(() =>
   import("./components/ConjugateInfoPage.tsx").then((m) => ({ default: m.ConjugateInfoPage }))
 );
 
+const IndexPage = lazy(() =>
+  import("./components/IndexPage.tsx").then((m) => ({ default: m.IndexPage }))
+);
+
 function resolvePageComponent(page: string | null) {
   if (page === "conjugate")
     return (
@@ -16,11 +20,26 @@ function resolvePageComponent(page: string | null) {
         <ConjugateInfoPage />
       </Suspense>
     );
+  if (page === "index")
+    return (
+      <Suspense>
+        <IndexPage />
+      </Suspense>
+    );
   if (page === null) return <App />;
   return <p>Page not found.</p>;
 }
 
-const page = new URLSearchParams(window.location.search).get("page");
+const KNOWN_PAGES = new Set(["conjugate", "index"]);
+
+function resolvePage(): string | null {
+  const queryPage = new URLSearchParams(window.location.search).get("page");
+  if (queryPage) return queryPage;
+  const lastSegment = window.location.pathname.split("/").filter(Boolean).pop() ?? "";
+  return KNOWN_PAGES.has(lastSegment) ? lastSegment : null;
+}
+
+const page = resolvePage();
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
