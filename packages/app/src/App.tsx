@@ -57,31 +57,28 @@ function App() {
     [pairs]
   );
 
-  const effectiveBaselineNames = useMemo(() => {
-    const result: Partial<Record<LiftTab, string>> = {};
+  const { effectiveBaselineNames, effectiveTargetNames } = useMemo(() => {
+    const baseline: Partial<Record<LiftTab, string>> = {};
+    const target: Partial<Record<LiftTab, string>> = {};
     for (const tab of LIFT_TABS) {
-      const name = tabState[tab].baselineName ?? defaultBaselineName(tabRows[tab]);
-      if (name) result[tab] = name;
+      const b = tabState[tab].baselineName ?? defaultBaselineName(tabRows[tab]);
+      if (b) baseline[tab] = b;
+      const t = tabState[tab].targetName ?? defaultTargetName(tabRows[tab]);
+      if (t) target[tab] = t;
     }
-    return result;
-  }, [tabRows, tabState]);
-
-  const effectiveTargetNames = useMemo(() => {
-    const result: Partial<Record<LiftTab, string>> = {};
-    for (const tab of LIFT_TABS) {
-      const name = tabState[tab].targetName ?? defaultTargetName(tabRows[tab]);
-      if (name) result[tab] = name;
-    }
-    return result;
+    return { effectiveBaselineNames: baseline, effectiveTargetNames: target };
   }, [tabRows, tabState]);
 
   const stats = useLastSessionStats(pairs, effectiveBaselineNames);
 
   const tabs = [...MAIN_TABS, ...(tabRows.accessory.length > 0 ? [ACCESSORY_TAB] : [])];
 
+  const liftTab: LiftTab | null =
+    activeTab !== "calculator" && activeTab !== "sigma" ? activeTab : null;
+
   const activeRows = useMemo(
-    () => (activeTab === "calculator" || activeTab === "sigma" ? [] : tabRows[activeTab]),
-    [activeTab, tabRows]
+    () => (liftTab ? tabRows[liftTab] : []),
+    [liftTab, tabRows]
   );
 
   const calcPairs = useMemo(
@@ -93,11 +90,8 @@ function App() {
   );
 
   const filteredRows = useMemo(
-    () =>
-      activeTab === "calculator" || activeTab === "sigma"
-        ? []
-        : calcPairs.filter(([ex]) => ex.type === activeTab),
-    [calcPairs, activeTab]
+    () => (liftTab ? calcPairs.filter(([ex]) => ex.type === liftTab) : []),
+    [calcPairs, liftTab]
   );
 
   const sigmaPairs = useMemo(
@@ -118,12 +112,12 @@ function App() {
   }
 
   function toggleFilter(facet: Exclude<keyof FilterState, "excludeVolumeWork">, value: string) {
-    const tab = activeTab as LiftTab;
+    if (!liftTab) return;
     setTabState((prev) => ({
       ...prev,
-      [tab]: {
-        ...prev[tab],
-        filters: { ...prev[tab].filters, [facet]: toggleInSet(prev[tab].filters[facet], value) },
+      [liftTab]: {
+        ...prev[liftTab],
+        filters: { ...prev[liftTab].filters, [facet]: toggleInSet(prev[liftTab].filters[facet], value) },
       },
     }));
   }
@@ -233,24 +227,24 @@ function App() {
                   stats={sigmaStats}
                 />
               </>
-            ) : (
+            ) : liftTab !== null ? (
               <>
                 <BaselineSelect
                   rows={activeRows}
-                  selectedName={effectiveBaselineNames[activeTab] ?? null}
+                  selectedName={effectiveBaselineNames[liftTab] ?? null}
                   onSelect={(name) =>
                     setTabState((prev) => ({
                       ...prev,
-                      [activeTab]: { ...prev[activeTab as LiftTab], baselineName: name ?? undefined },
+                      [liftTab]: { ...prev[liftTab], baselineName: name ?? undefined },
                     }))
                   }
                 />
-                {activeTab !== "accessory" && (
+                {liftTab !== "accessory" && (
                   <VolumeWorkToggle checked={excludeVolumeWork} onChange={toggleVolumeWork} />
                 )}
                 <ExerciseFilters
                   rows={activeRows}
-                  filters={tabState[activeTab as LiftTab].filters}
+                  filters={tabState[liftTab].filters}
                   onToggle={toggleFilter}
                 />
                 <LiftTabPanel
@@ -258,16 +252,16 @@ function App() {
                   filteredRows={filteredRows}
                   effectiveBaselineNames={effectiveBaselineNames}
                   chartStats={chartStats}
-                  targetName={effectiveTargetNames[activeTab as LiftTab] ?? null}
+                  targetName={effectiveTargetNames[liftTab] ?? null}
                   onTargetChange={(name) =>
                     setTabState((prev) => ({
                       ...prev,
-                      [activeTab]: { ...prev[activeTab as LiftTab], targetName: name ?? undefined },
+                      [liftTab]: { ...prev[liftTab], targetName: name ?? undefined },
                     }))
                   }
                 />
               </>
-            )}
+            ) : null}
           </>
         )}
       </div>

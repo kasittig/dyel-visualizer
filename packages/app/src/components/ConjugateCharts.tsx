@@ -39,7 +39,6 @@ export function ConjugateCharts({
   const {
     variations,
     data,
-    visibleVariations,
     showNormalized,
     bestSetByLabelAndDate,
     baselineExercise,
@@ -147,7 +146,7 @@ export function ConjugateCharts({
                 connectNulls
               />
             )}
-            {visibleVariations.map(({ label, i }) => {
+            {variations.map((label, i) => {
               const isHighlighted = highlightedVariation === label;
               const stroke = isHighlighted ? "var(--text-h)" : LINE_COLORS[i % LINE_COLORS.length];
               const handleClick = onVariationClick ? () => onVariationClick(label) : undefined;
