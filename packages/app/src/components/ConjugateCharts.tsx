@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import {
   CartesianGrid,
   Line,
@@ -33,8 +33,6 @@ export function ConjugateCharts({
   highlightedVariation?: string | null;
   onVariationClick?: (variation: string) => void;
 }) {
-  const [legendOpen, setLegendOpen] = useState(false);
-
   const unit = rows[0]?.[1].unit ?? "lbs";
 
   const { addlWtOffset, variantFactor } = stats;
@@ -146,70 +144,6 @@ export function ConjugateCharts({
 
   return (
     <section>
-      <button
-        onClick={() => setLegendOpen((v) => !v)}
-        style={{
-          background: "none",
-          border: "none",
-          padding: 0,
-          cursor: "pointer",
-          fontSize: "0.8rem",
-          color: "var(--text)",
-          marginBottom: legendOpen ? "0.5rem" : "0.75rem",
-        }}
-      >
-        {legendOpen ? "▲" : "▼"} Legend
-      </button>
-      {legendOpen && (
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(2, 1fr)",
-            gap: "0.2rem 1.5rem",
-            fontSize: "0.8rem",
-            marginBottom: "0.75rem",
-          }}
-        >
-          {showNormalized && (
-            <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", minWidth: 0 }}>
-              <svg width={16} height={8} style={{ flexShrink: 0 }}>
-                <line
-                  x1={0}
-                  y1={4}
-                  x2={16}
-                  y2={4}
-                  stroke={NORMALIZED_COLOR}
-                  strokeWidth={2}
-                  strokeDasharray="5 3"
-                />
-              </svg>
-              <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                {NORMALIZED_LABEL}
-              </span>
-            </div>
-          )}
-          {visibleVariations.map(({ label, i }) => (
-            <div
-              key={label}
-              style={{ display: "flex", alignItems: "center", gap: "0.4rem", minWidth: 0 }}
-            >
-              <span
-                style={{
-                  display: "inline-block",
-                  width: 16,
-                  height: 3,
-                  background: LINE_COLORS[i % LINE_COLORS.length],
-                  borderRadius: 2,
-                  flexShrink: 0,
-                }}
-              />
-              <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                {label}
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
       {baselineExercise && (
         <div
           style={{
