@@ -63,6 +63,7 @@ export interface ConjugateExercise {
   addlWts: ConjugateAddlWt[];
   equipment: ConjugateEquipment | null;
   displayName: string;
+  movementCategory: MovementCategory;
 }
 
 export type ConjugateDataPair = [ConjugateExercise, TrainingSession];

@@ -10,6 +10,7 @@ function ex(overrides: Partial<ConjugateExercise> = {}): ConjugateExercise {
     addlWts: [],
     equipment: null,
     displayName: "squat",
+    movementCategory: "anchor",
     ...overrides,
   };
 }

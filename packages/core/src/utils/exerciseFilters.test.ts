@@ -11,6 +11,7 @@ function pair(type: "squat" | "bench" | "deadlift" | "accessory", sets: number):
       addlWts: [],
       equipment: null,
       displayName: type,
+      movementCategory: "anchor",
     },
     { date: new Date("2024-01-01"), sets, reps: 5, weight: 100, e1rm: 120, unit: "lbs" },
   ];

@@ -1,10 +1,12 @@
 import type { ConjugateExercise, MovementCategory } from "../types/conjugate";
 
+type ExerciseShape = Pick<ConjugateExercise, "type" | "bar" | "stance" | "equipment">;
+
 const LOCKOUT_EQUIPMENT = new Set(["board", "floor", "blocks", "rack"]);
 const BOTTOM_RANGE_EQUIPMENT = new Set(["deficit", "pause"]);
 const QUAD_DOMINANT_BARS = new Set(["ssb", "goblet", "trap"]);
 
-export function toMovementCategory(ex: ConjugateExercise): MovementCategory {
+export function toMovementCategory(ex: ExerciseShape): MovementCategory {
   if (ex.stance === "competition") return "anchor";
   if ((ex.equipment !== null && LOCKOUT_EQUIPMENT.has(ex.equipment)) || ex.stance === "close")
     return "lockout";
