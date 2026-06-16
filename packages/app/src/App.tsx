@@ -8,6 +8,7 @@ import { RepCalculator } from "./components/RepCalculator";
 import { TotalChart } from "./components/TotalChart";
 import { SigmaRadarChart } from "./components/SigmaRadarChart";
 import { LiftTabPanel } from "./components/LiftTabPanel";
+import { CrossLiftCorrelationPanel } from "./components/CrossLiftCorrelationPanel";
 import { VolumeWorkToggle } from "./components/VolumeWorkToggle";
 import { applyFilters } from "@dyel/core";
 import { buildChartData } from "./utils/buildChartData";
@@ -116,6 +117,11 @@ function App() {
   );
 
   const sigmaUnit = sigmaPairs[0]?.[1].unit ?? "lbs";
+
+  const sigmaMainPairs = useMemo(
+    () => sigmaPairs.filter(([ex]) => ex.type !== "accessory"),
+    [sigmaPairs]
+  );
 
   function handleUrlChange(newUrl: string) {
     setUrl(newUrl);
@@ -232,6 +238,14 @@ function App() {
                 <VolumeWorkToggle checked={excludeVolumeWork} onChange={toggleVolumeWork} />
                 <TotalChart chartData={sigmaChartData} unit={sigmaUnit} />
                 <SigmaRadarChart chartData={sigmaChartData} unit={sigmaUnit} />
+                <CrossLiftCorrelationPanel
+                  rows={sigmaMainPairs}
+                  baselineNames={
+                    effectiveBaselineNames as Partial<
+                      Record<"squat" | "bench" | "deadlift", string>
+                    >
+                  }
+                />
               </>
             ) : liftTab !== null ? (
               <>

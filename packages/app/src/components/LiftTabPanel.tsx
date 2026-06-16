@@ -1,8 +1,10 @@
 import { useState } from "react";
 import type { ConjugateDataPair } from "../hooks/useConjugateData";
 import type { SessionStats } from "../hooks/useLastSessionStats";
+import { usePerLiftCorrelation } from "../hooks/useCorrelationData";
 import { ConjugateCharts } from "./ConjugateCharts";
 import { VariationRadarChart } from "./VariationRadarChart";
+import { CorrelationMatrix } from "./CorrelationMatrix";
 import type { LiftType } from "../utils/appUtils";
 
 export function LiftTabPanel({
@@ -19,6 +21,11 @@ export function LiftTabPanel({
   onTargetChange: (name: string | null) => void;
 }) {
   const [selectedVariation, setSelectedVariation] = useState<string | null>(null);
+  const { matrix, variantNames } = usePerLiftCorrelation(filteredRows);
+
+  const liftType = filteredRows[0]?.[0].type as LiftType | undefined;
+  const baselineName = liftType ? effectiveBaselineNames[liftType] : undefined;
+  const competitionLabels = baselineName ? new Set([baselineName]) : undefined;
 
   function handleVariationClick(variation: string) {
     setSelectedVariation((v) => (v === variation ? null : variation));
@@ -39,6 +46,11 @@ export function LiftTabPanel({
         rows={filteredRows}
         stats={chartStats}
         onVariationClick={handleVariationClick}
+      />
+      <CorrelationMatrix
+        matrix={matrix}
+        labels={variantNames}
+        competitionLabels={competitionLabels}
       />
     </>
   );

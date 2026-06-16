@@ -27,3 +27,9 @@ export {
 export { setsRepsLabel } from "./utils/setsRepsLabel";
 
 export { LINE_COLORS, formatDate } from "./utils/chartUtils";
+
+export {
+  pearsonCorrelation,
+  computeCorrelationMatrix,
+  selectTopCrossLiftVariants,
+} from "./utils/correlation";
