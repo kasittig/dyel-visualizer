@@ -67,6 +67,14 @@ export interface ConjugateExercise {
 
 export type ConjugateDataPair = [ConjugateExercise, TrainingSession];
 
+export type MovementCategory =
+  | "anchor"
+  | "lockout"
+  | "bottom_range"
+  | "quad_dominant"
+  | "posterior_chain"
+  | "unclassified";
+
 export function variantLabel(ex: ConjugateExercise): string {
   const parts: string[] = [];
   if (ex.bar !== "standard" && ex.bar !== null) parts.push(ex.bar);
