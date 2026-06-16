@@ -1,30 +1,9 @@
 import { useMemo } from "react";
-import type { RepCalcStats } from "@dyel/core";
-import type { ConjugateDataPair } from "../hooks/useConjugateData";
-import { useBaselineTargetExercises } from "../hooks/useBaselineTargetExercises";
-import { buildChartData } from "../utils/buildChartData";
+import type { ChartPoint } from "../utils/buildChartData";
 import { BaseRadarChart } from "./BaseRadarChart";
 
-export function SigmaRadarChart({
-  pairs,
-  baselineNames = {},
-  targetNames = {},
-  stats,
-}: {
-  pairs: ConjugateDataPair[];
-  baselineNames?: Partial<Record<string, string>>;
-  targetNames?: Partial<Record<string, string>>;
-  stats: RepCalcStats;
-}) {
-  const unit = pairs[0]?.[1].unit ?? "lbs";
-  const { baselineExByType, targetExByType } = useBaselineTargetExercises(
-    pairs,
-    baselineNames,
-    targetNames
-  );
-
+export function SigmaRadarChart({ chartData, unit }: { chartData: ChartPoint[]; unit: string }) {
   const data = useMemo(() => {
-    const chartData = buildChartData(pairs, baselineExByType, targetExByType, stats);
     if (chartData.length === 0) return null;
 
     let lastSquat: number | undefined;
@@ -43,7 +22,7 @@ export function SigmaRadarChart({
     ].filter((p): p is { lift: string; e1rm: number } => p !== null);
 
     return points.length === 3 ? points : null;
-  }, [pairs, baselineExByType, targetExByType, stats]);
+  }, [chartData]);
 
   if (!data) return null;
 

@@ -1,3 +1,4 @@
+import { useCallback } from "react";
 import {
   CartesianGrid,
   Line,
@@ -44,6 +45,59 @@ export function ConjugateCharts({
     baselineExercise,
     effectiveTargetName,
   } = useConjugateChartData(rows, baselineNames, stats, targetName);
+
+  const tooltipContent = useCallback(
+    ({
+      active,
+      payload,
+      label,
+    }: {
+      active?: boolean;
+      payload?: readonly {
+        name?: unknown;
+        value?: unknown;
+        color?: string;
+        payload?: { date: string };
+      }[];
+      label?: string | number;
+    }) => {
+      if (!active || !payload?.length) return null;
+      const isoDate = payload[0].payload!.date;
+      return (
+        <div
+          style={{
+            background: "var(--bg, #fff)",
+            border: "1px solid var(--border, #ccc)",
+            borderRadius: 4,
+            padding: "6px 10px",
+            fontSize: "0.8rem",
+            lineHeight: 1.5,
+          }}
+        >
+          <div style={{ fontWeight: 600, marginBottom: "0.2rem" }}>{label}</div>
+          {payload.map((item) => {
+            const name = String(item.name);
+            const bestSet =
+              name !== NORMALIZED_KEY ? bestSetByLabelAndDate.get(name)?.get(isoDate) : undefined;
+            return (
+              <div key={name} style={{ marginTop: "0.2rem" }}>
+                <div style={{ color: item.color }}>{name}</div>
+                <div>
+                  e1RM: {String(item.value)} {unit}
+                </div>
+                {bestSet && (
+                  <div style={{ opacity: 0.7 }}>
+                    {bestSet.sets}×{bestSet.reps} @ {bestSet.weight} {unit}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      );
+    },
+    [bestSetByLabelAndDate, unit]
+  );
 
   if (variations.length === 0) {
     return (
@@ -92,46 +146,7 @@ export function ConjugateCharts({
               tick={{ fontSize: 11 }}
             />
             <YAxis tick={{ fontSize: 11 }} width={45} unit={` ${unit}`} />
-            <Tooltip
-              content={({ active, payload, label }) => {
-                if (!active || !payload?.length) return null;
-                const isoDate = (payload[0].payload as { date: string }).date;
-                return (
-                  <div
-                    style={{
-                      background: "var(--bg, #fff)",
-                      border: "1px solid var(--border, #ccc)",
-                      borderRadius: 4,
-                      padding: "6px 10px",
-                      fontSize: "0.8rem",
-                      lineHeight: 1.5,
-                    }}
-                  >
-                    <div style={{ fontWeight: 600, marginBottom: "0.2rem" }}>{label}</div>
-                    {payload.map((item) => {
-                      const name = String(item.name);
-                      const bestSet =
-                        name !== NORMALIZED_KEY
-                          ? bestSetByLabelAndDate.get(name)?.get(isoDate)
-                          : undefined;
-                      return (
-                        <div key={name} style={{ marginTop: "0.2rem" }}>
-                          <div style={{ color: item.color }}>{name}</div>
-                          <div>
-                            e1RM: {item.value} {unit}
-                          </div>
-                          {bestSet && (
-                            <div style={{ opacity: 0.7 }}>
-                              {bestSet.sets}×{bestSet.reps} @ {bestSet.weight} {unit}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                );
-              }}
-            />
+            <Tooltip content={tooltipContent} />
             {showNormalized && (
               <Line
                 key={NORMALIZED_KEY}

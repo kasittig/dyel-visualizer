@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { useConjugateData } from "./hooks/useConjugateData";
 import { useLastSessionStats } from "./hooks/useLastSessionStats";
+import { useBaselineTargetExercises } from "./hooks/useBaselineTargetExercises";
 import { ExerciseFilters } from "./components/ExerciseFilters";
 import { BaselineSelect } from "./components/BaselineSelect";
 import { RepCalculator } from "./components/RepCalculator";
@@ -9,6 +10,7 @@ import { SigmaRadarChart } from "./components/SigmaRadarChart";
 import { LiftTabPanel } from "./components/LiftTabPanel";
 import { VolumeWorkToggle } from "./components/VolumeWorkToggle";
 import { applyFilters } from "@dyel/core";
+import { buildChartData } from "./utils/buildChartData";
 import type { ConjugateDataPair } from "./hooks/useConjugateData";
 import type { FilterState } from "@dyel/core";
 import {
@@ -26,8 +28,12 @@ import {
 import type { LiftType, PageTab, TabState } from "./utils/appUtils";
 
 function App() {
-  const params = new URLSearchParams(window.location.search);
-  const [url, setUrl] = useState(params.get("sheet") ?? import.meta.env.VITE_SHEET_URL ?? "");
+  const [url, setUrl] = useState(
+    () =>
+      new URLSearchParams(window.location.search).get("sheet") ??
+      import.meta.env.VITE_SHEET_URL ??
+      ""
+  );
   const [activeTab, setActiveTab] = useState<PageTab>("sigma");
   const [shownResetToken, setShownResetToken] = useState(0);
   const [tabState, setTabState] = useState<Record<LiftType, TabState>>(initialTabState);
@@ -100,6 +106,16 @@ function App() {
   );
   const sigmaStats = useLastSessionStats(sigmaPairs, effectiveBaselineNames);
   const chartStats = useLastSessionStats(filteredRows, effectiveBaselineNames);
+
+  const { baselineExByType: sigmaBaselineExByType, targetExByType: sigmaTargetExByType } =
+    useBaselineTargetExercises(sigmaPairs, effectiveBaselineNames, effectiveTargetNames);
+
+  const sigmaChartData = useMemo(
+    () => buildChartData(sigmaPairs, sigmaBaselineExByType, sigmaTargetExByType, sigmaStats),
+    [sigmaPairs, sigmaBaselineExByType, sigmaTargetExByType, sigmaStats]
+  );
+
+  const sigmaUnit = sigmaPairs[0]?.[1].unit ?? "lbs";
 
   function handleUrlChange(newUrl: string) {
     setUrl(newUrl);
@@ -214,18 +230,8 @@ function App() {
             ) : activeTab === "sigma" ? (
               <>
                 <VolumeWorkToggle checked={excludeVolumeWork} onChange={toggleVolumeWork} />
-                <TotalChart
-                  pairs={sigmaPairs}
-                  baselineNames={effectiveBaselineNames}
-                  targetNames={effectiveTargetNames}
-                  stats={sigmaStats}
-                />
-                <SigmaRadarChart
-                  pairs={sigmaPairs}
-                  baselineNames={effectiveBaselineNames}
-                  targetNames={effectiveTargetNames}
-                  stats={sigmaStats}
-                />
+                <TotalChart chartData={sigmaChartData} unit={sigmaUnit} />
+                <SigmaRadarChart chartData={sigmaChartData} unit={sigmaUnit} />
               </>
             ) : liftTab !== null ? (
               <>

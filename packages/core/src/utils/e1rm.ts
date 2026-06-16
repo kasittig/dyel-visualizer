@@ -6,20 +6,22 @@ export function calcE1RM(weight: number, reps: number): number {
   return weight * (1 + reps / 30);
 }
 
-export function predictE1RM(sessions: TrainingSession[], targetDate: Date): number | null {
-  if (sessions.length === 0) return null;
+type SessionGridPoint = { t: number; e1rm: number };
 
+function buildSessionGrid(sessions: TrainingSession[]): SessionGridPoint[] {
   const bestByDate = new Map<string, number>();
   for (const { date, e1rm } of sessions) {
     const key = date.toISOString();
     const prev = bestByDate.get(key);
     if (prev === undefined || e1rm > prev) bestByDate.set(key, e1rm);
   }
-
-  const sorted = [...bestByDate.entries()]
+  return [...bestByDate.entries()]
     .map(([dateStr, e1rm]) => ({ t: new Date(dateStr).getTime(), e1rm }))
     .sort((a, b) => a.t - b.t);
+}
 
+function interpolateGrid(sorted: SessionGridPoint[], targetDate: Date): number | null {
+  if (sorted.length === 0) return null;
   if (sorted.length === 1) return sorted[0].e1rm;
 
   const target = targetDate.getTime();
@@ -54,6 +56,10 @@ export function predictE1RM(sessions: TrainingSession[], targetDate: Date): numb
   return a.e1rm + (b.e1rm - a.e1rm) * ((target - a.t) / dt);
 }
 
+export function predictE1RM(sessions: TrainingSession[], targetDate: Date): number | null {
+  return interpolateGrid(buildSessionGrid(sessions), targetDate);
+}
+
 export function invertE1RM(e1rm: number, reps: number): number {
   if (reps === 1) return e1rm;
   return e1rm / (1 + reps / 30);
@@ -63,10 +69,11 @@ export function fitVariantFactor(
   baselineSessions: TrainingSession[],
   variantSessions: TrainingSession[]
 ): { factor: number; sampleCount: number } {
+  const grid = buildSessionGrid(baselineSessions);
   const factors: number[] = [];
   for (const session of variantSessions) {
     if (session.reps <= 0) continue;
-    const predicted = predictE1RM(baselineSessions, session.date);
+    const predicted = interpolateGrid(grid, session.date);
     if (predicted === null || predicted === 0) continue;
     factors.push(calcE1RM(session.weight, session.reps) / predicted);
   }
@@ -79,10 +86,11 @@ export function fitAddlWtOffset(
   straightSessions: TrainingSession[],
   variantSessions: TrainingSession[]
 ): { offset: number; sampleCount: number } {
+  const grid = buildSessionGrid(straightSessions);
   const offsets: number[] = [];
   for (const session of variantSessions) {
     if (session.reps <= 0) continue;
-    const predicted = predictE1RM(straightSessions, session.date);
+    const predicted = interpolateGrid(grid, session.date);
     if (predicted === null) continue;
     const effectiveWeight = invertE1RM(predicted, session.reps);
     offsets.push(effectiveWeight - session.weight);
