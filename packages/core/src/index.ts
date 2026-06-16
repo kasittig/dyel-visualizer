@@ -7,6 +7,7 @@ export type {
   ConjugateExercise,
   ConjugateDataPair,
   MovementCategory,
+  DiagnosticResult,
 } from "./types/conjugate";
 export { variantLabel, familyKey } from "./types/conjugate";
 

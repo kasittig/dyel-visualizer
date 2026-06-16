@@ -76,6 +76,15 @@ export type MovementCategory =
   | "posterior_chain"
   | "unclassified";
 
+export interface DiagnosticResult {
+  primaryLift: "squat" | "bench" | "deadlift";
+  name: string;
+  category: MovementCategory;
+  averageIndex: number;
+  expectedBaseline: string;
+  diagnostic: string;
+}
+
 export function variantLabel(ex: ConjugateExercise): string {
   const parts: string[] = [];
   if (ex.bar !== "standard" && ex.bar !== null) parts.push(ex.bar);
