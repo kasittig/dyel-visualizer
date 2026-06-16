@@ -4,9 +4,9 @@ import { DateRangePicker } from "./DateRangePicker";
 import { findBestE1RM, predictWeightForReps, predictRepsForWeight } from "@dyel/core";
 import type { ConjugateDataPair } from "../hooks/useConjugateData";
 import type { E1RMEstimate, RepCalcStats } from "@dyel/core";
-import type { LiftTab } from "../utils/appUtils";
+import type { LiftType } from "../utils/appUtils";
 
-const LIFT_LABELS: Record<LiftTab, string> = {
+const LIFT_LABELS: Record<LiftType, string> = {
   squat: "Squat",
   bench: "Bench",
   deadlift: "Deadlift",
@@ -38,7 +38,7 @@ export function RepCalculator({
   baselineNames: Partial<Record<string, string>>;
   stats: RepCalcStats;
 }) {
-  const [liftType, setLiftType] = useState<LiftTab>("squat");
+  const [liftType, setLiftType] = useState<LiftType>("squat");
   const [selectedName, setSelectedName] = useState("");
   const [reps, setReps] = useState("");
   const [weight, setWeight] = useState("");
@@ -161,10 +161,10 @@ export function RepCalculator({
           <select
             id="calc-lift"
             value={liftType}
-            onChange={(e) => setLiftType(e.target.value as LiftTab)}
+            onChange={(e) => setLiftType(e.target.value as LiftType)}
             style={{ fontSize: "1rem" }}
           >
-            {(Object.keys(LIFT_LABELS) as LiftTab[])
+            {(Object.keys(LIFT_LABELS) as LiftType[])
               .filter((t) => t !== "accessory" || hasAccessories)
               .map((t) => (
                 <option key={t} value={t}>

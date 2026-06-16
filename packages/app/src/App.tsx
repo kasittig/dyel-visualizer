@@ -23,14 +23,14 @@ import {
   EXAMPLE_SHEET_URL,
   EXAMPLE_VISUALIZER_URL,
 } from "./utils/appUtils";
-import type { LiftTab, PageTab, TabState } from "./utils/appUtils";
+import type { LiftType, PageTab, TabState } from "./utils/appUtils";
 
 function App() {
   const params = new URLSearchParams(window.location.search);
   const [url, setUrl] = useState(params.get("sheet") ?? import.meta.env.VITE_SHEET_URL ?? "");
   const [activeTab, setActiveTab] = useState<PageTab>("sigma");
   const [shownResetToken, setShownResetToken] = useState(0);
-  const [tabState, setTabState] = useState<Record<LiftTab, TabState>>(initialTabState);
+  const [tabState, setTabState] = useState<Record<LiftType, TabState>>(initialTabState);
   const [excludeVolumeWork, setExcludeVolumeWork] = useState(true);
 
   useEffect(() => {
@@ -47,7 +47,7 @@ function App() {
 
   const pairs = useMemo(() => (state.status === "success" ? state.pairs : []), [state]);
 
-  const tabRows = useMemo<Record<LiftTab, ConjugateDataPair[]>>(
+  const tabRows = useMemo<Record<LiftType, ConjugateDataPair[]>>(
     () => ({
       squat: pairs.filter(([ex]) => ex.type === "squat"),
       bench: pairs.filter(([ex]) => ex.type === "bench"),
@@ -58,8 +58,8 @@ function App() {
   );
 
   const { effectiveBaselineNames, effectiveTargetNames } = useMemo(() => {
-    const baseline: Partial<Record<LiftTab, string>> = {};
-    const target: Partial<Record<LiftTab, string>> = {};
+    const baseline: Partial<Record<LiftType, string>> = {};
+    const target: Partial<Record<LiftType, string>> = {};
     for (const tab of LIFT_TABS) {
       const b = tabState[tab].baselineName ?? defaultBaselineName(tabRows[tab]);
       if (b) baseline[tab] = b;
@@ -73,13 +73,10 @@ function App() {
 
   const tabs = [...MAIN_TABS, ...(tabRows.accessory.length > 0 ? [ACCESSORY_TAB] : [])];
 
-  const liftTab: LiftTab | null =
+  const liftTab: LiftType | null =
     activeTab !== "calculator" && activeTab !== "sigma" ? activeTab : null;
 
-  const activeRows = useMemo(
-    () => (liftTab ? tabRows[liftTab] : []),
-    [liftTab, tabRows]
-  );
+  const activeRows = useMemo(() => (liftTab ? tabRows[liftTab] : []), [liftTab, tabRows]);
 
   const calcPairs = useMemo(
     () =>
@@ -117,7 +114,10 @@ function App() {
       ...prev,
       [liftTab]: {
         ...prev[liftTab],
-        filters: { ...prev[liftTab].filters, [facet]: toggleInSet(prev[liftTab].filters[facet], value) },
+        filters: {
+          ...prev[liftTab].filters,
+          [facet]: toggleInSet(prev[liftTab].filters[facet], value),
+        },
       },
     }));
   }
