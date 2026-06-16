@@ -99,7 +99,43 @@ export function VariationRadarChart({
             />
             <PolarRadiusAxis tick={{ fontSize: 10 }} unit={` ${unit}`} />
             <Radar dataKey="e1rm" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.25} />
-            <Tooltip formatter={(v) => [`${v} ${unit}`, "e1RM"]} />
+            <Tooltip
+              content={({ payload }) => {
+                const item = payload?.[0];
+                if (!item) return null;
+                const name = (item.payload as { variation: string }).variation;
+                const lastDate = stats.lastPerformed.get(name);
+                const bestSet = stats.lastSessionBestSet.get(name);
+                const dateStr = lastDate
+                  ? lastDate.toLocaleDateString(undefined, {
+                      month: "short",
+                      day: "numeric",
+                      year: "numeric",
+                    })
+                  : "Never";
+                return (
+                  <div
+                    style={{
+                      background: "var(--bg, #fff)",
+                      border: "1px solid var(--border, #ccc)",
+                      borderRadius: 4,
+                      padding: "6px 10px",
+                      fontSize: "0.8rem",
+                      lineHeight: 1.5,
+                    }}
+                  >
+                    <div style={{ fontWeight: 600 }}>{name}</div>
+                    <div>
+                      e1RM: {item.value} {unit}
+                    </div>
+                    <div style={{ opacity: 0.7 }}>
+                      {dateStr}
+                      {bestSet ? ` · ${bestSet.weight} ${unit} × ${bestSet.reps}` : ""}
+                    </div>
+                  </div>
+                );
+              }}
+            />
           </RadarChart>
         </ResponsiveContainer>
       </div>
