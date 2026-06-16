@@ -252,6 +252,16 @@ function App() {
   const sigmaStats = useLastSessionStats(sigmaPairs, effectiveBaselineNames);
   const chartStats = useLastSessionStats(filteredRows, effectiveBaselineNames);
 
+  const sigmaRadarRows = useMemo(
+    () =>
+      (["squat", "bench", "deadlift"] as const).flatMap((type) => {
+        const baselineName = effectiveBaselineNames[type];
+        if (!baselineName) return [];
+        return sigmaPairs.filter(([ex]) => ex.type === type && ex.displayName === baselineName);
+      }),
+    [sigmaPairs, effectiveBaselineNames]
+  );
+
   function handleUrlChange(newUrl: string) {
     setUrl(newUrl);
     setShownResetToken((t) => t + 1);
@@ -366,6 +376,7 @@ function App() {
                   targetNames={effectiveTargetNames}
                   stats={sigmaStats}
                 />
+                <VariationRadarChart rows={sigmaRadarRows} stats={sigmaStats} />
               </>
             ) : (
               <>
