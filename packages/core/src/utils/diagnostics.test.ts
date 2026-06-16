@@ -101,7 +101,7 @@ describe("BIOMECHANICAL_BASELINES", () => {
   });
 
   it("bench lockout floor press override is 85–90%", () => {
-    const override = BIOMECHANICAL_BASELINES.bench.lockout!.equipmentOverrides?.floor!;
+    const override = BIOMECHANICAL_BASELINES.bench.lockout!.equipmentOverrides!.floor!;
     expect(override.min).toBe(85);
     expect(override.max).toBe(90);
   });
