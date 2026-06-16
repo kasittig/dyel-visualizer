@@ -18,11 +18,24 @@ Single-page React app with no backend. All data comes from a user-supplied Googl
 
 **Data flow:**
 
-1. `App.tsx` takes a URL, calls `extractSheetRef()` to parse it into `{ id, published }`, and passes it to `useConjugateData()`
+1. `App.tsx` takes a URL, calls `extractSheetRef()` (from `src/utils/appUtils.ts`) to parse it into `{ id, published }`, and passes it to `useConjugateData()`
 2. `useConjugateData` (in `src/hooks/useConjugateData.ts`) fetches the sheet as CSV and calls `parseConjugateData` from `@dyel/core`
 3. The resulting `ConjugateDataPair[]` (tuples of `[ConjugateExercise, TrainingSession]`) flows through exercise-type tabs (squat / bench / deadlift / accessory), `ExerciseFilters`, `ConjugateCharts`, and `ExerciseList`
 4. `useLastSessionStats` (in `src/hooks/useLastSessionStats.ts`) computes per-exercise stats from the pair list — e1RM, last session, predicted e1RM, variant factors, resistance offsets
 5. `ErrorBoundary` wraps `<App />` in `main.tsx`
+
+**Tab state:** `App.tsx` owns a single `tabState: Record<LiftTab, TabState>` (type defined in `appUtils.ts`) instead of separate `filterState`/`baselineNames`/`targetNames` objects. All three concerns are updated together, which prevents them from diverging.
+
+**Key modules:**
+
+| Path | Purpose |
+|---|---|
+| `src/utils/appUtils.ts` | Pure helpers (`extractSheetRef`, `defaultBaselineName`, `defaultTargetName`, `toggleInSet`), type aliases (`LiftTab`, `PageTab`, `TabState`), and URL constants — no React dependency |
+| `src/components/BaseRadarChart.tsx` | Shared Recharts wrapper used by `SigmaRadarChart` and `VariationRadarChart`; accepts `angleKey`, `unit`, `tooltip`, optional `onClick` |
+| `src/hooks/useBaselineTargetExercises.ts` | Builds `baselineExByType` and `targetExByType` maps; shared by `TotalChart` and `SigmaRadarChart` |
+| `src/hooks/useConjugateChartData.ts` | All data aggregation for `ConjugateCharts` (grouping, normalization, forward-fill); the component itself is presentation-only |
+| `src/components/LiftTabPanel.tsx` | Per-lift tab content: `ConjugateCharts` + `VariationRadarChart` with shared variation-highlight state |
+| `src/components/VolumeWorkToggle.tsx` | Checkbox toggle for excluding volume work (sets > 1) |
 
 **Dev proxy:** `vite.config.ts` defines a `sheetsProxyPlugin` that forwards `/sheets-proxy/*` to `https://docs.google.com/*` using Node's `fetch`, which follows redirects server-side and avoids CORS issues. In production `useConjugateData` hits Google directly — this only works with published sheets.
 
