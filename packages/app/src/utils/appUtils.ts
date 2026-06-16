@@ -3,18 +3,18 @@ import type { FilterState } from "@dyel/core";
 import type { ConjugateDataPair } from "../hooks/useConjugateData";
 
 export type SheetRef = { id: string; published: boolean };
-export type LiftTab = "squat" | "bench" | "deadlift" | "accessory";
-export type PageTab = LiftTab | "calculator" | "sigma";
+export type LiftType = "squat" | "bench" | "deadlift" | "accessory";
+export type PageTab = LiftType | "calculator" | "sigma";
 
-export const LIFT_TABS: LiftTab[] = ["squat", "bench", "deadlift", "accessory"];
+export const LIFT_TABS: LiftType[] = ["squat", "bench", "deadlift", "accessory"];
 
 export const MAIN_TABS = [
-  { id: "squat" as LiftTab, label: "Squat" },
-  { id: "bench" as LiftTab, label: "Bench" },
-  { id: "deadlift" as LiftTab, label: "Deadlift" },
+  { id: "squat" as LiftType, label: "Squat" },
+  { id: "bench" as LiftType, label: "Bench" },
+  { id: "deadlift" as LiftType, label: "Deadlift" },
 ];
 
-export const ACCESSORY_TAB = { id: "accessory" as LiftTab, label: "Accessories" };
+export const ACCESSORY_TAB = { id: "accessory" as LiftType, label: "Accessories" };
 
 export const EXAMPLE_CSV_URL =
   "https://docs.google.com/spreadsheets/d/e/2PACX-1vRPu7N-kHeJeUVhjbL0Q9xDLXEPeC3GsvnAE4HXj2-q9pIjM25BxUwUVxHYqxVR-9uQvW9MKM4l9xNI/pub?gid=1297658251&single=true&output=csv";
@@ -99,8 +99,9 @@ export function extractSheetRef(input: string): SheetRef | null {
   return null;
 }
 
-export function initialTabState(): Record<LiftTab, TabState> {
-  return Object.fromEntries(
-    LIFT_TABS.map((t) => [t, { filters: emptyFilters() }])
-  ) as Record<LiftTab, TabState>;
+export function initialTabState(): Record<LiftType, TabState> {
+  return Object.fromEntries(LIFT_TABS.map((t) => [t, { filters: emptyFilters() }])) as Record<
+    LiftType,
+    TabState
+  >;
 }

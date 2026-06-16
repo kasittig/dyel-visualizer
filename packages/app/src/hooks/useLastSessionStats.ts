@@ -99,12 +99,11 @@ export function useLastSessionStats(
     for (const [exercise, session] of pairs) {
       const baselineEx = baselineExByType.get(exercise.type);
       const isBaseline = exercise.displayName === baselineEx?.displayName;
-      const isVariant = !isBaseline;
       if (isBaseline) {
         const sessions = baselineByType.get(exercise.type) ?? [];
         sessions.push(session);
         baselineByType.set(exercise.type, sessions);
-      } else if (isVariant) {
+      } else {
         const sessions = variantFactorSessionsByName.get(exercise.displayName) ?? [];
         sessions.push(session);
         variantFactorSessionsByName.set(exercise.displayName, sessions);

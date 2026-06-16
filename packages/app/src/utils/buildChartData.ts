@@ -49,31 +49,33 @@ export function buildChartData(
     ...new Set([...squatByDate.keys(), ...benchByDate.keys(), ...deadliftByDate.keys()]),
   ].sort();
 
-  type Acc = { rows: ChartPoint[]; lastSquat?: number; lastBench?: number; lastDeadlift?: number };
+  const rows: ChartPoint[] = [];
+  let lastSquat: number | undefined;
+  let lastBench: number | undefined;
+  let lastDeadlift: number | undefined;
 
-  return allDates.reduce<Acc>(
-    (acc, date) => {
-      const squat = squatByDate.get(date);
-      const bench = benchByDate.get(date);
-      const deadlift = deadliftByDate.get(date);
+  for (const date of allDates) {
+    const squat = squatByDate.get(date);
+    const bench = benchByDate.get(date);
+    const deadlift = deadliftByDate.get(date);
 
-      const lastSquat = squat ?? acc.lastSquat;
-      const lastBench = bench ?? acc.lastBench;
-      const lastDeadlift = deadlift ?? acc.lastDeadlift;
+    if (squat !== undefined) lastSquat = squat;
+    if (bench !== undefined) lastBench = bench;
+    if (deadlift !== undefined) lastDeadlift = deadlift;
 
-      const total =
-        lastSquat !== undefined && lastBench !== undefined && lastDeadlift !== undefined
-          ? Math.round(lastSquat + lastBench + lastDeadlift)
-          : undefined;
+    const total =
+      lastSquat !== undefined && lastBench !== undefined && lastDeadlift !== undefined
+        ? Math.round(lastSquat + lastBench + lastDeadlift)
+        : undefined;
 
-      const point: ChartPoint = { date, label: formatDate(date) };
-      if (squat !== undefined) point.squat = Math.round(squat);
-      if (bench !== undefined) point.bench = Math.round(bench);
-      if (deadlift !== undefined) point.deadlift = Math.round(deadlift);
-      if (total !== undefined) point.total = total;
+    const point: ChartPoint = { date, label: formatDate(date) };
+    if (squat !== undefined) point.squat = Math.round(squat);
+    if (bench !== undefined) point.bench = Math.round(bench);
+    if (deadlift !== undefined) point.deadlift = Math.round(deadlift);
+    if (total !== undefined) point.total = total;
 
-      return { rows: [...acc.rows, point], lastSquat, lastBench, lastDeadlift };
-    },
-    { rows: [] }
-  ).rows;
+    rows.push(point);
+  }
+
+  return rows;
 }

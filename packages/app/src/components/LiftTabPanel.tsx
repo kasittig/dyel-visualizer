@@ -3,7 +3,7 @@ import type { ConjugateDataPair } from "../hooks/useConjugateData";
 import type { SessionStats } from "../hooks/useLastSessionStats";
 import { ConjugateCharts } from "./ConjugateCharts";
 import { VariationRadarChart } from "./VariationRadarChart";
-import type { LiftTab } from "../utils/appUtils";
+import type { LiftType } from "../utils/appUtils";
 
 export function LiftTabPanel({
   filteredRows,
@@ -13,7 +13,7 @@ export function LiftTabPanel({
   onTargetChange,
 }: {
   filteredRows: ConjugateDataPair[];
-  effectiveBaselineNames: Partial<Record<LiftTab, string>>;
+  effectiveBaselineNames: Partial<Record<LiftType, string>>;
   chartStats: SessionStats;
   targetName: string | null;
   onTargetChange: (name: string | null) => void;

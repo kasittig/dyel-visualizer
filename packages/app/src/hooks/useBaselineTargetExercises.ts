@@ -10,25 +10,18 @@ export function useBaselineTargetExercises(
   baselineExByType: Map<string, ConjugateExercise>;
   targetExByType: Map<string, ConjugateExercise>;
 } {
-  const baselineExByType = useMemo(() => {
-    const m = new Map<string, ConjugateExercise>();
+  return useMemo(() => {
+    const baselineExByType = new Map<string, ConjugateExercise>();
+    const targetExByType = new Map<string, ConjugateExercise>();
     for (const [ex] of pairs) {
       if (ex.type === "accessory") continue;
-      const name = baselineNames[ex.type];
-      if (name && ex.displayName === name && !m.has(ex.type)) m.set(ex.type, ex);
+      const bName = baselineNames[ex.type];
+      if (bName && ex.displayName === bName && !baselineExByType.has(ex.type))
+        baselineExByType.set(ex.type, ex);
+      const tName = targetNames[ex.type];
+      if (tName && ex.displayName === tName && !targetExByType.has(ex.type))
+        targetExByType.set(ex.type, ex);
     }
-    return m;
-  }, [pairs, baselineNames]);
-
-  const targetExByType = useMemo(() => {
-    const m = new Map<string, ConjugateExercise>();
-    for (const [ex] of pairs) {
-      if (ex.type === "accessory") continue;
-      const name = targetNames[ex.type];
-      if (name && ex.displayName === name && !m.has(ex.type)) m.set(ex.type, ex);
-    }
-    return m;
-  }, [pairs, targetNames]);
-
-  return { baselineExByType, targetExByType };
+    return { baselineExByType, targetExByType };
+  }, [pairs, baselineNames, targetNames]);
 }

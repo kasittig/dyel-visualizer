@@ -15,7 +15,6 @@ export function useConjugateChartData(
 ): {
   variations: string[];
   data: Record<string, string | number>[];
-  visibleVariations: { label: string; i: number }[];
   showNormalized: boolean;
   bestSetByLabelAndDate: Map<string, Map<string, { sets: number; reps: number; weight: number }>>;
   baselineExercise: ConjugateExercise | null;
@@ -53,7 +52,7 @@ export function useConjugateChartData(
 
     const allDates = [
       ...new Set([...e1rmByLabelAndDate.values()].flatMap((m) => [...m.keys()])),
-    ].sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+    ].sort();
 
     return { variations, e1rmByLabelAndDate, bestSetByLabelAndDate, allDates };
   }, [rows]);
@@ -110,17 +109,11 @@ export function useConjugateChartData(
     });
   }, [allDates, variations, e1rmByLabelAndDate, normalizedByDate]);
 
-  const visibleVariations = useMemo(
-    () => variations.map((label, i) => ({ label, i })),
-    [variations]
-  );
-
   const showNormalized = normalizedByDate.size > 0;
 
   return {
     variations,
     data,
-    visibleVariations,
     showNormalized,
     bestSetByLabelAndDate,
     baselineExercise,

@@ -4,8 +4,7 @@ import { DateRangePicker } from "./DateRangePicker";
 import { findBestE1RM, predictWeightForReps, predictRepsForWeight } from "@dyel/core";
 import type { ConjugateDataPair } from "../hooks/useConjugateData";
 import type { E1RMEstimate, RepCalcStats } from "@dyel/core";
-
-type LiftType = "squat" | "bench" | "deadlift" | "accessory";
+import type { LiftType } from "../utils/appUtils";
 
 const LIFT_LABELS: Record<LiftType, string> = {
   squat: "Squat",
