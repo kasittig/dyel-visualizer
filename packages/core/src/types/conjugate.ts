@@ -66,6 +66,8 @@ export interface ConjugateExercise {
   movementCategory: MovementCategory;
 }
 
+export type PrimaryLift = Exclude<ConjugateExercise["type"], "accessory">;
+
 export type ConjugateDataPair = [ConjugateExercise, TrainingSession];
 
 export type MovementCategory =
@@ -77,7 +79,7 @@ export type MovementCategory =
   | "unclassified";
 
 export interface DiagnosticResult {
-  primaryLift: "squat" | "bench" | "deadlift";
+  primaryLift: PrimaryLift;
   name: string;
   category: MovementCategory;
   averageIndex: number;
