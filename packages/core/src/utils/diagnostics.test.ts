@@ -5,6 +5,7 @@ import {
   ACCOMMODATING_RESISTANCE_BASELINES,
   generateDiagnostics,
 } from "./diagnostics";
+import { calcE1RM } from "./e1rm";
 import type { ConjugateDataPair, ConjugateExercise, TrainingSession } from "../types/conjugate";
 
 function ex(overrides: Partial<ConjugateExercise> = {}): ConjugateExercise {
@@ -130,8 +131,7 @@ describe("BIOMECHANICAL_BASELINES", () => {
 });
 
 function session(date: string, weight: number, reps = 1): TrainingSession {
-  const e1rm = reps === 1 ? weight : weight * (1 + reps / 30);
-  return { date: new Date(date), sets: 1, reps, weight, e1rm, unit: "lbs" };
+  return { date: new Date(date), sets: 1, reps, weight, e1rm: calcE1RM(weight, reps), unit: "lbs" };
 }
 
 function pair(overrides: Partial<ConjugateExercise>, s: TrainingSession): ConjugateDataPair {
