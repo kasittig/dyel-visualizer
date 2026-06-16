@@ -183,26 +183,20 @@ function App() {
     [activeTab, tabRows]
   );
 
+  const calcPairs = useMemo(
+    () =>
+      LIFT_TABS.flatMap((tab) =>
+        applyFilters(tabRows[tab], { ...filterState[tab], excludeVolumeWork })
+      ),
+    [tabRows, filterState, excludeVolumeWork]
+  );
+
   const filteredRows = useMemo(
     () =>
       activeTab === "calculator" || activeTab === "sigma"
         ? []
-        : applyFilters(activeRows, {
-            ...filterState[activeTab as LiftTab],
-            excludeVolumeWork: activeTab !== "accessory" ? excludeVolumeWork : false,
-          }),
-    [activeRows, filterState, activeTab, excludeVolumeWork]
-  );
-
-  const calcPairs = useMemo(
-    () =>
-      LIFT_TABS.flatMap((tab) =>
-        applyFilters(tabRows[tab], {
-          ...filterState[tab],
-          excludeVolumeWork: tab !== "accessory" ? excludeVolumeWork : false,
-        })
-      ),
-    [tabRows, filterState, excludeVolumeWork]
+        : calcPairs.filter(([ex]) => ex.type === activeTab),
+    [calcPairs, activeTab]
   );
 
   const sigmaPairs = useMemo(
