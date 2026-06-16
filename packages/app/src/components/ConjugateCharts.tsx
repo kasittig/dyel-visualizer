@@ -22,12 +22,14 @@ export function ConjugateCharts({
   stats,
   targetName,
   onTargetChange,
+  highlightedVariation = null,
 }: {
   rows: ConjugateDataPair[];
   baselineNames?: Partial<Record<string, string>>;
   stats: RepCalcStats;
   targetName: string | null;
   onTargetChange: (name: string) => void;
+  highlightedVariation?: string | null;
 }) {
   const [legendOpen, setLegendOpen] = useState(false);
 
@@ -297,17 +299,28 @@ export function ConjugateCharts({
                 connectNulls
               />
             )}
-            {visibleVariations.map(({ label, i }) => (
-              <Line
-                key={label}
-                type="monotone"
-                dataKey={label}
-                stroke={LINE_COLORS[i % LINE_COLORS.length]}
-                dot={{ r: 3 }}
-                activeDot={{ r: 5 }}
-                connectNulls
-              />
-            ))}
+            {visibleVariations.map(({ label, i }) => {
+              const isHighlighted = highlightedVariation === label;
+              const dimmed = highlightedVariation !== null && !isHighlighted;
+              const stroke = isHighlighted ? "#0f172a" : LINE_COLORS[i % LINE_COLORS.length];
+              return (
+                <Line
+                  key={label}
+                  type="monotone"
+                  dataKey={label}
+                  stroke={stroke}
+                  strokeOpacity={dimmed ? 0.15 : 1}
+                  strokeWidth={isHighlighted ? 3 : 1.5}
+                  dot={{
+                    r: isHighlighted ? 4 : 3,
+                    fillOpacity: dimmed ? 0.15 : 1,
+                    strokeOpacity: dimmed ? 0.15 : 1,
+                  }}
+                  activeDot={{ r: 5 }}
+                  connectNulls
+                />
+              );
+            })}
           </LineChart>
         </ResponsiveContainer>
       </div>

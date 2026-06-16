@@ -16,9 +16,11 @@ const MIN_VARIATIONS = 3;
 export function VariationRadarChart({
   rows,
   stats,
+  onVariationClick,
 }: {
   rows: ConjugateDataPair[];
   stats: SessionStats;
+  onVariationClick?: (variation: string) => void;
 }) {
   const unit = rows[0]?.[1].unit ?? "lbs";
 
@@ -52,7 +54,14 @@ export function VariationRadarChart({
       </p>
       <div style={{ width: "80%", margin: "0 auto" }}>
         <ResponsiveContainer width="100%" height={340}>
-          <RadarChart data={data}>
+          <RadarChart
+            data={data}
+            onClick={(chartData) => {
+              const name = chartData?.activeLabel;
+              if (typeof name === "string" && name) onVariationClick?.(name);
+            }}
+            style={{ cursor: onVariationClick ? "pointer" : undefined }}
+          >
             <PolarGrid />
             <PolarAngleAxis dataKey="variation" tick={{ fontSize: 11 }} />
             <PolarRadiusAxis tick={{ fontSize: 10 }} unit={` ${unit}`} />
