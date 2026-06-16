@@ -37,6 +37,7 @@ export const BIOMECHANICAL_BASELINES: Record<
   deadlift: {
     bottom_range: { min: 85, max: 90 },
     lockout: { min: 90, max: 95 },
+    quad_dominant: { min: 88, max: 97 },
   },
 };
 
@@ -121,5 +122,12 @@ export function toMovementCategory(ex: ExerciseShape): MovementCategory {
   )
     return "quad_dominant";
   if (ex.type === "deadlift" && ex.stance === "romanian") return "posterior_chain";
+  if (ex.type === "squat" && ex.equipment === "box") return "bottom_range";
+  if (ex.stance === "slingshot" || ex.stance === "builder") return "lockout";
+  if (ex.stance === "narrow") return "lockout";
+  if (ex.type === "bench" && (ex.equipment === "incline" || ex.equipment === "decline"))
+    return "lockout";
+  if (ex.type === "deadlift" && ex.stance === "sumo") return "posterior_chain";
+  if (ex.type === "deadlift" && ex.stance === "conventional") return "quad_dominant";
   return "unclassified";
 }

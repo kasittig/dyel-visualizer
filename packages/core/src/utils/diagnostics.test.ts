@@ -82,6 +82,48 @@ describe("toMovementCategory", () => {
     );
   });
 
+  it('squat + box equipment → "bottom_range"', () => {
+    expect(toMovementCategory(ex({ type: "squat", stance: null, equipment: "box" }))).toBe(
+      "bottom_range"
+    );
+  });
+
+  it('slingshot stance → "lockout"', () => {
+    expect(toMovementCategory(ex({ type: "bench", stance: "slingshot" }))).toBe("lockout");
+  });
+
+  it('builder stance → "lockout"', () => {
+    expect(toMovementCategory(ex({ type: "bench", stance: "builder" }))).toBe("lockout");
+  });
+
+  it('narrow stance → "lockout"', () => {
+    expect(toMovementCategory(ex({ type: "bench", stance: "narrow" }))).toBe("lockout");
+  });
+
+  it('bench + incline equipment → "lockout"', () => {
+    expect(toMovementCategory(ex({ type: "bench", stance: null, equipment: "incline" }))).toBe(
+      "lockout"
+    );
+  });
+
+  it('bench + decline equipment → "lockout"', () => {
+    expect(toMovementCategory(ex({ type: "bench", stance: null, equipment: "decline" }))).toBe(
+      "lockout"
+    );
+  });
+
+  it('deadlift + sumo stance → "posterior_chain"', () => {
+    expect(toMovementCategory(ex({ type: "deadlift", stance: "sumo", equipment: null }))).toBe(
+      "posterior_chain"
+    );
+  });
+
+  it('deadlift + conventional stance → "quad_dominant"', () => {
+    expect(
+      toMovementCategory(ex({ type: "deadlift", stance: "conventional", equipment: null }))
+    ).toBe("quad_dominant");
+  });
+
   it('bench with no matching rule → "unclassified"', () => {
     expect(toMovementCategory(ex({ type: "bench", stance: null, equipment: null }))).toBe(
       "unclassified"
@@ -90,6 +132,12 @@ describe("toMovementCategory", () => {
 
   it("competition stance beats board equipment (priority check)", () => {
     expect(toMovementCategory(ex({ stance: "competition", equipment: "board" }))).toBe("anchor");
+  });
+
+  it("competition stance beats incline equipment (priority check)", () => {
+    expect(
+      toMovementCategory(ex({ type: "bench", stance: "competition", equipment: "incline" }))
+    ).toBe("anchor");
   });
 });
 
@@ -122,6 +170,12 @@ describe("BIOMECHANICAL_BASELINES", () => {
     const entry = BIOMECHANICAL_BASELINES.deadlift.bottom_range!;
     expect(entry.min).toBe(85);
     expect(entry.max).toBe(90);
+  });
+
+  it("deadlift quad_dominant baseline is 88–97%", () => {
+    const entry = BIOMECHANICAL_BASELINES.deadlift.quad_dominant!;
+    expect(entry.min).toBe(88);
+    expect(entry.max).toBe(97);
   });
 
   it("categories not in the table are absent", () => {
