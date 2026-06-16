@@ -3,6 +3,7 @@ import type {
   ConjugateDataPair,
   ConjugateEquipment,
   ConjugateExercise,
+  DeadliftStancePreference,
   DiagnosticResult,
   MovementCategory,
   PrimaryLift,
@@ -44,7 +45,22 @@ export const BIOMECHANICAL_BASELINES: Record<
 export const ACCOMMODATING_RESISTANCE_BASELINES: Record<string, { range: string; floor: number }> =
   {};
 
-export function generateDiagnostics(pairs: ConjugateDataPair[]): DiagnosticResult[] {
+export type DiagnosticsOptions = { deadliftStance?: DeadliftStancePreference };
+
+function resolveCategory(ex: ConjugateExercise, options?: DiagnosticsOptions): MovementCategory {
+  if (
+    ex.type === "deadlift" &&
+    (ex.stance === "sumo" || ex.stance === "conventional" || ex.stance === "opposite")
+  ) {
+    return toMovementCategory(ex, options);
+  }
+  return ex.movementCategory;
+}
+
+export function generateDiagnostics(
+  pairs: ConjugateDataPair[],
+  options?: DiagnosticsOptions
+): DiagnosticResult[] {
   const byLift = new Map<PrimaryLift, ConjugateDataPair[]>();
   for (const pair of pairs) {
     const [ex] = pair;
@@ -64,9 +80,10 @@ export function generateDiagnostics(pairs: ConjugateDataPair[]): DiagnosticResul
     >();
 
     for (const [ex, session] of liftPairs) {
-      if (ex.movementCategory === "anchor") {
+      const effectiveCategory = resolveCategory(ex, options);
+      if (effectiveCategory === "anchor") {
         anchorSessions.push(session);
-      } else if (ex.movementCategory !== "unclassified") {
+      } else if (effectiveCategory !== "unclassified") {
         const key = ex.displayName;
         if (!variationGroups.has(key)) variationGroups.set(key, { ex, sessions: [] });
         variationGroups.get(key)!.sessions.push(session);
@@ -74,6 +91,7 @@ export function generateDiagnostics(pairs: ConjugateDataPair[]): DiagnosticResul
     }
 
     for (const [name, { ex, sessions }] of variationGroups) {
+      const effectiveCategory = resolveCategory(ex, options);
       const { factor, sampleCount } = fitVariantFactor(anchorSessions, sessions);
       if (sampleCount === 0) continue;
 
@@ -86,7 +104,7 @@ export function generateDiagnostics(pairs: ConjugateDataPair[]): DiagnosticResul
         baseline = { min: arEntry.floor, max: arEntry.floor };
         expectedBaseline = arEntry.range;
       } else {
-        const catEntry = BIOMECHANICAL_BASELINES[lift][ex.movementCategory];
+        const catEntry = BIOMECHANICAL_BASELINES[lift][effectiveCategory];
         if (catEntry) {
           const override = ex.equipment ? catEntry.equipmentOverrides?.[ex.equipment] : undefined;
           baseline = override ?? { min: catEntry.min, max: catEntry.max };
@@ -99,7 +117,7 @@ export function generateDiagnostics(pairs: ConjugateDataPair[]): DiagnosticResul
       results.push({
         primaryLift: lift,
         name,
-        category: ex.movementCategory,
+        category: effectiveCategory,
         averageIndex,
         expectedBaseline,
         diagnostic: `${tag}: ${name} at ${Math.round(averageIndex)}%`,
@@ -110,7 +128,10 @@ export function generateDiagnostics(pairs: ConjugateDataPair[]): DiagnosticResul
   return results;
 }
 
-export function toMovementCategory(ex: ExerciseShape): MovementCategory {
+export function toMovementCategory(
+  ex: ExerciseShape,
+  options?: DiagnosticsOptions
+): MovementCategory {
   if (ex.type === "accessory") return "unclassified";
   if (ex.stance === "competition") return "anchor";
   if ((ex.equipment !== null && LOCKOUT_EQUIPMENT.has(ex.equipment)) || ex.stance === "close")
@@ -127,7 +148,20 @@ export function toMovementCategory(ex: ExerciseShape): MovementCategory {
   if (ex.stance === "narrow") return "lockout";
   if (ex.type === "bench" && (ex.equipment === "incline" || ex.equipment === "decline"))
     return "lockout";
-  if (ex.type === "deadlift" && ex.stance === "sumo") return "posterior_chain";
-  if (ex.type === "deadlift" && ex.stance === "conventional") return "quad_dominant";
+  if (
+    ex.type === "deadlift" &&
+    (ex.stance === "sumo" || ex.stance === "conventional" || ex.stance === "opposite")
+  ) {
+    const primary = options?.deadliftStance ?? "conventional";
+    // sumo stance and "opposite" are the non-conventional side of the deadlift.
+    // With conventional primary: non-conventional → posterior_chain, conventional → quad_dominant.
+    // Toggling to sumo primary swaps all three labels.
+    const isNonConventionalStance = ex.stance === "sumo" || ex.stance === "opposite";
+    if (primary === "conventional") {
+      return isNonConventionalStance ? "posterior_chain" : "quad_dominant";
+    } else {
+      return isNonConventionalStance ? "quad_dominant" : "posterior_chain";
+    }
+  }
   return "unclassified";
 }
