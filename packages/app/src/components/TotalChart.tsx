@@ -8,8 +8,9 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import type { ConjugateExercise, RepCalcStats } from "@dyel/core";
+import type { RepCalcStats } from "@dyel/core";
 import type { ConjugateDataPair } from "../hooks/useConjugateData";
+import { useBaselineTargetExercises } from "../hooks/useBaselineTargetExercises";
 import { buildChartData } from "../utils/buildChartData";
 
 const SQUAT_COLOR = "#e67e22";
@@ -30,25 +31,11 @@ export function TotalChart({
 }) {
   const unit = pairs[0]?.[1].unit ?? "lbs";
 
-  const baselineExByType = useMemo(() => {
-    const m = new Map<string, ConjugateExercise>();
-    for (const [ex] of pairs) {
-      if (ex.type === "accessory") continue;
-      const name = baselineNames[ex.type];
-      if (name && ex.displayName === name && !m.has(ex.type)) m.set(ex.type, ex);
-    }
-    return m;
-  }, [pairs, baselineNames]);
-
-  const targetExByType = useMemo(() => {
-    const m = new Map<string, ConjugateExercise>();
-    for (const [ex] of pairs) {
-      if (ex.type === "accessory") continue;
-      const name = targetNames[ex.type];
-      if (name && ex.displayName === name && !m.has(ex.type)) m.set(ex.type, ex);
-    }
-    return m;
-  }, [pairs, targetNames]);
+  const { baselineExByType, targetExByType } = useBaselineTargetExercises(
+    pairs,
+    baselineNames,
+    targetNames
+  );
 
   const data = useMemo(
     () => buildChartData(pairs, baselineExByType, targetExByType, stats),

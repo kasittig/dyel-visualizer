@@ -1,15 +1,7 @@
 import { useMemo } from "react";
-import {
-  PolarAngleAxis,
-  PolarGrid,
-  PolarRadiusAxis,
-  Radar,
-  RadarChart,
-  ResponsiveContainer,
-  Tooltip,
-} from "recharts";
 import type { ConjugateDataPair } from "../hooks/useConjugateData";
 import type { SessionStats } from "../hooks/useLastSessionStats";
+import { BaseRadarChart } from "./BaseRadarChart";
 
 const MIN_VARIATIONS = 3;
 
@@ -41,76 +33,54 @@ export function VariationRadarChart({
   if (data.length < MIN_VARIATIONS) return null;
 
   return (
-    <section style={{ marginTop: "1rem" }}>
-      <p
-        style={{
-          fontSize: "0.8rem",
-          color: "var(--text)",
-          marginBottom: "0.25rem",
-          textAlign: "center",
-        }}
-      >
-        Projected e1RM by variation (today)
-      </p>
-      <div style={{ width: "80%", margin: "0 auto" }}>
-        <ResponsiveContainer width="100%" height={340}>
-          <RadarChart
-            data={data}
-            onClick={(chartData) => {
-              const name = chartData?.activeLabel;
-              if (typeof name === "string" && name) onVariationClick?.(name);
-            }}
-            style={{ cursor: onVariationClick ? "pointer" : undefined }}
-          >
-            <PolarGrid />
-            <PolarAngleAxis dataKey="variation" tick={{ fontSize: 11 }} />
-            <PolarRadiusAxis tick={{ fontSize: 10 }} unit={` ${unit}`} />
-            <Radar dataKey="e1rm" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.25} />
-            <Tooltip
-              content={({ payload }) => {
-                const item = payload?.[0];
-                if (!item) return null;
-                const name = (item.payload as { variation: string }).variation;
-                const lastDate = stats.lastPerformed.get(name);
-                const lastE1RM = stats.lastSessionE1RM.get(name);
-                const bestSet = stats.lastSessionBestSet.get(name);
-                const dateStr = lastDate
-                  ? lastDate.toLocaleDateString(undefined, {
-                      month: "short",
-                      day: "numeric",
-                      year: "numeric",
-                    })
-                  : "Never";
-                return (
-                  <div
-                    style={{
-                      background: "var(--bg, #fff)",
-                      border: "1px solid var(--border, #ccc)",
-                      borderRadius: 4,
-                      padding: "6px 10px",
-                      fontSize: "0.8rem",
-                      lineHeight: 1.5,
-                    }}
-                  >
-                    <div style={{ fontWeight: 600 }}>{name}</div>
-                    <div>
-                      Projected e1RM: {Number(item.value).toFixed(2)} {unit}
-                    </div>
-                    <div style={{ opacity: 0.7 }}>
-                      Last session:{" "}
-                      {lastE1RM !== undefined ? `${lastE1RM.toFixed(2)} ${unit} · ` : ""}
-                      {dateStr}
-                      {bestSet
-                        ? ` · ${bestSet.sets}×${bestSet.reps} @ ${bestSet.weight} ${unit}`
-                        : ""}
-                    </div>
-                  </div>
-                );
+    <BaseRadarChart
+      label="Projected e1RM by variation (today)"
+      data={data}
+      angleKey="variation"
+      unit={unit}
+      onClick={onVariationClick}
+      tooltip={{
+        content: ({ payload }) => {
+          const item = payload?.[0];
+          if (!item) return null;
+          const name = (item.payload as { variation: string }).variation;
+          const lastDate = stats.lastPerformed.get(name);
+          const lastE1RM = stats.lastSessionE1RM.get(name);
+          const bestSet = stats.lastSessionBestSet.get(name);
+          const dateStr = lastDate
+            ? lastDate.toLocaleDateString(undefined, {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+              })
+            : "Never";
+          return (
+            <div
+              style={{
+                background: "var(--bg, #fff)",
+                border: "1px solid var(--border, #ccc)",
+                borderRadius: 4,
+                padding: "6px 10px",
+                fontSize: "0.8rem",
+                lineHeight: 1.5,
               }}
-            />
-          </RadarChart>
-        </ResponsiveContainer>
-      </div>
-    </section>
+            >
+              <div style={{ fontWeight: 600 }}>{name}</div>
+              <div>
+                Projected e1RM: {Number(item.value).toFixed(2)} {unit}
+              </div>
+              <div style={{ opacity: 0.7 }}>
+                Last session:{" "}
+                {lastE1RM !== undefined ? `${lastE1RM.toFixed(2)} ${unit} · ` : ""}
+                {dateStr}
+                {bestSet
+                  ? ` · ${bestSet.sets}×${bestSet.reps} @ ${bestSet.weight} ${unit}`
+                  : ""}
+              </div>
+            </div>
+          );
+        },
+      }}
+    />
   );
 }

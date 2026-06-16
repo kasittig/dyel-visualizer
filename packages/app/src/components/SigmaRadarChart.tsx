@@ -1,16 +1,9 @@
 import { useMemo } from "react";
-import {
-  PolarAngleAxis,
-  PolarGrid,
-  PolarRadiusAxis,
-  Radar,
-  RadarChart,
-  ResponsiveContainer,
-  Tooltip,
-} from "recharts";
 import type { RepCalcStats } from "@dyel/core";
 import type { ConjugateDataPair } from "../hooks/useConjugateData";
+import { useBaselineTargetExercises } from "../hooks/useBaselineTargetExercises";
 import { buildChartData } from "../utils/buildChartData";
+import { BaseRadarChart } from "./BaseRadarChart";
 
 export function SigmaRadarChart({
   pairs,
@@ -24,19 +17,13 @@ export function SigmaRadarChart({
   stats: RepCalcStats;
 }) {
   const unit = pairs[0]?.[1].unit ?? "lbs";
+  const { baselineExByType, targetExByType } = useBaselineTargetExercises(
+    pairs,
+    baselineNames,
+    targetNames
+  );
 
   const data = useMemo(() => {
-    const baselineExByType = new Map(
-      pairs
-        .filter(([ex]) => ex.type !== "accessory" && ex.displayName === baselineNames[ex.type])
-        .map(([ex]) => [ex.type, ex] as const)
-    );
-    const targetExByType = new Map(
-      pairs
-        .filter(([ex]) => ex.type !== "accessory" && ex.displayName === targetNames[ex.type])
-        .map(([ex]) => [ex.type, ex] as const)
-    );
-
     const chartData = buildChartData(pairs, baselineExByType, targetExByType, stats);
     if (chartData.length === 0) return null;
 
@@ -56,33 +43,17 @@ export function SigmaRadarChart({
     ].filter((p): p is { lift: string; e1rm: number } => p !== null);
 
     return points.length === 3 ? points : null;
-  }, [pairs, baselineNames, targetNames, stats]);
+  }, [pairs, baselineExByType, targetExByType, stats]);
 
   if (!data) return null;
 
   return (
-    <section style={{ marginTop: "1rem" }}>
-      <p
-        style={{
-          fontSize: "0.8rem",
-          color: "var(--text)",
-          marginBottom: "0.25rem",
-          textAlign: "center",
-        }}
-      >
-        Current e1RM by lift (normalized)
-      </p>
-      <div style={{ width: "80%", margin: "0 auto" }}>
-        <ResponsiveContainer width="100%" height={340}>
-          <RadarChart data={data}>
-            <PolarGrid />
-            <PolarAngleAxis dataKey="lift" tick={{ fontSize: 11 }} />
-            <PolarRadiusAxis tick={{ fontSize: 10 }} unit={` ${unit}`} />
-            <Radar dataKey="e1rm" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.25} />
-            <Tooltip formatter={(v) => [`${v} ${unit}`, "e1RM"]} />
-          </RadarChart>
-        </ResponsiveContainer>
-      </div>
-    </section>
+    <BaseRadarChart
+      label="Current e1RM by lift (normalized)"
+      data={data}
+      angleKey="lift"
+      unit={unit}
+      tooltip={{ formatter: (v) => [`${v} ${unit}`, "e1RM"] }}
+    />
   );
 }
