@@ -37,6 +37,7 @@ npm run build -w packages/core
 - Before deleting any local branch that has a remote, run `gh pr list --state open --json headRefName` first and confirm no open PR points to it. A `git branch -d` "merged to refs/remotes/origin/..." warning does NOT mean the PR was merged — three branches in this repo were lost this way (fix/merge-exercise-lists, feat/conjugate-weight-calculator, feature/issue-62-chain-coefficient).
 - Never use `--admin` or any flag to bypass branch protection rules on `gh pr merge`. If a merge is blocked, surface the specific blocker to the user.
 - Never cherry pick changes. If work depends on changes on a different feature branch, rebase your branch on top of that feature branch.
+- Never close a GitHub issue until its PR has merged. Use `Closes #NNN` in the PR description — GitHub closes the issue automatically on merge.
 
 **Pull requests**
 

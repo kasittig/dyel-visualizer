@@ -1,10 +1,12 @@
+import { memo } from "react";
+
 const muted: React.CSSProperties = {
   color: "var(--text)",
   fontSize: "0.85rem",
   whiteSpace: "nowrap",
 };
 
-export function OneRepMaxCell({
+export const OneRepMaxCell = memo(function OneRepMaxCell({
   one,
   unit = "lbs",
 }: {
@@ -19,9 +21,9 @@ export function OneRepMaxCell({
       {one.weight} {unit}
     </>
   );
-}
+});
 
-export function PredictedE1RMCell({
+export const PredictedE1RMCell = memo(function PredictedE1RMCell({
   predicted,
   unit = "lbs",
 }: {
@@ -34,9 +36,9 @@ export function PredictedE1RMCell({
       {Math.round(predicted)} {unit}
     </>
   );
-}
+});
 
-export function AddlWtOffsetCell({
+export const AddlWtOffsetCell = memo(function AddlWtOffsetCell({
   addlWtOffset,
   unit = "lbs",
 }: {
@@ -57,9 +59,9 @@ export function AddlWtOffsetCell({
       </span>
     </>
   );
-}
+});
 
-export function VariantFactorCell({
+export const VariantFactorCell = memo(function VariantFactorCell({
   variantFactor,
 }: {
   variantFactor:
@@ -80,9 +82,9 @@ export function VariantFactorCell({
       </span>
     </>
   );
-}
+});
 
-export function LastSessionCell({
+export const LastSessionCell = memo(function LastSessionCell({
   sessionE1RM,
   lastDate,
   setsReps,
@@ -103,4 +105,4 @@ export function LastSessionCell({
       {Math.round(sessionE1RM)} {unit}
     </>
   );
-}
+});
