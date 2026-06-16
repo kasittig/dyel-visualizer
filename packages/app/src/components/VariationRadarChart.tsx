@@ -34,9 +34,9 @@ export function VariationRadarChart({
       }
     }
     return names
-      .map((name) => ({ variation: name, e1rm: stats.lastSessionE1RM.get(name) }))
+      .map((name) => ({ variation: name, e1rm: stats.projectedE1RM.get(name) }))
       .filter((d): d is { variation: string; e1rm: number } => d.e1rm !== undefined);
-  }, [rows, stats.lastSessionE1RM]);
+  }, [rows, stats.projectedE1RM]);
 
   if (data.length < MIN_VARIATIONS) return null;
 
@@ -50,7 +50,7 @@ export function VariationRadarChart({
           textAlign: "center",
         }}
       >
-        Last session e1RM by variation
+        Projected e1RM by variation (today)
       </p>
       <div style={{ width: "80%", margin: "0 auto" }}>
         <ResponsiveContainer width="100%" height={340}>
@@ -72,6 +72,7 @@ export function VariationRadarChart({
                 if (!item) return null;
                 const name = (item.payload as { variation: string }).variation;
                 const lastDate = stats.lastPerformed.get(name);
+                const lastE1RM = stats.lastSessionE1RM.get(name);
                 const bestSet = stats.lastSessionBestSet.get(name);
                 const dateStr = lastDate
                   ? lastDate.toLocaleDateString(undefined, {
@@ -93,9 +94,11 @@ export function VariationRadarChart({
                   >
                     <div style={{ fontWeight: 600 }}>{name}</div>
                     <div>
-                      e1RM: {Number(item.value).toFixed(2)} {unit}
+                      Projected e1RM: {Number(item.value).toFixed(2)} {unit}
                     </div>
                     <div style={{ opacity: 0.7 }}>
+                      Last session:{" "}
+                      {lastE1RM !== undefined ? `${lastE1RM.toFixed(2)} ${unit} · ` : ""}
                       {dateStr}
                       {bestSet
                         ? ` · ${bestSet.sets}×${bestSet.reps} @ ${bestSet.weight} ${unit}`
