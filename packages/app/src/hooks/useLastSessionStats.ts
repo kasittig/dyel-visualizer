@@ -12,8 +12,9 @@ import type { ConjugateDataPair } from "./useConjugateData";
 export function useLastSessionStats(
   pairs: ConjugateDataPair[],
   baselineNames: Partial<Record<string, string>> = {},
-  today: Date = new Date()
+  today?: Date
 ) {
+  const resolvedToday = useMemo(() => today ?? new Date(), [today]);
   return useMemo(() => {
     // Build a map of baseline exercise per lift type from the provided display names.
     const baselineExByType = new Map<string, ConjugateExercise>();
@@ -145,7 +146,7 @@ export function useLastSessionStats(
 
     const projectedE1RM = new Map<string, number>();
     for (const [name, sessions] of sessionsByVariation) {
-      const projected = predictE1RM(sessions, today);
+      const projected = predictE1RM(sessions, resolvedToday);
       if (projected !== null) projectedE1RM.set(name, projected);
     }
 
@@ -157,7 +158,7 @@ export function useLastSessionStats(
       variantFactor,
       projectedE1RM,
     };
-  }, [pairs, baselineNames, today]);
+  }, [pairs, baselineNames, resolvedToday]);
 }
 
 export type SessionStats = ReturnType<typeof useLastSessionStats>;

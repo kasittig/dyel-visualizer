@@ -1,4 +1,3 @@
-import { useMemo } from "react";
 import {
   CartesianGrid,
   Line,
@@ -8,39 +7,15 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import type { RepCalcStats } from "@dyel/core";
-import type { ConjugateDataPair } from "../hooks/useConjugateData";
-import { useBaselineTargetExercises } from "../hooks/useBaselineTargetExercises";
-import { buildChartData } from "../utils/buildChartData";
+import type { ChartPoint } from "../utils/buildChartData";
 
 const SQUAT_COLOR = "#e67e22";
 const BENCH_COLOR = "#3498db";
 const DEADLIFT_COLOR = "#2ecc71";
 const TOTAL_COLOR = "#9b59b6";
 
-export function TotalChart({
-  pairs,
-  baselineNames = {},
-  targetNames = {},
-  stats,
-}: {
-  pairs: ConjugateDataPair[];
-  baselineNames?: Partial<Record<string, string>>;
-  targetNames?: Partial<Record<string, string>>;
-  stats: RepCalcStats;
-}) {
-  const unit = pairs[0]?.[1].unit ?? "lbs";
-
-  const { baselineExByType, targetExByType } = useBaselineTargetExercises(
-    pairs,
-    baselineNames,
-    targetNames
-  );
-
-  const data = useMemo(
-    () => buildChartData(pairs, baselineExByType, targetExByType, stats),
-    [pairs, baselineExByType, targetExByType, stats]
-  );
+export function TotalChart({ chartData, unit }: { chartData: ChartPoint[]; unit: string }) {
+  const data = chartData;
 
   if (data.length === 0) {
     return (
