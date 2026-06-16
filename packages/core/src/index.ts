@@ -34,4 +34,5 @@ export { LINE_COLORS, formatDate } from "./utils/chartUtils";
 export {
   BIOMECHANICAL_BASELINES,
   ACCOMMODATING_RESISTANCE_BASELINES,
+  generateDiagnostics,
 } from "./utils/diagnostics";
