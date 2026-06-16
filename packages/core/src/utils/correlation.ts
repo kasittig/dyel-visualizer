@@ -56,13 +56,15 @@ function correlateVariants(
   const rangeB = dateRange(sessionsB);
   if (!rangeA || !rangeB) return NaN;
 
-  const overlapStart = rangeA.first > rangeB.first ? rangeA.first : rangeB.first;
-  const overlapEnd = rangeA.last < rangeB.last ? rangeA.last : rangeB.last;
-  if (overlapStart > overlapEnd) return NaN;
+  // Use the union of both training windows so predictE1RM can estimate e1RM
+  // for dates where only one variant has sessions (linear extrapolation from
+  // its nearest endpoint).
+  const unionStart = rangeA.first < rangeB.first ? rangeA.first : rangeB.first;
+  const unionEnd = rangeA.last > rangeB.last ? rangeA.last : rangeB.last;
 
   const xs: number[] = [];
   const ys: number[] = [];
-  for (const date of buildWeeklyGrid(overlapStart, overlapEnd)) {
+  for (const date of buildWeeklyGrid(unionStart, unionEnd)) {
     const a = predictE1RM(sessionsA, date);
     const b = predictE1RM(sessionsB, date);
     if (a !== null && b !== null) {
