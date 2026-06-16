@@ -39,6 +39,7 @@ export const BIOMECHANICAL_BASELINES: Record<
     bottom_range: { min: 85, max: 90 },
     lockout: { min: 90, max: 95 },
     quad_dominant: { min: 88, max: 97 },
+    posterior_chain: { min: 85, max: 95 },
   },
 };
 
@@ -133,7 +134,9 @@ export function toMovementCategory(
   options?: DiagnosticsOptions
 ): MovementCategory {
   if (ex.type === "accessory") return "unclassified";
-  if (ex.stance === "competition") return "anchor";
+  // Variation-specific checks run before the competition-stance anchor check so that exercises
+  // with a default "competition" stance (the parser fallback) are still classified by their
+  // equipment or other modifiers rather than being swept into anchorSessions.
   if ((ex.equipment !== null && LOCKOUT_EQUIPMENT.has(ex.equipment)) || ex.stance === "close")
     return "lockout";
   if (ex.equipment !== null && BOTTOM_RANGE_EQUIPMENT.has(ex.equipment)) return "bottom_range";
@@ -148,20 +151,22 @@ export function toMovementCategory(
   if (ex.stance === "narrow") return "lockout";
   if (ex.type === "bench" && (ex.equipment === "incline" || ex.equipment === "decline"))
     return "lockout";
+  if (ex.stance === "competition") return "anchor";
   if (
     ex.type === "deadlift" &&
-    (ex.stance === "sumo" || ex.stance === "conventional" || ex.stance === "opposite")
+    (ex.stance === null ||
+      ex.stance === "sumo" ||
+      ex.stance === "conventional" ||
+      ex.stance === "opposite")
   ) {
     const primary = options?.deadliftStance ?? "conventional";
-    // sumo stance and "opposite" are the non-conventional side of the deadlift.
-    // With conventional primary: non-conventional → posterior_chain, conventional → quad_dominant.
-    // Toggling to sumo primary swaps all three labels.
-    const isNonConventionalStance = ex.stance === "sumo" || ex.stance === "opposite";
-    if (primary === "conventional") {
-      return isNonConventionalStance ? "posterior_chain" : "quad_dominant";
-    } else {
-      return isNonConventionalStance ? "quad_dominant" : "posterior_chain";
-    }
+    const nonPrimary = primary === "conventional" ? "sumo" : "conventional";
+    // Resolve to the actual stance: "opposite" = the non-primary stance; null = the primary stance.
+    const actualStance: "sumo" | "conventional" =
+      ex.stance === "opposite" ? nonPrimary : ex.stance === null ? primary : ex.stance;
+    // sumo = posterior chain (hip abductor/glute dominant)
+    // conventional = quad dominant (leg drive, more knee extension at the start)
+    return actualStance === "sumo" ? "posterior_chain" : "quad_dominant";
   }
   return "unclassified";
 }
