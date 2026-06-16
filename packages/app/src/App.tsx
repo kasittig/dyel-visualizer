@@ -53,6 +53,24 @@ function defaultBaselineName(rows: ConjugateDataPair[]): string | null {
   return bestName ?? first;
 }
 
+function defaultTargetName(rows: ConjugateDataPair[]): string | null {
+  let first: string | null = null;
+  const seen = new Set<string>();
+  for (const [ex] of rows) {
+    if (seen.has(ex.displayName)) continue;
+    seen.add(ex.displayName);
+    if (first === null) first = ex.displayName;
+    if (
+      ex.bar === "standard" &&
+      ex.stance === "competition" &&
+      ex.equipment === null &&
+      ex.addlWts.length === 0
+    )
+      return ex.displayName;
+  }
+  return first;
+}
+
 type SheetRef = { id: string; published: boolean };
 type LiftTab = "squat" | "bench" | "deadlift" | "accessory";
 type PageTab = LiftTab | "calculator" | "sigma";
@@ -189,6 +207,15 @@ function App() {
     }
     return result;
   }, [tabRows, baselineNames]);
+
+  const effectiveTargetNames = useMemo(() => {
+    const result: Partial<Record<LiftTab, string>> = {};
+    for (const tab of LIFT_TABS) {
+      const name = targetNames[tab] ?? defaultTargetName(tabRows[tab]);
+      if (name) result[tab] = name;
+    }
+    return result;
+  }, [tabRows, targetNames]);
 
   const stats = useLastSessionStats(pairs, effectiveBaselineNames);
 
@@ -336,7 +363,7 @@ function App() {
                 <TotalChart
                   pairs={sigmaPairs}
                   baselineNames={effectiveBaselineNames}
-                  targetNames={targetNames}
+                  targetNames={effectiveTargetNames}
                   stats={sigmaStats}
                 />
               </>
@@ -360,7 +387,7 @@ function App() {
                   filteredRows={filteredRows}
                   effectiveBaselineNames={effectiveBaselineNames}
                   chartStats={chartStats}
-                  targetName={targetNames[activeTab as LiftTab] ?? null}
+                  targetName={effectiveTargetNames[activeTab as LiftTab] ?? null}
                   onTargetChange={(name) =>
                     setTargetNames((prev) => ({ ...prev, [activeTab]: name }))
                   }
