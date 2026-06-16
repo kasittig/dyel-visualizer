@@ -1,5 +1,4 @@
 import { useState } from "react";
-import type { DeadliftStancePreference } from "@dyel/core";
 import type { ConjugateDataPair } from "../hooks/useConjugateData";
 import type { SessionStats } from "../hooks/useLastSessionStats";
 import { ConjugateCharts } from "./ConjugateCharts";
@@ -13,14 +12,12 @@ export function LiftTabPanel({
   chartStats,
   targetName,
   onTargetChange,
-  deadliftStance,
 }: {
   filteredRows: ConjugateDataPair[];
   effectiveBaselineNames: Partial<Record<LiftType, string>>;
   chartStats: SessionStats;
   targetName: string | null;
   onTargetChange: (name: string | null) => void;
-  deadliftStance?: DeadliftStancePreference;
 }) {
   const [selectedVariation, setSelectedVariation] = useState<string | null>(null);
 
@@ -44,7 +41,7 @@ export function LiftTabPanel({
         stats={chartStats}
         onVariationClick={handleVariationClick}
       />
-      <DiagnosticsPanel rows={filteredRows} deadliftStance={deadliftStance} />
+      <DiagnosticsPanel rows={filteredRows} />
     </>
   );
 }

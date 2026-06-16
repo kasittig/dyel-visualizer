@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { generateDiagnostics } from "@dyel/core";
 import type { DeadliftStancePreference } from "@dyel/core";
 import type { ConjugateDataPair } from "../hooks/useConjugateData";
@@ -14,13 +14,11 @@ const monoStyle: React.CSSProperties = {
   textAlign: "right",
 };
 
-export function DiagnosticsPanel({
-  rows,
-  deadliftStance,
-}: {
-  rows: ConjugateDataPair[];
-  deadliftStance?: DeadliftStancePreference;
-}) {
+export function DiagnosticsPanel({ rows }: { rows: ConjugateDataPair[] }) {
+  const [deadliftStance, setDeadliftStance] = useState<DeadliftStancePreference | undefined>(
+    undefined
+  );
+
   const hasDeadlift = rows.some(([ex]) => ex.type === "deadlift");
 
   const results = useMemo(
@@ -34,6 +32,23 @@ export function DiagnosticsPanel({
   return (
     <div style={{ marginTop: "1.5rem" }}>
       <h2>Weakness Diagnostics</h2>
+      {hasDeadlift && (
+        <div style={{ marginBottom: "0.75rem", fontSize: "0.8rem", color: "var(--text)" }}>
+          <span>Primary pull: </span>
+          {(["conventional", "sumo"] as const).map((s) => (
+            <label key={s} style={{ marginRight: "1rem", cursor: "pointer" }}>
+              <input
+                type="radio"
+                name="deadlift-stance"
+                checked={(deadliftStance ?? "conventional") === s}
+                onChange={() => setDeadliftStance(s)}
+                style={{ marginRight: "0.3rem" }}
+              />
+              {s[0].toUpperCase() + s.slice(1)}
+            </label>
+          ))}
+        </div>
+      )}
       {results.length > 0 && (
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.9rem" }}>
           <thead>
