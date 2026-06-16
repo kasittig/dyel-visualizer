@@ -8,6 +8,7 @@ import { BaselineSelect } from "./components/BaselineSelect";
 import { RepCalculator } from "./components/RepCalculator";
 import { TotalChart } from "./components/TotalChart";
 import { VariationRadarChart } from "./components/VariationRadarChart";
+import { SigmaRadarChart } from "./components/SigmaRadarChart";
 import { applyFilters, emptyFilters } from "@dyel/core";
 import type { ConjugateDataPair } from "./hooks/useConjugateData";
 import type { FilterState } from "@dyel/core";
@@ -361,6 +362,12 @@ function App() {
               <>
                 <VolumeWorkToggle checked={excludeVolumeWork} onChange={toggleVolumeWork} />
                 <TotalChart
+                  pairs={sigmaPairs}
+                  baselineNames={effectiveBaselineNames}
+                  targetNames={effectiveTargetNames}
+                  stats={sigmaStats}
+                />
+                <SigmaRadarChart
                   pairs={sigmaPairs}
                   baselineNames={effectiveBaselineNames}
                   targetNames={effectiveTargetNames}
