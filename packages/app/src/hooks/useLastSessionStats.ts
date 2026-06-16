@@ -22,7 +22,7 @@ export function useLastSessionStats(
     }
     const lastPerformed = new Map<string, Date>();
     const lastSessionE1RM = new Map<string, number>();
-    const lastSessionBestSet = new Map<string, { weight: number; reps: number }>();
+    const lastSessionBestSet = new Map<string, { weight: number; reps: number; sets: number }>();
 
     // Pass 1: find the most-recent date for each key.
     // This must complete before pass 2 so we know which rows belong to the "last session."
@@ -42,7 +42,11 @@ export function useLastSessionStats(
       const prev = lastSessionE1RM.get(key);
       if (prev === undefined || session.e1rm > prev) {
         lastSessionE1RM.set(key, session.e1rm);
-        lastSessionBestSet.set(key, { weight: session.weight, reps: Math.round(session.reps) });
+        lastSessionBestSet.set(key, {
+          weight: session.weight,
+          reps: Math.round(session.reps),
+          sets: session.sets,
+        });
       }
     }
 

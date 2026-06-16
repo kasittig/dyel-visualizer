@@ -35,17 +35,31 @@ export function ConjugateCharts({
 
   const { addlWtOffset, variantFactor } = stats;
 
-  // label → date → best e1RM — recomputed only when rows changes
-  const { variations, e1rmByLabelAndDate, allDates } = useMemo(() => {
+  // label → date → best e1RM (and corresponding sets/reps/weight) — recomputed only when rows changes
+  const { variations, e1rmByLabelAndDate, bestSetByLabelAndDate, allDates } = useMemo(() => {
     const e1rmByLabelAndDate = new Map<string, Map<string, number>>();
+    const bestSetByLabelAndDate = new Map<
+      string,
+      Map<string, { sets: number; reps: number; weight: number }>
+    >();
 
     for (const [exercise, session] of rows) {
       const label = exercise.displayName;
       const date = session.date.toISOString().slice(0, 10);
-      if (!e1rmByLabelAndDate.has(label)) e1rmByLabelAndDate.set(label, new Map());
+      if (!e1rmByLabelAndDate.has(label)) {
+        e1rmByLabelAndDate.set(label, new Map());
+        bestSetByLabelAndDate.set(label, new Map());
+      }
       const byDate = e1rmByLabelAndDate.get(label)!;
       const prev = byDate.get(date);
-      if (prev === undefined || session.e1rm > prev) byDate.set(date, session.e1rm);
+      if (prev === undefined || session.e1rm > prev) {
+        byDate.set(date, session.e1rm);
+        bestSetByLabelAndDate.get(label)!.set(date, {
+          sets: session.sets,
+          reps: session.reps,
+          weight: session.weight,
+        });
+      }
     }
 
     const variations = [...e1rmByLabelAndDate.keys()].sort();
@@ -54,7 +68,7 @@ export function ConjugateCharts({
       ...new Set([...e1rmByLabelAndDate.values()].flatMap((m) => [...m.keys()])),
     ].sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
 
-    return { variations, e1rmByLabelAndDate, allDates };
+    return { variations, e1rmByLabelAndDate, bestSetByLabelAndDate, allDates };
   }, [rows]);
 
   const exerciseType = rows[0]?.[0].type;
@@ -229,7 +243,46 @@ export function ConjugateCharts({
               tick={{ fontSize: 11 }}
             />
             <YAxis tick={{ fontSize: 11 }} width={45} unit={` ${unit}`} />
-            <Tooltip formatter={(v, name) => [`${v} ${unit}`, String(name)]} />
+            <Tooltip
+              content={({ active, payload, label }) => {
+                if (!active || !payload?.length) return null;
+                const isoDate = (payload[0].payload as { date: string }).date;
+                return (
+                  <div
+                    style={{
+                      background: "var(--bg, #fff)",
+                      border: "1px solid var(--border, #ccc)",
+                      borderRadius: 4,
+                      padding: "6px 10px",
+                      fontSize: "0.8rem",
+                      lineHeight: 1.5,
+                    }}
+                  >
+                    <div style={{ fontWeight: 600, marginBottom: "0.2rem" }}>{label}</div>
+                    {payload.map((item) => {
+                      const name = String(item.name);
+                      const bestSet =
+                        name !== NORMALIZED_KEY
+                          ? bestSetByLabelAndDate.get(name)?.get(isoDate)
+                          : undefined;
+                      return (
+                        <div key={name} style={{ marginTop: "0.2rem" }}>
+                          <div style={{ color: item.color }}>{name}</div>
+                          <div>
+                            e1RM: {item.value} {unit}
+                          </div>
+                          {bestSet && (
+                            <div style={{ opacity: 0.7 }}>
+                              {bestSet.sets}×{bestSet.reps} @ {bestSet.weight} {unit}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              }}
+            />
             {showNormalized && (
               <Line
                 key={NORMALIZED_KEY}
