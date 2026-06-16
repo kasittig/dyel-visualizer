@@ -105,6 +105,12 @@ function LiftTabPanel({
   targetName: string | null;
   onTargetChange: (name: string | null) => void;
 }) {
+  const [selectedVariation, setSelectedVariation] = useState<string | null>(null);
+
+  function handleVariationClick(variation: string) {
+    setSelectedVariation((v) => (v === variation ? null : variation));
+  }
+
   return (
     <>
       <ConjugateCharts
@@ -113,8 +119,14 @@ function LiftTabPanel({
         stats={chartStats}
         targetName={targetName}
         onTargetChange={onTargetChange}
+        highlightedVariation={selectedVariation}
+        onVariationClick={handleVariationClick}
       />
-      <VariationRadarChart rows={filteredRows} stats={chartStats} />
+      <VariationRadarChart
+        rows={filteredRows}
+        stats={chartStats}
+        onVariationClick={handleVariationClick}
+      />
     </>
   );
 }
