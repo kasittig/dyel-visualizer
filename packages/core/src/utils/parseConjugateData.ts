@@ -115,25 +115,17 @@ export function nameToExercise(name: string): ConjugateExercise | null {
   const isDumbbell = lower.includes("dumbbell") || tokens.has("db");
   const type = isDumbbell ? "accessory" : (parseLiftType(base, tokens) ?? "accessory");
 
-  const fields =
+  const core =
     type === "accessory"
-      ? {
-          type,
-          bar: null,
-          stance: null,
-          addlWts: [] as ConjugateAddlWt[],
-          equipment: null,
-          displayName,
-        }
+      ? { type, bar: null, stance: null, addlWts: [] as ConjugateAddlWt[], equipment: null }
       : {
           type,
           bar: parseBar(lower, tokens) ?? "standard",
           stance: parseStance(lower, tokens) ?? "competition",
           addlWts,
           equipment: parseEquipment(lower, tokens),
-          displayName,
         };
-  return { ...fields, movementCategory: toMovementCategory(fields) };
+  return { ...core, displayName, movementCategory: toMovementCategory(core) };
 }
 
 type RawSession = Omit<TrainingSession, "unit"> & { unit: "lbs" | "kg" | null };
