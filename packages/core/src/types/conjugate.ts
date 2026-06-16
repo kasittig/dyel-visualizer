@@ -78,6 +78,8 @@ export type MovementCategory =
   | "posterior_chain"
   | "unclassified";
 
+export type DeadliftStancePreference = "sumo" | "conventional";
+
 export interface DiagnosticResult {
   primaryLift: PrimaryLift;
   name: string;

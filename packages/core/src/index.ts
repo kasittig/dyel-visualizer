@@ -7,6 +7,7 @@ export type {
   ConjugateExercise,
   ConjugateDataPair,
   MovementCategory,
+  DeadliftStancePreference,
   DiagnosticResult,
   PrimaryLift,
 } from "./types/conjugate";
@@ -31,6 +32,7 @@ export { setsRepsLabel } from "./utils/setsRepsLabel";
 
 export { LINE_COLORS, formatDate } from "./utils/chartUtils";
 
+export type { DiagnosticsOptions } from "./utils/diagnostics";
 export {
   BIOMECHANICAL_BASELINES,
   ACCOMMODATING_RESISTANCE_BASELINES,
