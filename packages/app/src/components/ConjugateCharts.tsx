@@ -18,14 +18,12 @@ const NORMALIZED_LABEL = "Normalized e1RM";
 
 export function ConjugateCharts({
   rows,
-  shown,
   baselineNames = {},
   stats,
   targetName,
   onTargetChange,
 }: {
   rows: ConjugateDataPair[];
-  shown: Set<string>;
   baselineNames?: Partial<Record<string, string>>;
   stats: RepCalcStats;
   targetName: string | null;
@@ -113,13 +111,9 @@ export function ConjugateCharts({
     });
   }, [allDates, variations, e1rmByLabelAndDate, normalizedByDate]);
 
-  // Shared by both the legend and <Line> elements — recomputed only when variations or shown changes
   const visibleVariations = useMemo(
-    () =>
-      variations
-        .map((label, i) => ({ label, i }))
-        .filter(({ label }) => shown.size === 0 || shown.has(label)),
-    [variations, shown]
+    () => variations.map((label, i) => ({ label, i })),
+    [variations]
   );
 
   const showNormalized = normalizedByDate.size > 0;

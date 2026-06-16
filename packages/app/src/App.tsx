@@ -3,7 +3,6 @@ import type { SessionStats } from "./hooks/useLastSessionStats";
 import { useConjugateData } from "./hooks/useConjugateData";
 import { useLastSessionStats } from "./hooks/useLastSessionStats";
 import { ConjugateCharts } from "./components/ConjugateCharts";
-import { ExerciseList } from "./components/ExerciseList";
 import { ExerciseFilters } from "./components/ExerciseFilters";
 import { BaselineSelect } from "./components/BaselineSelect";
 import { RepCalculator } from "./components/RepCalculator";
@@ -42,47 +41,15 @@ type SheetRef = { id: string; published: boolean };
 type LiftTab = "squat" | "bench" | "deadlift" | "accessory";
 type PageTab = LiftTab | "calculator" | "sigma";
 
-type TabConfig = {
-  id: LiftTab;
-  label: string;
-  heading: string;
-  columnHeader: string;
-  showSearch: boolean;
-};
-
 const LIFT_TABS: LiftTab[] = ["squat", "bench", "deadlift", "accessory"];
 
-const MAIN_TABS: TabConfig[] = [
-  {
-    id: "squat",
-    label: "Squat",
-    heading: "Variations",
-    columnHeader: "Variation",
-    showSearch: false,
-  },
-  {
-    id: "bench",
-    label: "Bench",
-    heading: "Variations",
-    columnHeader: "Variation",
-    showSearch: false,
-  },
-  {
-    id: "deadlift",
-    label: "Deadlift",
-    heading: "Variations",
-    columnHeader: "Variation",
-    showSearch: false,
-  },
+const MAIN_TABS = [
+  { id: "squat" as LiftTab, label: "Squat" },
+  { id: "bench" as LiftTab, label: "Bench" },
+  { id: "deadlift" as LiftTab, label: "Deadlift" },
 ];
 
-const ACCESSORY_TAB: TabConfig = {
-  id: "accessory",
-  label: "Accessories",
-  heading: "Accessories",
-  columnHeader: "Exercise",
-  showSearch: true,
-};
+const ACCESSORY_TAB = { id: "accessory" as LiftTab, label: "Accessories" };
 
 function extractSheetRef(input: string): SheetRef | null {
   // Published web URL: .../d/e/PUBLISHED_ID/pubhtml (may have /u/N/ before /d/)
@@ -94,13 +61,6 @@ function extractSheetRef(input: string): SheetRef | null {
   // Bare ID
   if (/^[a-zA-Z0-9_-]{20,}$/.test(input.trim())) return { id: input.trim(), published: false };
   return null;
-}
-
-function initialVariations(): Record<LiftTab, Set<string>> {
-  return Object.fromEntries(LIFT_TABS.map((t) => [t, new Set<string>()])) as Record<
-    LiftTab,
-    Set<string>
-  >;
 }
 
 function initialFilters(): Record<LiftTab, FilterState> {
@@ -133,63 +93,28 @@ function VolumeWorkToggle({ checked, onChange }: { checked: boolean; onChange: (
 }
 
 function LiftTabPanel({
-  activeTab,
   filteredRows,
-  activeRows,
   effectiveBaselineNames,
   chartStats,
-  stats,
-  activeTabConfig,
   targetName,
   onTargetChange,
 }: {
-  activeTab: LiftTab;
   filteredRows: ConjugateDataPair[];
-  activeRows: ConjugateDataPair[];
   effectiveBaselineNames: Partial<Record<LiftTab, string>>;
   chartStats: SessionStats;
-  stats: SessionStats;
-  activeTabConfig: TabConfig;
   targetName: string | null;
   onTargetChange: (name: string | null) => void;
 }) {
-  const [shownVariations, setShownVariations] =
-    useState<Record<LiftTab, Set<string>>>(initialVariations);
-
-  const shown = shownVariations[activeTab];
-
-  function toggleVariation(label: string) {
-    setShownVariations((prev) => {
-      const current = prev[activeTab];
-      if (current.size === 0) {
-        const all = new Set(activeRows.map(([ex]) => ex.displayName));
-        all.delete(label);
-        return { ...prev, [activeTab]: all };
-      }
-      return { ...prev, [activeTab]: toggleInSet(current, label) };
-    });
-  }
-
   return (
     <>
       <ConjugateCharts
         rows={filteredRows}
-        shown={shown}
         baselineNames={effectiveBaselineNames}
         stats={chartStats}
         targetName={targetName}
         onTargetChange={onTargetChange}
       />
       <VariationRadarChart rows={filteredRows} stats={chartStats} />
-      <ExerciseList
-        rows={activeRows}
-        shown={shown}
-        onToggle={toggleVariation}
-        stats={stats}
-        heading={activeTabConfig.heading}
-        columnHeader={activeTabConfig.columnHeader}
-        showSearch={activeTabConfig.showSearch}
-      />
     </>
   );
 }
@@ -240,7 +165,6 @@ function App() {
   const stats = useLastSessionStats(pairs, effectiveBaselineNames);
 
   const tabs = [...MAIN_TABS, ...(tabRows.accessory.length > 0 ? [ACCESSORY_TAB] : [])];
-  const activeTabConfig = tabs.find((t) => t.id === activeTab) ?? MAIN_TABS[0];
 
   const activeRows = useMemo(
     () => (activeTab === "calculator" || activeTab === "sigma" ? [] : tabRows[activeTab]),
@@ -393,13 +317,9 @@ function App() {
                 />
                 <LiftTabPanel
                   key={shownResetToken}
-                  activeTab={activeTab as LiftTab}
                   filteredRows={filteredRows}
-                  activeRows={activeRows}
                   effectiveBaselineNames={effectiveBaselineNames}
                   chartStats={chartStats}
-                  stats={stats}
-                  activeTabConfig={activeTabConfig}
                   targetName={targetNames[activeTab as LiftTab] ?? null}
                   onTargetChange={(name) =>
                     setTargetNames((prev) => ({ ...prev, [activeTab]: name }))
