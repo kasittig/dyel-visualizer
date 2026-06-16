@@ -8,6 +8,7 @@ import { ExerciseFilters } from "./components/ExerciseFilters";
 import { BaselineSelect } from "./components/BaselineSelect";
 import { RepCalculator } from "./components/RepCalculator";
 import { TotalChart } from "./components/TotalChart";
+import { VariationRadarChart } from "./components/VariationRadarChart";
 import { applyFilters, emptyFilters } from "@dyel/core";
 import type { ConjugateDataPair } from "./hooks/useConjugateData";
 import type { FilterState } from "@dyel/core";
@@ -179,6 +180,7 @@ function LiftTabPanel({
         targetName={targetName}
         onTargetChange={onTargetChange}
       />
+      {activeTab !== "accessory" && <VariationRadarChart rows={activeRows} stats={stats} />}
       <ExerciseList
         rows={activeRows}
         shown={shown}
