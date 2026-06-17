@@ -10,7 +10,6 @@ export type SessionStats = RepCalcStats & {
   projectedE1RM: Map<string, number>;
 };
 
-type LastData = { date: Date; e1rm: number; weight: number; reps: number; sets: number };
 type ExData = {
   sessions: TrainingSession[];
   label: string;
@@ -24,7 +23,9 @@ export function buildSessionStats(
   baselineNames: Partial<Record<string, string>>,
   today: Date
 ): SessionStats {
-  const lastByName = new Map<string, LastData>();
+  const lastPerformed = new Map<string, Date>();
+  const lastSessionE1RM = new Map<string, number>();
+  const lastSessionBestSet = new Map<string, { weight: number; reps: number; sets: number }>();
   const dataByName = new Map<string, ExData>();
   const straightByFamily = new Map<string, TrainingSession[]>();
 
@@ -32,17 +33,18 @@ export function buildSessionStats(
     const name = exercise.displayName;
     const fk = familyKey(exercise);
 
-    const last = lastByName.get(name);
+    const prevDate = lastPerformed.get(name);
     if (
-      !last ||
-      session.date > last.date ||
-      (session.date.getTime() === last.date.getTime() && session.e1rm > last.e1rm)
+      !prevDate ||
+      session.date > prevDate ||
+      (session.date.getTime() === prevDate.getTime() &&
+        session.e1rm > (lastSessionE1RM.get(name) ?? -Infinity))
     ) {
-      lastByName.set(name, {
-        date: session.date,
-        e1rm: session.e1rm,
+      lastPerformed.set(name, session.date);
+      lastSessionE1RM.set(name, session.e1rm);
+      lastSessionBestSet.set(name, {
         weight: session.weight,
-        reps: session.reps,
+        reps: Math.round(session.reps),
         sets: session.sets,
       });
     }
@@ -68,9 +70,15 @@ export function buildSessionStats(
   }
 
   const addlWtOffset = new Map<string, { offset: number; sampleCount: number }>();
+  const projectedE1RM = new Map<string, number>();
   for (const [name, data] of dataByName) {
-    if (!data.isAddlWt) continue;
-    addlWtOffset.set(name, fitAddlWtOffset(straightByFamily.get(data.family) ?? [], data.sessions));
+    if (data.isAddlWt)
+      addlWtOffset.set(
+        name,
+        fitAddlWtOffset(straightByFamily.get(data.family) ?? [], data.sessions)
+      );
+    const projected = predictE1RM(data.sessions, today);
+    if (projected !== null) projectedE1RM.set(name, projected);
   }
 
   const variantFactor = new Map<
@@ -95,25 +103,6 @@ export function buildSessionStats(
       sampleCount,
       label: data.label,
       baselineName: baselineName ?? "baseline",
-    });
-  }
-
-  const projectedE1RM = new Map<string, number>();
-  for (const [name, data] of dataByName) {
-    const projected = predictE1RM(data.sessions, today);
-    if (projected !== null) projectedE1RM.set(name, projected);
-  }
-
-  const lastPerformed = new Map<string, Date>();
-  const lastSessionE1RM = new Map<string, number>();
-  const lastSessionBestSet = new Map<string, { weight: number; reps: number; sets: number }>();
-  for (const [name, last] of lastByName) {
-    lastPerformed.set(name, last.date);
-    lastSessionE1RM.set(name, last.e1rm);
-    lastSessionBestSet.set(name, {
-      weight: last.weight,
-      reps: Math.round(last.reps),
-      sets: last.sets,
     });
   }
 
