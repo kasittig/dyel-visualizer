@@ -35,18 +35,23 @@ export function defaultBaselineName(rows: ConjugateDataPair[]): string | null {
 
 export function defaultTargetName(rows: ConjugateDataPair[]): string | null {
   let first: string | null = null;
+  let competition: string | null = null;
+  let commandsBench: string | null = null;
   const seen = new Set<string>();
+
   for (const [ex] of rows) {
     if (seen.has(ex.displayName)) continue;
     seen.add(ex.displayName);
     if (first === null) first = ex.displayName;
-    if (
-      ex.bar === "standard" &&
-      ex.stance === "competition" &&
-      ex.equipment === null &&
-      ex.addlWts.length === 0
-    )
-      return ex.displayName;
+
+    if (ex.bar === "standard" && ex.stance === "competition" && ex.addlWts.length === 0) {
+      if (ex.type === "bench" && ex.equipment === "pause" && commandsBench === null) {
+        commandsBench = ex.displayName;
+      } else if (ex.equipment === null && competition === null) {
+        competition = ex.displayName;
+      }
+    }
   }
-  return first;
+
+  return commandsBench ?? competition ?? first;
 }
