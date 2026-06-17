@@ -112,7 +112,8 @@ export interface DiagnosticResult {
   category: MovementCategory;
   averageIndex: number;
   expectedBaseline: string;
-  diagnostic: string;
+  status: "optimal" | "weakness" | "overtrained";
+  diagnostic: string; // description only, no status prefix
   effects: EffectEnum[];
 }
 

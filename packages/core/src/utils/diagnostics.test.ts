@@ -328,7 +328,8 @@ describe("generateDiagnostics", () => {
     expect(r.name).toBe("board press");
     expect(r.category).toBe("lockout");
     expect(r.expectedBaseline).toBe("105–115%");
-    expect(r.diagnostic).toMatch(/^(Optimal|Weakness|Overtrained): board press at \d+%$/);
+    expect(["optimal", "weakness", "overtrained"]).toContain(r.status);
+    expect(r.diagnostic).toMatch(/^board press at \d+%$/);
   });
 
   it("board press result includes LOCKOUT and REDUCED_ROM effects", () => {
@@ -355,7 +356,7 @@ describe("generateDiagnostics", () => {
     ];
     const results = generateDiagnostics(pairs);
     expect(results).toHaveLength(1);
-    expect(results[0].diagnostic).toMatch(/^Weakness:/);
+    expect(results[0].status).toBe("weakness");
   });
 
   it("emits an Optimal result when factor meets the baseline floor (exact boundary)", () => {
@@ -368,7 +369,7 @@ describe("generateDiagnostics", () => {
       ),
     ];
     const results = generateDiagnostics(pairs);
-    expect(results[0].diagnostic).toMatch(/^Optimal:/);
+    expect(results[0].status).toBe("optimal");
   });
 
   it("floor press baseline is 85–95% (from CSV)", () => {
@@ -486,7 +487,7 @@ describe("generateDiagnostics", () => {
       ),
     ];
     const results = generateDiagnostics(pairs);
-    expect(results[0].diagnostic).toMatch(/^Overtrained:/);
+    expect(results[0].status).toBe("overtrained");
   });
 
   it("SSB + pause squat combines bar:ssb + equipment:pause multiplicatively (77–90%)", () => {
