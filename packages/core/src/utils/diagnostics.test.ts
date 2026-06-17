@@ -1,10 +1,5 @@
-import { describe, it, expect, afterEach } from "vitest";
-import {
-  toMovementCategory,
-  BIOMECHANICAL_BASELINES,
-  ACCOMMODATING_RESISTANCE_BASELINES,
-  generateDiagnostics,
-} from "./diagnostics";
+import { describe, it, expect } from "vitest";
+import { toMovementCategory, MODIFIER_EFFECTS, generateDiagnostics } from "./diagnostics";
 import { calcE1RM } from "./e1rm";
 import type { ConjugateDataPair, ConjugateExercise, TrainingSession } from "../types/conjugate";
 
@@ -213,52 +208,62 @@ describe("toMovementCategory", () => {
   });
 });
 
-describe("BIOMECHANICAL_BASELINES", () => {
-  it("has entries for all three primary lifts", () => {
-    expect(BIOMECHANICAL_BASELINES).toHaveProperty("bench");
-    expect(BIOMECHANICAL_BASELINES).toHaveProperty("squat");
-    expect(BIOMECHANICAL_BASELINES).toHaveProperty("deadlift");
+describe("MODIFIER_EFFECTS", () => {
+  it("equipment:board:bench has min 105, max 115", () => {
+    const e = MODIFIER_EFFECTS["equipment:board:bench"];
+    expect(e).toBeDefined();
+    expect("min" in e).toBe(true);
+    if ("min" in e) {
+      expect(e.min).toBe(105);
+      expect(e.max).toBe(115);
+    }
   });
 
-  it("bench lockout non-floor baseline is 90–95%", () => {
-    const entry = BIOMECHANICAL_BASELINES.bench.lockout!;
-    expect(entry.min).toBe(90);
-    expect(entry.max).toBe(95);
+  it("equipment:floor:bench has min 85, max 95", () => {
+    const e = MODIFIER_EFFECTS["equipment:floor:bench"];
+    expect(e).toBeDefined();
+    expect("min" in e).toBe(true);
+    if ("min" in e) {
+      expect(e.min).toBe(85);
+      expect(e.max).toBe(95);
+    }
   });
 
-  it("bench lockout floor press override is 85–90%", () => {
-    const override = BIOMECHANICAL_BASELINES.bench.lockout!.equipmentOverrides!.floor!;
-    expect(override.min).toBe(85);
-    expect(override.max).toBe(90);
+  it("equipment:rack:deadlift has min 110, max 130", () => {
+    const e = MODIFIER_EFFECTS["equipment:rack:deadlift"];
+    expect(e).toBeDefined();
+    expect("min" in e).toBe(true);
+    if ("min" in e) {
+      expect(e.min).toBe(110);
+      expect(e.max).toBe(130);
+    }
   });
 
-  it("squat quad_dominant baseline is 80–85%", () => {
-    const entry = BIOMECHANICAL_BASELINES.squat.quad_dominant!;
-    expect(entry.min).toBe(80);
-    expect(entry.max).toBe(85);
+  it("stance:romanian:deadlift has min 60, max 75", () => {
+    const e = MODIFIER_EFFECTS["stance:romanian:deadlift"];
+    expect(e).toBeDefined();
+    expect("min" in e).toBe(true);
+    if ("min" in e) {
+      expect(e.min).toBe(60);
+      expect(e.max).toBe(75);
+    }
   });
 
-  it("deadlift bottom_range baseline is 85–90%", () => {
-    const entry = BIOMECHANICAL_BASELINES.deadlift.bottom_range!;
-    expect(entry.min).toBe(85);
-    expect(entry.max).toBe(90);
+  it("addl_wt:chains:squat has no min/max", () => {
+    const e = MODIFIER_EFFECTS["addl_wt:chains:squat"];
+    expect(e).toBeDefined();
+    expect("min" in e).toBe(false);
   });
 
-  it("deadlift quad_dominant baseline is 88–97%", () => {
-    const entry = BIOMECHANICAL_BASELINES.deadlift.quad_dominant!;
-    expect(entry.min).toBe(88);
-    expect(entry.max).toBe(97);
+  it("equipment:board:bench effects contain LOCKOUT and REDUCED_ROM", () => {
+    const e = MODIFIER_EFFECTS["equipment:board:bench"];
+    expect(e.effects).toContain("LOCKOUT");
+    expect(e.effects).toContain("REDUCED_ROM");
   });
 
-  it("deadlift posterior_chain baseline is 85–95%", () => {
-    const entry = BIOMECHANICAL_BASELINES.deadlift.posterior_chain!;
-    expect(entry.min).toBe(85);
-    expect(entry.max).toBe(95);
-  });
-
-  it("categories not in the table are absent", () => {
-    expect(BIOMECHANICAL_BASELINES.bench.quad_dominant).toBeUndefined();
-    expect(BIOMECHANICAL_BASELINES.squat.lockout).toBeUndefined();
+  it("stance:ssb:squat does not exist (key is bar:ssb:squat)", () => {
+    expect(MODIFIER_EFFECTS["stance:ssb:squat"]).toBeUndefined();
+    expect(MODIFIER_EFFECTS["bar:ssb:squat"]).toBeDefined();
   });
 });
 
@@ -281,14 +286,7 @@ function pair(overrides: Partial<ConjugateExercise>, s: TrainingSession): Conjug
 }
 
 describe("generateDiagnostics", () => {
-  afterEach(() => {
-    // Clean up any entries added to ACCOMMODATING_RESISTANCE_BASELINES during tests
-    for (const key of Object.keys(ACCOMMODATING_RESISTANCE_BASELINES)) {
-      delete ACCOMMODATING_RESISTANCE_BASELINES[key];
-    }
-  });
-
-  it("emits an Optimal result when factor meets the baseline floor", () => {
+  it("emits a result when factor meets the baseline floor", () => {
     const pairs: ConjugateDataPair[] = [
       pair({ movementCategory: "anchor", displayName: "bench press" }, session("2024-01-01", 300)),
       pair({ movementCategory: "anchor", displayName: "bench press" }, session("2024-01-08", 305)),
@@ -303,14 +301,27 @@ describe("generateDiagnostics", () => {
     expect(r.primaryLift).toBe("bench");
     expect(r.name).toBe("board press");
     expect(r.category).toBe("lockout");
-    expect(r.expectedBaseline).toBe("90–95%");
+    expect(r.expectedBaseline).toBe("105–115%");
     expect(r.diagnostic).toMatch(/^(Optimal|Weakness): board press at \d+%$/);
+  });
+
+  it("board press result includes LOCKOUT and REDUCED_ROM effects", () => {
+    const pairs: ConjugateDataPair[] = [
+      pair({ movementCategory: "anchor", displayName: "bench press" }, session("2024-01-01", 300)),
+      pair(
+        { movementCategory: "lockout", displayName: "board press", equipment: "board" },
+        session("2024-01-01", 280)
+      ),
+    ];
+    const results = generateDiagnostics(pairs);
+    expect(results[0].effects).toContain("LOCKOUT");
+    expect(results[0].effects).toContain("REDUCED_ROM");
   });
 
   it("emits a Weakness result when factor falls below the baseline floor", () => {
     const pairs: ConjugateDataPair[] = [
       pair({ movementCategory: "anchor", displayName: "bench press" }, session("2024-01-01", 300)),
-      // board press at only 80% of anchor → below 90% floor
+      // board press at only 80% of anchor → below 105% floor
       pair(
         { movementCategory: "lockout", displayName: "board press", equipment: "board" },
         session("2024-01-01", 240)
@@ -324,17 +335,17 @@ describe("generateDiagnostics", () => {
   it("emits an Optimal result when factor meets the baseline floor (exact boundary)", () => {
     const pairs: ConjugateDataPair[] = [
       pair({ movementCategory: "anchor", displayName: "bench press" }, session("2024-01-01", 100)),
-      // board press at exactly 90% of anchor → meets 90% floor
+      // floor press at exactly 85% of anchor → meets 85% floor (equipment:floor:bench = 85-95%)
       pair(
-        { movementCategory: "lockout", displayName: "board press", equipment: "board" },
-        session("2024-01-01", 90)
+        { movementCategory: "lockout", displayName: "floor press", equipment: "floor" },
+        session("2024-01-01", 85)
       ),
     ];
     const results = generateDiagnostics(pairs);
     expect(results[0].diagnostic).toMatch(/^Optimal:/);
   });
 
-  it("applies floor press equipment override (85–90% instead of 90–95%)", () => {
+  it("floor press baseline is 85–95% (from CSV)", () => {
     const pairs: ConjugateDataPair[] = [
       pair({ movementCategory: "anchor", displayName: "bench press" }, session("2024-01-01", 300)),
       pair(
@@ -344,7 +355,7 @@ describe("generateDiagnostics", () => {
     ];
     const results = generateDiagnostics(pairs);
     expect(results).toHaveLength(1);
-    expect(results[0].expectedBaseline).toBe("85–90%");
+    expect(results[0].expectedBaseline).toBe("85–95%");
   });
 
   it("skips variations with sampleCount === 0 (no date overlap with anchor)", () => {
@@ -381,35 +392,16 @@ describe("generateDiagnostics", () => {
     expect(generateDiagnostics(pairs)).toHaveLength(0);
   });
 
-  it("skips variations with no baseline in the table (e.g., bench quad_dominant)", () => {
+  it("skips variations with no non-standard modifier to look up", () => {
     const pairs: ConjugateDataPair[] = [
       pair({ movementCategory: "anchor", displayName: "bench press" }, session("2024-01-01", 300)),
-      // quad_dominant is not in bench baseline table
+      // quad_dominant with standard bar, null stance, no equipment → no modifier key → skipped
       pair(
         { movementCategory: "quad_dominant", displayName: "wide grip bench" },
         session("2024-01-01", 260)
       ),
     ];
     expect(generateDiagnostics(pairs)).toHaveLength(0);
-  });
-
-  it("uses ACCOMMODATING_RESISTANCE_BASELINES when name matches", () => {
-    ACCOMMODATING_RESISTANCE_BASELINES["band squat"] = { range: "105–115%", floor: 105 };
-    const sqPair = (cat: ConjugateExercise["movementCategory"], name: string, w: number) =>
-      pair(
-        { type: "squat", movementCategory: cat, displayName: name, equipment: null },
-        session("2024-01-01", w)
-      );
-
-    const pairs: ConjugateDataPair[] = [
-      sqPair("anchor", "squat", 400),
-      // band squat at 108% → above floor of 105 → Optimal
-      sqPair("lockout", "band squat", 432),
-    ];
-    const results = generateDiagnostics(pairs);
-    expect(results).toHaveLength(1);
-    expect(results[0].expectedBaseline).toBe("105–115%");
-    expect(results[0].diagnostic).toMatch(/^Optimal:/);
   });
 
   it("opposite-stance DL with default conventional primary produces posterior_chain result (opposite = sumo)", () => {
@@ -450,11 +442,12 @@ describe("generateDiagnostics", () => {
         session("2024-01-01", 460)
       ),
     ];
+    // stance:sumo:deadlift has a baseline (90–100%)
     const results = generateDiagnostics(pairs, { deadliftStance: "sumo" });
-    // sumo → posterior_chain; posterior_chain has a deadlift baseline (85–95%) → produces a diagnostic
     expect(results).toHaveLength(1);
     expect(results[0].category).toBe("posterior_chain");
     expect(results[0].name).toBe("deadlift (sumo)");
+    expect(results[0].effects).toContain("POSTERIOR_CHAIN");
   });
 
   it("handles multiple lifts and returns results for each", () => {
