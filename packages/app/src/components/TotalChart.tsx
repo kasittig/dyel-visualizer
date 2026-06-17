@@ -15,9 +15,7 @@ const DEADLIFT_COLOR = "#2ecc71";
 const TOTAL_COLOR = "#9b59b6";
 
 export function TotalChart({ chartData, unit }: { chartData: ChartPoint[]; unit: string }) {
-  const data = chartData;
-
-  if (data.length === 0) {
+  if (chartData.length === 0) {
     return (
       <section>
         <p style={{ color: "var(--text)" }}>No data found.</p>
@@ -29,7 +27,7 @@ export function TotalChart({ chartData, unit }: { chartData: ChartPoint[]; unit:
     <section>
       <div style={{ width: "80%", margin: "0 auto" }}>
         <ResponsiveContainer width="100%" height={300}>
-          <LineChart data={data} margin={{ top: 4, right: 16, bottom: 40, left: 0 }}>
+          <LineChart data={chartData} margin={{ top: 4, right: 16, bottom: 40, left: 0 }}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis
               dataKey="label"
