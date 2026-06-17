@@ -56,10 +56,6 @@ export function findBestE1RM(
   );
 
   const exerciseByName = new Map<string, ConjugateExercise>();
-  for (const [ex] of pairs) {
-    if (!exerciseByName.has(ex.displayName)) exerciseByName.set(ex.displayName, ex);
-  }
-
   const targetFamily = familyKey(target);
 
   // Pre-scan: for each exercise name find the most recent session within the window,
@@ -67,6 +63,7 @@ export function findBestE1RM(
   type WindowBest = { date: Date; e1rm: number; set: { weight: number; reps: number } };
   const windowBestByName = new Map<string, WindowBest>();
   for (const [ex, session] of pairs) {
+    if (!exerciseByName.has(ex.displayName)) exerciseByName.set(ex.displayName, ex);
     if (session.date < dayStart || session.date > dayEnd) continue;
     const prev = windowBestByName.get(ex.displayName);
     const t = session.date.getTime();
