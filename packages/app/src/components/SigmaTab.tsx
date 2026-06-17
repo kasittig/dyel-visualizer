@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useLastSessionStats } from "../hooks/useLastSessionStats";
 import { useBaselineTargetExercises } from "../hooks/useBaselineTargetExercises";
-import { buildChartData } from "../utils/buildChartData";
+import { buildChartData } from "@dyel/core";
 import { TotalChart } from "./TotalChart";
 import { SigmaRadarChart } from "./SigmaRadarChart";
 import { VolumeWorkToggle } from "./VolumeWorkToggle";

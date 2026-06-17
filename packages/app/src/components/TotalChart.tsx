@@ -7,7 +7,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import type { ChartPoint } from "../utils/buildChartData";
+import type { ChartPoint } from "@dyel/core";
 
 const SQUAT_COLOR = "#e67e22";
 const BENCH_COLOR = "#3498db";
