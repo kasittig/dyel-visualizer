@@ -4,20 +4,17 @@ import { useBaselineTargetExercises } from "../hooks/useBaselineTargetExercises"
 import { buildChartData } from "@dyel/core";
 import { TotalChart } from "./TotalChart";
 import { SigmaRadarChart } from "./SigmaRadarChart";
-import { VolumeWorkToggle } from "./VolumeWorkToggle";
 import type { ConjugateDataPair } from "../hooks/useConjugateData";
 import type { LiftType } from "../utils/appUtils";
 
 export function SigmaTab({
   pairs,
   excludeVolumeWork,
-  onToggleVolumeWork,
   effectiveBaselineNames,
   effectiveTargetNames,
 }: {
   pairs: ConjugateDataPair[];
   excludeVolumeWork: boolean;
-  onToggleVolumeWork: () => void;
   effectiveBaselineNames: Partial<Record<LiftType, string>>;
   effectiveTargetNames: Partial<Record<LiftType, string>>;
 }) {
@@ -46,7 +43,6 @@ export function SigmaTab({
 
   return (
     <>
-      <VolumeWorkToggle checked={excludeVolumeWork} onChange={onToggleVolumeWork} />
       <TotalChart chartData={chartData} unit={unit} />
       <SigmaRadarChart chartData={chartData} unit={unit} />
     </>

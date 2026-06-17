@@ -195,9 +195,9 @@ function App() {
                 </button>
               ))}
             </div>
+            <VolumeWorkToggle checked={excludeVolumeWork} onChange={toggleVolumeWork} />
             {activeTab === "calculator" ? (
               <>
-                <VolumeWorkToggle checked={excludeVolumeWork} onChange={toggleVolumeWork} />
                 <RepCalculator
                   pairs={calcPairs}
                   baselineNames={effectiveBaselineNames}
@@ -208,7 +208,6 @@ function App() {
               <SigmaTab
                 pairs={pairs}
                 excludeVolumeWork={excludeVolumeWork}
-                onToggleVolumeWork={toggleVolumeWork}
                 effectiveBaselineNames={effectiveBaselineNames}
                 effectiveTargetNames={effectiveTargetNames}
               />
@@ -224,9 +223,6 @@ function App() {
                     }))
                   }
                 />
-                {liftTab !== "accessory" && (
-                  <VolumeWorkToggle checked={excludeVolumeWork} onChange={toggleVolumeWork} />
-                )}
                 <ExerciseFilters
                   rows={activeRows}
                   filters={tabState[liftTab].filters}
