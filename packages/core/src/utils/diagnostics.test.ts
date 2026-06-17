@@ -489,6 +489,77 @@ describe("generateDiagnostics", () => {
     expect(results[0].diagnostic).toMatch(/^Overtrained:/);
   });
 
+  it("SSB + pause squat combines bar:ssb + equipment:pause multiplicatively (77–90%)", () => {
+    const anchor: ConjugateDataPair = [
+      ex({
+        type: "squat",
+        bar: "standard",
+        stance: "competition",
+        displayName: "squat",
+        movementCategory: "anchor",
+      }),
+      session("2024-01-01", 100),
+    ];
+    const variation: ConjugateDataPair = [
+      ex({
+        type: "squat",
+        bar: "ssb",
+        stance: null,
+        equipment: "pause",
+        displayName: "ssb pause squat",
+        movementCategory: "bottom_range",
+      }),
+      session("2024-01-01", 77),
+    ];
+    const results = generateDiagnostics([anchor, variation]);
+    expect(results).toHaveLength(1);
+    // bar:ssb:squat (90–95%) × equipment:pause:squat (85–95%) = 77–90%
+    expect(results[0].expectedBaseline).toBe("77–90%");
+    expect(results[0].effects).toContain("UPPER_BACK_DEMAND"); // from SSB
+    expect(results[0].effects).toContain("DEAD_STOP"); // from pause
+  });
+
+  it("SSB + box squat combines bar:ssb + equipment:box multiplicatively (81–95%)", () => {
+    const anchor: ConjugateDataPair = [
+      ex({
+        type: "squat",
+        bar: "standard",
+        stance: "competition",
+        displayName: "squat",
+        movementCategory: "anchor",
+      }),
+      session("2024-01-01", 100),
+    ];
+    const variation: ConjugateDataPair = [
+      ex({
+        type: "squat",
+        bar: "ssb",
+        stance: null,
+        equipment: "box",
+        displayName: "ssb box squat",
+        movementCategory: "bottom_range",
+      }),
+      session("2024-01-01", 81),
+    ];
+    const results = generateDiagnostics([anchor, variation]);
+    expect(results).toHaveLength(1);
+    // equipment:box:squat (90–100%) × bar:ssb:squat (90–95%) = 81–95%
+    expect(results[0].expectedBaseline).toBe("81–95%");
+  });
+
+  it("single-modifier baseline is unchanged (board press → 105–115%)", () => {
+    const pairs: ConjugateDataPair[] = [
+      pair({ movementCategory: "anchor", displayName: "bench press" }, session("2024-01-01", 300)),
+      pair(
+        { movementCategory: "lockout", displayName: "board press", equipment: "board" },
+        session("2024-01-01", 315)
+      ),
+    ];
+    const results = generateDiagnostics(pairs);
+    expect(results).toHaveLength(1);
+    expect(results[0].expectedBaseline).toBe("105–115%");
+  });
+
   it("handles multiple lifts and returns results for each", () => {
     const benchPairs: ConjugateDataPair[] = [
       pair({ movementCategory: "anchor", displayName: "bench press" }, session("2024-01-01", 300)),

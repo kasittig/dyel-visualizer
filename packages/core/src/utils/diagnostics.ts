@@ -53,6 +53,12 @@ type ModifierEffectEntry =
   | { effects: EffectEnum[]; min: number; max: number }
   | { effects: EffectEnum[] };
 
+// When multiple pct-bearing modifiers are simultaneously active (e.g. SSB + pause squat),
+// their ranges are combined multiplicatively: each modifier independently scales performance
+// relative to the competition lift, so the effects compound. Start at 100% and multiply by
+// each modifier's min and max in turn:
+//   combined_min = round(m1_min × m2_min / 100)  (applied iteratively)
+// addl_wt entries (chains, bands) carry no pct and are never included in the combination.
 export const MODIFIER_EFFECTS: Record<string, ModifierEffectEntry> = {
   // bar × lift
   "bar:standard:squat": { effects: [], min: 100, max: 100 },
@@ -212,32 +218,46 @@ export function generateDiagnostics(
       const { factor, sampleCount } = fitVariantFactor(anchorSessions, sessions);
       if (sampleCount === 0) continue;
 
-      // Derive the baseline lookup key for the primary modifier.
-      // Priority: equipment → deadlift stance (with null/opposite resolution) → stance → bar.
-      let modKey: string | null = null;
-      if (ex.equipment !== null) {
-        modKey = `equipment:${ex.equipment}:${ex.type}`;
-      } else if (
-        ex.type === "deadlift" &&
-        (ex.stance === null ||
-          ex.stance === "sumo" ||
-          ex.stance === "conventional" ||
-          ex.stance === "opposite")
-      ) {
-        // effectiveCategory already resolved null/opposite via toMovementCategory
-        const resolvedStance = effectiveCategory === "posterior_chain" ? "sumo" : "conventional";
-        modKey = `stance:${resolvedStance}:deadlift`;
-      } else if (ex.stance !== null && ex.stance !== "competition") {
-        modKey = `stance:${ex.stance}:${ex.type}`;
-      } else if (ex.bar !== null && ex.bar !== "standard") {
-        modKey = `bar:${ex.bar}:${ex.type}`;
-      }
+      // Collect pct-bearing keys for all active modifiers. Multiple simultaneous
+      // pct modifiers (e.g. SSB + pause squat) combine multiplicatively because
+      // each independently scales performance relative to the competition lift.
+      const resolvedStanceKey: string | null = (() => {
+        if (
+          ex.type === "deadlift" &&
+          (ex.stance === null ||
+            ex.stance === "sumo" ||
+            ex.stance === "conventional" ||
+            ex.stance === "opposite")
+        ) {
+          const resolvedStance = effectiveCategory === "posterior_chain" ? "sumo" : "conventional";
+          return `stance:${resolvedStance}:deadlift`;
+        }
+        if (ex.stance !== null && ex.stance !== "competition") {
+          return `stance:${ex.stance}:${ex.type}`;
+        }
+        return null;
+      })();
 
-      if (!modKey) continue;
-      const primaryEntry = MODIFIER_EFFECTS[modKey];
-      if (!primaryEntry || !("min" in primaryEntry)) continue;
+      const candidateKeys = [
+        ex.equipment !== null ? `equipment:${ex.equipment}:${ex.type}` : null,
+        resolvedStanceKey,
+        ex.bar !== null && ex.bar !== "standard" ? `bar:${ex.bar}:${ex.type}` : null,
+      ].filter((k): k is string => k !== null);
 
-      const baseline = { min: primaryEntry.min, max: primaryEntry.max };
+      type PctEntry = Extract<ModifierEffectEntry, { min: number }>;
+      const pctEntries = candidateKeys
+        .map((k) => MODIFIER_EFFECTS[k])
+        .filter((e): e is PctEntry => e !== undefined && "min" in e);
+
+      if (pctEntries.length === 0) continue;
+
+      const baseline = pctEntries.reduce(
+        (acc, e) => ({
+          min: Math.round((acc.min * e.min) / 100),
+          max: Math.round((acc.max * e.max) / 100),
+        }),
+        { min: 100, max: 100 }
+      );
       const expectedBaseline = `${baseline.min}–${baseline.max}%`;
       const averageIndex = factor * 100;
 

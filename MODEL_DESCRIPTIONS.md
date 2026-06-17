@@ -90,3 +90,32 @@ Returns `null` if either factor is missing or has zero samples.
 - **Source has addlWts and target is in a different family, but no `addlWtOffset` entry exists.** The function falls back to the raw (chain-weighted) e1RM before dividing by `variantFactor`, which will overestimate the baseline e1RM.
 - **Neither source nor target is the baseline, and one of them has no `variantFactor` entry.** Returns `null`; there is not enough data to cross-normalize.
 - **Proxy offset lookup for same-family → addlWt target.** `findBestE1RM` can search for a proxy offset from a related exercise in the same family, but `normalizeToBaseE1RM` only looks up the target's own `addlWtOffset` entry. If that entry is missing, it returns `null` rather than falling back to a proxy.
+
+## Diagnostic baseline combination (`generateDiagnostics`)
+
+### What it does
+
+Each entry in `MODIFIER_EFFECTS` carries an optional `min`/`max` percentage range expressing how strong a lifter is expected to be at that variation relative to their competition lift. For example, `equipment:pause:squat` is 85–95%, meaning a pause squat is expected at 85–95% of the competition squat e1RM.
+
+When an exercise has **multiple pct-bearing modifiers active simultaneously** (e.g. an SSB + pause squat has both `bar:ssb:squat` and `equipment:pause:squat`), `generateDiagnostics` combines them into a single expected range using **multiplicative scaling**:
+
+```
+combined_min = round(m1_min × m2_min / 100)   (applied iteratively)
+combined_max = round(m1_max × m2_max / 100)
+```
+
+Starting from 100%, each modifier's range is applied in turn. `addl_wt` entries (chains, bands, reverse bands) carry no pct and are never included.
+
+### Examples
+
+| Exercise        | Modifiers                                               | Baseline |
+| --------------- | ------------------------------------------------------- | -------- |
+| SSB pause squat | bar:ssb:squat (90–95%) × equipment:pause:squat (85–95%) | 77–90%   |
+| SSB box squat   | equipment:box:squat (90–100%) × bar:ssb:squat (90–95%)  | 81–95%   |
+| Board press     | equipment:board:bench (105–115%)                        | 105–115% |
+
+### Assumptions
+
+1. **Modifier pct values are independent.** The expected difficulty of stacking an SSB with a pause is the product of the two individual difficulties, with no interaction term. In practice this may overestimate the combined penalty if the two modifiers share a root cause (e.g. both challenge the upper back), but there is no data available to fit interaction terms.
+2. **Combined min ≤ combined max is preserved.** Because each modifier's `min ≤ max` and both are positive, multiplying min × min and max × max preserves the ordering after rounding.
+3. **Order does not affect the result.** Multiplication is commutative; the final range is the same regardless of which modifier is applied first.
