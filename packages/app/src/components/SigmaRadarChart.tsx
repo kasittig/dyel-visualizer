@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import type { ChartPoint } from "../utils/buildChartData";
+import type { ChartPoint } from "@dyel/core";
 import { BaseRadarChart } from "./BaseRadarChart";
 
 export function SigmaRadarChart({ chartData, unit }: { chartData: ChartPoint[]; unit: string }) {

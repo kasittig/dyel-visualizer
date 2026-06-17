@@ -1,7 +1,7 @@
-import { normalizeToBaseE1RM } from "@dyel/core";
-import type { ConjugateExercise, PrimaryLift, RepCalcStats } from "@dyel/core";
-import { formatDate } from "@dyel/core";
-import type { ConjugateDataPair } from "../hooks/useConjugateData";
+import type { ConjugateDataPair, ConjugateExercise, PrimaryLift } from "../types/conjugate";
+import { formatDate } from "./chartUtils";
+import type { RepCalcStats } from "./repCalculator";
+import { normalizeToBaseE1RM } from "./repCalculator";
 
 export type ChartPoint = Record<string, string | number>;
 

@@ -38,6 +38,9 @@ export { setsRepsLabel } from "./utils/setsRepsLabel";
 
 export { LINE_COLORS, formatDate } from "./utils/chartUtils";
 
+export type { ChartPoint } from "./utils/buildChartData";
+export { buildChartData } from "./utils/buildChartData";
+
 export type { DiagnosticsOptions } from "./utils/diagnostics";
 export {
   BIOMECHANICAL_BASELINES,
