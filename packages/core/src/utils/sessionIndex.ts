@@ -3,10 +3,14 @@ import type { ConjugateDataPair, TrainingSession } from "../types/conjugate";
 import { fitAddlWtOffset, fitVariantFactor, predictE1RM } from "./e1rm";
 import type { RepCalcStats } from "./repCalculator";
 
+export type LastSession = {
+  date: Date;
+  e1rm: number;
+  bestSet: { weight: number; reps: number; sets: number };
+};
+
 export type SessionStats = RepCalcStats & {
-  lastPerformed: Map<string, Date>;
-  lastSessionE1RM: Map<string, number>;
-  lastSessionBestSet: Map<string, { weight: number; reps: number; sets: number }>;
+  lastSession: Map<string, LastSession>;
   projectedE1RM: Map<string, number>;
 };
 
@@ -23,9 +27,7 @@ export function buildSessionStats(
   baselineNames: Partial<Record<string, string>>,
   today: Date
 ): SessionStats {
-  const lastPerformed = new Map<string, Date>();
-  const lastSessionE1RM = new Map<string, number>();
-  const lastSessionBestSet = new Map<string, { weight: number; reps: number; sets: number }>();
+  const lastSession = new Map<string, LastSession>();
   const dataByName = new Map<string, ExData>();
   const straightByFamily = new Map<string, TrainingSession[]>();
 
@@ -33,19 +35,16 @@ export function buildSessionStats(
     const name = exercise.displayName;
     const fk = familyKey(exercise);
 
-    const prevDate = lastPerformed.get(name);
+    const prev = lastSession.get(name);
     if (
-      !prevDate ||
-      session.date > prevDate ||
-      (session.date.getTime() === prevDate.getTime() &&
-        session.e1rm > (lastSessionE1RM.get(name) ?? -Infinity))
+      !prev ||
+      session.date > prev.date ||
+      (session.date.getTime() === prev.date.getTime() && session.e1rm > prev.e1rm)
     ) {
-      lastPerformed.set(name, session.date);
-      lastSessionE1RM.set(name, session.e1rm);
-      lastSessionBestSet.set(name, {
-        weight: session.weight,
-        reps: Math.round(session.reps),
-        sets: session.sets,
+      lastSession.set(name, {
+        date: session.date,
+        e1rm: session.e1rm,
+        bestSet: { weight: session.weight, reps: Math.round(session.reps), sets: session.sets },
       });
     }
 
@@ -107,9 +106,7 @@ export function buildSessionStats(
   }
 
   return {
-    lastPerformed,
-    lastSessionE1RM,
-    lastSessionBestSet,
+    lastSession,
     addlWtOffset,
     variantFactor,
     projectedE1RM,

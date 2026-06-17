@@ -1,5 +1,4 @@
 import type { ConjugateDataPair, ConjugateExercise } from "../types/conjugate";
-import { formatDate } from "./chartUtils";
 import type { RepCalcStats } from "./repCalculator";
 import { normalizeToBaseE1RM } from "./repCalculator";
 import type { ChartPoint } from "./buildChartData";
@@ -83,7 +82,7 @@ export function buildVariationChartData(
   }
 
   const data: ChartPoint[] = allDates.map((date) => {
-    const point: ChartPoint = { date, label: formatDate(date) };
+    const point: ChartPoint = { date };
     for (const variation of variations) {
       const e1rm = e1rmByLabelAndDate.get(variation)?.get(date);
       if (e1rm !== undefined) point[variation] = Math.round(e1rm);

@@ -8,7 +8,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { LINE_COLORS } from "@dyel/core";
+import { LINE_COLORS, formatDate } from "@dyel/core";
 import type { RepCalcStats } from "@dyel/core";
 import type { ConjugateDataPair } from "../hooks/useConjugateData";
 import {
@@ -139,7 +139,8 @@ export function ConjugateCharts({
           <LineChart data={data} margin={{ top: 4, right: 16, bottom: 40, left: 0 }}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis
-              dataKey="label"
+              dataKey="date"
+              tickFormatter={formatDate}
               angle={-45}
               textAnchor="end"
               interval="preserveStartEnd"

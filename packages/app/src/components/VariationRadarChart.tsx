@@ -44,9 +44,10 @@ export function VariationRadarChart({
           const item = payload?.[0];
           if (!item) return null;
           const name = (item.payload as { variation: string }).variation;
-          const lastDate = stats.lastPerformed.get(name);
-          const lastE1RM = stats.lastSessionE1RM.get(name);
-          const bestSet = stats.lastSessionBestSet.get(name);
+          const last = stats.lastSession.get(name);
+          const lastDate = last?.date;
+          const lastE1RM = last?.e1rm;
+          const bestSet = last?.bestSet;
           const dateStr = lastDate
             ? lastDate.toLocaleDateString(undefined, {
                 month: "short",
@@ -70,12 +71,9 @@ export function VariationRadarChart({
                 Projected e1RM: {Number(item.value).toFixed(2)} {unit}
               </div>
               <div style={{ opacity: 0.7 }}>
-                Last session:{" "}
-                {lastE1RM !== undefined ? `${lastE1RM.toFixed(2)} ${unit} · ` : ""}
+                Last session: {lastE1RM !== undefined ? `${lastE1RM.toFixed(2)} ${unit} · ` : ""}
                 {dateStr}
-                {bestSet
-                  ? ` · ${bestSet.sets}×${bestSet.reps} @ ${bestSet.weight} ${unit}`
-                  : ""}
+                {bestSet ? ` · ${bestSet.sets}×${bestSet.reps} @ ${bestSet.weight} ${unit}` : ""}
               </div>
             </div>
           );

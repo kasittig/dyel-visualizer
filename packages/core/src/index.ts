@@ -31,7 +31,7 @@ export {
   normalizeToBaseE1RM,
 } from "./utils/repCalculator";
 
-export type { SessionStats } from "./utils/sessionIndex";
+export type { SessionStats, LastSession } from "./utils/sessionIndex";
 export { buildSessionStats } from "./utils/sessionIndex";
 
 export { setsRepsLabel } from "./utils/setsRepsLabel";
