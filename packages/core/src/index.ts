@@ -31,6 +31,9 @@ export {
   normalizeToBaseE1RM,
 } from "./utils/repCalculator";
 
+export type { SessionStats } from "./utils/sessionIndex";
+export { buildSessionStats } from "./utils/sessionIndex";
+
 export { setsRepsLabel } from "./utils/setsRepsLabel";
 
 export { LINE_COLORS, formatDate } from "./utils/chartUtils";

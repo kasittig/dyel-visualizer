@@ -164,6 +164,7 @@ export function parseConjugateData(csv: string): Array<[ConjugateExercise, Train
     transform: (v) => v.trim(),
   }).data;
 
+  let hasAnyUnit = false;
   const raw: Array<[ConjugateExercise, RawSession]> = [];
   for (const row of rows) {
     const exerciseName = row["exercise"] ?? "";
@@ -172,10 +173,10 @@ export function parseConjugateData(csv: string): Array<[ConjugateExercise, Train
     if (!lift) continue;
     const session = parseSession(row);
     if (!session) continue;
+    if (session.unit !== null) hasAnyUnit = true;
     raw.push([lift, session]);
   }
 
   // Only fall back to "lbs" when no unit annotation exists anywhere in the data.
-  const hasAnyUnit = raw.some(([, s]) => s.unit !== null);
   return raw.map(([ex, s]) => [ex, { ...s, unit: hasAnyUnit ? (s.unit ?? "lbs") : "lbs" }]);
 }
