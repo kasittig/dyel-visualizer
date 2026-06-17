@@ -25,6 +25,7 @@ export function buildVariationChartData(
 ): VariationChartResult {
   const e1rmByLabelAndDate = new Map<string, Map<string, number>>();
   const bestSetByLabelAndDate = new Map<string, Map<string, BestSet>>();
+  const exerciseByName = new Map<string, ConjugateExercise>();
 
   for (const [exercise, session] of rows) {
     const label = exercise.displayName;
@@ -32,6 +33,7 @@ export function buildVariationChartData(
     if (!e1rmByLabelAndDate.has(label)) {
       e1rmByLabelAndDate.set(label, new Map());
       bestSetByLabelAndDate.set(label, new Map());
+      exerciseByName.set(label, exercise);
     }
     const byDate = e1rmByLabelAndDate.get(label)!;
     const prev = byDate.get(date);
@@ -49,10 +51,6 @@ export function buildVariationChartData(
   const allDates = [
     ...new Set([...e1rmByLabelAndDate.values()].flatMap((m) => [...m.keys()])),
   ].sort();
-
-  const exerciseByName = new Map<string, ConjugateExercise>();
-  for (const [ex] of rows)
-    if (!exerciseByName.has(ex.displayName)) exerciseByName.set(ex.displayName, ex);
 
   const exerciseType = rows[0]?.[0].type;
   const baselineName = exerciseType ? (baselineNames[exerciseType] ?? null) : null;

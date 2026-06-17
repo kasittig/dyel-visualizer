@@ -16,6 +16,7 @@ export function buildChartData(
   const byDate = new Map<PrimaryLift, Map<string, number>>(
     LIFT_TYPES.map((lift) => [lift, new Map()])
   );
+  const allDatesSet = new Set<string>();
 
   for (const [exercise, session] of pairs) {
     const liftMap = byDate.get(exercise.type as PrimaryLift);
@@ -42,9 +43,10 @@ export function buildChartData(
 
     const prev = liftMap.get(date);
     if (prev === undefined || e1rm > prev) liftMap.set(date, e1rm);
+    allDatesSet.add(date);
   }
 
-  const allDates = [...new Set(LIFT_TYPES.flatMap((lift) => [...byDate.get(lift)!.keys()]))].sort();
+  const allDates = [...allDatesSet].sort();
 
   const last = {} as Record<PrimaryLift, number | undefined>;
   const rows: ChartPoint[] = [];
