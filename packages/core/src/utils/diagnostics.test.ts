@@ -302,7 +302,7 @@ describe("generateDiagnostics", () => {
     expect(r.name).toBe("board press");
     expect(r.category).toBe("lockout");
     expect(r.expectedBaseline).toBe("105–115%");
-    expect(r.diagnostic).toMatch(/^(Optimal|Weakness): board press at \d+%$/);
+    expect(r.diagnostic).toMatch(/^(Optimal|Weakness|Overtrained): board press at \d+%$/);
   });
 
   it("board press result includes LOCKOUT and REDUCED_ROM effects", () => {
@@ -448,6 +448,19 @@ describe("generateDiagnostics", () => {
     expect(results[0].category).toBe("posterior_chain");
     expect(results[0].name).toBe("deadlift (sumo)");
     expect(results[0].effects).toContain("POSTERIOR_CHAIN");
+  });
+
+  it("emits an Overtrained result when factor exceeds the baseline ceiling", () => {
+    const pairs: ConjugateDataPair[] = [
+      pair({ movementCategory: "anchor", displayName: "bench press" }, session("2024-01-01", 100)),
+      // floor press at 100% of anchor → above 95% ceiling (equipment:floor:bench = 85-95%)
+      pair(
+        { movementCategory: "lockout", displayName: "floor press", equipment: "floor" },
+        session("2024-01-01", 100)
+      ),
+    ];
+    const results = generateDiagnostics(pairs);
+    expect(results[0].diagnostic).toMatch(/^Overtrained:/);
   });
 
   it("handles multiple lifts and returns results for each", () => {

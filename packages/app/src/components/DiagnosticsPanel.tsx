@@ -31,7 +31,7 @@ export function DiagnosticsPanel({ rows }: { rows: ConjugateDataPair[] }) {
 
   return (
     <div style={{ marginTop: "1.5rem" }}>
-      <h2>Weakness Diagnostics</h2>
+      <h2>Diagnostics</h2>
       {hasDeadlift && (
         <div style={{ marginBottom: "0.75rem", fontSize: "0.8rem", color: "var(--text)" }}>
           <span>Primary pull: </span>
@@ -68,7 +68,23 @@ export function DiagnosticsPanel({ rows }: { rows: ConjugateDataPair[] }) {
           </thead>
           <tbody>
             {results.map((r) => {
-              const isOptimal = r.diagnostic.startsWith("Optimal");
+              const status = r.diagnostic.startsWith("Optimal")
+                ? "optimal"
+                : r.diagnostic.startsWith("Overtrained")
+                  ? "overtrained"
+                  : "weakness";
+              const diagnosticColor =
+                status === "optimal"
+                  ? "var(--success)"
+                  : status === "overtrained"
+                    ? "var(--warning)"
+                    : "var(--danger)";
+              const diagnosticLabel =
+                status === "optimal"
+                  ? "Optimal"
+                  : status === "overtrained"
+                    ? "Overtrained"
+                    : "Weakness";
               return (
                 <tr key={r.name} style={{ borderBottom: "1px solid var(--border)" }}>
                   <td style={cellStyle}>{r.name}</td>
@@ -80,11 +96,11 @@ export function DiagnosticsPanel({ rows }: { rows: ConjugateDataPair[] }) {
                   <td
                     style={{
                       ...cellStyle,
-                      color: isOptimal ? "var(--success)" : "var(--danger)",
+                      color: diagnosticColor,
                       fontWeight: 600,
                     }}
                   >
-                    {isOptimal ? "Optimal" : "Weakness"}
+                    {diagnosticLabel}
                   </td>
                 </tr>
               );

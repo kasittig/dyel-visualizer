@@ -262,7 +262,12 @@ export function generateDiagnostics(
         if (k !== null) MODIFIER_EFFECTS[k]?.effects.forEach((e) => allEffects.add(e));
       }
 
-      const tag = averageIndex >= baseline.min ? "Optimal" : "Weakness";
+      const tag =
+        averageIndex < baseline.min
+          ? "Weakness"
+          : averageIndex > baseline.max
+            ? "Overtrained"
+            : "Optimal";
       results.push({
         primaryLift: lift,
         name,
