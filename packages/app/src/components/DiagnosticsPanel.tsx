@@ -19,7 +19,7 @@ export function DiagnosticsPanel({ rows }: { rows: ConjugateDataPair[] }) {
     undefined
   );
 
-  const hasDeadlift = rows.some(([ex]) => ex.type === "deadlift");
+  const hasDeadlift = useMemo(() => rows.some(([ex]) => ex.type === "deadlift"), [rows]);
 
   const results = useMemo(
     () =>
