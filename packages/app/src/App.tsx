@@ -82,7 +82,7 @@ function App() {
   const calcPairs = useMemo(
     () =>
       LIFT_TABS.flatMap((tab) =>
-        applyFilters(tabRows[tab], { ...tabState[tab].filters, excludeVolumeWork })
+        applyFilters(tabRows[tab], tabState[tab].filters, excludeVolumeWork)
       ),
     [tabRows, tabState, excludeVolumeWork]
   );
@@ -101,7 +101,7 @@ function App() {
     setExcludeVolumeWork(true);
   }
 
-  function toggleFilter(facet: Exclude<keyof FilterState, "excludeVolumeWork">, value: string) {
+  function toggleFilter(facet: keyof FilterState, value: string) {
     if (!liftTab) return;
     setTabState((prev) => ({
       ...prev,
