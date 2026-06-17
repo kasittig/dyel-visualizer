@@ -1,5 +1,4 @@
 import type { ConjugateDataPair, ConjugateExercise, PrimaryLift } from "../types/conjugate";
-import { formatDate } from "./chartUtils";
 import type { RepCalcStats } from "./repCalculator";
 import { normalizeToBaseE1RM } from "./repCalculator";
 
@@ -52,7 +51,7 @@ export function buildChartData(
   const rows: ChartPoint[] = [];
 
   for (const date of allDates) {
-    const point: ChartPoint = { date, label: formatDate(date) };
+    const point: ChartPoint = { date };
 
     for (const lift of LIFT_TYPES) {
       const val = byDate.get(lift)!.get(date);

@@ -30,10 +30,11 @@ describe("buildSessionStats", () => {
       pair("Squat", session("2024-03-01", 315, 2)),
     ];
     const stats = buildSessionStats(pairs, {}, today);
-    expect(stats.lastPerformed.get("Squat")).toEqual(new Date("2024-03-01"));
+    const last = stats.lastSession.get("Squat");
+    expect(last?.date).toEqual(new Date("2024-03-01"));
     // 315 × (1 + 2/30) = 336 > 320 × (1 + 1/30) ≈ 330.67, so 315×2r wins
-    expect(stats.lastSessionE1RM.get("Squat")).toBeCloseTo(315 * (1 + 2 / 30));
-    expect(stats.lastSessionBestSet.get("Squat")).toEqual({ weight: 315, reps: 2, sets: 1 });
+    expect(last?.e1rm).toBeCloseTo(315 * (1 + 2 / 30));
+    expect(last?.bestSet).toEqual({ weight: 315, reps: 2, sets: 1 });
   });
 
   it("returns addlWtOffset of 0 samples when no straight sessions exist", () => {
@@ -91,7 +92,7 @@ describe("buildSessionStats", () => {
 
   it("returns empty maps for empty input", () => {
     const stats = buildSessionStats([], {}, today);
-    expect(stats.lastPerformed.size).toBe(0);
+    expect(stats.lastSession.size).toBe(0);
     expect(stats.addlWtOffset.size).toBe(0);
     expect(stats.variantFactor.size).toBe(0);
     expect(stats.projectedE1RM.size).toBe(0);

@@ -7,6 +7,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { formatDate } from "@dyel/core";
 import type { ChartPoint } from "@dyel/core";
 
 const SQUAT_COLOR = "#e67e22";
@@ -30,7 +31,8 @@ export function TotalChart({ chartData, unit }: { chartData: ChartPoint[]; unit:
           <LineChart data={chartData} margin={{ top: 4, right: 16, bottom: 40, left: 0 }}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis
-              dataKey="label"
+              dataKey="date"
+              tickFormatter={formatDate}
               angle={-45}
               textAnchor="end"
               interval="preserveStartEnd"
