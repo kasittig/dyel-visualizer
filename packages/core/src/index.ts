@@ -47,3 +47,5 @@ export {
   ACCOMMODATING_RESISTANCE_BASELINES,
   generateDiagnostics,
 } from "./utils/diagnostics";
+
+export { defaultBaselineName, defaultTargetName } from "./utils/defaultSelections";
