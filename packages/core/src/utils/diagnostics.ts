@@ -170,7 +170,7 @@ export const MODIFIER_EFFECTS: Record<string, ModifierEffectEntry> = {
 
 export type DiagnosticsOptions = { deadliftStance?: DeadliftStancePreference };
 
-function resolveCategory(ex: ConjugateExercise, options?: DiagnosticsOptions): MovementCategory {
+function resolveCategory(ex: ConjugateExercise, options?: DiagnosticsOptions): MovementCategory[] {
   if (
     ex.type === "deadlift" &&
     (ex.stance === "sumo" || ex.stance === "conventional" || ex.stance === "opposite")
@@ -204,9 +204,9 @@ export function generateDiagnostics(
 
     for (const [ex, session] of liftPairs) {
       const effectiveCategory = resolveCategory(ex, options);
-      if (effectiveCategory === "anchor") {
+      if (effectiveCategory.length === 1 && effectiveCategory[0] === "anchor") {
         anchorSessions.push(session);
-      } else if (effectiveCategory !== "unclassified") {
+      } else if (!effectiveCategory.every((c) => c === "unclassified")) {
         const key = ex.displayName;
         if (!variationGroups.has(key)) variationGroups.set(key, { ex, sessions: [] });
         variationGroups.get(key)!.sessions.push(session);
@@ -229,7 +229,9 @@ export function generateDiagnostics(
             ex.stance === "conventional" ||
             ex.stance === "opposite")
         ) {
-          const resolvedStance = effectiveCategory === "posterior_chain" ? "sumo" : "conventional";
+          const resolvedStance = effectiveCategory.includes("posterior_chain")
+            ? "sumo"
+            : "conventional";
           return `stance:${resolvedStance}:deadlift`;
         }
         if (ex.stance !== null && ex.stance !== "competition") {
@@ -264,7 +266,7 @@ export function generateDiagnostics(
       // Aggregate effects from all active modifiers (bar + resolved stance + equipment + addlWts).
       const stanceForEffects: string | null =
         ex.type === "deadlift" && (ex.stance === null || ex.stance === "opposite")
-          ? effectiveCategory === "posterior_chain"
+          ? effectiveCategory.includes("posterior_chain")
             ? "sumo"
             : "conventional"
           : ex.stance;
@@ -307,44 +309,58 @@ export function generateDiagnostics(
 export function toMovementCategory(
   ex: ExerciseShape,
   options?: DiagnosticsOptions
-): MovementCategory {
-  if (ex.type === "accessory") return "unclassified";
-  // Variation-specific checks run before the competition-stance anchor check so that exercises
-  // with a default "competition" stance (the parser fallback) are still classified by their
-  // equipment or other modifiers rather than being swept into anchorSessions.
-  if ((ex.equipment !== null && LOCKOUT_EQUIPMENT.has(ex.equipment)) || ex.stance === "close")
-    return "lockout";
-  if (ex.equipment !== null && BOTTOM_RANGE_EQUIPMENT.has(ex.equipment)) return "bottom_range";
-  if (ex.type === "squat" && ex.bar === "cambered") return "bottom_range";
-  if (ex.type === "squat" && (ex.stance === "sumo" || ex.stance === "wide"))
-    return "posterior_chain";
+): MovementCategory[] {
+  if (ex.type === "accessory") return ["unclassified"];
+
+  const cats = new Set<MovementCategory>();
+
+  // ROM modifier dimension: captures where in the lift's range the exercise emphasizes work.
+  // These are independent of the underlying movement pattern and can combine with it.
+  if (ex.equipment !== null && LOCKOUT_EQUIPMENT.has(ex.equipment)) cats.add("lockout");
   if (
-    ex.type === "squat" &&
-    ((ex.bar !== null && QUAD_DOMINANT_BARS.has(ex.bar)) || ex.stance === "front")
+    ex.stance === "close" ||
+    ex.stance === "slingshot" ||
+    ex.stance === "builder" ||
+    ex.stance === "narrow"
   )
-    return "quad_dominant";
-  if (ex.type === "deadlift" && ex.stance === "romanian") return "posterior_chain";
-  if (ex.type === "squat" && ex.equipment === "box") return "bottom_range";
-  if (ex.stance === "slingshot" || ex.stance === "builder") return "lockout";
-  if (ex.stance === "narrow") return "lockout";
+    cats.add("lockout");
   if (ex.type === "bench" && (ex.equipment === "incline" || ex.equipment === "decline"))
-    return "lockout";
-  if (ex.stance === "competition") return "anchor";
-  if (
-    ex.type === "deadlift" &&
-    (ex.stance === null ||
+    cats.add("lockout");
+  if (ex.equipment !== null && BOTTOM_RANGE_EQUIPMENT.has(ex.equipment)) cats.add("bottom_range");
+  if (ex.type === "squat" && ex.bar === "cambered") cats.add("bottom_range");
+  if (ex.type === "squat" && ex.equipment === "box") cats.add("bottom_range");
+
+  // Movement pattern dimension: captures the muscular emphasis determined by stance, bar, and type.
+  // "anchor" is only added when no ROM modifier is present — competition stance is the parser
+  // fallback, so it shouldn't override equipment-based classification.
+  if (ex.type === "squat") {
+    if (ex.stance === "sumo" || ex.stance === "wide") cats.add("posterior_chain");
+    else if ((ex.bar !== null && QUAD_DOMINANT_BARS.has(ex.bar)) || ex.stance === "front")
+      cats.add("quad_dominant");
+    else if (ex.stance === "competition" && cats.size === 0) cats.add("anchor");
+  } else if (ex.type === "bench") {
+    if (ex.stance === "competition" && cats.size === 0) cats.add("anchor");
+  } else if (ex.type === "deadlift") {
+    if (ex.stance === "romanian") {
+      cats.add("posterior_chain");
+    } else if (
+      ex.stance === null ||
       ex.stance === "sumo" ||
       ex.stance === "conventional" ||
-      ex.stance === "opposite")
-  ) {
-    const primary = options?.deadliftStance ?? "conventional";
-    const nonPrimary = primary === "conventional" ? "sumo" : "conventional";
-    // Resolve to the actual stance: "opposite" = the non-primary stance; null = the primary stance.
-    const actualStance: "sumo" | "conventional" =
-      ex.stance === "opposite" ? nonPrimary : ex.stance === null ? primary : ex.stance;
-    // sumo = posterior chain (hip abductor/glute dominant)
-    // conventional = quad dominant (leg drive, more knee extension at the start)
-    return actualStance === "sumo" ? "posterior_chain" : "quad_dominant";
+      ex.stance === "opposite"
+    ) {
+      const primary = options?.deadliftStance ?? "conventional";
+      const nonPrimary = primary === "conventional" ? "sumo" : "conventional";
+      // Resolve to the actual stance: "opposite" = the non-primary stance; null = the primary stance.
+      const actualStance: "sumo" | "conventional" =
+        ex.stance === "opposite" ? nonPrimary : ex.stance === null ? primary : ex.stance;
+      // sumo = posterior chain (hip abductor/glute dominant)
+      // conventional = quad dominant (leg drive, more knee extension at the start)
+      cats.add(actualStance === "sumo" ? "posterior_chain" : "quad_dominant");
+    } else if (ex.stance === "competition" && cats.size === 0) {
+      cats.add("anchor");
+    }
   }
-  return "unclassified";
+
+  return cats.size > 0 ? [...cats] : ["unclassified"];
 }

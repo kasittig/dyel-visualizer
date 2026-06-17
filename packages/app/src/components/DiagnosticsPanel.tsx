@@ -23,7 +23,9 @@ export function DiagnosticsPanel({ rows }: { rows: ConjugateDataPair[] }) {
 
   const results = useMemo(
     () =>
-      generateDiagnostics(rows, { deadliftStance }).filter((r) => r.category !== "unclassified"),
+      generateDiagnostics(rows, { deadliftStance }).filter(
+        (r) => !r.category.every((c) => c === "unclassified")
+      ),
     [rows, deadliftStance]
   );
 
@@ -85,7 +87,10 @@ export function DiagnosticsPanel({ rows }: { rows: ConjugateDataPair[] }) {
                 <tr key={r.name} style={{ borderBottom: "1px solid var(--border)" }}>
                   <td style={cellStyle}>{r.name}</td>
                   <td style={{ ...cellStyle, color: "var(--text)" }}>
-                    {formatCategory(r.category)}
+                    {r.category
+                      .filter((c) => c !== "anchor" && c !== "unclassified")
+                      .map(formatCategory)
+                      .join(" + ")}
                   </td>
                   <td style={monoStyle}>{r.averageIndex.toFixed(1)}%</td>
                   <td style={monoStyle}>{r.expectedBaseline}</td>
