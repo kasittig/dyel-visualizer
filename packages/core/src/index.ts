@@ -10,6 +10,7 @@ export type {
   DeadliftStancePreference,
   DiagnosticResult,
   PrimaryLift,
+  EffectEnum,
 } from "./types/conjugate";
 export { variantLabel, familyKey } from "./types/conjugate";
 
@@ -45,10 +46,6 @@ export type { VariationChartResult } from "./utils/buildVariationChartData";
 export { NORMALIZED_KEY, buildVariationChartData } from "./utils/buildVariationChartData";
 
 export type { DiagnosticsOptions } from "./utils/diagnostics";
-export {
-  BIOMECHANICAL_BASELINES,
-  ACCOMMODATING_RESISTANCE_BASELINES,
-  generateDiagnostics,
-} from "./utils/diagnostics";
+export { EFFECT_DESCRIPTIONS, MODIFIER_EFFECTS, generateDiagnostics } from "./utils/diagnostics";
 
 export { defaultBaselineName, defaultTargetName } from "./utils/defaultSelections";

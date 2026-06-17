@@ -78,6 +78,32 @@ export type MovementCategory =
   | "posterior_chain"
   | "unclassified";
 
+export type EffectEnum =
+  | "QUAD_DOMINANT"
+  | "POSTERIOR_CHAIN"
+  | "HAMSTRING_DOMINANT"
+  | "HIP_DOMINANT"
+  | "TRICEP_DOMINANT"
+  | "UPPER_PECS"
+  | "LOWER_PECS"
+  | "LOCKOUT"
+  | "BOTTOM_RANGE"
+  | "DEAD_STOP"
+  | "REDUCED_ROM"
+  | "EXTENDED_ROM"
+  | "ACCOMMODATING_RESISTANCE"
+  | "SUPRAMAXIMAL"
+  | "STABILIZER_DEMAND"
+  | "UPPER_BACK_DEMAND"
+  | "CORE_DEMAND"
+  | "SHOULDER_FRIENDLY"
+  | "SPINE_DELOAD"
+  | "UNILATERAL"
+  | "BAR_SPEED"
+  | "POSTERIOR_SHIFT"
+  | "NO_LEG_DRIVE"
+  | "UPRIGHT_TORSO";
+
 export type DeadliftStancePreference = "sumo" | "conventional";
 
 export interface DiagnosticResult {
@@ -87,6 +113,7 @@ export interface DiagnosticResult {
   averageIndex: number;
   expectedBaseline: string;
   diagnostic: string;
+  effects: EffectEnum[];
 }
 
 export function variantLabel(ex: ConjugateExercise): string {
