@@ -2,7 +2,7 @@ import { memo, useMemo, useState } from "react";
 import type { FilterState } from "@dyel/core";
 import type { ConjugateDataPair } from "../hooks/useConjugateData";
 
-type SetFacet = Exclude<keyof FilterState, "excludeVolumeWork">;
+type SetFacet = keyof FilterState;
 
 const FACET_LABELS: Record<SetFacet, string> = {
   bar: "Bar",

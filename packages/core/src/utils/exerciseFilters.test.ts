@@ -35,8 +35,7 @@ describe("applyFilters — excludeVolumeWork", () => {
       pair("deadlift", 1),
       pair("accessory", 4),
     ];
-    const filters = { ...emptyFilters(), excludeVolumeWork: true };
-    const result = applyFilters(rows, filters);
+    const result = applyFilters(rows, emptyFilters(), true);
     expect(result).toHaveLength(2);
     expect(result[0][0].type).toBe("deadlift");
     expect(result[1][0].type).toBe("accessory");
@@ -44,13 +43,11 @@ describe("applyFilters — excludeVolumeWork", () => {
 
   it("keeps compound sets === 1", () => {
     const rows: ConjugateDataPair[] = [pair("squat", 1), pair("bench", 1)];
-    const filters = { ...emptyFilters(), excludeVolumeWork: true };
-    expect(applyFilters(rows, filters)).toHaveLength(2);
+    expect(applyFilters(rows, emptyFilters(), true)).toHaveLength(2);
   });
 
   it("never filters accessories regardless of sets", () => {
     const rows: ConjugateDataPair[] = [pair("accessory", 10)];
-    const filters = { ...emptyFilters(), excludeVolumeWork: true };
-    expect(applyFilters(rows, filters)).toHaveLength(1);
+    expect(applyFilters(rows, emptyFilters(), true)).toHaveLength(1);
   });
 });

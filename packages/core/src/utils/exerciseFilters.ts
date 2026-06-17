@@ -5,7 +5,6 @@ export type FilterState = {
   stance: Set<string>;
   addlWts: Set<string>;
   equipment: Set<string>;
-  excludeVolumeWork: boolean;
 };
 
 export function emptyFilters(): FilterState {
@@ -14,11 +13,14 @@ export function emptyFilters(): FilterState {
     stance: new Set(),
     addlWts: new Set(),
     equipment: new Set(),
-    excludeVolumeWork: false,
   };
 }
 
-export function applyFilters(rows: ConjugateDataPair[], filters: FilterState): ConjugateDataPair[] {
+export function applyFilters(
+  rows: ConjugateDataPair[],
+  filters: FilterState,
+  excludeVolumeWork = false
+): ConjugateDataPair[] {
   return rows.filter(([ex, session]) => {
     if (filters.bar.size > 0 && (ex.bar === null || !filters.bar.has(ex.bar))) return false;
     if (filters.stance.size > 0 && (ex.stance === null || !filters.stance.has(ex.stance)))
@@ -30,7 +32,7 @@ export function applyFilters(rows: ConjugateDataPair[], filters: FilterState): C
     )
       return false;
     if (
-      filters.excludeVolumeWork &&
+      excludeVolumeWork &&
       (ex.type === "squat" || ex.type === "bench" || ex.type === "deadlift") &&
       session.sets > 1
     )
