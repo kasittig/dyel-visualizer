@@ -16,7 +16,7 @@ type ExerciseShape = Pick<ConjugateExercise, "type" | "bar" | "stance" | "equipm
 
 const LOCKOUT_EQUIPMENT = new Set<ConjugateEquipment>(["board", "floor", "blocks", "rack"]);
 const BOTTOM_RANGE_EQUIPMENT = new Set<ConjugateEquipment>(["deficit", "pause"]);
-const QUAD_DOMINANT_BARS = new Set<ConjugateBar>(["ssb", "goblet", "trap"]);
+const QUAD_DOMINANT_BARS = new Set<ConjugateBar>(["ssb", "goblet", "trap", "zercher", "belt"]);
 
 export const EFFECT_DESCRIPTIONS: Record<EffectEnum, string> = {
   QUAD_DOMINANT: "shifts primary emphasis to the quadriceps",
@@ -294,6 +294,9 @@ export function toMovementCategory(
   if ((ex.equipment !== null && LOCKOUT_EQUIPMENT.has(ex.equipment)) || ex.stance === "close")
     return "lockout";
   if (ex.equipment !== null && BOTTOM_RANGE_EQUIPMENT.has(ex.equipment)) return "bottom_range";
+  if (ex.type === "squat" && ex.bar === "cambered") return "bottom_range";
+  if (ex.type === "squat" && (ex.stance === "sumo" || ex.stance === "wide"))
+    return "posterior_chain";
   if (
     ex.type === "squat" &&
     ((ex.bar !== null && QUAD_DOMINANT_BARS.has(ex.bar)) || ex.stance === "front")
