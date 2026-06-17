@@ -1,10 +1,9 @@
 import { useState, useEffect } from "react";
 import { parseConjugateData } from "@dyel/core";
 import type { ConjugateDataPair } from "@dyel/core";
+import type { SheetRef } from "../utils/appUtils";
 
 export type { ConjugateDataPair } from "@dyel/core";
-
-type SheetRef = { id: string; published: boolean };
 
 type ConjugateDataState =
   | { status: "idle" }
