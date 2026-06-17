@@ -7,6 +7,7 @@ function pair(
   date: string,
   e1rm: number,
   opts: Partial<{
+    type: ConjugateDataPair[0]["type"];
     bar: ConjugateDataPair[0]["bar"];
     stance: ConjugateDataPair[0]["stance"];
     equipment: ConjugateDataPair[0]["equipment"];
@@ -16,7 +17,7 @@ function pair(
   return [
     {
       displayName,
-      type: "squat",
+      type: opts.type ?? "squat",
       bar: opts.bar ?? "standard",
       stance: opts.stance ?? "competition",
       addlWts: opts.addlWts ?? [],
@@ -108,6 +109,37 @@ describe("defaultTargetName", () => {
   it("excludes exercises with addlWts", () => {
     const rows = [
       pair("Band Squat", "2024-01-01", 300, { addlWts: ["bands"] }),
+      pair("Squat", "2024-01-01", 280),
+    ];
+    expect(defaultTargetName(rows)).toBe("Squat");
+  });
+
+  it("prefers bench w/commands over plain bench when both are present", () => {
+    const rows = [
+      pair("Bench", "2024-01-01", 280, { type: "bench" }),
+      pair("Bench w/Commands", "2024-01-01", 260, { type: "bench", equipment: "pause" }),
+    ];
+    expect(defaultTargetName(rows)).toBe("Bench w/Commands");
+  });
+
+  it("returns plain bench when no commands variant exists", () => {
+    const rows = [
+      pair("SSB Bench", "2024-01-01", 300, { type: "bench", bar: "ssb" }),
+      pair("Bench", "2024-01-01", 280, { type: "bench" }),
+    ];
+    expect(defaultTargetName(rows)).toBe("Bench");
+  });
+
+  it("returns bench w/commands when it is the only bench variant", () => {
+    const rows = [
+      pair("Bench w/Commands", "2024-01-01", 260, { type: "bench", equipment: "pause" }),
+    ];
+    expect(defaultTargetName(rows)).toBe("Bench w/Commands");
+  });
+
+  it("does not prefer pause equipment for non-bench lifts", () => {
+    const rows = [
+      pair("Pause Squat", "2024-01-01", 300, { equipment: "pause" }),
       pair("Squat", "2024-01-01", 280),
     ];
     expect(defaultTargetName(rows)).toBe("Squat");

@@ -202,9 +202,27 @@ export function generateDiagnostics(
       { ex: ConjugateExercise; sessions: TrainingSession[] }
     >();
 
+    // For bench, prefer w/commands (equipment: "pause", standard bar, competition stance, no
+    // addlWts) as the anchor when present. Competition bench is always performed to judge's
+    // commands, so this IS the competition lift.
+    const commandsBenchName =
+      lift === "bench"
+        ? (liftPairs.find(
+            ([ex]) =>
+              ex.bar === "standard" &&
+              ex.stance === "competition" &&
+              ex.equipment === "pause" &&
+              ex.addlWts.length === 0
+          )?.[0].displayName ?? null)
+        : null;
+
     for (const [ex, session] of liftPairs) {
       const effectiveCategory = resolveCategory(ex, options);
-      if (effectiveCategory.length === 1 && effectiveCategory[0] === "anchor") {
+      const isAnchor =
+        commandsBenchName !== null
+          ? ex.displayName === commandsBenchName
+          : effectiveCategory.length === 1 && effectiveCategory[0] === "anchor";
+      if (isAnchor) {
         anchorSessions.push(session);
       } else if (!effectiveCategory.every((c) => c === "unclassified")) {
         const key = ex.displayName;
