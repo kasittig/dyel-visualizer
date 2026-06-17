@@ -47,6 +47,10 @@ npm run build -w packages/core
   - `gh issue view <number>` exits with a GraphQL error — use `gh api repos/kasittig/dyel-visualizer/issues/<number>`
   - `gh issue create` does not support `--jq` (only `gh api` does); omit it — the URL is printed to stdout on success
 
+**Documentation**
+
+- `ONBOARDING.md` (repo root) is the user-facing guide covering spreadsheet formatting, exercise naming rules, and how to use each chart. Update it whenever the CSV parsing logic, exercise name detection, or UI features change.
+
 **Code style**
 
 - Extract generic factories/helpers proactively whenever two or more implementations share the same shape. Don't wait to be asked.

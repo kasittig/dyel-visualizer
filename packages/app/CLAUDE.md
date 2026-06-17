@@ -24,7 +24,7 @@ Single-page React app with no backend. All data comes from a user-supplied Googl
 
 1. Takes a URL, calls `extractSheetRef()` to parse it into `{ id, published }`, passes to `useConjugateData()`
 2. `useConjugateData` fetches the sheet as CSV and calls `parseConjugateData` from `@dyel/core`
-3. The resulting `ConjugateDataPair[]` flows through exercise-type tabs (squat / bench / deadlift / accessory), `ExerciseFilters`, `ConjugateCharts`, and `ExerciseList`
+3. The resulting `ConjugateDataPair[]` flows through exercise-type tabs (squat / bench / deadlift / accessory), `ExerciseFilters`, and `LiftTabPanel` (which composes `ConjugateCharts` + `VariationRadarChart` + `DiagnosticsPanel`)
 4. `useLastSessionStats` computes per-exercise stats from the pair list — e1RM, last session, predicted e1RM, variant factors, resistance offsets
 5. `ErrorBoundary` wraps the root in `main.tsx`
 
