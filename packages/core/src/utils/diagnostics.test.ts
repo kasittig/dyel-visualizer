@@ -206,6 +206,32 @@ describe("toMovementCategory", () => {
       toMovementCategory(ex({ type: "deadlift", stance: "competition", equipment: "blocks" }))
     ).toBe("lockout");
   });
+
+  it('squat + zercher bar → "quad_dominant"', () => {
+    expect(toMovementCategory(ex({ type: "squat", stance: null, bar: "zercher" }))).toBe(
+      "quad_dominant"
+    );
+  });
+
+  it('squat + cambered bar → "bottom_range"', () => {
+    expect(toMovementCategory(ex({ type: "squat", stance: null, bar: "cambered" }))).toBe(
+      "bottom_range"
+    );
+  });
+
+  it('squat + belt bar → "quad_dominant"', () => {
+    expect(toMovementCategory(ex({ type: "squat", stance: null, bar: "belt" }))).toBe(
+      "quad_dominant"
+    );
+  });
+
+  it('squat + sumo stance → "posterior_chain"', () => {
+    expect(toMovementCategory(ex({ type: "squat", stance: "sumo" }))).toBe("posterior_chain");
+  });
+
+  it('squat + wide stance → "posterior_chain"', () => {
+    expect(toMovementCategory(ex({ type: "squat", stance: "wide" }))).toBe("posterior_chain");
+  });
 });
 
 describe("MODIFIER_EFFECTS", () => {
