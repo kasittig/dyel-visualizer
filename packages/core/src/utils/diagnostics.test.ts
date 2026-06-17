@@ -610,6 +610,65 @@ describe("generateDiagnostics", () => {
     expect(results[0].expectedBaseline).toBe("105–115%");
   });
 
+  it("uses bench w/commands as anchor when present, measuring other variations against it", () => {
+    const pairs: ConjugateDataPair[] = [
+      pair(
+        {
+          stance: "competition",
+          equipment: "pause",
+          movementCategory: ["bottom_range"],
+          displayName: "bench w/commands",
+        },
+        session("2024-01-01", 250)
+      ),
+      pair(
+        { movementCategory: ["lockout"], displayName: "board press", equipment: "board" },
+        session("2024-01-01", 270)
+      ),
+    ];
+    const results = generateDiagnostics(pairs);
+    expect(results).toHaveLength(1);
+    expect(results[0].name).toBe("board press");
+    expect(results[0].primaryLift).toBe("bench");
+    expect(results[0].expectedBaseline).toBe("105–115%");
+  });
+
+  it("plain bench does not produce a diagnostic result when bench w/commands is the anchor", () => {
+    const pairs: ConjugateDataPair[] = [
+      pair(
+        {
+          stance: "competition",
+          equipment: "pause",
+          movementCategory: ["bottom_range"],
+          displayName: "bench w/commands",
+        },
+        session("2024-01-01", 250)
+      ),
+      pair(
+        { stance: "competition", movementCategory: ["anchor"], displayName: "bench press" },
+        session("2024-01-01", 260)
+      ),
+    ];
+    const results = generateDiagnostics(pairs);
+    expect(results).toHaveLength(0);
+  });
+
+  it("falls back to plain bench as anchor when no bench w/commands is present", () => {
+    const pairs: ConjugateDataPair[] = [
+      pair(
+        { stance: "competition", movementCategory: ["anchor"], displayName: "bench press" },
+        session("2024-01-01", 300)
+      ),
+      pair(
+        { movementCategory: ["lockout"], displayName: "board press", equipment: "board" },
+        session("2024-01-01", 270)
+      ),
+    ];
+    const results = generateDiagnostics(pairs);
+    expect(results).toHaveLength(1);
+    expect(results[0].name).toBe("board press");
+  });
+
   it("handles multiple lifts and returns results for each", () => {
     const benchPairs: ConjugateDataPair[] = [
       pair(
