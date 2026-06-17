@@ -7,13 +7,11 @@ import { RepCalculator } from "./components/RepCalculator";
 import { SigmaTab } from "./components/SigmaTab";
 import { LiftTabPanel } from "./components/LiftTabPanel";
 import { VolumeWorkToggle } from "./components/VolumeWorkToggle";
-import { applyFilters } from "@dyel/core";
+import { applyFilters, defaultBaselineName, defaultTargetName } from "@dyel/core";
 import type { ConjugateDataPair } from "./hooks/useConjugateData";
 import type { FilterState } from "@dyel/core";
 import {
   extractSheetRef,
-  defaultBaselineName,
-  defaultTargetName,
   initialTabState,
   toggleInSet,
   LIFT_TABS,
