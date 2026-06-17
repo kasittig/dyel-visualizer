@@ -1,16 +1,13 @@
 import { useState, useMemo, useEffect } from "react";
 import { useConjugateData } from "./hooks/useConjugateData";
 import { useLastSessionStats } from "./hooks/useLastSessionStats";
-import { useBaselineTargetExercises } from "./hooks/useBaselineTargetExercises";
 import { ExerciseFilters } from "./components/ExerciseFilters";
 import { BaselineSelect } from "./components/BaselineSelect";
 import { RepCalculator } from "./components/RepCalculator";
-import { TotalChart } from "./components/TotalChart";
-import { SigmaRadarChart } from "./components/SigmaRadarChart";
+import { SigmaTab } from "./components/SigmaTab";
 import { LiftTabPanel } from "./components/LiftTabPanel";
 import { VolumeWorkToggle } from "./components/VolumeWorkToggle";
 import { applyFilters } from "@dyel/core";
-import { buildChartData } from "./utils/buildChartData";
 import type { ConjugateDataPair } from "./hooks/useConjugateData";
 import type { FilterState } from "@dyel/core";
 import {
@@ -97,25 +94,7 @@ function App() {
     [calcPairs, liftTab]
   );
 
-  const sigmaPairs = useMemo(
-    () =>
-      excludeVolumeWork
-        ? pairs.filter(([ex, session]) => ex.type === "accessory" || session.sets <= 1)
-        : pairs,
-    [pairs, excludeVolumeWork]
-  );
-  const sigmaStats = useLastSessionStats(sigmaPairs, effectiveBaselineNames);
   const chartStats = useLastSessionStats(filteredRows, effectiveBaselineNames);
-
-  const { baselineExByType: sigmaBaselineExByType, targetExByType: sigmaTargetExByType } =
-    useBaselineTargetExercises(sigmaPairs, effectiveBaselineNames, effectiveTargetNames);
-
-  const sigmaChartData = useMemo(
-    () => buildChartData(sigmaPairs, sigmaBaselineExByType, sigmaTargetExByType, sigmaStats),
-    [sigmaPairs, sigmaBaselineExByType, sigmaTargetExByType, sigmaStats]
-  );
-
-  const sigmaUnit = sigmaPairs[0]?.[1].unit ?? "lbs";
 
   function handleUrlChange(newUrl: string) {
     setUrl(newUrl);
@@ -228,11 +207,13 @@ function App() {
                 />
               </>
             ) : activeTab === "sigma" ? (
-              <>
-                <VolumeWorkToggle checked={excludeVolumeWork} onChange={toggleVolumeWork} />
-                <TotalChart chartData={sigmaChartData} unit={sigmaUnit} />
-                <SigmaRadarChart chartData={sigmaChartData} unit={sigmaUnit} />
-              </>
+              <SigmaTab
+                pairs={pairs}
+                excludeVolumeWork={excludeVolumeWork}
+                onToggleVolumeWork={toggleVolumeWork}
+                effectiveBaselineNames={effectiveBaselineNames}
+                effectiveTargetNames={effectiveTargetNames}
+              />
             ) : liftTab !== null ? (
               <>
                 <BaselineSelect
