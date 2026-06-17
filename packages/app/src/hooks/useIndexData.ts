@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
+import { parseIndexCsv, type IndexEntry } from "@dyel/core";
 
-export type IndexEntry = { name: string; url: string };
+export type { IndexEntry };
 
 const INDEX_SHEET_ID =
   "2PACX-1vTmiDdFL3yDqnm-sK2KvbljacO6Rq9KltzzoOJY1aFu6B2tWPejLDH4XqKW0su0j1IFSI7iA4IGmGbU";
@@ -9,18 +10,6 @@ type IndexDataState =
   | { status: "loading" }
   | { status: "error"; message: string }
   | { status: "success"; entries: IndexEntry[] };
-
-function parseIndexCsv(csv: string): IndexEntry[] {
-  const lines = csv.trim().split("\n");
-  return lines.slice(1).flatMap((line) => {
-    const commaIdx = line.indexOf(",");
-    if (commaIdx === -1) return [];
-    const name = line.slice(0, commaIdx).trim();
-    const url = line.slice(commaIdx + 1).trim();
-    if (!name || !url) return [];
-    return [{ name, url }];
-  });
-}
 
 export function useIndexData(): IndexDataState {
   const [state, setState] = useState<IndexDataState>({ status: "loading" });

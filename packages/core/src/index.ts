@@ -17,6 +17,9 @@ export { calcE1RM, invertE1RM, predictE1RM, fitAddlWtOffset, fitVariantFactor } 
 
 export { parseConjugateData } from "./utils/parseConjugateData";
 
+export type { IndexEntry } from "./utils/parseIndexCsv";
+export { parseIndexCsv } from "./utils/parseIndexCsv";
+
 export type { FilterState } from "./utils/exerciseFilters";
 export { emptyFilters, applyFilters } from "./utils/exerciseFilters";
 
