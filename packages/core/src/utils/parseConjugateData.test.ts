@@ -155,7 +155,7 @@ describe("nameToExercise", () => {
         addlWts: [],
         equipment: null,
         displayName: "Squat",
-        movementCategory: "anchor",
+        movementCategory: ["anchor"],
       });
     });
 
@@ -194,7 +194,7 @@ describe("nameToExercise", () => {
         addlWts: [],
         equipment: null,
         displayName: "Bench",
-        movementCategory: "anchor",
+        movementCategory: ["anchor"],
       });
     });
 
@@ -339,7 +339,7 @@ describe("nameToExercise", () => {
         addlWts: [],
         equipment: null,
         displayName: "Deadlift",
-        movementCategory: "anchor",
+        movementCategory: ["anchor"],
       });
     });
 
@@ -439,7 +439,7 @@ describe("nameToExercise", () => {
         addlWts: [],
         equipment: null,
         displayName: "Lat Pulldown",
-        movementCategory: "unclassified",
+        movementCategory: ["unclassified"],
       });
     });
 
@@ -451,7 +451,7 @@ describe("nameToExercise", () => {
         addlWts: [],
         equipment: null,
         displayName: "Overhead Press",
-        movementCategory: "unclassified",
+        movementCategory: ["unclassified"],
       });
     });
   });

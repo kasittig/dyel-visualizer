@@ -63,7 +63,7 @@ export interface ConjugateExercise {
   addlWts: ConjugateAddlWt[];
   equipment: ConjugateEquipment | null;
   displayName: string;
-  movementCategory: MovementCategory;
+  movementCategory: MovementCategory[];
 }
 
 export type PrimaryLift = Exclude<ConjugateExercise["type"], "accessory">;
@@ -109,7 +109,7 @@ export type DeadliftStancePreference = "sumo" | "conventional";
 export interface DiagnosticResult {
   primaryLift: PrimaryLift;
   name: string;
-  category: MovementCategory;
+  category: MovementCategory[];
   averageIndex: number;
   expectedBaseline: string;
   status: "optimal" | "weakness" | "overtrained";
