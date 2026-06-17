@@ -12,30 +12,40 @@ Set `VITE_SHEET_URL` in `.env.local` to pre-fill the sheet URL input during deve
 
 ## Architecture
 
-Single-page React app with no backend. All data comes from a user-supplied Google Sheet URL. There is no router — page selection is done via `?page=` query params in `main.tsx`.
+Single-page React app with no backend. All data comes from a user-supplied Google Sheet URL. There is no router — page selection is done via `?page=` query params (or matching path segment) in `main.tsx`.
 
-**Page routing (`main.tsx`):** `?page=conjugate` renders `ConjugateInfoPage` (which displays `CONJUGATE.md` as markdown via react-markdown); anything else renders `App`.
+**Page routing (`main.tsx`):**
 
-**Data flow:**
+- `?page=conjugate` (or `/conjugate`) → `ConjugateInfoPage` (renders `CONJUGATE.md` as markdown)
+- `?page=index` (or `/index`) → `IndexPage` (list of linked sheets fetched from a hardcoded published index sheet)
+- no `?page=` → `App` (main visualizer)
 
-1. `App.tsx` takes a URL, calls `extractSheetRef()` (from `src/utils/appUtils.ts`) to parse it into `{ id, published }`, and passes it to `useConjugateData()`
-2. `useConjugateData` (in `src/hooks/useConjugateData.ts`) fetches the sheet as CSV and calls `parseConjugateData` from `@dyel/core`
-3. The resulting `ConjugateDataPair[]` (tuples of `[ConjugateExercise, TrainingSession]`) flows through exercise-type tabs (squat / bench / deadlift / accessory), `ExerciseFilters`, `ConjugateCharts`, and `ExerciseList`
-4. `useLastSessionStats` (in `src/hooks/useLastSessionStats.ts`) computes per-exercise stats from the pair list — e1RM, last session, predicted e1RM, variant factors, resistance offsets
-5. `ErrorBoundary` wraps `<App />` in `main.tsx`
+**Data flow (`App.tsx`):**
 
-**Tab state:** `App.tsx` owns a single `tabState: Record<LiftTab, TabState>` (type defined in `appUtils.ts`) instead of separate `filterState`/`baselineNames`/`targetNames` objects. All three concerns are updated together, which prevents them from diverging.
+1. Takes a URL, calls `extractSheetRef()` to parse it into `{ id, published }`, passes to `useConjugateData()`
+2. `useConjugateData` fetches the sheet as CSV and calls `parseConjugateData` from `@dyel/core`
+3. The resulting `ConjugateDataPair[]` flows through exercise-type tabs (squat / bench / deadlift / accessory), `ExerciseFilters`, `ConjugateCharts`, and `ExerciseList`
+4. `useLastSessionStats` computes per-exercise stats from the pair list — e1RM, last session, predicted e1RM, variant factors, resistance offsets
+5. `ErrorBoundary` wraps the root in `main.tsx`
+
+**Tab state:** `App.tsx` owns `tabState: Record<LiftType, TabState>` (initialized via `initialTabState()`) plus a separate `excludeVolumeWork: boolean` state. `excludeVolumeWork` is passed directly to `applyFilters` as a parameter — it is NOT part of `FilterState` or `TabState`. Active non-lift tabs: `"sigma"` and `"calculator"`.
 
 **Key modules:**
 
-| Path | Purpose |
-|---|---|
-| `src/utils/appUtils.ts` | Pure helpers (`extractSheetRef`, `defaultBaselineName`, `defaultTargetName`, `toggleInSet`), type aliases (`LiftTab`, `PageTab`, `TabState`), and URL constants — no React dependency |
-| `src/components/BaseRadarChart.tsx` | Shared Recharts wrapper used by `SigmaRadarChart` and `VariationRadarChart`; accepts `angleKey`, `unit`, `tooltip`, optional `onClick` |
-| `src/hooks/useBaselineTargetExercises.ts` | Builds `baselineExByType` and `targetExByType` maps; shared by `TotalChart` and `SigmaRadarChart` |
-| `src/hooks/useConjugateChartData.ts` | All data aggregation for `ConjugateCharts` (grouping, normalization, forward-fill); the component itself is presentation-only |
-| `src/components/LiftTabPanel.tsx` | Per-lift tab content: `ConjugateCharts` + `VariationRadarChart` with shared variation-highlight state |
-| `src/components/VolumeWorkToggle.tsx` | Checkbox toggle for excluding volume work (sets > 1) |
+| Path                                      | Purpose                                                                                                                                                           |
+| ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/utils/appUtils.ts`                   | Pure helpers (`extractSheetRef`, `toggleInSet`, `initialTabState`), type aliases (`LiftType`, `PageTab`, `TabState`), and URL/tab constants — no React dependency |
+| `src/components/BaseRadarChart.tsx`       | Shared Recharts wrapper used by `SigmaRadarChart` and `VariationRadarChart`; accepts `angleKey`, `unit`, `tooltip`, optional `onClick`                            |
+| `src/components/SigmaTab.tsx`             | "Σ" overview tab: `TotalChart` + `SigmaRadarChart` across all lift types                                                                                          |
+| `src/components/LiftTabPanel.tsx`         | Per-lift tab content: `ConjugateCharts` + `VariationRadarChart` with shared variation-highlight state                                                             |
+| `src/components/RepCalculator.tsx`        | Calculator tab: predicts weight-for-reps and reps-for-weight using `findBestE1RM` from `@dyel/core`                                                               |
+| `src/components/DiagnosticsPanel.tsx`     | Diagnostics panel using `generateDiagnostics` from `@dyel/core`                                                                                                   |
+| `src/components/DateRangePicker.tsx`      | Date range input using `react-day-picker` + Radix Popover                                                                                                         |
+| `src/components/IndexPage.tsx`            | Landing page listing linked sheets; fetches from a hardcoded published index sheet via `useIndexData`                                                             |
+| `src/components/VolumeWorkToggle.tsx`     | Checkbox toggle for excluding volume work (sets > 1)                                                                                                              |
+| `src/hooks/useBaselineTargetExercises.ts` | Builds `baselineExByType` and `targetExByType` maps; shared by `TotalChart` and `SigmaRadarChart`                                                                 |
+| `src/hooks/useConjugateChartData.ts`      | All data aggregation for `ConjugateCharts` (grouping, normalization, forward-fill); the component itself is presentation-only                                     |
+| `src/hooks/useIndexData.ts`               | Fetches and parses the published index sheet CSV; returns `IndexEntry[]`                                                                                          |
 
 **Dev proxy:** `vite.config.ts` defines a `sheetsProxyPlugin` that forwards `/sheets-proxy/*` to `https://docs.google.com/*` using Node's `fetch`, which follows redirects server-side and avoids CORS issues. In production `useConjugateData` hits Google directly — this only works with published sheets.
 
