@@ -282,19 +282,20 @@ export function generateDiagnostics(
         if (k !== null) MODIFIER_EFFECTS[k]?.effects.forEach((e) => allEffects.add(e));
       }
 
-      const tag =
+      const status =
         averageIndex < baseline.min
-          ? "Weakness"
+          ? "weakness"
           : averageIndex > baseline.max
-            ? "Overtrained"
-            : "Optimal";
+            ? "overtrained"
+            : "optimal";
       results.push({
         primaryLift: lift,
         name,
         category: effectiveCategory,
         averageIndex,
         expectedBaseline,
-        diagnostic: `${tag}: ${name} at ${Math.round(averageIndex)}%`,
+        status,
+        diagnostic: `${name} at ${Math.round(averageIndex)}%`,
         effects: [...allEffects],
       });
     }

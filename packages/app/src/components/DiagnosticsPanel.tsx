@@ -68,11 +68,7 @@ export function DiagnosticsPanel({ rows }: { rows: ConjugateDataPair[] }) {
           </thead>
           <tbody>
             {results.map((r) => {
-              const status = r.diagnostic.startsWith("Optimal")
-                ? "optimal"
-                : r.diagnostic.startsWith("Overtrained")
-                  ? "overtrained"
-                  : "weakness";
+              const { status } = r;
               const diagnosticColor =
                 status === "optimal"
                   ? "var(--success)"
