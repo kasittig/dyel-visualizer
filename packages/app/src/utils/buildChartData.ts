@@ -1,9 +1,11 @@
 import { normalizeToBaseE1RM } from "@dyel/core";
-import type { ConjugateExercise, RepCalcStats } from "@dyel/core";
+import type { ConjugateExercise, PrimaryLift, RepCalcStats } from "@dyel/core";
 import { formatDate } from "@dyel/core";
 import type { ConjugateDataPair } from "../hooks/useConjugateData";
 
 export type ChartPoint = Record<string, string | number>;
+
+const LIFT_TYPES: PrimaryLift[] = ["squat", "bench", "deadlift"];
 
 export function buildChartData(
   pairs: ConjugateDataPair[],
@@ -11,18 +13,15 @@ export function buildChartData(
   targetExByType: Map<string, ConjugateExercise>,
   stats: RepCalcStats
 ): ChartPoint[] {
-  const squatByDate = new Map<string, number>();
-  const benchByDate = new Map<string, number>();
-  const deadliftByDate = new Map<string, number>();
+  const byDate = new Map<PrimaryLift, Map<string, number>>(
+    LIFT_TYPES.map((lift) => [lift, new Map()])
+  );
 
   for (const [exercise, session] of pairs) {
-    const date = session.date.toISOString().slice(0, 10);
-    let map: Map<string, number>;
-    if (exercise.type === "squat") map = squatByDate;
-    else if (exercise.type === "bench") map = benchByDate;
-    else if (exercise.type === "deadlift") map = deadliftByDate;
-    else continue;
+    const liftMap = byDate.get(exercise.type as PrimaryLift);
+    if (!liftMap) continue;
 
+    const date = session.date.toISOString().slice(0, 10);
     const baselineEx = baselineExByType.get(exercise.type);
     const targetEx = targetExByType.get(exercise.type) ?? baselineEx;
     let e1rm: number;
@@ -41,38 +40,29 @@ export function buildChartData(
       e1rm = session.e1rm;
     }
 
-    const prev = map.get(date);
-    if (prev === undefined || e1rm > prev) map.set(date, e1rm);
+    const prev = liftMap.get(date);
+    if (prev === undefined || e1rm > prev) liftMap.set(date, e1rm);
   }
 
-  const allDates = [
-    ...new Set([...squatByDate.keys(), ...benchByDate.keys(), ...deadliftByDate.keys()]),
-  ].sort();
+  const allDates = [...new Set(LIFT_TYPES.flatMap((lift) => [...byDate.get(lift)!.keys()]))].sort();
 
+  const last = {} as Record<PrimaryLift, number | undefined>;
   const rows: ChartPoint[] = [];
-  let lastSquat: number | undefined;
-  let lastBench: number | undefined;
-  let lastDeadlift: number | undefined;
 
   for (const date of allDates) {
-    const squat = squatByDate.get(date);
-    const bench = benchByDate.get(date);
-    const deadlift = deadliftByDate.get(date);
-
-    if (squat !== undefined) lastSquat = squat;
-    if (bench !== undefined) lastBench = bench;
-    if (deadlift !== undefined) lastDeadlift = deadlift;
-
-    const total =
-      lastSquat !== undefined && lastBench !== undefined && lastDeadlift !== undefined
-        ? Math.round(lastSquat + lastBench + lastDeadlift)
-        : undefined;
-
     const point: ChartPoint = { date, label: formatDate(date) };
-    if (squat !== undefined) point.squat = Math.round(squat);
-    if (bench !== undefined) point.bench = Math.round(bench);
-    if (deadlift !== undefined) point.deadlift = Math.round(deadlift);
-    if (total !== undefined) point.total = total;
+
+    for (const lift of LIFT_TYPES) {
+      const val = byDate.get(lift)!.get(date);
+      if (val !== undefined) {
+        last[lift] = val;
+        point[lift] = Math.round(val);
+      }
+    }
+
+    if (LIFT_TYPES.every((lift) => last[lift] !== undefined)) {
+      point.total = Math.round(LIFT_TYPES.reduce((sum, lift) => sum + last[lift]!, 0));
+    }
 
     rows.push(point);
   }
