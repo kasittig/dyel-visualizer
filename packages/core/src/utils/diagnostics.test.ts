@@ -669,6 +669,79 @@ describe("generateDiagnostics", () => {
     expect(results[0].name).toBe("board press");
   });
 
+  it("deadlift with addlWts is not treated as anchor (prevents phantom anchor from bands e1RM)", () => {
+    // Bands e1RM is far below straight-bar max; if included in the anchor grid it creates a
+    // steep negative slope that backward-extrapolates into absurd predicted anchors.
+    const pairs: ConjugateDataPair[] = [
+      pair(
+        {
+          type: "deadlift",
+          movementCategory: ["anchor"],
+          displayName: "deadlift",
+          addlWts: [],
+        },
+        session("2024-02-01", 250)
+      ),
+      pair(
+        {
+          type: "deadlift",
+          movementCategory: ["anchor"], // would be anchor by category alone — addlWts must block it
+          displayName: "deadlift (bands)",
+          addlWts: ["bands"],
+        },
+        session("2024-02-08", 190)
+      ),
+      pair(
+        {
+          type: "deadlift",
+          movementCategory: ["bottom_range"],
+          displayName: "deficit deadlift",
+          equipment: "deficit",
+          addlWts: [],
+        },
+        session("2024-02-01", 220)
+      ),
+    ];
+    const results = generateDiagnostics(pairs);
+    const deficit = results.find((r) => r.name === "deficit deadlift");
+    expect(deficit).toBeDefined();
+    // Anchor grid should only contain the straight-bar session (250).
+    // deficit factor = 220/250 = 88% → within 85–95% → optimal
+    expect(deficit!.status).toBe("optimal");
+  });
+
+  it("variations with addlWts are excluded from diagnostic results", () => {
+    // Chains/bands add variable load not captured in recorded weight, so e1RM comparison
+    // against the straight-bar anchor is unreliable. They must not appear in results even
+    // when they have a pct-bearing key from another modifier (e.g. swiss bar, floor press).
+    const pairs: ConjugateDataPair[] = [
+      pair(
+        { movementCategory: ["anchor"], displayName: "bench press" },
+        session("2024-01-01", 300)
+      ),
+      pair(
+        {
+          bar: "swiss",
+          movementCategory: ["anchor"],
+          displayName: "swiss bar bench (chain)",
+          addlWts: ["chains"],
+        },
+        session("2024-01-01", 270)
+      ),
+      pair(
+        {
+          equipment: "floor",
+          movementCategory: ["lockout"],
+          displayName: "floor press (chain)",
+          addlWts: ["chains"],
+        },
+        session("2024-01-01", 255)
+      ),
+    ];
+    const results = generateDiagnostics(pairs);
+    expect(results).toHaveLength(0);
+  });
+
   it("handles multiple lifts and returns results for each", () => {
     const benchPairs: ConjugateDataPair[] = [
       pair(
