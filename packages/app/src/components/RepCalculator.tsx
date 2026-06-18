@@ -23,9 +23,9 @@ function sourceNote(estimate: E1RMEstimate): string {
     case "exact":
       return `Based on ${estimate.sourceName} · ${date}`;
     case "addlWtOffset":
-      return `Based on ${estimate.sourceName} · ${date} · resistance offset adjusted`;
+      return `Based on ${estimate.sourceName} · ${date} · adjusted for added resistance (chains/bands)`;
     case "variantFactor":
-      return `Based on ${estimate.sourceName} · ${date} · variant factor applied`;
+      return `Based on ${estimate.sourceName} · ${date} · estimated from a related exercise`;
   }
 }
 

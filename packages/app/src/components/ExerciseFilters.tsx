@@ -45,10 +45,12 @@ export function ExerciseFilters({
   rows,
   filters,
   onToggle,
+  onClearAll,
 }: {
   rows: ConjugateDataPair[];
   filters: FilterState;
   onToggle: (facet: SetFacet, value: string) => void;
+  onClearAll?: () => void;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -82,20 +84,38 @@ export function ExerciseFilters({
 
   return (
     <div style={{ marginBottom: "1rem" }}>
-      <button
-        onClick={() => setOpen((v) => !v)}
-        style={{
-          background: "none",
-          border: "none",
-          padding: 0,
-          cursor: "pointer",
-          fontSize: "0.8rem",
-          color: "var(--text)",
-          marginBottom: open ? "0.75rem" : 0,
-        }}
-      >
-        {open ? "▲" : "▼"} Filters{activeCount > 0 ? ` (${activeCount} active)` : ""}
-      </button>
+      <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+        <button
+          onClick={() => setOpen((v) => !v)}
+          style={{
+            background: "none",
+            border: "none",
+            padding: 0,
+            cursor: "pointer",
+            fontSize: "0.8rem",
+            color: "var(--text)",
+            marginBottom: open ? "0.75rem" : 0,
+          }}
+        >
+          {open ? "▲" : "▼"} Filters{activeCount > 0 ? ` (${activeCount} active)` : ""}
+        </button>
+        {open && activeCount > 0 && onClearAll && (
+          <button
+            onClick={onClearAll}
+            style={{
+              background: "none",
+              border: "none",
+              padding: 0,
+              cursor: "pointer",
+              fontSize: "0.75rem",
+              color: "var(--accent)",
+              marginBottom: "0.75rem",
+            }}
+          >
+            Clear all
+          </button>
+        )}
+      </div>
       {open &&
         activeFacets.map((facet) => (
           <div key={facet} style={{ marginBottom: "0.5rem" }}>

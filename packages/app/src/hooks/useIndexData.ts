@@ -20,13 +20,20 @@ export function useIndexData(): IndexDataState {
       : "https://docs.google.com/spreadsheets";
     const url = `${base}/d/e/${INDEX_SHEET_ID}/pub?output=csv`;
 
-    fetch(url)
+    const controller = new AbortController();
+
+    fetch(url, { signal: controller.signal })
       .then((res) => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.text();
       })
       .then((csv) => setState({ status: "success", entries: parseIndexCsv(csv) }))
-      .catch((err) => setState({ status: "error", message: String(err.message) }));
+      .catch((err) => {
+        if (err.name === "AbortError") return;
+        setState({ status: "error", message: String(err.message) });
+      });
+
+    return () => controller.abort();
   }, []);
 
   return state;

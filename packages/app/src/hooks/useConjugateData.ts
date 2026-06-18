@@ -26,7 +26,9 @@ export function useConjugateData(sheetRef: SheetRef | null, gid = "0"): Conjugat
       ? `${base}/d/e/${sheetRef.id}/pub?output=csv`
       : `${base}/d/${sheetRef.id}/export?format=csv&gid=${gid}`;
 
-    fetch(url)
+    const controller = new AbortController();
+
+    fetch(url, { signal: controller.signal })
       .then((res) => {
         if (res.status === 404) throw new Error("Sheet not found. Check that the URL is correct.");
         if (res.status === 401 || res.status === 403)
@@ -46,7 +48,12 @@ export function useConjugateData(sheetRef: SheetRef | null, gid = "0"): Conjugat
         return res.text();
       })
       .then((csv) => setState({ status: "success", pairs: parseConjugateData(csv) }))
-      .catch((err) => setState({ status: "error", message: String(err.message) }));
+      .catch((err) => {
+        if (err.name === "AbortError") return;
+        setState({ status: "error", message: String(err.message) });
+      });
+
+    return () => controller.abort();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sheetRef?.id, sheetRef?.published, gid]);
 
