@@ -7,7 +7,7 @@ import { RepCalculator } from "./components/RepCalculator";
 import { SigmaTab } from "./components/SigmaTab";
 import { LiftTabPanel } from "./components/LiftTabPanel";
 import { VolumeWorkToggle } from "./components/VolumeWorkToggle";
-import { applyFilters, defaultBaselineName, defaultTargetName } from "@dyel/core";
+import { applyFilters, defaultBaselineName, defaultTargetName, emptyFilters } from "@dyel/core";
 import type { ConjugateDataPair } from "./hooks/useConjugateData";
 import type { FilterState } from "@dyel/core";
 import {
@@ -112,6 +112,14 @@ function App() {
           [facet]: toggleInSet(prev[liftTab].filters[facet], value),
         },
       },
+    }));
+  }
+
+  function clearFilters() {
+    if (!liftTab) return;
+    setTabState((prev) => ({
+      ...prev,
+      [liftTab]: { ...prev[liftTab], filters: emptyFilters() },
     }));
   }
 
@@ -238,6 +246,7 @@ function App() {
                   rows={activeRows}
                   filters={tabState[liftTab].filters}
                   onToggle={toggleFilter}
+                  onClearAll={clearFilters}
                 />
                 <LiftTabPanel
                   key={shownResetToken}
