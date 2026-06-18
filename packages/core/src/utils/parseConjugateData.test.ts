@@ -482,4 +482,9 @@ describe("findCol", () => {
     const row = { "bodyweight (lbs)": "175", "weight (lbs)": "135" };
     expect(findCol(row, "weight")).toBe("135");
   });
+
+  it("treats metacharacters in keyword as literals", () => {
+    expect(findCol({ "wt.lbs": "135" }, "wt.lbs")).toBe("135");
+    expect(findCol({ "wt-lbs": "135" }, "wt.lbs")).toBeUndefined();
+  });
 });
