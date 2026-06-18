@@ -109,7 +109,6 @@ export type DeadliftStancePreference = 'sumo' | 'conventional';
 export interface DiagnosticResult {
   primaryLift: PrimaryLift;
   name: string;
-  category: MovementCategory[];
   averageIndex: number;
   expectedBaseline: string;
   status: 'optimal' | 'weakness' | 'overtrained';
