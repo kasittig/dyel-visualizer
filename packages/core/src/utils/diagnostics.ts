@@ -353,8 +353,6 @@ export function toMovementCategory(
     ex.stance === "narrow"
   )
     cats.add("lockout");
-  if (ex.type === "bench" && (ex.equipment === "incline" || ex.equipment === "decline"))
-    cats.add("lockout");
   if (ex.equipment !== null && BOTTOM_RANGE_EQUIPMENT.has(ex.equipment)) cats.add("bottom_range");
   if (ex.type === "squat" && ex.bar === "cambered") cats.add("bottom_range");
   if (ex.type === "squat" && ex.equipment === "box") cats.add("bottom_range");

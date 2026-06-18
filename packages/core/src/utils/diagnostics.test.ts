@@ -97,15 +97,15 @@ describe("toMovementCategory", () => {
     expect(toMovementCategory(ex({ type: "bench", stance: "narrow" }))).toEqual(["lockout"]);
   });
 
-  it('bench + incline equipment (null stance) → ["lockout"]', () => {
+  it('bench + incline equipment (null stance) → ["unclassified"] (angle variation, not ROM modifier)', () => {
     expect(toMovementCategory(ex({ type: "bench", stance: null, equipment: "incline" }))).toEqual([
-      "lockout",
+      "unclassified",
     ]);
   });
 
-  it('bench + decline equipment (null stance) → ["lockout"]', () => {
+  it('bench + decline equipment (null stance) → ["unclassified"] (angle variation, not ROM modifier)', () => {
     expect(toMovementCategory(ex({ type: "bench", stance: null, equipment: "decline" }))).toEqual([
-      "lockout",
+      "unclassified",
     ]);
   });
 
@@ -193,10 +193,10 @@ describe("toMovementCategory", () => {
     ]);
   });
 
-  it("incline equipment beats competition stance (parser fallback) → ROM modifier wins", () => {
+  it("incline equipment is not a ROM modifier → competition stance still anchors", () => {
     expect(
       toMovementCategory(ex({ type: "bench", stance: "competition", equipment: "incline" }))
-    ).toEqual(["lockout"]);
+    ).toEqual(["anchor"]);
   });
 
   it("deadlift + deficit equipment + competition stance (parser fallback) → ROM modifier wins", () => {
