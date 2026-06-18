@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { validateSheetCsv } from "@dyel/core";
 import type { SheetValidationResult } from "@dyel/core";
 import { extractSheetRef } from "../utils/appUtils";
@@ -12,6 +12,7 @@ type ValidationState =
 
 export function useSheetValidation(): [ValidationState, (url: string) => void] {
   const [state, setState] = useState<ValidationState>({ status: "idle" });
+  const abortRef = useRef<AbortController | null>(null);
 
   function validate(url: string) {
     const trimmed = url.trim();
@@ -21,17 +22,22 @@ export function useSheetValidation(): [ValidationState, (url: string) => void] {
       return;
     }
 
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     setState({ status: "loading" });
-    fetchSheetCsv(sheetCsvUrl(sheetRef, "0"))
+    fetchSheetCsv(sheetCsvUrl(sheetRef, "0"), controller.signal)
       .then((csv) =>
         setState({ status: "success", result: validateSheetCsv(csv), sheetUrl: trimmed })
       )
-      .catch((err: unknown) =>
+      .catch((err: unknown) => {
+        if (err instanceof Error && err.name === "AbortError") return;
         setState({
           status: "error",
           message: err instanceof Error ? err.message : String(err),
-        })
-      );
+        });
+      });
   }
 
   return [state, validate];
