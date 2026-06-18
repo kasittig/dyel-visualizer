@@ -53,7 +53,10 @@ export function DiagnosticsPanel({ rows }: { rows: ConjugateDataPair[] }) {
     () =>
       generateDiagnostics(rows, {
         deadliftStance,
-        modifierEffects: effectsResource.status === 'success' ? effectsResource.data : undefined,
+        modifierEffects:
+          effectsResource.status === 'success' && effectsResource.data !== null
+            ? effectsResource.data
+            : undefined,
       }),
     [rows, deadliftStance, effectsResource]
   );

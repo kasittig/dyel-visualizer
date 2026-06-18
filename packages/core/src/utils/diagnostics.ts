@@ -66,13 +66,20 @@ interface ModifierEffectsRow {
   'pct-high': string;
 }
 
-export function parseModifierEffectsCsv(csv: string): ModifierEffectsMap {
-  const { data } = Papa.parse<ModifierEffectsRow>(csv, {
+// Returns null when the CSV is missing the expected columns (wrong sheet tab, etc.),
+// so callers can fall back to the hardcoded MODIFIER_EFFECTS instead of silently
+// producing an empty map.
+export function parseModifierEffectsCsv(csv: string): ModifierEffectsMap | null {
+  const { data, meta } = Papa.parse<ModifierEffectsRow>(csv, {
     header: true,
     skipEmptyLines: true,
     transformHeader: (h) => h.trim().toLowerCase(),
     transform: (v) => v.trim(),
   });
+  const required = ['dimension', 'value', 'base_exercise', 'pct-low', 'pct-high'];
+  if (!required.every((col) => meta.fields?.includes(col))) {
+    return null;
+  }
   const map: ModifierEffectsMap = {};
   for (const row of data) {
     const key = `${row.dimension}:${row.value}:${row.base_exercise}`;
