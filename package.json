@@ -36,9 +36,5 @@
     "prettier": "^3.8.3",
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.59.2"
-  },
-  "dependencies": {
-    "@radix-ui/react-popover": "^1.1.17",
-    "react-day-picker": "^10.0.1"
   }
 }
