@@ -1,4 +1,3 @@
-import Papa from 'papaparse';
 import type {
   ConjugateBar,
   ConjugateDataPair,
@@ -55,54 +54,6 @@ type ModifierEffectEntry =
   | { effects: EffectEnum[] };
 
 export type ModifierEffectsMap = Record<string, ModifierEffectEntry>;
-
-interface ModifierEffectsRow {
-  dimension: string;
-  value: string;
-  base_exercise: string;
-  description: string;
-  effects: string;
-  'pct-low': string;
-  'pct-high': string;
-}
-
-// Returns null when the CSV is missing the expected columns (wrong sheet tab, etc.),
-// so callers can fall back to the hardcoded MODIFIER_EFFECTS instead of silently
-// producing an empty map.
-export function parseModifierEffectsCsv(csv: string): ModifierEffectsMap | null {
-  const { data, meta } = Papa.parse<ModifierEffectsRow>(csv, {
-    header: true,
-    skipEmptyLines: true,
-    transformHeader: (h) => h.trim().toLowerCase(),
-    transform: (v) => v.trim(),
-  });
-  const required = ['dimension', 'value', 'base_exercise', 'pct-low', 'pct-high'];
-  if (!required.every((col) => meta.fields?.includes(col))) {
-    return null;
-  }
-  const map: ModifierEffectsMap = {};
-  for (const row of data) {
-    const key = `${row.dimension}:${row.value}:${row.base_exercise}`;
-    const effects = row.effects
-      ? (row.effects
-          .split(',')
-          .map((e) => e.trim())
-          .filter(Boolean) as EffectEnum[])
-      : [];
-    const pctLow = row['pct-low'];
-    const pctHigh = row['pct-high'];
-    if (pctLow && pctHigh) {
-      map[key] = {
-        effects,
-        min: Math.round(parseFloat(pctLow) * 100),
-        max: Math.round(parseFloat(pctHigh) * 100),
-      };
-    } else {
-      map[key] = { effects };
-    }
-  }
-  return map;
-}
 
 // When multiple pct-bearing modifiers are simultaneously active (e.g. SSB + pause squat),
 // their ranges are combined multiplicatively: each modifier independently scales performance
