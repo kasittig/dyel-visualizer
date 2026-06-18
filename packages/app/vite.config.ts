@@ -2,6 +2,8 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { fileURLToPath } from 'node:url';
 import type { Plugin } from 'vite';
+import fs from 'fs';
+import path from 'path';
 
 function sheetsProxyPlugin(): Plugin {
   return {
@@ -28,6 +30,9 @@ function sheetsProxyPlugin(): Plugin {
   };
 }
 
+const modifierEffectsPath = path.resolve(__dirname, './modifierEffects.json');
+const modifierEffects = JSON.parse(fs.readFileSync(modifierEffectsPath, 'utf-8'));
+
 export default defineConfig({
   plugins: [react(), sheetsProxyPlugin()],
   base: './',
@@ -49,5 +54,8 @@ export default defineConfig({
         },
       },
     },
+  },
+  define: {
+    __MODIFIER__EFFECTS__: JSON.stringify(modifierEffects),
   },
 });

@@ -109,7 +109,7 @@ export function validateSheetCsv(csv: string): SheetValidationResult {
   }
 
   const liftTypes = emptyLiftTypes();
-  let parsed = 0;
+  let num_parsed = 0;
   const rowIssues: SheetValidationIssue[] = [];
 
   for (let i = 0; i < data.length; i++) {
@@ -150,7 +150,7 @@ export function validateSheetCsv(csv: string): SheetValidationResult {
         rowIssues.push({ row: rowNum, exercise: exerciseName || '(empty)', issues: rowProblems });
       }
     } else {
-      parsed++;
+      num_parsed++;
       const ex = nameToExercise(exerciseName);
       if (ex) {
         liftTypes[ex.type]++;
@@ -162,34 +162,39 @@ export function validateSheetCsv(csv: string): SheetValidationResult {
 
   if (total === 0) {
     issues.push('No data rows found in the sheet.');
-  } else if (parsed === 0) {
+  } else if (num_parsed === 0) {
     issues.push(
       `None of the ${total} data row${total === 1 ? '' : 's'} could be parsed. See row issues below.`
     );
-  } else if (parsed < total) {
-    const skipped = total - parsed;
+  } else if (num_parsed < total) {
+    const skipped = total - num_parsed;
     warnings.push(
       `${skipped} of ${total} row${skipped === 1 ? '' : 's'} couldn't be parsed and will be skipped.`
     );
-    if (total - parsed > MAX_ROW_ISSUES) {
+    if (total - num_parsed > MAX_ROW_ISSUES) {
       warnings.push(`Showing the first ${MAX_ROW_ISSUES} row errors — fix these and re-validate.`);
     }
   }
 
-  if (parsed > 0 && liftTypes.squat === 0 && liftTypes.bench === 0 && liftTypes.deadlift === 0) {
+  if (
+    num_parsed > 0 &&
+    liftTypes.squat === 0 &&
+    liftTypes.bench === 0 &&
+    liftTypes.deadlift === 0
+  ) {
     warnings.push(
       'No squat, bench, or deadlift exercises were recognized — only accessories. Check exercise naming rules in the onboarding guide.'
     );
   }
 
   const verdict: 'ok' | 'warning' | 'error' =
-    issues.length > 0 || parsed === 0 ? 'error' : warnings.length > 0 ? 'warning' : 'ok';
+    issues.length > 0 || num_parsed === 0 ? 'error' : warnings.length > 0 ? 'warning' : 'ok';
 
   return {
     verdict,
     headerRow: headerIdx,
     columns,
-    rows: { total, parsed, liftTypes },
+    rows: { total, parsed: num_parsed, liftTypes },
     issues,
     warnings,
     rowIssues,
