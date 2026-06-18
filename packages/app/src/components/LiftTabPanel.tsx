@@ -1,10 +1,10 @@
-import { useState } from "react";
-import type { ConjugateDataPair } from "../hooks/useConjugateData";
-import type { SessionStats } from "../hooks/useLastSessionStats";
-import { ConjugateCharts } from "./ConjugateCharts";
-import { DiagnosticsPanel } from "./DiagnosticsPanel";
-import { VariationRadarChart } from "./VariationRadarChart";
-import type { LiftType } from "../utils/appUtils";
+import { useState } from 'react';
+import type { ConjugateDataPair } from '../hooks/useConjugateData';
+import type { SessionStats } from '../hooks/useLastSessionStats';
+import { ConjugateCharts } from './ConjugateCharts';
+import { DiagnosticsPanel } from './DiagnosticsPanel';
+import { VariationRadarChart } from './VariationRadarChart';
+import type { LiftType } from '../utils/appUtils';
 
 export function LiftTabPanel({
   filteredRows,

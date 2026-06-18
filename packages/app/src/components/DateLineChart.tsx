@@ -1,13 +1,13 @@
-import type React from "react";
-import { CartesianGrid, LineChart, ResponsiveContainer, XAxis, YAxis } from "recharts";
-import { formatDate } from "@dyel/core";
-import type { ChartPoint } from "@dyel/core";
+import type React from 'react';
+import { CartesianGrid, LineChart, ResponsiveContainer, XAxis, YAxis } from 'recharts';
+import { formatDate } from '@dyel/core';
+import type { ChartPoint } from '@dyel/core';
 
 /** The "No data found." placeholder shared by the time-series charts. */
 export function ChartEmpty() {
   return (
     <section>
-      <p style={{ color: "var(--text)" }}>No data found.</p>
+      <p style={{ color: 'var(--text)' }}>No data found.</p>
     </section>
   );
 }
@@ -31,7 +31,7 @@ export function DateLineChart({
   children: React.ReactNode;
 }) {
   return (
-    <div style={{ width: "80%", margin: "0 auto" }}>
+    <div style={{ width: '80%', margin: '0 auto' }}>
       <ResponsiveContainer width="100%" height={height}>
         <LineChart data={data} margin={{ top: 4, right: 16, bottom: 40, left: 0 }}>
           <CartesianGrid strokeDasharray="3 3" />

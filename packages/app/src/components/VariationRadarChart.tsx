@@ -1,9 +1,9 @@
-import { useMemo } from "react";
-import type { ConjugateDataPair } from "../hooks/useConjugateData";
-import type { SessionStats } from "../hooks/useLastSessionStats";
-import { BaseRadarChart } from "./BaseRadarChart";
-import { TooltipCard } from "./TooltipCard";
-import { distinctDisplayNames } from "../utils/appUtils";
+import { useMemo } from 'react';
+import type { ConjugateDataPair } from '../hooks/useConjugateData';
+import type { SessionStats } from '../hooks/useLastSessionStats';
+import { BaseRadarChart } from './BaseRadarChart';
+import { TooltipCard } from './TooltipCard';
+import { distinctDisplayNames } from '../utils/appUtils';
 
 const MIN_VARIATIONS = 3;
 
@@ -16,7 +16,7 @@ export function VariationRadarChart({
   stats: SessionStats;
   onVariationClick?: (variation: string) => void;
 }) {
-  const unit = rows[0]?.[1].unit ?? "lbs";
+  const unit = rows[0]?.[1].unit ?? 'lbs';
 
   const data = useMemo(
     () =>
@@ -26,7 +26,9 @@ export function VariationRadarChart({
     [rows, stats.projectedE1RM]
   );
 
-  if (data.length < MIN_VARIATIONS) return null;
+  if (data.length < MIN_VARIATIONS) {
+    return null;
+  }
 
   return (
     <BaseRadarChart
@@ -38,7 +40,9 @@ export function VariationRadarChart({
       tooltip={{
         content: ({ payload }) => {
           const item = payload?.[0];
-          if (!item) return null;
+          if (!item) {
+            return null;
+          }
           const name = (item.payload as { variation: string }).variation;
           const last = stats.lastSession.get(name);
           const lastDate = last?.date;
@@ -46,11 +50,11 @@ export function VariationRadarChart({
           const bestSet = last?.bestSet;
           const dateStr = lastDate
             ? lastDate.toLocaleDateString(undefined, {
-                month: "short",
-                day: "numeric",
-                year: "numeric",
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric',
               })
-            : "Never";
+            : 'Never';
           return (
             <TooltipCard>
               <div style={{ fontWeight: 600 }}>{name}</div>
@@ -58,9 +62,9 @@ export function VariationRadarChart({
                 Projected e1RM: {Number(item.value).toFixed(2)} {unit}
               </div>
               <div style={{ opacity: 0.7 }}>
-                Last session: {lastE1RM !== undefined ? `${lastE1RM.toFixed(2)} ${unit} · ` : ""}
+                Last session: {lastE1RM !== undefined ? `${lastE1RM.toFixed(2)} ${unit} · ` : ''}
                 {dateStr}
-                {bestSet ? ` · ${bestSet.sets}×${bestSet.reps} @ ${bestSet.weight} ${unit}` : ""}
+                {bestSet ? ` · ${bestSet.sets}×${bestSet.reps} @ ${bestSet.weight} ${unit}` : ''}
               </div>
             </TooltipCard>
           );

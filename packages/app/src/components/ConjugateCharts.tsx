@@ -1,16 +1,16 @@
-import { useCallback } from "react";
-import { Line, Tooltip } from "recharts";
-import { LINE_COLORS } from "@dyel/core";
-import type { RepCalcStats } from "@dyel/core";
-import type { ConjugateDataPair } from "../hooks/useConjugateData";
+import { useCallback } from 'react';
+import { Line, Tooltip } from 'recharts';
+import { LINE_COLORS } from '@dyel/core';
+import type { RepCalcStats } from '@dyel/core';
+import type { ConjugateDataPair } from '../hooks/useConjugateData';
 import {
   useConjugateChartData,
   NORMALIZED_KEY,
   NORMALIZED_COLOR,
   NORMALIZED_LABEL,
-} from "../hooks/useConjugateChartData";
-import { DateLineChart, ChartEmpty } from "./DateLineChart";
-import { TooltipCard } from "./TooltipCard";
+} from '../hooks/useConjugateChartData';
+import { DateLineChart, ChartEmpty } from './DateLineChart';
+import { TooltipCard } from './TooltipCard';
 
 export function ConjugateCharts({
   rows,
@@ -29,7 +29,7 @@ export function ConjugateCharts({
   highlightedVariation?: string | null;
   onVariationClick?: (variation: string) => void;
 }) {
-  const unit = rows[0]?.[1].unit ?? "lbs";
+  const unit = rows[0]?.[1].unit ?? 'lbs';
 
   const {
     variations,
@@ -55,17 +55,19 @@ export function ConjugateCharts({
       }[];
       label?: string | number;
     }) => {
-      if (!active || !payload?.length) return null;
+      if (!active || !payload?.length) {
+        return null;
+      }
       const isoDate = payload[0].payload!.date;
       return (
         <TooltipCard>
-          <div style={{ fontWeight: 600, marginBottom: "0.2rem" }}>{label}</div>
+          <div style={{ fontWeight: 600, marginBottom: '0.2rem' }}>{label}</div>
           {payload.map((item) => {
             const name = String(item.name);
             const bestSet =
               name !== NORMALIZED_KEY ? bestSetByLabelAndDate.get(name)?.get(isoDate) : undefined;
             return (
-              <div key={name} style={{ marginTop: "0.2rem" }}>
+              <div key={name} style={{ marginTop: '0.2rem' }}>
                 <div style={{ color: item.color }}>{name}</div>
                 <div>
                   e1RM: {String(item.value)} {unit}
@@ -93,18 +95,18 @@ export function ConjugateCharts({
       {baselineExercise && (
         <div
           style={{
-            fontSize: "0.8rem",
-            color: "var(--text)",
-            marginBottom: "0.5rem",
-            textAlign: "center",
+            fontSize: '0.8rem',
+            color: 'var(--text)',
+            marginBottom: '0.5rem',
+            textAlign: 'center',
           }}
         >
           <label>
-            Normalize to:{" "}
+            Normalize to:{' '}
             <select
-              value={effectiveTargetName ?? ""}
+              value={effectiveTargetName ?? ''}
               onChange={(e) => onTargetChange(e.target.value)}
-              style={{ fontSize: "0.8rem" }}
+              style={{ fontSize: '0.8rem' }}
             >
               {variations.map((v) => (
                 <option key={v} value={v}>
@@ -133,7 +135,7 @@ export function ConjugateCharts({
         )}
         {variations.map((label, i) => {
           const isHighlighted = highlightedVariation === label;
-          const stroke = isHighlighted ? "var(--text-h)" : LINE_COLORS[i % LINE_COLORS.length];
+          const stroke = isHighlighted ? 'var(--text-h)' : LINE_COLORS[i % LINE_COLORS.length];
           const handleClick = onVariationClick ? () => onVariationClick(label) : undefined;
           return (
             <Line
@@ -146,10 +148,10 @@ export function ConjugateCharts({
               activeDot={{
                 r: 5,
                 onClick: handleClick,
-                style: { cursor: onVariationClick ? "pointer" : undefined },
+                style: { cursor: onVariationClick ? 'pointer' : undefined },
               }}
               onClick={handleClick}
-              style={{ cursor: onVariationClick ? "pointer" : undefined }}
+              style={{ cursor: onVariationClick ? 'pointer' : undefined }}
               connectNulls
             />
           );

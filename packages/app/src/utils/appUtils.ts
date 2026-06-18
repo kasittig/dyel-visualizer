@@ -1,31 +1,34 @@
-import { emptyFilters } from "@dyel/core";
-import type { FilterState, ConjugateDataPair } from "@dyel/core";
+import { emptyFilters } from '@dyel/core';
+import type { FilterState, ConjugateDataPair } from '@dyel/core';
 
-export type SheetRef = { id: string; published: boolean };
-export type LiftType = "squat" | "bench" | "deadlift" | "accessory";
-export type PageTab = LiftType | "calculator" | "sigma";
+export interface SheetRef {
+  id: string;
+  published: boolean;
+}
+export type LiftType = 'squat' | 'bench' | 'deadlift' | 'accessory';
+export type PageTab = LiftType | 'calculator' | 'sigma';
 
-export const LIFT_TABS: LiftType[] = ["squat", "bench", "deadlift", "accessory"];
+export const LIFT_TABS: LiftType[] = ['squat', 'bench', 'deadlift', 'accessory'];
 
 export const MAIN_TABS = [
-  { id: "squat" as LiftType, label: "Squat" },
-  { id: "bench" as LiftType, label: "Bench" },
-  { id: "deadlift" as LiftType, label: "Deadlift" },
+  { id: 'squat' as LiftType, label: 'Squat' },
+  { id: 'bench' as LiftType, label: 'Bench' },
+  { id: 'deadlift' as LiftType, label: 'Deadlift' },
 ];
 
-export const ACCESSORY_TAB = { id: "accessory" as LiftType, label: "Accessories" };
+export const ACCESSORY_TAB = { id: 'accessory' as LiftType, label: 'Accessories' };
 
 export const EXAMPLE_CSV_URL =
-  "https://docs.google.com/spreadsheets/d/e/2PACX-1vRPu7N-kHeJeUVhjbL0Q9xDLXEPeC3GsvnAE4HXj2-q9pIjM25BxUwUVxHYqxVR-9uQvW9MKM4l9xNI/pub?gid=1297658251&single=true&output=csv";
+  'https://docs.google.com/spreadsheets/d/e/2PACX-1vRPu7N-kHeJeUVhjbL0Q9xDLXEPeC3GsvnAE4HXj2-q9pIjM25BxUwUVxHYqxVR-9uQvW9MKM4l9xNI/pub?gid=1297658251&single=true&output=csv';
 export const EXAMPLE_SHEET_URL =
-  "https://docs.google.com/spreadsheets/d/1Uwfzrb4wjYcBisTPdNEUGJyvfKRLwpN0tm8ciRPHB0c/edit?gid=1297658251#gid=1297658251";
+  'https://docs.google.com/spreadsheets/d/1Uwfzrb4wjYcBisTPdNEUGJyvfKRLwpN0tm8ciRPHB0c/edit?gid=1297658251#gid=1297658251';
 export const EXAMPLE_VISUALIZER_URL = `?sheet=${encodeURIComponent(EXAMPLE_CSV_URL)}`;
 
-export type TabState = {
+export interface TabState {
   filters: FilterState;
   baselineName?: string;
   targetName?: string;
-};
+}
 
 /** Distinct exercise display names in first-seen order. Callers `.sort()` if they need it. */
 export function distinctDisplayNames(rows: ConjugateDataPair[]): string[] {
@@ -42,20 +45,29 @@ export function distinctDisplayNames(rows: ConjugateDataPair[]): string[] {
 
 export function toggleInSet<T>(set: Set<T>, item: T): Set<T> {
   const next = new Set(set);
-  if (next.has(item)) next.delete(item);
-  else next.add(item);
+  if (next.has(item)) {
+    next.delete(item);
+  } else {
+    next.add(item);
+  }
   return next;
 }
 
 export function extractSheetRef(input: string): SheetRef | null {
   // Published web URL: .../d/e/PUBLISHED_ID/pubhtml (may have /u/N/ before /d/)
   const publishedMatch = input.match(/\/d\/e\/([a-zA-Z0-9_-]+)/);
-  if (publishedMatch) return { id: publishedMatch[1], published: true };
+  if (publishedMatch) {
+    return { id: publishedMatch[1], published: true };
+  }
   // Edit/view URL: .../d/SHEET_ID/
   const regularMatch = input.match(/\/d\/([a-zA-Z0-9_-]+)/);
-  if (regularMatch) return { id: regularMatch[1], published: false };
+  if (regularMatch) {
+    return { id: regularMatch[1], published: false };
+  }
   // Bare ID
-  if (/^[a-zA-Z0-9_-]{20,}$/.test(input.trim())) return { id: input.trim(), published: false };
+  if (/^[a-zA-Z0-9_-]{20,}$/.test(input.trim())) {
+    return { id: input.trim(), published: false };
+  }
   return null;
 }
 

@@ -1,21 +1,25 @@
-import type { ConjugateDataPair, ConjugateExercise } from "../types/conjugate";
-import type { RepCalcStats } from "./repCalculator";
-import { normalizeToBaseE1RM } from "./repCalculator";
-import type { ChartPoint } from "./buildChartData";
-import { isoDate, recordMax, sortedGridDates, type DateValueGrid } from "./chartGrid";
+import type { ConjugateDataPair, ConjugateExercise } from '../types/conjugate';
+import type { RepCalcStats } from './repCalculator';
+import { normalizeToBaseE1RM } from './repCalculator';
+import type { ChartPoint } from './buildChartData';
+import { isoDate, recordMax, sortedGridDates, type DateValueGrid } from './chartGrid';
 
-export const NORMALIZED_KEY = "__normalized__";
+export const NORMALIZED_KEY = '__normalized__';
 
-type BestSet = { sets: number; reps: number; weight: number };
+interface BestSet {
+  sets: number;
+  reps: number;
+  weight: number;
+}
 
-export type VariationChartResult = {
+export interface VariationChartResult {
   variations: string[];
   data: ChartPoint[];
   showNormalized: boolean;
   bestSetByLabelAndDate: Map<string, Map<string, BestSet>>;
   baselineExercise: ConjugateExercise | null;
   effectiveTargetName: string | null;
-};
+}
 
 export function buildVariationChartData(
   rows: ConjugateDataPair[],
@@ -70,8 +74,9 @@ export function buildVariationChartData(
       );
       if (normalized !== null) {
         const prev = normalizedByDate.get(date);
-        if (prev === undefined || normalized > prev)
+        if (prev === undefined || normalized > prev) {
           normalizedByDate.set(date, Math.round(normalized));
+        }
       }
     }
   }
@@ -80,10 +85,14 @@ export function buildVariationChartData(
     const point: ChartPoint = { date };
     for (const variation of variations) {
       const e1rm = e1rmByLabelAndDate.get(variation)?.get(date);
-      if (e1rm !== undefined) point[variation] = Math.round(e1rm);
+      if (e1rm !== undefined) {
+        point[variation] = Math.round(e1rm);
+      }
     }
     const normalized = normalizedByDate.get(date);
-    if (normalized !== undefined) point[NORMALIZED_KEY] = normalized;
+    if (normalized !== undefined) {
+      point[NORMALIZED_KEY] = normalized;
+    }
     return point;
   });
 

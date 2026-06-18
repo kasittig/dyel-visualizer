@@ -1,26 +1,26 @@
-import { familyKey, variantLabel } from "../types/conjugate";
-import type { ConjugateDataPair, TrainingSession } from "../types/conjugate";
-import { fitAddlWtOffset, fitVariantFactor, predictE1RM } from "./e1rm";
-import type { RepCalcStats } from "./repCalculator";
+import { familyKey, variantLabel } from '../types/conjugate';
+import type { ConjugateDataPair, TrainingSession } from '../types/conjugate';
+import { fitAddlWtOffset, fitVariantFactor, predictE1RM } from './e1rm';
+import type { RepCalcStats } from './repCalculator';
 
-export type LastSession = {
+export interface LastSession {
   date: Date;
   e1rm: number;
   bestSet: { weight: number; reps: number; sets: number };
-};
+}
 
-export type SessionStats = RepCalcStats & {
+export interface SessionStats extends RepCalcStats {
   lastSession: Map<string, LastSession>;
   projectedE1RM: Map<string, number>;
-};
+}
 
-type ExData = {
+interface ExData {
   sessions: TrainingSession[];
   label: string;
   type: string;
   isAddlWt: boolean;
   family: string;
-};
+}
 
 export function buildSessionStats(
   pairs: ConjugateDataPair[],
@@ -63,21 +63,27 @@ export function buildSessionStats(
 
     if (exercise.addlWts.length === 0) {
       const arr = straightByFamily.get(fk);
-      if (arr) arr.push(session);
-      else straightByFamily.set(fk, [session]);
+      if (arr) {
+        arr.push(session);
+      } else {
+        straightByFamily.set(fk, [session]);
+      }
     }
   }
 
   const addlWtOffset = new Map<string, { offset: number; sampleCount: number }>();
   const projectedE1RM = new Map<string, number>();
   for (const [name, data] of dataByName) {
-    if (data.isAddlWt)
+    if (data.isAddlWt) {
       addlWtOffset.set(
         name,
         fitAddlWtOffset(straightByFamily.get(data.family) ?? [], data.sessions)
       );
+    }
     const projected = predictE1RM(data.sessions, today);
-    if (projected !== null) projectedE1RM.set(name, projected);
+    if (projected !== null) {
+      projectedE1RM.set(name, projected);
+    }
   }
 
   const variantFactor = new Map<
@@ -85,9 +91,13 @@ export function buildSessionStats(
     { factor: number; sampleCount: number; label: string; baselineName: string }
   >();
   for (const [name, data] of dataByName) {
-    if (data.type === "accessory") continue;
+    if (data.type === 'accessory') {
+      continue;
+    }
     const baselineName = baselineNames[data.type];
-    if (name === baselineName) continue;
+    if (name === baselineName) {
+      continue;
+    }
 
     const baselineSessions = baselineName ? (dataByName.get(baselineName)?.sessions ?? []) : [];
     const offsetEntry = addlWtOffset.get(name);
@@ -101,7 +111,7 @@ export function buildSessionStats(
       factor,
       sampleCount,
       label: data.label,
-      baselineName: baselineName ?? "baseline",
+      baselineName: baselineName ?? 'baseline',
     });
   }
 

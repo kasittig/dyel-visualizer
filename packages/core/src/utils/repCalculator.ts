@@ -1,29 +1,33 @@
-import { calcE1RM, invertE1RM } from "./e1rm";
-import { familyKey } from "../types/conjugate";
-import type { ConjugateExercise, ConjugateDataPair } from "../types/conjugate";
+import { calcE1RM, invertE1RM } from './e1rm';
+import { familyKey } from '../types/conjugate';
+import type { ConjugateExercise, ConjugateDataPair } from '../types/conjugate';
 
-export type E1RMEstimate = {
+export interface E1RMEstimate {
   e1rm: number;
   date: Date;
   sourceName: string;
-  method: "exact" | "addlWtOffset" | "variantFactor";
-};
+  method: 'exact' | 'addlWtOffset' | 'variantFactor';
+}
 
-export type RepCalcStats = {
+export interface RepCalcStats {
   addlWtOffset: Map<string, { offset: number; sampleCount: number }>;
   variantFactor: Map<
     string,
     { factor: number; sampleCount: number; label: string; baselineName: string }
   >;
-};
+}
 
 export function predictWeightForReps(e1rm: number, reps: number): number {
-  if (reps <= 0) return 0;
+  if (reps <= 0) {
+    return 0;
+  }
   return invertE1RM(e1rm, reps);
 }
 
 export function predictRepsForWeight(e1rm: number, weight: number): number {
-  if (weight <= 0 || weight >= e1rm) return 1;
+  if (weight <= 0 || weight >= e1rm) {
+    return 1;
+  }
   return Math.max(1, 30 * (e1rm / weight - 1));
 }
 
@@ -60,11 +64,19 @@ export function findBestE1RM(
 
   // Pre-scan: for each exercise name find the most recent session within the window,
   // and within that date the best (highest e1rm) set.
-  type WindowBest = { date: Date; e1rm: number; set: { weight: number; reps: number } };
+  interface WindowBest {
+    date: Date;
+    e1rm: number;
+    set: { weight: number; reps: number };
+  }
   const windowBestByName = new Map<string, WindowBest>();
   for (const [ex, session] of pairs) {
-    if (!exerciseByName.has(ex.displayName)) exerciseByName.set(ex.displayName, ex);
-    if (session.date < dayStart || session.date > dayEnd) continue;
+    if (!exerciseByName.has(ex.displayName)) {
+      exerciseByName.set(ex.displayName, ex);
+    }
+    if (session.date < dayStart || session.date > dayEnd) {
+      continue;
+    }
     const prev = windowBestByName.get(ex.displayName);
     const t = session.date.getTime();
     const prevT = prev?.date.getTime() ?? -Infinity;
@@ -83,11 +95,18 @@ export function findBestE1RM(
   let bestName: string | null = null;
 
   for (const [name, ex] of exerciseByName) {
-    if (ex.type !== target.type) continue;
-    if (target.type === "accessory" ? name !== target.displayName : familyKey(ex) !== targetFamily)
+    if (ex.type !== target.type) {
       continue;
+    }
+    if (
+      target.type === 'accessory' ? name !== target.displayName : familyKey(ex) !== targetFamily
+    ) {
+      continue;
+    }
     const data = windowBestByName.get(name);
-    if (!data) continue;
+    if (!data) {
+      continue;
+    }
     if (!bestDate || data.date > bestDate) {
       bestDate = data.date;
       bestName = name;
@@ -103,12 +122,12 @@ export function findBestE1RM(
     const targetHasAddl = target.addlWts.length > 0;
 
     // Accessories: exact match only, no variant adjustments.
-    if (target.type === "accessory") {
-      return { e1rm: sourceE1RM, date: bestDate, sourceName: bestName, method: "exact" };
+    if (target.type === 'accessory') {
+      return { e1rm: sourceE1RM, date: bestDate, sourceName: bestName, method: 'exact' };
     }
 
     if (sourceEx.displayName === target.displayName || (!sourceHasAddl && !targetHasAddl)) {
-      return { e1rm: sourceE1RM, date: bestDate, sourceName: bestName, method: "exact" };
+      return { e1rm: sourceE1RM, date: bestDate, sourceName: bestName, method: 'exact' };
     }
 
     if (sourceHasAddl && !targetHasAddl) {
@@ -120,7 +139,7 @@ export function findBestE1RM(
           e1rm: calcE1RM(sourceBestSet.weight + off.offset, sourceBestSet.reps),
           date: bestDate,
           sourceName: bestName,
-          method: "addlWtOffset",
+          method: 'addlWtOffset',
         };
       }
     }
@@ -135,7 +154,7 @@ export function findBestE1RM(
           return (
             ex &&
             familyKey(ex) === targetFamily &&
-            ex.addlWts.join(",") === target.addlWts.join(",")
+            ex.addlWts.join(',') === target.addlWts.join(',')
           );
         })?.[1];
       if (proxyOffset && proxyOffset.sampleCount > 0) {
@@ -144,13 +163,15 @@ export function findBestE1RM(
           e1rm: calcE1RM(adjustedWeight, sourceBestSet.reps),
           date: bestDate,
           sourceName: bestName,
-          method: "addlWtOffset",
+          method: 'addlWtOffset',
         };
       }
     }
   }
 
-  if (target.type === "accessory") return null;
+  if (target.type === 'accessory') {
+    return null;
+  }
 
   // Phase 2: no same-family history. Cross-estimate through baseline via variantFactor.
   // variantFactor[name].factor = e1rm_variant / e1rm_baseline
@@ -160,9 +181,13 @@ export function findBestE1RM(
     targetFactor = 1.0;
   } else {
     const tvf = variantFactor.get(target.displayName);
-    if (tvf && tvf.sampleCount > 0 && tvf.factor > 0) targetFactor = tvf.factor;
+    if (tvf && tvf.sampleCount > 0 && tvf.factor > 0) {
+      targetFactor = tvf.factor;
+    }
   }
-  if (targetFactor === null) return null;
+  if (targetFactor === null) {
+    return null;
+  }
 
   let bestVFDate: Date | null = null;
   let bestVFName: string | null = null;
@@ -170,7 +195,9 @@ export function findBestE1RM(
 
   function tryVFSource(name: string, sourceFactor: number) {
     const data = windowBestByName.get(name);
-    if (!data) return;
+    if (!data) {
+      return;
+    }
     if (!bestVFDate || data.date > bestVFDate) {
       bestVFDate = data.date;
       bestVFName = name;
@@ -178,13 +205,21 @@ export function findBestE1RM(
     }
   }
 
-  if (baselineNameForType) tryVFSource(baselineNameForType, 1.0);
+  if (baselineNameForType) {
+    tryVFSource(baselineNameForType, 1.0);
+  }
 
   for (const [name, vf] of variantFactor) {
     const ex = exerciseByName.get(name);
-    if (!ex || ex.type !== target.type) continue;
-    if (name === target.displayName) continue;
-    if (vf.sampleCount === 0 || vf.factor <= 0) continue;
+    if (!ex || ex.type !== target.type) {
+      continue;
+    }
+    if (name === target.displayName) {
+      continue;
+    }
+    if (vf.sampleCount === 0 || vf.factor <= 0) {
+      continue;
+    }
     tryVFSource(name, vf.factor);
   }
 
@@ -193,7 +228,7 @@ export function findBestE1RM(
       e1rm: bestVFE1RM,
       date: bestVFDate,
       sourceName: bestVFName,
-      method: "variantFactor",
+      method: 'variantFactor',
     };
   }
 
@@ -220,10 +255,14 @@ export function normalizeToBaseE1RM(
 
     if (sourceHasAddl && !targetHasAddl) {
       const off = addlWtOffset.get(source.displayName);
-      if (off && off.sampleCount > 0) return calcE1RM(weight + off.offset, reps);
+      if (off && off.sampleCount > 0) {
+        return calcE1RM(weight + off.offset, reps);
+      }
     } else if (!sourceHasAddl && targetHasAddl) {
       const off = addlWtOffset.get(target.displayName);
-      if (off && off.sampleCount > 0) return calcE1RM(Math.max(0, weight - off.offset), reps);
+      if (off && off.sampleCount > 0) {
+        return calcE1RM(Math.max(0, weight - off.offset), reps);
+      }
     }
     return null;
   }
@@ -234,18 +273,24 @@ export function normalizeToBaseE1RM(
   let sourceE1RM = calcE1RM(weight, reps);
   if (source.addlWts.length > 0) {
     const off = addlWtOffset.get(source.displayName);
-    if (off && off.sampleCount > 0) sourceE1RM = calcE1RM(weight + off.offset, reps);
+    if (off && off.sampleCount > 0) {
+      sourceE1RM = calcE1RM(weight + off.offset, reps);
+    }
   }
 
-  const lookupFactor = (name: string): number | null => {
-    if (name === baseline?.displayName) return 1.0;
+  function lookupFactor(name: string): number | null {
+    if (name === baseline?.displayName) {
+      return 1.0;
+    }
     const vf = variantFactor.get(name);
     return vf && vf.sampleCount > 0 && vf.factor > 0 ? vf.factor : null;
-  };
+  }
 
   const sourceFactor = lookupFactor(source.displayName);
   const targetFactor = lookupFactor(target.displayName);
-  if (sourceFactor === null || targetFactor === null) return null;
+  if (sourceFactor === null || targetFactor === null) {
+    return null;
+  }
 
   return (sourceE1RM / sourceFactor) * targetFactor;
 }
