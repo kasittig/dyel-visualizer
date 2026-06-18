@@ -1,14 +1,6 @@
 import { useCallback } from "react";
-import {
-  CartesianGrid,
-  Line,
-  LineChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
-import { LINE_COLORS, formatDate } from "@dyel/core";
+import { Line, Tooltip } from "recharts";
+import { LINE_COLORS } from "@dyel/core";
 import type { RepCalcStats } from "@dyel/core";
 import type { ConjugateDataPair } from "../hooks/useConjugateData";
 import {
@@ -17,6 +9,8 @@ import {
   NORMALIZED_COLOR,
   NORMALIZED_LABEL,
 } from "../hooks/useConjugateChartData";
+import { DateLineChart, ChartEmpty } from "./DateLineChart";
+import { TooltipCard } from "./TooltipCard";
 
 export function ConjugateCharts({
   rows,
@@ -64,16 +58,7 @@ export function ConjugateCharts({
       if (!active || !payload?.length) return null;
       const isoDate = payload[0].payload!.date;
       return (
-        <div
-          style={{
-            background: "var(--bg, #fff)",
-            border: "1px solid var(--border, #ccc)",
-            borderRadius: 4,
-            padding: "6px 10px",
-            fontSize: "0.8rem",
-            lineHeight: 1.5,
-          }}
-        >
+        <TooltipCard>
           <div style={{ fontWeight: 600, marginBottom: "0.2rem" }}>{label}</div>
           {payload.map((item) => {
             const name = String(item.name);
@@ -93,18 +78,14 @@ export function ConjugateCharts({
               </div>
             );
           })}
-        </div>
+        </TooltipCard>
       );
     },
     [bestSetByLabelAndDate, unit]
   );
 
   if (variations.length === 0) {
-    return (
-      <section>
-        <p style={{ color: "var(--text)" }}>No data found.</p>
-      </section>
-    );
+    return <ChartEmpty />;
   }
 
   return (
@@ -134,60 +115,46 @@ export function ConjugateCharts({
           </label>
         </div>
       )}
-      <div style={{ width: "80%", margin: "0 auto" }}>
-        <ResponsiveContainer width="100%" height={300}>
-          <LineChart data={data} margin={{ top: 4, right: 16, bottom: 40, left: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis
-              dataKey="date"
-              tickFormatter={formatDate}
-              angle={-45}
-              textAnchor="end"
-              interval="preserveStartEnd"
-              tick={{ fontSize: 11 }}
+      <DateLineChart data={data} unit={unit}>
+        <Tooltip content={tooltipContent} />
+        {showNormalized && (
+          <Line
+            key={NORMALIZED_KEY}
+            type="monotone"
+            dataKey={NORMALIZED_KEY}
+            name={NORMALIZED_LABEL}
+            stroke={NORMALIZED_COLOR}
+            strokeWidth={2}
+            strokeDasharray="6 3"
+            dot={{ r: 3 }}
+            activeDot={{ r: 5 }}
+            connectNulls
+          />
+        )}
+        {variations.map((label, i) => {
+          const isHighlighted = highlightedVariation === label;
+          const stroke = isHighlighted ? "var(--text-h)" : LINE_COLORS[i % LINE_COLORS.length];
+          const handleClick = onVariationClick ? () => onVariationClick(label) : undefined;
+          return (
+            <Line
+              key={label}
+              type="monotone"
+              dataKey={label}
+              stroke={stroke}
+              strokeWidth={isHighlighted ? 3 : 1.5}
+              dot={{ r: isHighlighted ? 4 : 3 }}
+              activeDot={{
+                r: 5,
+                onClick: handleClick,
+                style: { cursor: onVariationClick ? "pointer" : undefined },
+              }}
+              onClick={handleClick}
+              style={{ cursor: onVariationClick ? "pointer" : undefined }}
+              connectNulls
             />
-            <YAxis tick={{ fontSize: 11 }} width={45} unit={` ${unit}`} />
-            <Tooltip content={tooltipContent} />
-            {showNormalized && (
-              <Line
-                key={NORMALIZED_KEY}
-                type="monotone"
-                dataKey={NORMALIZED_KEY}
-                name={NORMALIZED_LABEL}
-                stroke={NORMALIZED_COLOR}
-                strokeWidth={2}
-                strokeDasharray="6 3"
-                dot={{ r: 3 }}
-                activeDot={{ r: 5 }}
-                connectNulls
-              />
-            )}
-            {variations.map((label, i) => {
-              const isHighlighted = highlightedVariation === label;
-              const stroke = isHighlighted ? "var(--text-h)" : LINE_COLORS[i % LINE_COLORS.length];
-              const handleClick = onVariationClick ? () => onVariationClick(label) : undefined;
-              return (
-                <Line
-                  key={label}
-                  type="monotone"
-                  dataKey={label}
-                  stroke={stroke}
-                  strokeWidth={isHighlighted ? 3 : 1.5}
-                  dot={{ r: isHighlighted ? 4 : 3 }}
-                  activeDot={{
-                    r: 5,
-                    onClick: handleClick,
-                    style: { cursor: onVariationClick ? "pointer" : undefined },
-                  }}
-                  onClick={handleClick}
-                  style={{ cursor: onVariationClick ? "pointer" : undefined }}
-                  connectNulls
-                />
-              );
-            })}
-          </LineChart>
-        </ResponsiveContainer>
-      </div>
+          );
+        })}
+      </DateLineChart>
     </section>
   );
 }

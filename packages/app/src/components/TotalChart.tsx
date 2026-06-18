@@ -1,14 +1,6 @@
-import {
-  CartesianGrid,
-  Line,
-  LineChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
-import { formatDate } from "@dyel/core";
+import { Line, Tooltip } from "recharts";
 import type { ChartPoint } from "@dyel/core";
+import { DateLineChart, ChartEmpty } from "./DateLineChart";
 
 const SQUAT_COLOR = "#e67e22";
 const BENCH_COLOR = "#3498db";
@@ -16,70 +8,50 @@ const DEADLIFT_COLOR = "#2ecc71";
 const TOTAL_COLOR = "#9b59b6";
 
 export function TotalChart({ chartData, unit }: { chartData: ChartPoint[]; unit: string }) {
-  if (chartData.length === 0) {
-    return (
-      <section>
-        <p style={{ color: "var(--text)" }}>No data found.</p>
-      </section>
-    );
-  }
+  if (chartData.length === 0) return <ChartEmpty />;
 
   return (
     <section>
-      <div style={{ width: "80%", margin: "0 auto" }}>
-        <ResponsiveContainer width="100%" height={300}>
-          <LineChart data={chartData} margin={{ top: 4, right: 16, bottom: 40, left: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis
-              dataKey="date"
-              tickFormatter={formatDate}
-              angle={-45}
-              textAnchor="end"
-              interval="preserveStartEnd"
-              tick={{ fontSize: 11 }}
-            />
-            <YAxis tick={{ fontSize: 11 }} width={55} unit={` ${unit}`} />
-            <Tooltip formatter={(v, name) => [`${v} ${unit}`, String(name)]} />
-            <Line
-              type="monotone"
-              dataKey="squat"
-              name="Squat"
-              stroke={SQUAT_COLOR}
-              dot={{ r: 3 }}
-              activeDot={{ r: 5 }}
-              connectNulls
-            />
-            <Line
-              type="monotone"
-              dataKey="bench"
-              name="Bench"
-              stroke={BENCH_COLOR}
-              dot={{ r: 3 }}
-              activeDot={{ r: 5 }}
-              connectNulls
-            />
-            <Line
-              type="monotone"
-              dataKey="deadlift"
-              name="Deadlift"
-              stroke={DEADLIFT_COLOR}
-              dot={{ r: 3 }}
-              activeDot={{ r: 5 }}
-              connectNulls
-            />
-            <Line
-              type="monotone"
-              dataKey="total"
-              name="Est. Total"
-              stroke={TOTAL_COLOR}
-              strokeWidth={2}
-              dot={{ r: 3 }}
-              activeDot={{ r: 5 }}
-              connectNulls
-            />
-          </LineChart>
-        </ResponsiveContainer>
-      </div>
+      <DateLineChart data={chartData} unit={unit} yAxisWidth={55}>
+        <Tooltip formatter={(v, name) => [`${v} ${unit}`, String(name)]} />
+        <Line
+          type="monotone"
+          dataKey="squat"
+          name="Squat"
+          stroke={SQUAT_COLOR}
+          dot={{ r: 3 }}
+          activeDot={{ r: 5 }}
+          connectNulls
+        />
+        <Line
+          type="monotone"
+          dataKey="bench"
+          name="Bench"
+          stroke={BENCH_COLOR}
+          dot={{ r: 3 }}
+          activeDot={{ r: 5 }}
+          connectNulls
+        />
+        <Line
+          type="monotone"
+          dataKey="deadlift"
+          name="Deadlift"
+          stroke={DEADLIFT_COLOR}
+          dot={{ r: 3 }}
+          activeDot={{ r: 5 }}
+          connectNulls
+        />
+        <Line
+          type="monotone"
+          dataKey="total"
+          name="Est. Total"
+          stroke={TOTAL_COLOR}
+          strokeWidth={2}
+          dot={{ r: 3 }}
+          activeDot={{ r: 5 }}
+          connectNulls
+        />
+      </DateLineChart>
     </section>
   );
 }

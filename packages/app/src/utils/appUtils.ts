@@ -1,5 +1,5 @@
 import { emptyFilters } from "@dyel/core";
-import type { FilterState } from "@dyel/core";
+import type { FilterState, ConjugateDataPair } from "@dyel/core";
 
 export type SheetRef = { id: string; published: boolean };
 export type LiftType = "squat" | "bench" | "deadlift" | "accessory";
@@ -26,6 +26,19 @@ export type TabState = {
   baselineName?: string;
   targetName?: string;
 };
+
+/** Distinct exercise display names in first-seen order. Callers `.sort()` if they need it. */
+export function distinctDisplayNames(rows: ConjugateDataPair[]): string[] {
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const [ex] of rows) {
+    if (!seen.has(ex.displayName)) {
+      seen.add(ex.displayName);
+      result.push(ex.displayName);
+    }
+  }
+  return result;
+}
 
 export function toggleInSet<T>(set: Set<T>, item: T): Set<T> {
   const next = new Set(set);

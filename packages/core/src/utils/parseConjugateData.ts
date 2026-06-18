@@ -1,4 +1,3 @@
-import Papa from "papaparse";
 import {
   type ConjugateAddlWt,
   type ConjugateBar,
@@ -9,8 +8,7 @@ import {
 } from "../types/conjugate";
 import { calcE1RM } from "./e1rm";
 import { toMovementCategory } from "./diagnostics";
-
-type RawRow = Record<string, string>;
+import { parseSheetRows, detectWeightUnit, type RawRow } from "./sheetRows";
 
 export function findCol(row: RawRow, keyword: string): string | undefined {
   const re = new RegExp(`^${keyword}(\\W|$)`);
@@ -130,15 +128,6 @@ export function nameToExercise(name: string): ConjugateExercise | null {
 
 type RawSession = Omit<TrainingSession, "unit"> & { unit: "lbs" | "kg" | null };
 
-function findWeightUnit(row: RawRow): "lbs" | "kg" | null {
-  const re = /^weight(\W|$)/;
-  const key = Object.keys(row).find((k) => re.test(k));
-  if (!key) return null;
-  if (key.includes("kg")) return "kg";
-  if (key.includes("lb")) return "lbs";
-  return null;
-}
-
 function parseSession(row: RawRow): RawSession | null {
   const dateStr = row["date"]?.trim() ?? "";
   const date = new Date(dateStr);
@@ -149,20 +138,20 @@ function parseSession(row: RawRow): RawSession | null {
   if (isNaN(weight) || isNaN(reps) || reps <= 0) return null;
 
   const sets = parseInt(findCol(row, "sets") ?? "") || 1;
-  return { date, sets, reps, weight, e1rm: calcE1RM(weight, reps), unit: findWeightUnit(row) };
+  return {
+    date,
+    sets,
+    reps,
+    weight,
+    e1rm: calcE1RM(weight, reps),
+    unit: detectWeightUnit(Object.keys(row)),
+  };
 }
 
 export function parseConjugateData(csv: string): Array<[ConjugateExercise, TrainingSession]> {
-  const lines = csv.trim().split("\n");
-  const headerIdx = lines.findIndex((l) => l.toLowerCase().includes("exercise"));
-  if (headerIdx === -1 || headerIdx >= lines.length - 1) return [];
-
-  const rows = Papa.parse<RawRow>(lines.slice(headerIdx).join("\n"), {
-    header: true,
-    skipEmptyLines: true,
-    transformHeader: (h) => h.trim().toLowerCase(),
-    transform: (v) => v.trim(),
-  }).data;
+  const parsed = parseSheetRows(csv);
+  if (!parsed) return [];
+  const rows = parsed.rows;
 
   let hasAnyUnit = false;
   const raw: Array<[ConjugateExercise, RawSession]> = [];

@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import type { ConjugateDataPair } from "../hooks/useConjugateData";
+import { distinctDisplayNames } from "../utils/appUtils";
 
 export function BaselineSelect({
   rows,
@@ -10,17 +11,10 @@ export function BaselineSelect({
   selectedName: string | null;
   onSelect: (displayName: string) => void;
 }) {
-  const exercises = useMemo(() => {
-    const seen = new Set<string>();
-    const result: string[] = [];
-    for (const [ex] of rows) {
-      if (!seen.has(ex.displayName)) {
-        seen.add(ex.displayName);
-        result.push(ex.displayName);
-      }
-    }
-    return result.sort((a, b) => a.localeCompare(b));
-  }, [rows]);
+  const exercises = useMemo(
+    () => distinctDisplayNames(rows).sort((a, b) => a.localeCompare(b)),
+    [rows]
+  );
 
   if (exercises.length <= 1 || selectedName === null) return null;
 
