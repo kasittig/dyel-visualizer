@@ -18,37 +18,6 @@ const LOCKOUT_EQUIPMENT = new Set<ConjugateEquipment>(['board', 'floor', 'blocks
 const BOTTOM_RANGE_EQUIPMENT = new Set<ConjugateEquipment>(['deficit', 'pause']);
 const QUAD_DOMINANT_BARS = new Set<ConjugateBar>(['ssb', 'goblet', 'trap', 'zercher', 'belt']);
 
-export const EFFECT_DESCRIPTIONS: Record<EffectEnum, string> = {
-  QUAD_DOMINANT: 'shifts primary emphasis to the quadriceps',
-  POSTERIOR_CHAIN: 'shifts primary emphasis to glutes/hamstrings/lower back as a unit',
-  HAMSTRING_DOMINANT: 'specifically targets the hamstrings within the posterior chain',
-  HIP_DOMINANT: 'emphasizes hip hinge mechanics and hip abductors/adductors',
-  TRICEP_DOMINANT: 'shifts pressing emphasis to the triceps',
-  UPPER_PECS: 'shifts pressing emphasis to the upper pectorals and anterior deltoids',
-  LOWER_PECS: 'shifts pressing emphasis to the lower pectorals',
-  LOCKOUT: 'trains the top portion of the lift; develops strength near full extension',
-  BOTTOM_RANGE:
-    'trains the bottom portion of the lift; develops strength out of the hole or off the floor',
-  DEAD_STOP: 'removes the stretch-shortening reflex; requires generating force from a static start',
-  REDUCED_ROM: 'shortens the range of motion relative to competition lift',
-  EXTENDED_ROM: 'lengthens the range of motion relative to competition lift',
-  ACCOMMODATING_RESISTANCE:
-    'resistance increases as the bar rises; rewards bar speed and trains the full ROM',
-  SUPRAMAXIMAL:
-    "allows loading above the lifter's true max; develops confidence and strength at specific positions",
-  STABILIZER_DEMAND: 'requires greater activation of stabilizer muscles to control the bar',
-  UPPER_BACK_DEMAND: 'increases demand on lats and upper back to maintain position',
-  CORE_DEMAND: 'increases demand on the core to maintain position and transfer force',
-  SHOULDER_FRIENDLY: 'reduces stress on the shoulder joint relative to a straight bar',
-  SPINE_DELOAD: 'reduces axial spinal compression; spares the lower back',
-  UNILATERAL: 'loads one limb at a time; exposes and addresses side-to-side imbalances',
-  BAR_SPEED: 'rewards or requires explosive bar speed to complete the lift',
-  POSTERIOR_SHIFT:
-    'promotes shifting weight posteriorly; encourages sitting back rather than forward',
-  NO_LEG_DRIVE: 'eliminates the ability to use leg drive; isolates upper body pressing musculature',
-  UPRIGHT_TORSO: 'forces or encourages a more vertical torso angle than the competition lift',
-};
-
 type ModifierEffectEntry =
   | { effects: EffectEnum[]; min: number; max: number }
   | { effects: EffectEnum[] };
