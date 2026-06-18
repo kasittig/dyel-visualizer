@@ -30,8 +30,6 @@ function sheetsProxyPlugin(): Plugin {
   };
 }
 
-// 1. Read the settings file.
-// Using path.resolve ensures it finds the file relative to this config file.
 const modifierEffectsPath = path.resolve(__dirname, './modifierEffects.json');
 const modifierEffects = JSON.parse(fs.readFileSync(modifierEffectsPath, 'utf-8'));
 
