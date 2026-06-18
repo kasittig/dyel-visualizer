@@ -5,7 +5,7 @@ import type { ConjugateDataPair, TrainingSession } from "../types/conjugate";
 
 function session(dateStr: string, weight: number, reps: number, sets = 1): TrainingSession {
   return {
-    date: new Date(dateStr),
+    date: new Date(dateStr + "T00:00:00"),
     weight,
     reps,
     sets,
@@ -21,7 +21,7 @@ function pair(name: string, s: TrainingSession): ConjugateDataPair {
 }
 
 describe("buildSessionStats", () => {
-  const today = new Date("2024-06-01");
+  const today = new Date("2024-06-01T00:00:00");
 
   it("tracks the last session per exercise", () => {
     const pairs: ConjugateDataPair[] = [
@@ -31,7 +31,7 @@ describe("buildSessionStats", () => {
     ];
     const stats = buildSessionStats(pairs, {}, today);
     const last = stats.lastSession.get("Squat");
-    expect(last?.date).toEqual(new Date("2024-03-01"));
+    expect(last?.date).toEqual(new Date("2024-03-01T00:00:00"));
     // 315 × (1 + 2/30) = 336 > 320 × (1 + 1/30) ≈ 330.67, so 315×2r wins
     expect(last?.e1rm).toBeCloseTo(315 * (1 + 2 / 30));
     expect(last?.bestSet).toEqual({ weight: 315, reps: 2, sets: 1 });

@@ -24,7 +24,7 @@ function pair(
       equipment: opts.equipment ?? null,
       movementCategory: "anchor",
     },
-    { date: new Date(date), sets: 1, reps: 1, weight: 100, e1rm, unit: "lbs" },
+    { date: new Date(date + "T00:00:00"), sets: 1, reps: 1, weight: 100, e1rm, unit: "lbs" },
   ];
 }
 
