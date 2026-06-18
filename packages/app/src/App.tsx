@@ -163,7 +163,14 @@ function App() {
 
       <div style={{ marginTop: "1rem" }}>
         {state.status === "loading" && <p>Loading…</p>}
-        {state.status === "error" && <p style={{ color: "red" }}>{state.message}</p>}
+        {state.status === "error" && (
+          <p style={{ color: "red" }}>
+            {state.message}{" "}
+            <a href="?page=validator" style={{ color: "var(--accent)" }}>
+              Check your spreadsheet format
+            </a>
+          </p>
+        )}
         {state.status === "success" && (
           <>
             <div
