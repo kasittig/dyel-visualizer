@@ -13,6 +13,10 @@ const IndexPage = lazy(() =>
   import("./components/IndexPage.tsx").then((m) => ({ default: m.IndexPage }))
 );
 
+const ValidatorPage = lazy(() =>
+  import("./components/ValidatorPage.tsx").then((m) => ({ default: m.ValidatorPage }))
+);
+
 function resolvePageComponent(page: string | null) {
   if (page === "conjugate")
     return (
@@ -26,11 +30,17 @@ function resolvePageComponent(page: string | null) {
         <IndexPage />
       </Suspense>
     );
+  if (page === "validator")
+    return (
+      <Suspense>
+        <ValidatorPage />
+      </Suspense>
+    );
   if (page === null) return <App />;
   return <p>Page not found.</p>;
 }
 
-const KNOWN_PAGES = new Set(["conjugate", "index"]);
+const KNOWN_PAGES = new Set(["conjugate", "index", "validator"]);
 
 function resolvePage(): string | null {
   const queryPage = new URLSearchParams(window.location.search).get("page");

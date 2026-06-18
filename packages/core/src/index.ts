@@ -18,6 +18,13 @@ export { calcE1RM, invertE1RM, predictE1RM, fitAddlWtOffset, fitVariantFactor } 
 
 export { parseConjugateData } from "./utils/parseConjugateData";
 
+export type {
+  SheetValidationResult,
+  SheetValidationIssue,
+  ColumnInfo,
+} from "./utils/validateSheetCsv";
+export { validateSheetCsv } from "./utils/validateSheetCsv";
+
 export type { IndexEntry } from "./utils/parseIndexCsv";
 export { parseIndexCsv } from "./utils/parseIndexCsv";
 

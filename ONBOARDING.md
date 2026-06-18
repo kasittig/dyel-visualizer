@@ -78,12 +78,23 @@ date,       exercise,                   weight (lbs), reps, sets
 
 ---
 
+## Checking Your Spreadsheet
+
+Before pasting your URL into the visualizer, use the **[Sheet Validator](/?page=validator)** to confirm your spreadsheet is formatted correctly. Paste the URL and click **Check Sheet** — the validator will tell you:
+
+- Which required columns are present (and flag any that are missing)
+- How many rows parsed successfully
+- Specific row-level errors (invalid date, non-numeric weight, etc.)
+- Warnings like a missing weight unit
+
+If everything looks good, there's a **View in Visualizer** button that takes you straight to your data.
+
 ## Loading Your Data
 
 1. In the app, paste your published Google Sheet URL into the "Your Google Sheet" field.
 2. The URL is saved in the browser address bar, so you can bookmark it or share it.
 
-If the sheet loads but you see no data, check that your header row contains the word `exercise` and that your dates are valid.
+If the sheet loads but you see no data, use the Sheet Validator (linked below the URL input) to diagnose formatting issues.
 
 ---
 
