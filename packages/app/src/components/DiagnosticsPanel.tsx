@@ -3,8 +3,11 @@ import { generateDiagnostics } from '@dyel/core';
 import type { DeadliftStancePreference } from '@dyel/core';
 import type { ConjugateDataPair } from '../hooks/useConjugateData';
 
-function formatCategory(category: string): string {
-  return category.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+function formatEffect(effect: string): string {
+  return effect
+    .toLowerCase()
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 const cellStyle: React.CSSProperties = { padding: '0.5rem 0.75rem' };
@@ -22,10 +25,7 @@ export function DiagnosticsPanel({ rows }: { rows: ConjugateDataPair[] }) {
   const hasDeadlift = useMemo(() => rows.some(([ex]) => ex.type === 'deadlift'), [rows]);
 
   const results = useMemo(
-    () =>
-      generateDiagnostics(rows, { deadliftStance }).filter(
-        (r) => !r.category.every((c) => c === 'unclassified')
-      ),
+    () => generateDiagnostics(rows, { deadliftStance }),
     [rows, deadliftStance]
   );
 
@@ -64,7 +64,7 @@ export function DiagnosticsPanel({ rows }: { rows: ConjugateDataPair[] }) {
               }}
             >
               <th style={{ ...cellStyle, textAlign: 'left' }}>Variation</th>
-              <th style={{ ...cellStyle, textAlign: 'left' }}>Category</th>
+              <th style={{ ...cellStyle, textAlign: 'left' }}>Effects</th>
               <th style={{ ...monoStyle }}>Avg Index</th>
               <th style={{ ...monoStyle }}>Baseline Range</th>
               <th style={{ ...cellStyle, textAlign: 'left' }}>Diagnostic</th>
@@ -89,10 +89,7 @@ export function DiagnosticsPanel({ rows }: { rows: ConjugateDataPair[] }) {
                 <tr key={r.name} style={{ borderBottom: '1px solid var(--border)' }}>
                   <td style={cellStyle}>{r.name}</td>
                   <td style={{ ...cellStyle, color: 'var(--text)' }}>
-                    {r.category
-                      .filter((c) => c !== 'anchor' && c !== 'unclassified')
-                      .map(formatCategory)
-                      .join(' + ')}
+                    {r.effects.map(formatEffect).join(', ')}
                   </td>
                   <td style={monoStyle}>{r.averageIndex.toFixed(1)}%</td>
                   <td style={monoStyle}>{r.expectedBaseline}</td>

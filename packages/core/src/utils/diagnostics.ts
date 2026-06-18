@@ -309,7 +309,6 @@ export function generateDiagnostics(
       results.push({
         primaryLift: lift,
         name,
-        category: effectiveCategory,
         averageIndex,
         expectedBaseline,
         status,

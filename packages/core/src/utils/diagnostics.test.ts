@@ -355,7 +355,6 @@ describe('generateDiagnostics', () => {
     const r = results[0];
     expect(r.primaryLift).toBe('bench');
     expect(r.name).toBe('board press');
-    expect(r.category).toEqual(['lockout']);
     expect(r.expectedBaseline).toBe('105–115%');
     expect(['optimal', 'weakness', 'overtrained']).toContain(r.status);
     expect(r.diagnostic).toMatch(/^board press at \d+%$/);
@@ -499,7 +498,6 @@ describe('generateDiagnostics', () => {
     ];
     const results = generateDiagnostics(pairs);
     expect(results).toHaveLength(1);
-    expect(results[0].category).toEqual(['posterior_chain']);
     expect(results[0].name).toBe('deadlift (opposite)');
   });
 
@@ -522,7 +520,6 @@ describe('generateDiagnostics', () => {
     // stance:sumo:deadlift has a baseline (90–100%)
     const results = generateDiagnostics(pairs, { deadliftStance: 'sumo' });
     expect(results).toHaveLength(1);
-    expect(results[0].category).toEqual(['posterior_chain']);
     expect(results[0].name).toBe('deadlift (sumo)');
     expect(results[0].effects).toContain('POSTERIOR_CHAIN');
   });
