@@ -38,8 +38,8 @@ export function findBestE1RM(
   const { addlWtOffset, variantFactor } = stats;
 
   // Normalize to local day boundaries so sessions on the start/end dates are always included.
-  // CSV dates are UTC midnight (new Date("YYYY-MM-DD")); DayPicker dates are local midnight.
-  // Without this, UTC+ users lose end-date sessions and UTC- users lose start-date sessions.
+  // Both CSV dates and DayPicker dates are local midnight, but expanding to full-day ranges
+  // ensures start/end sessions aren't clipped by sub-millisecond timestamp differences.
   const dayStart = new Date(
     windowStart.getFullYear(),
     windowStart.getMonth(),

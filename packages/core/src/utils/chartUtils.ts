@@ -12,7 +12,7 @@ export const LINE_COLORS = [
 ];
 
 export function formatDate(str: string): string {
-  const d = new Date(str);
+  const d = /^\d{4}-\d{2}-\d{2}$/.test(str) ? new Date(str + "T00:00:00") : new Date(str);
   return isNaN(d.getTime())
     ? str
     : d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "2-digit" });

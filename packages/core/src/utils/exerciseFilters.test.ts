@@ -13,7 +13,7 @@ function pair(type: "squat" | "bench" | "deadlift" | "accessory", sets: number):
       displayName: type,
       movementCategory: "anchor",
     },
-    { date: new Date("2024-01-01"), sets, reps: 5, weight: 100, e1rm: 120, unit: "lbs" },
+    { date: new Date("2024-01-01T00:00:00"), sets, reps: 5, weight: 100, e1rm: 120, unit: "lbs" },
   ];
 }
 

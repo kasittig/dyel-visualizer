@@ -310,7 +310,14 @@ describe("MODIFIER_EFFECTS", () => {
 });
 
 function session(date: string, weight: number, reps = 1): TrainingSession {
-  return { date: new Date(date), sets: 1, reps, weight, e1rm: calcE1RM(weight, reps), unit: "lbs" };
+  return {
+    date: new Date(date + "T00:00:00"),
+    sets: 1,
+    reps,
+    weight,
+    e1rm: calcE1RM(weight, reps),
+    unit: "lbs",
+  };
 }
 
 function pair(overrides: Partial<ConjugateExercise>, s: TrainingSession): ConjugateDataPair {

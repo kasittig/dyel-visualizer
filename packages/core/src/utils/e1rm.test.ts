@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { calcE1RM, predictE1RM, fitAddlWtOffset, fitVariantFactor } from "./e1rm";
 import type { TrainingSession } from "../types/conjugate";
 
-const d = (dateStr: string) => new Date(dateStr);
+const d = (dateStr: string) => new Date(dateStr + "T00:00:00");
 
 // Constructs a minimal TrainingSession for predictE1RM tests where only date and e1rm matter.
 const s = (dateStr: string, e1rm: number): TrainingSession => ({

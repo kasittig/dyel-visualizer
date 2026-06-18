@@ -33,7 +33,7 @@ function pair(
   return [
     exercise,
     {
-      date: new Date(date),
+      date: new Date(date + "T00:00:00"),
       sets: opts.sets ?? 1,
       reps: opts.reps ?? 1,
       weight: opts.weight ?? e1rm,
