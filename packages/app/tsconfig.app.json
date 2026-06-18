@@ -7,9 +7,12 @@
     "types": ["vite/client"],
     "skipLibCheck": true,
 
+    "rootDir": "../../",
+
     /* Bundler mode */
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
+    "emitDeclarationOnly": false,
     "verbatimModuleSyntax": true,
     "moduleDetection": "force",
     "noEmit": true,
@@ -21,10 +24,16 @@
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true,
 
+    "composite": false,
+    "declaration": false,
+    "declarationMap": false,
+    "outDir": "./dist/types", // 👈 This stops files from dropping into your src folder
+
     /* Workspace package resolution */
     "paths": {
       "@dyel/core": ["../core/src/index.ts"]
     }
   },
-  "include": ["src"]
+  "include": ["src", "../../global.d.ts"],
+  "exclude": ["src/**/*.test.ts", "src/**/*.test.tsx", "src/**/*.spec.ts"] // 👈 EXCLUDE TESTS FROM THE BUILD
 }

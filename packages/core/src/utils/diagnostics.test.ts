@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { toMovementCategory, MODIFIER_EFFECTS, generateDiagnostics } from './diagnostics';
+import { toMovementCategory, generateDiagnostics } from './diagnostics';
 import { calcE1RM } from './e1rm';
 import type { ConjugateDataPair, ConjugateExercise, TrainingSession } from '../types/conjugate';
 
@@ -250,9 +250,9 @@ describe('toMovementCategory', () => {
   });
 });
 
-describe('MODIFIER_EFFECTS', () => {
+describe('__MODIFIER__EFFECTS__', () => {
   it('equipment:board:bench has min 105, max 115', () => {
-    const e = MODIFIER_EFFECTS['equipment:board:bench'];
+    const e = __MODIFIER__EFFECTS__['equipment:board:bench'];
     expect(e).toBeDefined();
     expect('min' in e).toBe(true);
     if ('min' in e) {
@@ -262,7 +262,7 @@ describe('MODIFIER_EFFECTS', () => {
   });
 
   it('equipment:floor:bench has min 85, max 95', () => {
-    const e = MODIFIER_EFFECTS['equipment:floor:bench'];
+    const e = __MODIFIER__EFFECTS__['equipment:floor:bench'];
     expect(e).toBeDefined();
     expect('min' in e).toBe(true);
     if ('min' in e) {
@@ -272,7 +272,7 @@ describe('MODIFIER_EFFECTS', () => {
   });
 
   it('equipment:rack:deadlift has min 110, max 130', () => {
-    const e = MODIFIER_EFFECTS['equipment:rack:deadlift'];
+    const e = __MODIFIER__EFFECTS__['equipment:rack:deadlift'];
     expect(e).toBeDefined();
     expect('min' in e).toBe(true);
     if ('min' in e) {
@@ -282,7 +282,7 @@ describe('MODIFIER_EFFECTS', () => {
   });
 
   it('stance:romanian:deadlift has min 60, max 75', () => {
-    const e = MODIFIER_EFFECTS['stance:romanian:deadlift'];
+    const e = __MODIFIER__EFFECTS__['stance:romanian:deadlift'];
     expect(e).toBeDefined();
     expect('min' in e).toBe(true);
     if ('min' in e) {
@@ -292,20 +292,20 @@ describe('MODIFIER_EFFECTS', () => {
   });
 
   it('addl_wt:chains:squat has no min/max', () => {
-    const e = MODIFIER_EFFECTS['addl_wt:chains:squat'];
+    const e = __MODIFIER__EFFECTS__['addl_wt:chains:squat'];
     expect(e).toBeDefined();
     expect('min' in e).toBe(false);
   });
 
   it('equipment:board:bench effects contain LOCKOUT and REDUCED_ROM', () => {
-    const e = MODIFIER_EFFECTS['equipment:board:bench'];
+    const e = __MODIFIER__EFFECTS__['equipment:board:bench'];
     expect(e.effects).toContain('LOCKOUT');
     expect(e.effects).toContain('REDUCED_ROM');
   });
 
   it('stance:ssb:squat does not exist (key is bar:ssb:squat)', () => {
-    expect(MODIFIER_EFFECTS['stance:ssb:squat']).toBeUndefined();
-    expect(MODIFIER_EFFECTS['bar:ssb:squat']).toBeDefined();
+    expect(__MODIFIER__EFFECTS__['stance:ssb:squat']).toBeUndefined();
+    expect(__MODIFIER__EFFECTS__['bar:ssb:squat']).toBeDefined();
   });
 });
 
@@ -689,7 +689,7 @@ describe('generateDiagnostics', () => {
       pair(
         {
           type: 'deadlift',
-          movementCategory: ['anchor'], // would be anchor by category alone — addlWts must block it
+          movementCategory: ['anchor'], // would be an anchor by category alone — addlWts must block it
           displayName: 'deadlift (bands)',
           addlWts: ['bands'],
         },

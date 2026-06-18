@@ -54,6 +54,12 @@ export function DateRangePicker({
   const [focused, setFocused] = useState<'start' | 'end' | null>(null);
   const [calendarMonth, setCalendarMonth] = useState<Date>(() => value.from ?? new Date());
   const containerRef = useRef<HTMLDivElement>(null);
+  type InteractOutsideEvent = Parameters<
+    NonNullable<Popover.PopoverContentProps['onInteractOutside']>
+  >[0];
+  type FocusOutsideEvent = Parameters<
+    NonNullable<Popover.PopoverContentProps['onFocusOutside']>
+  >[0];
 
   // Sync text and calendar month from external value changes, but only for the field
   // that isn't focused (avoid overwriting what the user is currently typing).
@@ -150,13 +156,13 @@ export function DateRangePicker({
       <Popover.Portal>
         <Popover.Content
           sideOffset={6}
-          onOpenAutoFocus={(e) => e.preventDefault()}
-          onInteractOutside={(e) => {
+          onOpenAutoFocus={(e: Event) => e.preventDefault()}
+          onInteractOutside={(e: InteractOutsideEvent) => {
             if (containerRef.current?.contains(e.detail.originalEvent.target as Node)) {
               e.preventDefault();
             }
           }}
-          onFocusOutside={(e) => {
+          onFocusOutside={(e: FocusOutsideEvent) => {
             if (containerRef.current?.contains(e.detail.originalEvent.target as Node)) {
               e.preventDefault();
             }
@@ -166,7 +172,7 @@ export function DateRangePicker({
           <DayPicker
             mode="range"
             selected={value}
-            onSelect={(r) => {
+            onSelect={(r: DateRange | undefined) => {
               onChange(r ?? { from: undefined, to: undefined });
             }}
             month={calendarMonth}
