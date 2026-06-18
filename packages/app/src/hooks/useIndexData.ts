@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
 import { parseIndexCsv, type IndexEntry } from "@dyel/core";
+import { publishedCsvUrl } from "../utils/sheetFetch";
+import { useCsvResource } from "./useCsvResource";
 
 export type { IndexEntry };
 
@@ -12,29 +13,8 @@ type IndexDataState =
   | { status: "success"; entries: IndexEntry[] };
 
 export function useIndexData(): IndexDataState {
-  const [state, setState] = useState<IndexDataState>({ status: "loading" });
-
-  useEffect(() => {
-    const base = import.meta.env.DEV
-      ? "/sheets-proxy/spreadsheets"
-      : "https://docs.google.com/spreadsheets";
-    const url = `${base}/d/e/${INDEX_SHEET_ID}/pub?output=csv`;
-
-    const controller = new AbortController();
-
-    fetch(url, { signal: controller.signal })
-      .then((res) => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return res.text();
-      })
-      .then((csv) => setState({ status: "success", entries: parseIndexCsv(csv) }))
-      .catch((err) => {
-        if (err.name === "AbortError") return;
-        setState({ status: "error", message: String(err.message) });
-      });
-
-    return () => controller.abort();
-  }, []);
-
-  return state;
+  const resource = useCsvResource(publishedCsvUrl(INDEX_SHEET_ID), parseIndexCsv);
+  if (resource.status === "success") return { status: "success", entries: resource.data };
+  if (resource.status === "error") return resource;
+  return { status: "loading" };
 }

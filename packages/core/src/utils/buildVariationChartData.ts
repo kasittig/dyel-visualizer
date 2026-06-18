@@ -2,6 +2,7 @@ import type { ConjugateDataPair, ConjugateExercise } from "../types/conjugate";
 import type { RepCalcStats } from "./repCalculator";
 import { normalizeToBaseE1RM } from "./repCalculator";
 import type { ChartPoint } from "./buildChartData";
+import { isoDate, recordMax, sortedGridDates, type DateValueGrid } from "./chartGrid";
 
 export const NORMALIZED_KEY = "__normalized__";
 
@@ -22,22 +23,18 @@ export function buildVariationChartData(
   stats: RepCalcStats,
   targetName: string | null
 ): VariationChartResult {
-  const e1rmByLabelAndDate = new Map<string, Map<string, number>>();
+  const e1rmByLabelAndDate: DateValueGrid = new Map();
   const bestSetByLabelAndDate = new Map<string, Map<string, BestSet>>();
   const exerciseByName = new Map<string, ConjugateExercise>();
 
   for (const [exercise, session] of rows) {
     const label = exercise.displayName;
-    const date = session.date.toISOString().slice(0, 10);
-    if (!e1rmByLabelAndDate.has(label)) {
-      e1rmByLabelAndDate.set(label, new Map());
+    const date = isoDate(session.date);
+    if (!exerciseByName.has(label)) {
       bestSetByLabelAndDate.set(label, new Map());
       exerciseByName.set(label, exercise);
     }
-    const byDate = e1rmByLabelAndDate.get(label)!;
-    const prev = byDate.get(date);
-    if (prev === undefined || session.e1rm > prev) {
-      byDate.set(date, session.e1rm);
+    if (recordMax(e1rmByLabelAndDate, label, date, session.e1rm)) {
       bestSetByLabelAndDate.get(label)!.set(date, {
         sets: session.sets,
         reps: session.reps,
@@ -47,9 +44,7 @@ export function buildVariationChartData(
   }
 
   const variations = [...e1rmByLabelAndDate.keys()].sort();
-  const allDates = [
-    ...new Set([...e1rmByLabelAndDate.values()].flatMap((m) => [...m.keys()])),
-  ].sort();
+  const allDates = sortedGridDates(e1rmByLabelAndDate);
 
   const exerciseType = rows[0]?.[0].type;
   const baselineName = exerciseType ? (baselineNames[exerciseType] ?? null) : null;
@@ -64,7 +59,7 @@ export function buildVariationChartData(
   const normalizedByDate = new Map<string, number>();
   if (targetExercise) {
     for (const [exercise, session] of rows) {
-      const date = session.date.toISOString().slice(0, 10);
+      const date = isoDate(session.date);
       const normalized = normalizeToBaseE1RM(
         session.weight,
         session.reps,

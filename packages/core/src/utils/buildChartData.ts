@@ -1,10 +1,12 @@
 import type { ConjugateDataPair, ConjugateExercise, PrimaryLift } from "../types/conjugate";
 import type { RepCalcStats } from "./repCalculator";
 import { normalizeToBaseE1RM } from "./repCalculator";
+import { isoDate, recordMax, sortedGridDates, type DateValueGrid } from "./chartGrid";
 
 export type ChartPoint = Record<string, string | number>;
 
 const LIFT_TYPES: PrimaryLift[] = ["squat", "bench", "deadlift"];
+const PRIMARY_LIFTS = new Set<string>(LIFT_TYPES);
 
 export function buildChartData(
   pairs: ConjugateDataPair[],
@@ -12,16 +14,11 @@ export function buildChartData(
   targetExByType: Map<string, ConjugateExercise>,
   stats: RepCalcStats
 ): ChartPoint[] {
-  const byDate = new Map<PrimaryLift, Map<string, number>>(
-    LIFT_TYPES.map((lift) => [lift, new Map()])
-  );
-  const allDatesSet = new Set<string>();
+  const byDate: DateValueGrid = new Map();
 
   for (const [exercise, session] of pairs) {
-    const liftMap = byDate.get(exercise.type as PrimaryLift);
-    if (!liftMap) continue;
+    if (!PRIMARY_LIFTS.has(exercise.type)) continue;
 
-    const date = session.date.toISOString().slice(0, 10);
     const baselineEx = baselineExByType.get(exercise.type);
     const targetEx = targetExByType.get(exercise.type) ?? baselineEx;
     let e1rm: number;
@@ -40,12 +37,10 @@ export function buildChartData(
       e1rm = session.e1rm;
     }
 
-    const prev = liftMap.get(date);
-    if (prev === undefined || e1rm > prev) liftMap.set(date, e1rm);
-    allDatesSet.add(date);
+    recordMax(byDate, exercise.type, isoDate(session.date), e1rm);
   }
 
-  const allDates = [...allDatesSet].sort();
+  const allDates = sortedGridDates(byDate);
 
   const last = {} as Record<PrimaryLift, number | undefined>;
   const rows: ChartPoint[] = [];
@@ -54,7 +49,7 @@ export function buildChartData(
     const point: ChartPoint = { date };
 
     for (const lift of LIFT_TYPES) {
-      const val = byDate.get(lift)!.get(date);
+      const val = byDate.get(lift)?.get(date);
       if (val !== undefined) {
         last[lift] = val;
         point[lift] = Math.round(val);

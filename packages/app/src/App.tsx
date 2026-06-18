@@ -7,6 +7,8 @@ import { RepCalculator } from "./components/RepCalculator";
 import { SigmaTab } from "./components/SigmaTab";
 import { LiftTabPanel } from "./components/LiftTabPanel";
 import { VolumeWorkToggle } from "./components/VolumeWorkToggle";
+import { SheetUrlPanel } from "./components/SheetUrlPanel";
+import { GettingStarted } from "./components/GettingStarted";
 import { applyFilters, defaultBaselineName, defaultTargetName, emptyFilters } from "@dyel/core";
 import type { ConjugateDataPair } from "./hooks/useConjugateData";
 import type { FilterState } from "@dyel/core";
@@ -17,8 +19,6 @@ import {
   LIFT_TABS,
   MAIN_TABS,
   ACCESSORY_TAB,
-  EXAMPLE_SHEET_URL,
-  EXAMPLE_VISUALIZER_URL,
 } from "./utils/appUtils";
 import type { LiftType, PageTab, TabState } from "./utils/appUtils";
 
@@ -133,138 +133,18 @@ function App() {
 
   return (
     <main style={{ padding: "2rem", fontFamily: "sans-serif", textAlign: "left" }}>
-      <div style={{ textAlign: "center" }}>
-        <h1>DYEL Visualizer</h1>
-        {!showUrlPanel ? (
-          <p style={{ fontSize: "0.85rem", color: "var(--text)", marginTop: "-0.5rem" }}>
-            <button
-              onClick={() => setPanelForcedOpen(true)}
-              style={{
-                background: "none",
-                border: "none",
-                padding: 0,
-                cursor: "pointer",
-                color: "var(--accent)",
-                fontSize: "inherit",
-                textDecoration: "underline",
-              }}
-            >
-              Change sheet URL
-            </button>
-            {" · "}
-            <a href="?page=conjugate" style={{ color: "var(--accent)" }}>
-              What is the conjugate method?
-            </a>
-          </p>
-        ) : (
-          <>
-            <p style={{ fontSize: "0.85rem", color: "var(--text)", marginTop: "-0.5rem" }}>
-              {state.status === "success" ? (
-                <button
-                  onClick={() => setPanelForcedOpen(false)}
-                  style={{
-                    background: "none",
-                    border: "none",
-                    padding: 0,
-                    cursor: "pointer",
-                    color: "var(--accent)",
-                    fontSize: "inherit",
-                    textDecoration: "underline",
-                  }}
-                >
-                  Cancel
-                </button>
-              ) : (
-                <a href="?page=conjugate" style={{ color: "var(--accent)" }}>
-                  What is the conjugate method?
-                </a>
-              )}
-              {" · "}
-              <a href="?page=validator" style={{ color: "var(--accent)" }}>
-                Check if my spreadsheet will work
-              </a>
-            </p>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "0.5rem",
-                marginBottom: "0.5rem",
-              }}
-            >
-              <label htmlFor="sheet-url" style={{ whiteSpace: "nowrap" }}>
-                Your Google Sheet
-              </label>
-              <input
-                id="sheet-url"
-                type="text"
-                value={url}
-                onChange={(e) => handleUrlChange(e.target.value)}
-                placeholder="https://docs.google.com/spreadsheets/d/…"
-                style={{ flex: 1, padding: "0.5rem", boxSizing: "border-box" }}
-                autoFocus={state.status === "success"}
-              />
-            </div>
-            {invalidUrl && (
-              <p style={{ color: "red", marginTop: "0.5rem" }}>
-                That doesn't look like a Google Sheet URL.
-              </p>
-            )}
-            <p style={{ fontSize: "0.85rem", color: "var(--text)", marginTop: "0.5rem" }}>
-              Don't have a sheet?{" "}
-              <a href={EXAMPLE_VISUALIZER_URL}>View an example in the visualizer</a>
-              {" · "}
-              <a href={EXAMPLE_SHEET_URL} target="_blank" rel="noreferrer">
-                View the example spreadsheet
-              </a>
-            </p>
-          </>
-        )}
-      </div>
+      <SheetUrlPanel
+        showUrlPanel={showUrlPanel}
+        url={url}
+        loaded={state.status === "success"}
+        invalidUrl={invalidUrl}
+        onUrlChange={handleUrlChange}
+        onForceOpen={() => setPanelForcedOpen(true)}
+        onCancel={() => setPanelForcedOpen(false)}
+      />
 
       <div style={{ marginTop: "1rem" }}>
-        {url.length === 0 && (
-          <div
-            style={{
-              maxWidth: "480px",
-              margin: "1.5rem auto 0",
-              textAlign: "left",
-              fontSize: "0.9rem",
-              lineHeight: "1.7",
-              color: "var(--text-h)",
-            }}
-          >
-            <p style={{ marginTop: 0, marginBottom: "0.75rem", fontWeight: 600 }}>
-              Getting started
-            </p>
-            <ol style={{ paddingLeft: "1.4rem", margin: 0 }}>
-              <li style={{ marginBottom: "0.5rem" }}>
-                <strong>Set up your spreadsheet</strong> — your sheet needs columns for{" "}
-                <code>date</code>, <code>exercise</code>, <code>weight</code>, and <code>reps</code>
-                . Use the{" "}
-                <a href={EXAMPLE_SHEET_URL} target="_blank" rel="noreferrer">
-                  example sheet
-                </a>{" "}
-                as a template.
-              </li>
-              <li style={{ marginBottom: "0.5rem" }}>
-                <strong>Publish to the web</strong> — in Google Sheets, go to{" "}
-                <strong>File → Share → Publish to web</strong>, choose{" "}
-                <em>Comma-separated values (.csv)</em>, and click Publish.
-              </li>
-              <li>
-                <strong>Paste the URL above</strong> — the published URL or your sheet's regular URL
-                both work.
-              </li>
-            </ol>
-            <p style={{ marginTop: "0.85rem", marginBottom: 0, color: "var(--text)" }}>
-              Not sure if your sheet is compatible?{" "}
-              <a href="?page=validator" style={{ color: "var(--accent)" }}>
-                Run it through the validator.
-              </a>
-            </p>
-          </div>
-        )}
+        {url.length === 0 && <GettingStarted />}
         {state.status === "loading" && <p>Loading…</p>}
         {state.status === "error" && (
           <p style={{ color: "red" }}>

@@ -4,7 +4,7 @@ import { DateRangePicker } from "./DateRangePicker";
 import { findBestE1RM, predictWeightForReps, predictRepsForWeight } from "@dyel/core";
 import type { ConjugateDataPair } from "../hooks/useConjugateData";
 import type { E1RMEstimate, RepCalcStats } from "@dyel/core";
-import type { LiftType } from "../utils/appUtils";
+import { distinctDisplayNames, type LiftType } from "../utils/appUtils";
 
 const LIFT_LABELS: Record<LiftType, string> = {
   squat: "Squat",
@@ -51,18 +51,13 @@ export function RepCalculator({
 
   const hasAccessories = useMemo(() => pairs.some(([ex]) => ex.type === "accessory"), [pairs]);
 
-  const exercisesForType = useMemo(() => {
-    const seen = new Set<string>();
-    const result: string[] = [];
-    for (const [ex] of pairs) {
-      if (ex.type !== liftType) continue;
-      if (!seen.has(ex.displayName)) {
-        seen.add(ex.displayName);
-        result.push(ex.displayName);
-      }
-    }
-    return result.sort((a, b) => a.localeCompare(b));
-  }, [pairs, liftType]);
+  const exercisesForType = useMemo(
+    () =>
+      distinctDisplayNames(pairs.filter(([ex]) => ex.type === liftType)).sort((a, b) =>
+        a.localeCompare(b)
+      ),
+    [pairs, liftType]
+  );
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect

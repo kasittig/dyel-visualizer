@@ -170,6 +170,15 @@ export const MODIFIER_EFFECTS: Record<string, ModifierEffectEntry> = {
 
 export type DiagnosticsOptions = { deadliftStance?: DeadliftStancePreference };
 
+/**
+ * Resolves a deadlift's effective stance to sumo vs. conventional from whether its movement
+ * categories landed on the posterior chain. Shared by the pct-baseline lookup and the
+ * effect-aggregation step so they can never disagree.
+ */
+function resolveDeadliftStance(effectiveCategory: MovementCategory[]): "sumo" | "conventional" {
+  return effectiveCategory.includes("posterior_chain") ? "sumo" : "conventional";
+}
+
 function resolveCategory(ex: ConjugateExercise, options?: DiagnosticsOptions): MovementCategory[] {
   if (
     ex.type === "deadlift" &&
@@ -254,10 +263,7 @@ export function generateDiagnostics(
             ex.stance === "conventional" ||
             ex.stance === "opposite")
         ) {
-          const resolvedStance = effectiveCategory.includes("posterior_chain")
-            ? "sumo"
-            : "conventional";
-          return `stance:${resolvedStance}:deadlift`;
+          return `stance:${resolveDeadliftStance(effectiveCategory)}:deadlift`;
         }
         if (ex.stance !== null && ex.stance !== "competition") {
           return `stance:${ex.stance}:${ex.type}`;
@@ -291,9 +297,7 @@ export function generateDiagnostics(
       // Aggregate effects from all active modifiers (bar + resolved stance + equipment + addlWts).
       const stanceForEffects: string | null =
         ex.type === "deadlift" && (ex.stance === null || ex.stance === "opposite")
-          ? effectiveCategory.includes("posterior_chain")
-            ? "sumo"
-            : "conventional"
+          ? resolveDeadliftStance(effectiveCategory)
           : ex.stance;
 
       const allEffects = new Set<EffectEnum>();

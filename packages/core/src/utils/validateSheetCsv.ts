@@ -1,7 +1,5 @@
-import Papa from "papaparse";
 import { findCol, nameToExercise } from "./parseConjugateData";
-
-type RawRow = Record<string, string>;
+import { parseSheetRows, detectWeightUnit } from "./sheetRows";
 
 export type SheetValidationIssue = {
   row: number;
@@ -46,10 +44,9 @@ const emptyColumns: ColumnInfo = {
 const emptyLiftTypes = () => ({ squat: 0, bench: 0, deadlift: 0, accessory: 0 });
 
 export function validateSheetCsv(csv: string): SheetValidationResult {
-  const lines = csv.trim().split("\n");
-  const headerIdx = lines.findIndex((l) => l.toLowerCase().includes("exercise"));
+  const sheet = parseSheetRows(csv);
 
-  if (headerIdx === -1 || headerIdx >= lines.length - 1) {
+  if (!sheet) {
     return {
       verdict: "error",
       headerRow: null,
@@ -63,28 +60,15 @@ export function validateSheetCsv(csv: string): SheetValidationResult {
     };
   }
 
-  const { data } = Papa.parse<RawRow>(lines.slice(headerIdx).join("\n"), {
-    header: true,
-    skipEmptyLines: true,
-    transformHeader: (h) => h.trim().toLowerCase(),
-    transform: (v) => v.trim(),
-  });
-
+  const { headerIdx, rows: data } = sheet;
   const keys = data.length > 0 ? Object.keys(data[0]) : [];
 
   const hasExercise = keys.includes("exercise");
   const hasDate = keys.includes("date");
-  const weightKey = keys.find((k) => /^weight(\W|$)/.test(k));
-  const hasWeight = weightKey !== undefined;
+  const hasWeight = keys.some((k) => /^weight(\W|$)/.test(k));
   const hasReps = keys.includes("reps");
   const hasSets = keys.some((k) => /^sets(\W|$)/.test(k));
-  const weightUnit: "lbs" | "kg" | null = weightKey
-    ? weightKey.includes("kg")
-      ? "kg"
-      : weightKey.includes("lb")
-        ? "lbs"
-        : null
-    : null;
+  const weightUnit = detectWeightUnit(keys);
 
   const columns: ColumnInfo = { hasExercise, hasDate, hasWeight, hasReps, hasSets, weightUnit };
 
