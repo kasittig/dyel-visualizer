@@ -1,0 +1,181 @@
+# DYEL Visualizer — User Guide
+
+## What Is This?
+
+DYEL Visualizer is a training analytics tool for **powerlifters using the conjugate method**. You paste in the URL of a Google Sheet where you track your training, and the app turns that data into charts and diagnostics to help you:
+
+- See how your squat, bench, and deadlift are trending over time
+- Identify weaknesses and imbalances across exercise variations
+- Set realistic session targets on Max Effort days
+- Track your projected competition total
+
+If you don't yet follow conjugate training, there's an explanation at the "What is the conjugate method?" link on the main page.
+
+---
+
+## Setting Up Your Spreadsheet
+
+The app reads a **published Google Sheet** as CSV. Your sheet must be published to the web (`File → Share → Publish to web`, select "Comma-separated values"). Only published sheets work — sharing a sheet as "anyone with link can view" is not sufficient.
+
+### Required Column Headers
+
+Your sheet needs a header row that contains at minimum:
+
+| Column     | Notes                                                                                                                              |
+| ---------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `exercise` | Name of the exercise (see naming rules below)                                                                                      |
+| `date`     | Any standard date format (e.g. `2024-11-15` or `11/15/2024`)                                                                       |
+| `weight`   | The weight lifted. Rename to `weight (lbs)` or `weight (kg)` to set the unit. If you don't annotate the unit, the app assumes lbs. |
+| `reps`     | Number of reps performed                                                                                                           |
+| `sets`     | _(optional)_ Number of sets — defaults to 1 if omitted                                                                             |
+
+You can have rows above the header (for notes, a title, etc.) — the parser skips everything before the first row that contains the word "exercise".
+
+### Naming Exercises
+
+Exercise names are the most important thing to get right. The app parses names automatically to determine the lift type and variation; how you name things determines what shows up in the charts.
+
+**Lift type** is detected from keywords in the name:
+
+| Lift      | Keywords that trigger it                                                         |
+| --------- | -------------------------------------------------------------------------------- |
+| Squat     | `squat`, `ssb`, `safety`                                                         |
+| Bench     | `bench`, `floor` (as in floor press), `incline`, `decline`, `board`, `slingshot` |
+| Deadlift  | `deadlift`, `rack` (as in rack pull)                                             |
+| Accessory | Everything else (dumbbells, rows, etc.)                                          |
+
+**Variations** are detected from additional keywords anywhere in the name:
+
+_Bar type:_ `ssb` / `safety`, `trap`, `cambered`, `zercher`, `duffalo`, `swiss`, `american`, `bamboo`, `belt`, `goblet`, `dumbbell` / `db`
+
+_Stance/grip:_ `sumo`, `conventional`, `close grip` / `cg`, `wide grip`, `narrow`, `medium`, `front`, `romanian`, `slingshot`, `builder`
+
+_Equipment:_ `incline`, `decline`, `box`, `board`, `blocks`, `deficit`, `pause` / `command`, `floor`, `rack`
+
+_Additional resistance:_ `chain` → chains; `band` → bands; `reverse band` / `rev. band` → reverse bands
+
+You can put modifiers in parentheses if you prefer:
+
+```
+Squat (sumo, chains)
+Bench Press (close grip, boards)
+Deadlift (deficit, conventional)
+```
+
+**A plain competition lift should contain no extra keywords** — `Squat`, `Bench Press`, and `Deadlift` (or `Bench w/Commands` for a paused bench to judge commands) are parsed as your anchor movements. Everything else is treated as a variation.
+
+### Example Rows
+
+```
+date,       exercise,                   weight (lbs), reps, sets
+2024-11-04, Squat,                      405,          2,    1
+2024-11-04, SSB Squat,                  335,          3,    1
+2024-11-06, Bench w/Commands,           245,          2,    1
+2024-11-06, Floor Press,                205,          3,    1
+2024-11-08, Deadlift,                   455,          2,    1
+2024-11-08, Deadlift (deficit),         385,          3,    1
+```
+
+---
+
+## Loading Your Data
+
+1. In the app, paste your published Google Sheet URL into the "Your Google Sheet" field.
+2. The URL is saved in the browser address bar, so you can bookmark it or share it.
+
+If the sheet loads but you see no data, check that your header row contains the word `exercise` and that your dates are valid.
+
+---
+
+## The Interface
+
+Once your data loads, you'll see tabs across the top: **Σ**, **Squat**, **Bench**, **Deadlift**, and **Calculator** (Accessory appears if you have accessory data).
+
+There is also an **"Exclude volume work"** checkbox at the top. When checked (the default), sets recorded with more than one set are excluded from the charts. This keeps Dynamic Effort volume from drowning out your Max Effort numbers — leave it checked unless you specifically want to see all your volume.
+
+---
+
+## Σ (Sigma) Tab — Your Total at a Glance
+
+This tab gives you the big picture across all three lifts.
+
+### Total Chart
+
+A line chart with four lines: Squat (orange), Bench (blue), Deadlift (green), and Est. Total (purple). Each point represents your best estimated one-rep max (e1RM) on a given training day, normalized to your competition lift so that a heavy SSB squat session and a competition squat session land on the same scale.
+
+**How to use it:** Look at the overall slope. If your total has been flat for weeks, something in your program isn't working. If one lift's line is dipping while the others climb, that's a signal your recovery budget is tilted — or you have an underlying weakness to address.
+
+### Radar Chart
+
+A spider chart showing your most recent e1RM on each of the three lifts, with all three axes scaled to the same maximum. Useful for seeing at a glance whether your lifts are balanced or whether one is lagging.
+
+**How to use it:** In powerlifting, a lopsided total — e.g. a big squat but a small bench — is a sign that you'd gain more total weight by investing training time in the weak lift rather than piling more into the strong one. The radar makes this imbalance immediately visible.
+
+---
+
+## Squat / Bench / Deadlift Tabs
+
+Each lift tab has the same three sections.
+
+### Line Chart (Variation Trends)
+
+One line per exercise variation you've done, plotted over time. Hover a point to see the actual set (e.g. 1×3 @ 365 lbs) and the calculated e1RM. Click a line to highlight it; the corresponding spoke in the radar chart below will also highlight.
+
+**"Normalize to" dropdown:** When you have a baseline exercise set, this dropdown lets you choose which exercise the y-axis is calibrated to. When normalization is active, a dashed line appears showing the target exercise's projected e1RM computed from all your variation data — this line is often smoother than the raw e1RM because it synthesizes information from multiple exercises.
+
+**How to use it:** Look for stalls. If a variation that used to trend upward has flatlined, you've probably adapted to it and should rotate to something different. If the normalized dashed line is climbing while the raw competition lift line isn't, your special exercises are getting stronger faster than your competition lift — a sign you may need more specificity.
+
+### Baseline Selector
+
+At the top of each lift tab is a small "Baseline:" dropdown. This selects which exercise the app treats as your anchor — the exercise everything else is expressed relative to. The default is the most natural competition movement (e.g. paused bench to commands, or conventional deadlift). Change this if you compete with a different primary movement.
+
+### Filters
+
+Click "▼ Filters" to show filter chips. You can narrow the line chart to specific bars, stances, equipment, or additional weight types. Useful if you have a lot of variations and want to focus on, say, only band work.
+
+### Variation Radar Chart
+
+A spider chart with one spoke per exercise variation, showing the **projected e1RM today** for each. Unlike the line chart (which shows history), this shows where the app estimates each variation is right now, using a linear trend fit to recent sessions.
+
+**How to use it:** If one variation's spoke is noticeably shorter than the others, you haven't trained it recently or you're relatively weaker there. Clicking a spoke highlights that variation in the line chart above so you can see its history.
+
+### Diagnostics Panel
+
+A table that appears below the radar chart. For each variation (excluding accessories and exercises that can't be classified), it shows:
+
+| Column             | What it means                                                                                          |
+| ------------------ | ------------------------------------------------------------------------------------------------------ |
+| **Variation**      | Exercise name                                                                                          |
+| **Category**       | What physical quality it trains (e.g. lockout, bottom range, quad dominant, posterior chain)           |
+| **Avg Index**      | Your average e1RM on this exercise as a % of your competition-lift e1RM                                |
+| **Baseline Range** | The expected % range for this modifier (e.g. a board press is typically 105–115% of competition bench) |
+| **Diagnostic**     | **Optimal** (in range), **Weakness** (below range), or **Overtrained** (above range)                   |
+
+**How to use it:** This is the most actionable view in the app for programming decisions.
+
+- **Weakness** means you're lifting less on this variation relative to your competition lift than you should be, given what the exercise is. For example, if your lockout work (board press, rack pulls) is below the expected range, your lockout is the limiting factor in your competition lifts — add more lockout-focused work.
+- **Overtrained** means you're doing that variation so often or so heavy that you're overspecialized there relative to your competition lift — consider reducing frequency and rotating to a different quality.
+- **Optimal** means your training is producing the expected transfer to the competition lift from that exercise.
+
+If you pull conventional or sumo, set the "Primary pull" radio button in the diagnostics panel so deadlift variations are classified correctly.
+
+---
+
+## Calculator Tab
+
+A rep calculator that translates between weight and reps using your actual e1RM.
+
+1. Select the lift and exercise.
+2. Set a **data window** (default: last 28 days). The app finds the best e1RM estimate within that window — it will use your competition lift directly if you've done it recently, or cross-estimate from a variation if not (the source is shown below the inputs).
+3. Enter either a **weight** or a **rep count** — the other field fills in automatically.
+
+**How to use it:** On a Max Effort day, use this before training to figure out what hitting a new PR would require. For example: if your last competition squat was 405 × 2, enter "1 rep" to see what your projected single is and plan your warmup around that target.
+
+---
+
+## Tips for Getting the Most Out of the App
+
+- **Log every Max Effort set as a separate row**, even warmup singles. The app takes the best e1RM per session per exercise, so extra rows don't hurt and give the trend lines more data.
+- **Be consistent with exercise names.** The parser matches on keywords, so "SSB Squat" and "Safety Bar Squat" are treated as the same bar type — but "SSB" and "Squats with the SSB" will produce two different variation entries. Pick one name and stick to it.
+- **Keep the "Exclude volume work" checkbox on** if you log Dynamic Effort sets as multiple sets (e.g. 8 × 3). This prevents your volume work from appearing as spuriously low e1RMs on the chart.
+- **Check the diagnostics after every training block**, not just at the end of a cycle. Early identification of a lockout weakness or a posterior chain deficit gives you time to address it before a meet.
