@@ -1,6 +1,7 @@
 // eslint-disable-next-line @typescript-eslint/triple-slash-reference
 /// <reference path="../../../../global.d.ts" />
 
+import Papa from 'papaparse';
 import type {
   ConjugateBar,
   ConjugateDataPair,
@@ -25,8 +26,167 @@ type ModifierEffectEntry =
   | { effects: EffectEnum[]; min: number; max: number }
   | { effects: EffectEnum[] };
 
+export type ModifierEffectsMap = Record<string, ModifierEffectEntry>;
+
+interface ModifierEffectsRow {
+  dimension: string;
+  value: string;
+  base_exercise: string;
+  description: string;
+  effects: string;
+  'pct-low': string;
+  'pct-high': string;
+}
+
+export function parseModifierEffectsCsv(csv: string): ModifierEffectsMap {
+  const { data } = Papa.parse<ModifierEffectsRow>(csv, {
+    header: true,
+    skipEmptyLines: true,
+    transformHeader: (h) => h.trim().toLowerCase(),
+    transform: (v) => v.trim(),
+  });
+  const map: ModifierEffectsMap = {};
+  for (const row of data) {
+    const key = `${row.dimension}:${row.value}:${row.base_exercise}`;
+    const effects = row.effects
+      ? (row.effects
+          .split(',')
+          .map((e) => e.trim())
+          .filter(Boolean) as EffectEnum[])
+      : [];
+    const pctLow = row['pct-low'];
+    const pctHigh = row['pct-high'];
+    if (pctLow && pctHigh) {
+      map[key] = {
+        effects,
+        min: Math.round(parseFloat(pctLow) * 100),
+        max: Math.round(parseFloat(pctHigh) * 100),
+      };
+    } else {
+      map[key] = { effects };
+    }
+  }
+  return map;
+}
+
+// When multiple pct-bearing modifiers are simultaneously active (e.g. SSB + pause squat),
+// their ranges are combined multiplicatively: each modifier independently scales performance
+// relative to the competition lift, so the effects compound. Start at 100% and multiply by
+// each modifier's min and max in turn:
+//   combined_min = round(m1_min × m2_min / 100)  (applied iteratively)
+// addl_wt entries (chains, bands) carry no pct and are never included in the combination.
+export const MODIFIER_EFFECTS: Record<string, ModifierEffectEntry> = {
+  // bar × lift
+  'bar:standard:squat': { effects: [], min: 100, max: 100 },
+  'bar:standard:bench': { effects: [], min: 100, max: 100 },
+  'bar:standard:deadlift': { effects: [], min: 100, max: 100 },
+  'bar:ssb:squat': {
+    effects: ['QUAD_DOMINANT', 'UPPER_BACK_DEMAND', 'SHOULDER_FRIENDLY', 'UPRIGHT_TORSO'],
+    min: 90,
+    max: 95,
+  },
+  'bar:trap:deadlift': {
+    effects: ['QUAD_DOMINANT', 'UPRIGHT_TORSO', 'SPINE_DELOAD'],
+    min: 105,
+    max: 115,
+  },
+  'bar:american:bench': { effects: ['SHOULDER_FRIENDLY'], min: 95, max: 100 },
+  'bar:swiss:bench': { effects: ['SHOULDER_FRIENDLY'], min: 90, max: 100 },
+  'bar:cambered:squat': {
+    effects: ['STABILIZER_DEMAND', 'UPPER_BACK_DEMAND', 'BOTTOM_RANGE'],
+    min: 85,
+    max: 95,
+  },
+  'bar:zercher:squat': {
+    effects: ['CORE_DEMAND', 'UPPER_BACK_DEMAND', 'UPRIGHT_TORSO'],
+    min: 70,
+    max: 85,
+  },
+  'bar:duffalo:bench': { effects: ['SHOULDER_FRIENDLY'], min: 95, max: 100 },
+  'bar:dumbbell:bench': { effects: ['UNILATERAL', 'STABILIZER_DEMAND'], min: 75, max: 90 },
+  'bar:bamboo:bench': { effects: ['STABILIZER_DEMAND', 'BAR_SPEED'], min: 80, max: 90 },
+  'bar:belt:squat': { effects: ['SPINE_DELOAD', 'QUAD_DOMINANT'], min: 85, max: 95 },
+  'bar:goblet:squat': {
+    effects: ['QUAD_DOMINANT', 'UPRIGHT_TORSO', 'CORE_DEMAND'],
+    min: 50,
+    max: 65,
+  },
+
+  // stance × lift
+  'stance:competition:squat': { effects: [], min: 100, max: 100 },
+  'stance:competition:bench': { effects: [], min: 100, max: 100 },
+  'stance:competition:deadlift': { effects: [], min: 100, max: 100 },
+  'stance:sumo:deadlift': {
+    effects: ['HIP_DOMINANT', 'POSTERIOR_CHAIN', 'REDUCED_ROM'],
+    min: 90,
+    max: 100,
+  },
+  'stance:sumo:squat': { effects: ['HIP_DOMINANT', 'POSTERIOR_CHAIN'], min: 90, max: 100 },
+  'stance:conventional:deadlift': {
+    effects: ['HAMSTRING_DOMINANT', 'POSTERIOR_CHAIN'],
+    min: 90,
+    max: 100,
+  },
+  'stance:close:bench': { effects: ['TRICEP_DOMINANT'], min: 80, max: 90 },
+  'stance:close:squat': { effects: ['QUAD_DOMINANT'], min: 85, max: 95 },
+  'stance:wide:bench': { effects: ['UPPER_PECS', 'REDUCED_ROM'], min: 90, max: 100 },
+  'stance:wide:squat': { effects: ['POSTERIOR_CHAIN'], min: 90, max: 100 },
+  'stance:medium:bench': { effects: [], min: 100, max: 100 },
+  'stance:medium:squat': { effects: [], min: 100, max: 100 },
+  'stance:narrow:bench': { effects: ['TRICEP_DOMINANT'], min: 85, max: 95 },
+  'stance:narrow:squat': { effects: ['QUAD_DOMINANT'], min: 85, max: 95 },
+  'stance:romanian:deadlift': { effects: ['HAMSTRING_DOMINANT', 'BOTTOM_RANGE'], min: 60, max: 75 },
+  'stance:front:squat': {
+    effects: ['QUAD_DOMINANT', 'UPRIGHT_TORSO', 'CORE_DEMAND'],
+    min: 75,
+    max: 85,
+  },
+  'stance:slingshot:bench': { effects: ['SUPRAMAXIMAL', 'LOCKOUT'], min: 110, max: 120 },
+  'stance:builder:bench': { effects: ['BOTTOM_RANGE', 'SUPRAMAXIMAL'], min: 105, max: 115 },
+  'stance:opposite:deadlift': { effects: [], min: 100, max: 100 },
+
+  // equipment × lift
+  'equipment:incline:bench': { effects: ['UPPER_PECS'], min: 85, max: 95 },
+  'equipment:decline:bench': { effects: ['LOWER_PECS'], min: 100, max: 110 },
+  'equipment:blocks:deadlift': { effects: ['REDUCED_ROM', 'LOCKOUT'], min: 105, max: 115 },
+  'equipment:deficit:deadlift': { effects: ['EXTENDED_ROM', 'BOTTOM_RANGE'], min: 85, max: 95 },
+  'equipment:board:bench': {
+    effects: ['REDUCED_ROM', 'LOCKOUT', 'SUPRAMAXIMAL'],
+    min: 105,
+    max: 115,
+  },
+  'equipment:pause:squat': { effects: ['DEAD_STOP'], min: 85, max: 95 },
+  'equipment:pause:bench': { effects: ['DEAD_STOP'], min: 85, max: 95 },
+  'equipment:pause:deadlift': { effects: ['DEAD_STOP'], min: 90, max: 95 },
+  'equipment:floor:bench': {
+    effects: ['REDUCED_ROM', 'LOCKOUT', 'NO_LEG_DRIVE', 'TRICEP_DOMINANT'],
+    min: 85,
+    max: 95,
+  },
+  'equipment:box:squat': { effects: ['DEAD_STOP', 'POSTERIOR_SHIFT'], min: 90, max: 100 },
+  'equipment:rack:deadlift': { effects: ['REDUCED_ROM', 'LOCKOUT'], min: 110, max: 130 },
+
+  // addl_wt × lift (no pct — accommodating resistance has no percentage baselines)
+  'addl_wt:chains:squat': {
+    effects: ['ACCOMMODATING_RESISTANCE', 'BAR_SPEED', 'STABILIZER_DEMAND'],
+  },
+  'addl_wt:chains:bench': {
+    effects: ['ACCOMMODATING_RESISTANCE', 'BAR_SPEED', 'STABILIZER_DEMAND'],
+  },
+  'addl_wt:chains:deadlift': {
+    effects: ['ACCOMMODATING_RESISTANCE', 'BAR_SPEED', 'STABILIZER_DEMAND'],
+  },
+  'addl_wt:bands:squat': { effects: ['ACCOMMODATING_RESISTANCE', 'BAR_SPEED'] },
+  'addl_wt:bands:bench': { effects: ['ACCOMMODATING_RESISTANCE', 'BAR_SPEED'] },
+  'addl_wt:bands:deadlift': { effects: ['ACCOMMODATING_RESISTANCE', 'BAR_SPEED'] },
+  'addl_wt:rev. bands:squat': { effects: ['SUPRAMAXIMAL', 'LOCKOUT'] },
+  'addl_wt:rev. bands:bench': { effects: ['SUPRAMAXIMAL', 'LOCKOUT'] },
+  'addl_wt:rev. bands:deadlift': { effects: ['SUPRAMAXIMAL', 'LOCKOUT'] },
+};
+
 export interface DiagnosticsOptions {
   deadliftStance?: DeadliftStancePreference;
+  modifierEffects?: ModifierEffectsMap;
 }
 
 /**
@@ -52,6 +212,7 @@ export function generateDiagnostics(
   pairs: ConjugateDataPair[],
   options?: DiagnosticsOptions
 ): DiagnosticResult[] {
+  const effectsMap = options?.modifierEffects ?? MODIFIER_EFFECTS;
   const byLift = new Map<PrimaryLift, ConjugateDataPair[]>();
   for (const pair of pairs) {
     const [ex] = pair;
@@ -148,7 +309,7 @@ export function generateDiagnostics(
 
       type PctEntry = Extract<ModifierEffectEntry, { min: number }>;
       const pctEntries = candidateKeys
-        .map((k) => __MODIFIER__EFFECTS__[k])
+        .map((k) => effectsMap[k])
         .filter((e): e is PctEntry => e !== undefined && 'min' in e);
 
       if (pctEntries.length === 0) {
