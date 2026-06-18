@@ -236,6 +236,9 @@ export function generateDiagnostics(
     }
 
     for (const [name, { ex, sessions }] of variationGroups) {
+      // Accommodating resistance makes e1RM comparison against the straight-bar anchor
+      // unreliable (recorded weight excludes the variable chain/band load), so skip.
+      if (ex.addlWts.length > 0) continue;
       const effectiveCategory = resolveCategory(ex, options);
       const { factor, sampleCount } = fitVariantFactor(anchorSessions, sessions);
       if (sampleCount === 0) continue;

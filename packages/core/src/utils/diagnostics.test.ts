@@ -710,6 +710,38 @@ describe("generateDiagnostics", () => {
     expect(deficit!.status).toBe("optimal");
   });
 
+  it("variations with addlWts are excluded from diagnostic results", () => {
+    // Chains/bands add variable load not captured in recorded weight, so e1RM comparison
+    // against the straight-bar anchor is unreliable. They must not appear in results even
+    // when they have a pct-bearing key from another modifier (e.g. swiss bar, floor press).
+    const pairs: ConjugateDataPair[] = [
+      pair(
+        { movementCategory: ["anchor"], displayName: "bench press" },
+        session("2024-01-01", 300)
+      ),
+      pair(
+        {
+          bar: "swiss",
+          movementCategory: ["anchor"],
+          displayName: "swiss bar bench (chain)",
+          addlWts: ["chains"],
+        },
+        session("2024-01-01", 270)
+      ),
+      pair(
+        {
+          equipment: "floor",
+          movementCategory: ["lockout"],
+          displayName: "floor press (chain)",
+          addlWts: ["chains"],
+        },
+        session("2024-01-01", 255)
+      ),
+    ];
+    const results = generateDiagnostics(pairs);
+    expect(results).toHaveLength(0);
+  });
+
   it("handles multiple lifts and returns results for each", () => {
     const benchPairs: ConjugateDataPair[] = [
       pair(
