@@ -24,7 +24,7 @@ Everything re-exported from `src/index.ts` is public. Key exports:
 
 `ConjugateExercise.movementCategory` and `DiagnosticResult.category` are both `MovementCategory[]`. `toMovementCategory` collects into two independent dimensions:
 
-- **ROM modifier** (lockout/bottom_range): from equipment (board/floor/blocks/rack → lockout; deficit/pause → bottom_range), certain stances (close/narrow/slingshot/builder → lockout), incline/decline bench, cambered bar squat, box squat
+- **ROM modifier** (lockout/bottom_range): from equipment (board/floor/blocks/rack → lockout; deficit/pause → bottom_range), certain stances (close/narrow/slingshot/builder → lockout), cambered bar squat, box squat
 - **Movement pattern** (anchor/quad_dominant/posterior_chain): from stance and bar type
 
 An exercise can carry both (e.g. deficit sumo deadlift → `["bottom_range", "posterior_chain"]`). `"anchor"` is only added when no ROM modifier is present — competition stance is the parser fallback and must not override equipment-based classification.
