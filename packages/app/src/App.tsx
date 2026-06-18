@@ -127,6 +127,10 @@ function App() {
           <a href="?page=conjugate" style={{ color: "var(--accent)" }}>
             What is the conjugate method?
           </a>
+          {" · "}
+          <a href="?page=validator" style={{ color: "var(--accent)" }}>
+            Check if my spreadsheet will work
+          </a>
         </p>
         <div
           style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.5rem" }}
