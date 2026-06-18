@@ -1,16 +1,16 @@
-import { useState, useMemo, useEffect, useRef } from "react";
-import type { DateRange } from "react-day-picker";
-import { DateRangePicker } from "./DateRangePicker";
-import { findBestE1RM, predictWeightForReps, predictRepsForWeight } from "@dyel/core";
-import type { ConjugateDataPair } from "../hooks/useConjugateData";
-import type { E1RMEstimate, RepCalcStats } from "@dyel/core";
-import { distinctDisplayNames, type LiftType } from "../utils/appUtils";
+import { useState, useMemo, useEffect, useRef } from 'react';
+import type { DateRange } from 'react-day-picker';
+import { DateRangePicker } from './DateRangePicker';
+import { findBestE1RM, predictWeightForReps, predictRepsForWeight } from '@dyel/core';
+import type { ConjugateDataPair } from '../hooks/useConjugateData';
+import type { E1RMEstimate, RepCalcStats } from '@dyel/core';
+import { distinctDisplayNames, type LiftType } from '../utils/appUtils';
 
 const LIFT_LABELS: Record<LiftType, string> = {
-  squat: "Squat",
-  bench: "Bench",
-  deadlift: "Deadlift",
-  accessory: "Accessory",
+  squat: 'Squat',
+  bench: 'Bench',
+  deadlift: 'Deadlift',
+  accessory: 'Accessory',
 };
 
 function roundTo5(n: number): number {
@@ -20,11 +20,11 @@ function roundTo5(n: number): number {
 function sourceNote(estimate: E1RMEstimate): string {
   const date = estimate.date.toLocaleDateString();
   switch (estimate.method) {
-    case "exact":
+    case 'exact':
       return `Based on ${estimate.sourceName} · ${date}`;
-    case "addlWtOffset":
+    case 'addlWtOffset':
       return `Based on ${estimate.sourceName} · ${date} · adjusted for added resistance (chains/bands)`;
-    case "variantFactor":
+    case 'variantFactor':
       return `Based on ${estimate.sourceName} · ${date} · estimated from a related exercise`;
   }
 }
@@ -38,18 +38,18 @@ export function RepCalculator({
   baselineNames: Partial<Record<string, string>>;
   stats: RepCalcStats;
 }) {
-  const [liftType, setLiftType] = useState<LiftType>("squat");
-  const [selectedName, setSelectedName] = useState("");
-  const [reps, setReps] = useState("");
-  const [weight, setWeight] = useState("");
+  const [liftType, setLiftType] = useState<LiftType>('squat');
+  const [selectedName, setSelectedName] = useState('');
+  const [reps, setReps] = useState('');
+  const [weight, setWeight] = useState('');
   const [dateRange, setDateRange] = useState<DateRange>(() => ({
     from: new Date(Date.now() - 28 * 24 * 60 * 60 * 1000),
     to: new Date(),
   }));
 
-  const unit = pairs[0]?.[1].unit ?? "lbs";
+  const unit = pairs[0]?.[1].unit ?? 'lbs';
 
-  const hasAccessories = useMemo(() => pairs.some(([ex]) => ex.type === "accessory"), [pairs]);
+  const hasAccessories = useMemo(() => pairs.some(([ex]) => ex.type === 'accessory'), [pairs]);
 
   const exercisesForType = useMemo(
     () =>
@@ -61,16 +61,18 @@ export function RepCalculator({
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setSelectedName(exercisesForType[0] ?? "");
-    setReps("");
-    setWeight("");
+    setSelectedName(exercisesForType[0] ?? '');
+    setReps('');
+    setWeight('');
   }, [liftType, exercisesForType]);
 
   const sessionDates = useMemo(() => {
     const seen = new Set<string>();
     const dates: Date[] = [];
     for (const [ex, session] of pairs) {
-      if (ex.type !== liftType) continue;
+      if (ex.type !== liftType) {
+        continue;
+      }
       const key = session.date.toDateString();
       if (!seen.has(key)) {
         seen.add(key);
@@ -86,7 +88,9 @@ export function RepCalculator({
   );
 
   const estimate = useMemo(() => {
-    if (!selectedExercise || !dateRange.from || !dateRange.to) return null;
+    if (!selectedExercise || !dateRange.from || !dateRange.to) {
+      return null;
+    }
     return findBestE1RM(
       pairs,
       selectedExercise,
@@ -105,7 +109,9 @@ export function RepCalculator({
   });
 
   useEffect(() => {
-    if (!estimate) return;
+    if (!estimate) {
+      return;
+    }
     const r = parseFloat(repsRef.current);
     if (!isNaN(r) && r > 0) {
       setWeight(String(roundTo5(predictWeightForReps(estimate.e1rm, r))));
@@ -128,28 +134,28 @@ export function RepCalculator({
     }
   }
 
-  const muted: React.CSSProperties = { color: "var(--text)", fontSize: "0.85rem" };
+  const muted: React.CSSProperties = { color: 'var(--text)', fontSize: '0.85rem' };
   const inputStyle: React.CSSProperties = {
-    width: "6rem",
-    padding: "0.4rem 0.5rem",
-    fontSize: "1rem",
-    textAlign: "center",
+    width: '6rem',
+    padding: '0.4rem 0.5rem',
+    fontSize: '1rem',
+    textAlign: 'center',
   };
 
   return (
     <section>
-      <h2 style={{ textAlign: "center" }}>Rep Calculator</h2>
+      <h2 style={{ textAlign: 'center' }}>Rep Calculator</h2>
 
       <div
         style={{
-          display: "flex",
-          flexWrap: "wrap",
-          gap: "1rem",
-          alignItems: "center",
-          marginBottom: "1.5rem",
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: '1rem',
+          alignItems: 'center',
+          marginBottom: '1.5rem',
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <label htmlFor="calc-lift" style={muted}>
             Lift
           </label>
@@ -157,10 +163,10 @@ export function RepCalculator({
             id="calc-lift"
             value={liftType}
             onChange={(e) => setLiftType(e.target.value as LiftType)}
-            style={{ fontSize: "1rem" }}
+            style={{ fontSize: '1rem' }}
           >
             {(Object.keys(LIFT_LABELS) as LiftType[])
-              .filter((t) => t !== "accessory" || hasAccessories)
+              .filter((t) => t !== 'accessory' || hasAccessories)
               .map((t) => (
                 <option key={t} value={t}>
                   {LIFT_LABELS[t]}
@@ -169,7 +175,7 @@ export function RepCalculator({
           </select>
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <label htmlFor="calc-exercise" style={muted}>
             Exercise
           </label>
@@ -179,7 +185,7 @@ export function RepCalculator({
             onChange={(e) => {
               setSelectedName(e.target.value);
             }}
-            style={{ fontSize: "1rem" }}
+            style={{ fontSize: '1rem' }}
           >
             {exercisesForType.map((name) => (
               <option key={name} value={name}>
@@ -200,19 +206,19 @@ export function RepCalculator({
         <>
           <div
             style={{
-              display: "flex",
-              flexWrap: "wrap",
-              gap: "1.5rem",
-              alignItems: "center",
-              marginBottom: "1rem",
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: '1.5rem',
+              alignItems: 'center',
+              marginBottom: '1rem',
             }}
           >
             <div
               style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                gap: "0.25rem",
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '0.25rem',
               }}
             >
               <label htmlFor="calc-reps" style={muted}>
@@ -232,10 +238,10 @@ export function RepCalculator({
 
             <span
               style={{
-                fontSize: "1.25rem",
-                color: "var(--text)",
-                alignSelf: "flex-end",
-                paddingBottom: "0.35rem",
+                fontSize: '1.25rem',
+                color: 'var(--text)',
+                alignSelf: 'flex-end',
+                paddingBottom: '0.35rem',
               }}
             >
               ↔
@@ -243,10 +249,10 @@ export function RepCalculator({
 
             <div
               style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                gap: "0.25rem",
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '0.25rem',
               }}
             >
               <label htmlFor="calc-weight" style={muted}>
@@ -263,7 +269,7 @@ export function RepCalculator({
               />
             </div>
 
-            <div style={{ ...muted, alignSelf: "flex-end", paddingBottom: "0.5rem" }}>
+            <div style={{ ...muted, alignSelf: 'flex-end', paddingBottom: '0.5rem' }}>
               e1RM: {Math.round(estimate.e1rm)} {unit}
             </div>
           </div>
@@ -272,7 +278,7 @@ export function RepCalculator({
         </>
       )}
 
-      <div style={{ marginTop: "1.5rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+      <div style={{ marginTop: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
         <span style={muted}>Data window</span>
         <DateRangePicker value={dateRange} onChange={setDateRange} sessionDates={sessionDates} />
       </div>

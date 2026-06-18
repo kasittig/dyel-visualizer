@@ -1,14 +1,16 @@
-import { Line, Tooltip } from "recharts";
-import type { ChartPoint } from "@dyel/core";
-import { DateLineChart, ChartEmpty } from "./DateLineChart";
+import { Line, Tooltip } from 'recharts';
+import type { ChartPoint } from '@dyel/core';
+import { DateLineChart, ChartEmpty } from './DateLineChart';
 
-const SQUAT_COLOR = "#e67e22";
-const BENCH_COLOR = "#3498db";
-const DEADLIFT_COLOR = "#2ecc71";
-const TOTAL_COLOR = "#9b59b6";
+const SQUAT_COLOR = '#e67e22';
+const BENCH_COLOR = '#3498db';
+const DEADLIFT_COLOR = '#2ecc71';
+const TOTAL_COLOR = '#9b59b6';
 
 export function TotalChart({ chartData, unit }: { chartData: ChartPoint[]; unit: string }) {
-  if (chartData.length === 0) return <ChartEmpty />;
+  if (chartData.length === 0) {
+    return <ChartEmpty />;
+  }
 
   return (
     <section>

@@ -1,17 +1,17 @@
-import { useState, useMemo, useEffect } from "react";
-import { useConjugateData } from "./hooks/useConjugateData";
-import { useLastSessionStats } from "./hooks/useLastSessionStats";
-import { ExerciseFilters } from "./components/ExerciseFilters";
-import { BaselineSelect } from "./components/BaselineSelect";
-import { RepCalculator } from "./components/RepCalculator";
-import { SigmaTab } from "./components/SigmaTab";
-import { LiftTabPanel } from "./components/LiftTabPanel";
-import { VolumeWorkToggle } from "./components/VolumeWorkToggle";
-import { SheetUrlPanel } from "./components/SheetUrlPanel";
-import { GettingStarted } from "./components/GettingStarted";
-import { applyFilters, defaultBaselineName, defaultTargetName, emptyFilters } from "@dyel/core";
-import type { ConjugateDataPair } from "./hooks/useConjugateData";
-import type { FilterState } from "@dyel/core";
+import { useState, useMemo, useEffect } from 'react';
+import { useConjugateData } from './hooks/useConjugateData';
+import { useLastSessionStats } from './hooks/useLastSessionStats';
+import { ExerciseFilters } from './components/ExerciseFilters';
+import { BaselineSelect } from './components/BaselineSelect';
+import { RepCalculator } from './components/RepCalculator';
+import { SigmaTab } from './components/SigmaTab';
+import { LiftTabPanel } from './components/LiftTabPanel';
+import { VolumeWorkToggle } from './components/VolumeWorkToggle';
+import { SheetUrlPanel } from './components/SheetUrlPanel';
+import { GettingStarted } from './components/GettingStarted';
+import { applyFilters, defaultBaselineName, defaultTargetName, emptyFilters } from '@dyel/core';
+import type { ConjugateDataPair } from './hooks/useConjugateData';
+import type { FilterState } from '@dyel/core';
 import {
   extractSheetRef,
   initialTabState,
@@ -19,27 +19,30 @@ import {
   LIFT_TABS,
   MAIN_TABS,
   ACCESSORY_TAB,
-} from "./utils/appUtils";
-import type { LiftType, PageTab, TabState } from "./utils/appUtils";
+} from './utils/appUtils';
+import type { LiftType, PageTab, TabState } from './utils/appUtils';
 
-function App() {
+export function App() {
   const [url, setUrl] = useState(
     () =>
-      new URLSearchParams(window.location.search).get("sheet") ??
+      new URLSearchParams(window.location.search).get('sheet') ??
       import.meta.env.VITE_SHEET_URL ??
-      ""
+      ''
   );
   const [panelForcedOpen, setPanelForcedOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<PageTab>("sigma");
+  const [activeTab, setActiveTab] = useState<PageTab>('sigma');
   const [shownResetToken, setShownResetToken] = useState(0);
   const [tabState, setTabState] = useState<Record<LiftType, TabState>>(initialTabState);
   const [excludeVolumeWork, setExcludeVolumeWork] = useState(true);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    if (url) params.set("sheet", url);
-    else params.delete("sheet");
-    history.replaceState(null, "", "?" + params.toString());
+    if (url) {
+      params.set('sheet', url);
+    } else {
+      params.delete('sheet');
+    }
+    history.replaceState(null, '', '?' + params.toString());
   }, [url]);
 
   const sheetRef = extractSheetRef(url);
@@ -47,16 +50,16 @@ function App() {
 
   const state = useConjugateData(sheetRef);
 
-  const showUrlPanel = panelForcedOpen || state.status !== "success";
+  const showUrlPanel = panelForcedOpen || state.status !== 'success';
 
-  const pairs = useMemo(() => (state.status === "success" ? state.pairs : []), [state]);
+  const pairs = useMemo(() => (state.status === 'success' ? state.pairs : []), [state]);
 
   const tabRows = useMemo<Record<LiftType, ConjugateDataPair[]>>(
     () => ({
-      squat: pairs.filter(([ex]) => ex.type === "squat"),
-      bench: pairs.filter(([ex]) => ex.type === "bench"),
-      deadlift: pairs.filter(([ex]) => ex.type === "deadlift"),
-      accessory: pairs.filter(([ex]) => ex.type === "accessory"),
+      squat: pairs.filter(([ex]) => ex.type === 'squat'),
+      bench: pairs.filter(([ex]) => ex.type === 'bench'),
+      deadlift: pairs.filter(([ex]) => ex.type === 'deadlift'),
+      accessory: pairs.filter(([ex]) => ex.type === 'accessory'),
     }),
     [pairs]
   );
@@ -66,9 +69,13 @@ function App() {
     const target: Partial<Record<LiftType, string>> = {};
     for (const tab of LIFT_TABS) {
       const b = tabState[tab].baselineName ?? defaultBaselineName(tabRows[tab]);
-      if (b) baseline[tab] = b;
+      if (b) {
+        baseline[tab] = b;
+      }
       const t = tabState[tab].targetName ?? defaultTargetName(tabRows[tab]);
-      if (t) target[tab] = t;
+      if (t) {
+        target[tab] = t;
+      }
     }
     return { effectiveBaselineNames: baseline, effectiveTargetNames: target };
   }, [tabRows, tabState]);
@@ -78,7 +85,7 @@ function App() {
   const tabs = [...MAIN_TABS, ...(tabRows.accessory.length > 0 ? [ACCESSORY_TAB] : [])];
 
   const liftTab: LiftType | null =
-    activeTab !== "calculator" && activeTab !== "sigma" ? activeTab : null;
+    activeTab !== 'calculator' && activeTab !== 'sigma' ? activeTab : null;
 
   const activeRows = useMemo(() => (liftTab ? tabRows[liftTab] : []), [liftTab, tabRows]);
 
@@ -106,7 +113,9 @@ function App() {
   }
 
   function toggleFilter(facet: keyof FilterState, value: string) {
-    if (!liftTab) return;
+    if (!liftTab) {
+      return;
+    }
     setTabState((prev) => ({
       ...prev,
       [liftTab]: {
@@ -120,7 +129,9 @@ function App() {
   }
 
   function clearFilters() {
-    if (!liftTab) return;
+    if (!liftTab) {
+      return;
+    }
     setTabState((prev) => ({
       ...prev,
       [liftTab]: { ...prev[liftTab], filters: emptyFilters() },
@@ -132,57 +143,57 @@ function App() {
   }
 
   return (
-    <main style={{ padding: "2rem", fontFamily: "sans-serif", textAlign: "left" }}>
+    <main style={{ padding: '2rem', fontFamily: 'sans-serif', textAlign: 'left' }}>
       <SheetUrlPanel
         showUrlPanel={showUrlPanel}
         url={url}
-        loaded={state.status === "success"}
+        loaded={state.status === 'success'}
         invalidUrl={invalidUrl}
         onUrlChange={handleUrlChange}
         onForceOpen={() => setPanelForcedOpen(true)}
         onCancel={() => setPanelForcedOpen(false)}
       />
 
-      <div style={{ marginTop: "1rem" }}>
+      <div style={{ marginTop: '1rem' }}>
         {url.length === 0 && <GettingStarted />}
-        {state.status === "loading" && <p>Loading…</p>}
-        {state.status === "error" && (
-          <p style={{ color: "red" }}>
-            {state.message}{" "}
-            <a href="?page=validator" style={{ color: "var(--accent)" }}>
+        {state.status === 'loading' && <p>Loading…</p>}
+        {state.status === 'error' && (
+          <p style={{ color: 'red' }}>
+            {state.message}{' '}
+            <a href="?page=validator" style={{ color: 'var(--accent)' }}>
               Check your spreadsheet format
             </a>
           </p>
         )}
-        {state.status === "success" && (
+        {state.status === 'success' && (
           <>
             <div
               style={{
-                display: "flex",
-                gap: "1.5rem",
-                borderBottom: "2px solid var(--border)",
-                marginBottom: "1rem",
+                display: 'flex',
+                gap: '1.5rem',
+                borderBottom: '2px solid var(--border)',
+                marginBottom: '1rem',
               }}
             >
               {[
-                { id: "sigma" as const, label: "Σ" },
+                { id: 'sigma' as const, label: 'Σ' },
                 ...tabs,
-                { id: "calculator" as const, label: "Calculator" },
+                { id: 'calculator' as const, label: 'Calculator' },
               ].map(({ id, label }) => (
                 <button
                   key={id}
                   onClick={() => setActiveTab(id)}
                   style={{
-                    background: "none",
-                    border: "none",
+                    background: 'none',
+                    border: 'none',
                     borderBottom:
-                      activeTab === id ? "2px solid var(--accent)" : "2px solid transparent",
-                    marginBottom: "-2px",
-                    padding: "0.4rem 0",
-                    cursor: "pointer",
+                      activeTab === id ? '2px solid var(--accent)' : '2px solid transparent',
+                    marginBottom: '-2px',
+                    padding: '0.4rem 0',
+                    cursor: 'pointer',
                     fontWeight: activeTab === id ? 700 : 400,
-                    fontSize: "1rem",
-                    color: activeTab === id ? "var(--accent)" : "var(--text-h)",
+                    fontSize: '1rem',
+                    color: activeTab === id ? 'var(--accent)' : 'var(--text-h)',
                   }}
                 >
                   {label}
@@ -190,7 +201,7 @@ function App() {
               ))}
             </div>
             <VolumeWorkToggle checked={excludeVolumeWork} onChange={toggleVolumeWork} />
-            {activeTab === "calculator" ? (
+            {activeTab === 'calculator' ? (
               <>
                 <RepCalculator
                   pairs={calcPairs}
@@ -198,7 +209,7 @@ function App() {
                   stats={stats}
                 />
               </>
-            ) : activeTab === "sigma" ? (
+            ) : activeTab === 'sigma' ? (
               <SigmaTab
                 pairs={pairs}
                 excludeVolumeWork={excludeVolumeWork}
@@ -244,5 +255,3 @@ function App() {
     </main>
   );
 }
-
-export default App;

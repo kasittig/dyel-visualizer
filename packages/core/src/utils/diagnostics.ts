@@ -9,44 +9,44 @@ import type {
   MovementCategory,
   PrimaryLift,
   TrainingSession,
-} from "../types/conjugate";
-import { fitVariantFactor } from "./e1rm";
+} from '../types/conjugate';
+import { fitVariantFactor } from './e1rm';
 
-type ExerciseShape = Pick<ConjugateExercise, "type" | "bar" | "stance" | "equipment">;
+type ExerciseShape = Pick<ConjugateExercise, 'type' | 'bar' | 'stance' | 'equipment'>;
 
-const LOCKOUT_EQUIPMENT = new Set<ConjugateEquipment>(["board", "floor", "blocks", "rack"]);
-const BOTTOM_RANGE_EQUIPMENT = new Set<ConjugateEquipment>(["deficit", "pause"]);
-const QUAD_DOMINANT_BARS = new Set<ConjugateBar>(["ssb", "goblet", "trap", "zercher", "belt"]);
+const LOCKOUT_EQUIPMENT = new Set<ConjugateEquipment>(['board', 'floor', 'blocks', 'rack']);
+const BOTTOM_RANGE_EQUIPMENT = new Set<ConjugateEquipment>(['deficit', 'pause']);
+const QUAD_DOMINANT_BARS = new Set<ConjugateBar>(['ssb', 'goblet', 'trap', 'zercher', 'belt']);
 
 export const EFFECT_DESCRIPTIONS: Record<EffectEnum, string> = {
-  QUAD_DOMINANT: "shifts primary emphasis to the quadriceps",
-  POSTERIOR_CHAIN: "shifts primary emphasis to glutes/hamstrings/lower back as a unit",
-  HAMSTRING_DOMINANT: "specifically targets the hamstrings within the posterior chain",
-  HIP_DOMINANT: "emphasizes hip hinge mechanics and hip abductors/adductors",
-  TRICEP_DOMINANT: "shifts pressing emphasis to the triceps",
-  UPPER_PECS: "shifts pressing emphasis to the upper pectorals and anterior deltoids",
-  LOWER_PECS: "shifts pressing emphasis to the lower pectorals",
-  LOCKOUT: "trains the top portion of the lift; develops strength near full extension",
+  QUAD_DOMINANT: 'shifts primary emphasis to the quadriceps',
+  POSTERIOR_CHAIN: 'shifts primary emphasis to glutes/hamstrings/lower back as a unit',
+  HAMSTRING_DOMINANT: 'specifically targets the hamstrings within the posterior chain',
+  HIP_DOMINANT: 'emphasizes hip hinge mechanics and hip abductors/adductors',
+  TRICEP_DOMINANT: 'shifts pressing emphasis to the triceps',
+  UPPER_PECS: 'shifts pressing emphasis to the upper pectorals and anterior deltoids',
+  LOWER_PECS: 'shifts pressing emphasis to the lower pectorals',
+  LOCKOUT: 'trains the top portion of the lift; develops strength near full extension',
   BOTTOM_RANGE:
-    "trains the bottom portion of the lift; develops strength out of the hole or off the floor",
-  DEAD_STOP: "removes the stretch-shortening reflex; requires generating force from a static start",
-  REDUCED_ROM: "shortens the range of motion relative to competition lift",
-  EXTENDED_ROM: "lengthens the range of motion relative to competition lift",
+    'trains the bottom portion of the lift; develops strength out of the hole or off the floor',
+  DEAD_STOP: 'removes the stretch-shortening reflex; requires generating force from a static start',
+  REDUCED_ROM: 'shortens the range of motion relative to competition lift',
+  EXTENDED_ROM: 'lengthens the range of motion relative to competition lift',
   ACCOMMODATING_RESISTANCE:
-    "resistance increases as the bar rises; rewards bar speed and trains the full ROM",
+    'resistance increases as the bar rises; rewards bar speed and trains the full ROM',
   SUPRAMAXIMAL:
     "allows loading above the lifter's true max; develops confidence and strength at specific positions",
-  STABILIZER_DEMAND: "requires greater activation of stabilizer muscles to control the bar",
-  UPPER_BACK_DEMAND: "increases demand on lats and upper back to maintain position",
-  CORE_DEMAND: "increases demand on the core to maintain position and transfer force",
-  SHOULDER_FRIENDLY: "reduces stress on the shoulder joint relative to a straight bar",
-  SPINE_DELOAD: "reduces axial spinal compression; spares the lower back",
-  UNILATERAL: "loads one limb at a time; exposes and addresses side-to-side imbalances",
-  BAR_SPEED: "rewards or requires explosive bar speed to complete the lift",
+  STABILIZER_DEMAND: 'requires greater activation of stabilizer muscles to control the bar',
+  UPPER_BACK_DEMAND: 'increases demand on lats and upper back to maintain position',
+  CORE_DEMAND: 'increases demand on the core to maintain position and transfer force',
+  SHOULDER_FRIENDLY: 'reduces stress on the shoulder joint relative to a straight bar',
+  SPINE_DELOAD: 'reduces axial spinal compression; spares the lower back',
+  UNILATERAL: 'loads one limb at a time; exposes and addresses side-to-side imbalances',
+  BAR_SPEED: 'rewards or requires explosive bar speed to complete the lift',
   POSTERIOR_SHIFT:
-    "promotes shifting weight posteriorly; encourages sitting back rather than forward",
-  NO_LEG_DRIVE: "eliminates the ability to use leg drive; isolates upper body pressing musculature",
-  UPRIGHT_TORSO: "forces or encourages a more vertical torso angle than the competition lift",
+    'promotes shifting weight posteriorly; encourages sitting back rather than forward',
+  NO_LEG_DRIVE: 'eliminates the ability to use leg drive; isolates upper body pressing musculature',
+  UPRIGHT_TORSO: 'forces or encourages a more vertical torso angle than the competition lift',
 };
 
 type ModifierEffectEntry =
@@ -61,128 +61,130 @@ type ModifierEffectEntry =
 // addl_wt entries (chains, bands) carry no pct and are never included in the combination.
 export const MODIFIER_EFFECTS: Record<string, ModifierEffectEntry> = {
   // bar × lift
-  "bar:standard:squat": { effects: [], min: 100, max: 100 },
-  "bar:standard:bench": { effects: [], min: 100, max: 100 },
-  "bar:standard:deadlift": { effects: [], min: 100, max: 100 },
-  "bar:ssb:squat": {
-    effects: ["QUAD_DOMINANT", "UPPER_BACK_DEMAND", "SHOULDER_FRIENDLY", "UPRIGHT_TORSO"],
+  'bar:standard:squat': { effects: [], min: 100, max: 100 },
+  'bar:standard:bench': { effects: [], min: 100, max: 100 },
+  'bar:standard:deadlift': { effects: [], min: 100, max: 100 },
+  'bar:ssb:squat': {
+    effects: ['QUAD_DOMINANT', 'UPPER_BACK_DEMAND', 'SHOULDER_FRIENDLY', 'UPRIGHT_TORSO'],
     min: 90,
     max: 95,
   },
-  "bar:trap:deadlift": {
-    effects: ["QUAD_DOMINANT", "UPRIGHT_TORSO", "SPINE_DELOAD"],
+  'bar:trap:deadlift': {
+    effects: ['QUAD_DOMINANT', 'UPRIGHT_TORSO', 'SPINE_DELOAD'],
     min: 105,
     max: 115,
   },
-  "bar:american:bench": { effects: ["SHOULDER_FRIENDLY"], min: 95, max: 100 },
-  "bar:swiss:bench": { effects: ["SHOULDER_FRIENDLY"], min: 90, max: 100 },
-  "bar:cambered:squat": {
-    effects: ["STABILIZER_DEMAND", "UPPER_BACK_DEMAND", "BOTTOM_RANGE"],
+  'bar:american:bench': { effects: ['SHOULDER_FRIENDLY'], min: 95, max: 100 },
+  'bar:swiss:bench': { effects: ['SHOULDER_FRIENDLY'], min: 90, max: 100 },
+  'bar:cambered:squat': {
+    effects: ['STABILIZER_DEMAND', 'UPPER_BACK_DEMAND', 'BOTTOM_RANGE'],
     min: 85,
     max: 95,
   },
-  "bar:zercher:squat": {
-    effects: ["CORE_DEMAND", "UPPER_BACK_DEMAND", "UPRIGHT_TORSO"],
+  'bar:zercher:squat': {
+    effects: ['CORE_DEMAND', 'UPPER_BACK_DEMAND', 'UPRIGHT_TORSO'],
     min: 70,
     max: 85,
   },
-  "bar:duffalo:bench": { effects: ["SHOULDER_FRIENDLY"], min: 95, max: 100 },
-  "bar:dumbbell:bench": { effects: ["UNILATERAL", "STABILIZER_DEMAND"], min: 75, max: 90 },
-  "bar:bamboo:bench": { effects: ["STABILIZER_DEMAND", "BAR_SPEED"], min: 80, max: 90 },
-  "bar:belt:squat": { effects: ["SPINE_DELOAD", "QUAD_DOMINANT"], min: 85, max: 95 },
-  "bar:goblet:squat": {
-    effects: ["QUAD_DOMINANT", "UPRIGHT_TORSO", "CORE_DEMAND"],
+  'bar:duffalo:bench': { effects: ['SHOULDER_FRIENDLY'], min: 95, max: 100 },
+  'bar:dumbbell:bench': { effects: ['UNILATERAL', 'STABILIZER_DEMAND'], min: 75, max: 90 },
+  'bar:bamboo:bench': { effects: ['STABILIZER_DEMAND', 'BAR_SPEED'], min: 80, max: 90 },
+  'bar:belt:squat': { effects: ['SPINE_DELOAD', 'QUAD_DOMINANT'], min: 85, max: 95 },
+  'bar:goblet:squat': {
+    effects: ['QUAD_DOMINANT', 'UPRIGHT_TORSO', 'CORE_DEMAND'],
     min: 50,
     max: 65,
   },
 
   // stance × lift
-  "stance:competition:squat": { effects: [], min: 100, max: 100 },
-  "stance:competition:bench": { effects: [], min: 100, max: 100 },
-  "stance:competition:deadlift": { effects: [], min: 100, max: 100 },
-  "stance:sumo:deadlift": {
-    effects: ["HIP_DOMINANT", "POSTERIOR_CHAIN", "REDUCED_ROM"],
+  'stance:competition:squat': { effects: [], min: 100, max: 100 },
+  'stance:competition:bench': { effects: [], min: 100, max: 100 },
+  'stance:competition:deadlift': { effects: [], min: 100, max: 100 },
+  'stance:sumo:deadlift': {
+    effects: ['HIP_DOMINANT', 'POSTERIOR_CHAIN', 'REDUCED_ROM'],
     min: 90,
     max: 100,
   },
-  "stance:sumo:squat": { effects: ["HIP_DOMINANT", "POSTERIOR_CHAIN"], min: 90, max: 100 },
-  "stance:conventional:deadlift": {
-    effects: ["HAMSTRING_DOMINANT", "POSTERIOR_CHAIN"],
+  'stance:sumo:squat': { effects: ['HIP_DOMINANT', 'POSTERIOR_CHAIN'], min: 90, max: 100 },
+  'stance:conventional:deadlift': {
+    effects: ['HAMSTRING_DOMINANT', 'POSTERIOR_CHAIN'],
     min: 90,
     max: 100,
   },
-  "stance:close:bench": { effects: ["TRICEP_DOMINANT"], min: 80, max: 90 },
-  "stance:close:squat": { effects: ["QUAD_DOMINANT"], min: 85, max: 95 },
-  "stance:wide:bench": { effects: ["UPPER_PECS", "REDUCED_ROM"], min: 90, max: 100 },
-  "stance:wide:squat": { effects: ["POSTERIOR_CHAIN"], min: 90, max: 100 },
-  "stance:medium:bench": { effects: [], min: 100, max: 100 },
-  "stance:medium:squat": { effects: [], min: 100, max: 100 },
-  "stance:narrow:bench": { effects: ["TRICEP_DOMINANT"], min: 85, max: 95 },
-  "stance:narrow:squat": { effects: ["QUAD_DOMINANT"], min: 85, max: 95 },
-  "stance:romanian:deadlift": { effects: ["HAMSTRING_DOMINANT", "BOTTOM_RANGE"], min: 60, max: 75 },
-  "stance:front:squat": {
-    effects: ["QUAD_DOMINANT", "UPRIGHT_TORSO", "CORE_DEMAND"],
+  'stance:close:bench': { effects: ['TRICEP_DOMINANT'], min: 80, max: 90 },
+  'stance:close:squat': { effects: ['QUAD_DOMINANT'], min: 85, max: 95 },
+  'stance:wide:bench': { effects: ['UPPER_PECS', 'REDUCED_ROM'], min: 90, max: 100 },
+  'stance:wide:squat': { effects: ['POSTERIOR_CHAIN'], min: 90, max: 100 },
+  'stance:medium:bench': { effects: [], min: 100, max: 100 },
+  'stance:medium:squat': { effects: [], min: 100, max: 100 },
+  'stance:narrow:bench': { effects: ['TRICEP_DOMINANT'], min: 85, max: 95 },
+  'stance:narrow:squat': { effects: ['QUAD_DOMINANT'], min: 85, max: 95 },
+  'stance:romanian:deadlift': { effects: ['HAMSTRING_DOMINANT', 'BOTTOM_RANGE'], min: 60, max: 75 },
+  'stance:front:squat': {
+    effects: ['QUAD_DOMINANT', 'UPRIGHT_TORSO', 'CORE_DEMAND'],
     min: 75,
     max: 85,
   },
-  "stance:slingshot:bench": { effects: ["SUPRAMAXIMAL", "LOCKOUT"], min: 110, max: 120 },
-  "stance:builder:bench": { effects: ["BOTTOM_RANGE", "SUPRAMAXIMAL"], min: 105, max: 115 },
-  "stance:opposite:deadlift": { effects: [], min: 100, max: 100 },
+  'stance:slingshot:bench': { effects: ['SUPRAMAXIMAL', 'LOCKOUT'], min: 110, max: 120 },
+  'stance:builder:bench': { effects: ['BOTTOM_RANGE', 'SUPRAMAXIMAL'], min: 105, max: 115 },
+  'stance:opposite:deadlift': { effects: [], min: 100, max: 100 },
 
   // equipment × lift
-  "equipment:incline:bench": { effects: ["UPPER_PECS"], min: 85, max: 95 },
-  "equipment:decline:bench": { effects: ["LOWER_PECS"], min: 100, max: 110 },
-  "equipment:blocks:deadlift": { effects: ["REDUCED_ROM", "LOCKOUT"], min: 105, max: 115 },
-  "equipment:deficit:deadlift": { effects: ["EXTENDED_ROM", "BOTTOM_RANGE"], min: 85, max: 95 },
-  "equipment:board:bench": {
-    effects: ["REDUCED_ROM", "LOCKOUT", "SUPRAMAXIMAL"],
+  'equipment:incline:bench': { effects: ['UPPER_PECS'], min: 85, max: 95 },
+  'equipment:decline:bench': { effects: ['LOWER_PECS'], min: 100, max: 110 },
+  'equipment:blocks:deadlift': { effects: ['REDUCED_ROM', 'LOCKOUT'], min: 105, max: 115 },
+  'equipment:deficit:deadlift': { effects: ['EXTENDED_ROM', 'BOTTOM_RANGE'], min: 85, max: 95 },
+  'equipment:board:bench': {
+    effects: ['REDUCED_ROM', 'LOCKOUT', 'SUPRAMAXIMAL'],
     min: 105,
     max: 115,
   },
-  "equipment:pause:squat": { effects: ["DEAD_STOP"], min: 85, max: 95 },
-  "equipment:pause:bench": { effects: ["DEAD_STOP"], min: 85, max: 95 },
-  "equipment:pause:deadlift": { effects: ["DEAD_STOP"], min: 90, max: 95 },
-  "equipment:floor:bench": {
-    effects: ["REDUCED_ROM", "LOCKOUT", "NO_LEG_DRIVE", "TRICEP_DOMINANT"],
+  'equipment:pause:squat': { effects: ['DEAD_STOP'], min: 85, max: 95 },
+  'equipment:pause:bench': { effects: ['DEAD_STOP'], min: 85, max: 95 },
+  'equipment:pause:deadlift': { effects: ['DEAD_STOP'], min: 90, max: 95 },
+  'equipment:floor:bench': {
+    effects: ['REDUCED_ROM', 'LOCKOUT', 'NO_LEG_DRIVE', 'TRICEP_DOMINANT'],
     min: 85,
     max: 95,
   },
-  "equipment:box:squat": { effects: ["DEAD_STOP", "POSTERIOR_SHIFT"], min: 90, max: 100 },
-  "equipment:rack:deadlift": { effects: ["REDUCED_ROM", "LOCKOUT"], min: 110, max: 130 },
+  'equipment:box:squat': { effects: ['DEAD_STOP', 'POSTERIOR_SHIFT'], min: 90, max: 100 },
+  'equipment:rack:deadlift': { effects: ['REDUCED_ROM', 'LOCKOUT'], min: 110, max: 130 },
 
   // addl_wt × lift (no pct — accommodating resistance has no percentage baselines)
-  "addl_wt:chains:squat": {
-    effects: ["ACCOMMODATING_RESISTANCE", "BAR_SPEED", "STABILIZER_DEMAND"],
+  'addl_wt:chains:squat': {
+    effects: ['ACCOMMODATING_RESISTANCE', 'BAR_SPEED', 'STABILIZER_DEMAND'],
   },
-  "addl_wt:chains:bench": {
-    effects: ["ACCOMMODATING_RESISTANCE", "BAR_SPEED", "STABILIZER_DEMAND"],
+  'addl_wt:chains:bench': {
+    effects: ['ACCOMMODATING_RESISTANCE', 'BAR_SPEED', 'STABILIZER_DEMAND'],
   },
-  "addl_wt:chains:deadlift": {
-    effects: ["ACCOMMODATING_RESISTANCE", "BAR_SPEED", "STABILIZER_DEMAND"],
+  'addl_wt:chains:deadlift': {
+    effects: ['ACCOMMODATING_RESISTANCE', 'BAR_SPEED', 'STABILIZER_DEMAND'],
   },
-  "addl_wt:bands:squat": { effects: ["ACCOMMODATING_RESISTANCE", "BAR_SPEED"] },
-  "addl_wt:bands:bench": { effects: ["ACCOMMODATING_RESISTANCE", "BAR_SPEED"] },
-  "addl_wt:bands:deadlift": { effects: ["ACCOMMODATING_RESISTANCE", "BAR_SPEED"] },
-  "addl_wt:rev. bands:squat": { effects: ["SUPRAMAXIMAL", "LOCKOUT"] },
-  "addl_wt:rev. bands:bench": { effects: ["SUPRAMAXIMAL", "LOCKOUT"] },
-  "addl_wt:rev. bands:deadlift": { effects: ["SUPRAMAXIMAL", "LOCKOUT"] },
+  'addl_wt:bands:squat': { effects: ['ACCOMMODATING_RESISTANCE', 'BAR_SPEED'] },
+  'addl_wt:bands:bench': { effects: ['ACCOMMODATING_RESISTANCE', 'BAR_SPEED'] },
+  'addl_wt:bands:deadlift': { effects: ['ACCOMMODATING_RESISTANCE', 'BAR_SPEED'] },
+  'addl_wt:rev. bands:squat': { effects: ['SUPRAMAXIMAL', 'LOCKOUT'] },
+  'addl_wt:rev. bands:bench': { effects: ['SUPRAMAXIMAL', 'LOCKOUT'] },
+  'addl_wt:rev. bands:deadlift': { effects: ['SUPRAMAXIMAL', 'LOCKOUT'] },
 };
 
-export type DiagnosticsOptions = { deadliftStance?: DeadliftStancePreference };
+export interface DiagnosticsOptions {
+  deadliftStance?: DeadliftStancePreference;
+}
 
 /**
  * Resolves a deadlift's effective stance to sumo vs. conventional from whether its movement
  * categories landed on the posterior chain. Shared by the pct-baseline lookup and the
  * effect-aggregation step so they can never disagree.
  */
-function resolveDeadliftStance(effectiveCategory: MovementCategory[]): "sumo" | "conventional" {
-  return effectiveCategory.includes("posterior_chain") ? "sumo" : "conventional";
+function resolveDeadliftStance(effectiveCategory: MovementCategory[]): 'sumo' | 'conventional' {
+  return effectiveCategory.includes('posterior_chain') ? 'sumo' : 'conventional';
 }
 
 function resolveCategory(ex: ConjugateExercise, options?: DiagnosticsOptions): MovementCategory[] {
   if (
-    ex.type === "deadlift" &&
-    (ex.stance === "sumo" || ex.stance === "conventional" || ex.stance === "opposite")
+    ex.type === 'deadlift' &&
+    (ex.stance === 'sumo' || ex.stance === 'conventional' || ex.stance === 'opposite')
   ) {
     return toMovementCategory(ex, options);
   }
@@ -196,9 +198,13 @@ export function generateDiagnostics(
   const byLift = new Map<PrimaryLift, ConjugateDataPair[]>();
   for (const pair of pairs) {
     const [ex] = pair;
-    if (ex.type === "accessory") continue;
+    if (ex.type === 'accessory') {
+      continue;
+    }
     const lift = ex.type as PrimaryLift;
-    if (!byLift.has(lift)) byLift.set(lift, []);
+    if (!byLift.has(lift)) {
+      byLift.set(lift, []);
+    }
     byLift.get(lift)!.push(pair);
   }
 
@@ -215,12 +221,12 @@ export function generateDiagnostics(
     // addlWts) as the anchor when present. Competition bench is always performed to judge's
     // commands, so this IS the competition lift.
     const commandsBenchName =
-      lift === "bench"
+      lift === 'bench'
         ? (liftPairs.find(
             ([ex]) =>
-              ex.bar === "standard" &&
-              ex.stance === "competition" &&
-              ex.equipment === "pause" &&
+              ex.bar === 'standard' &&
+              ex.stance === 'competition' &&
+              ex.equipment === 'pause' &&
               ex.addlWts.length === 0
           )?.[0].displayName ?? null)
         : null;
@@ -233,13 +239,15 @@ export function generateDiagnostics(
         commandsBenchName !== null
           ? ex.displayName === commandsBenchName
           : effectiveCategory.length === 1 &&
-            effectiveCategory[0] === "anchor" &&
+            effectiveCategory[0] === 'anchor' &&
             ex.addlWts.length === 0;
       if (isAnchor) {
         anchorSessions.push(session);
-      } else if (!effectiveCategory.every((c) => c === "unclassified")) {
+      } else if (!effectiveCategory.every((c) => c === 'unclassified')) {
         const key = ex.displayName;
-        if (!variationGroups.has(key)) variationGroups.set(key, { ex, sessions: [] });
+        if (!variationGroups.has(key)) {
+          variationGroups.set(key, { ex, sessions: [] });
+        }
         variationGroups.get(key)!.sessions.push(session);
       }
     }
@@ -247,25 +255,29 @@ export function generateDiagnostics(
     for (const [name, { ex, sessions }] of variationGroups) {
       // Accommodating resistance makes e1RM comparison against the straight-bar anchor
       // unreliable (recorded weight excludes the variable chain/band load), so skip.
-      if (ex.addlWts.length > 0) continue;
+      if (ex.addlWts.length > 0) {
+        continue;
+      }
       const effectiveCategory = resolveCategory(ex, options);
       const { factor, sampleCount } = fitVariantFactor(anchorSessions, sessions);
-      if (sampleCount === 0) continue;
+      if (sampleCount === 0) {
+        continue;
+      }
 
       // Collect pct-bearing keys for all active modifiers. Multiple simultaneous
       // pct modifiers (e.g. SSB + pause squat) combine multiplicatively because
       // each independently scales performance relative to the competition lift.
       const resolvedStanceKey: string | null = (() => {
         if (
-          ex.type === "deadlift" &&
+          ex.type === 'deadlift' &&
           (ex.stance === null ||
-            ex.stance === "sumo" ||
-            ex.stance === "conventional" ||
-            ex.stance === "opposite")
+            ex.stance === 'sumo' ||
+            ex.stance === 'conventional' ||
+            ex.stance === 'opposite')
         ) {
           return `stance:${resolveDeadliftStance(effectiveCategory)}:deadlift`;
         }
-        if (ex.stance !== null && ex.stance !== "competition") {
+        if (ex.stance !== null && ex.stance !== 'competition') {
           return `stance:${ex.stance}:${ex.type}`;
         }
         return null;
@@ -274,15 +286,17 @@ export function generateDiagnostics(
       const candidateKeys = [
         ex.equipment !== null ? `equipment:${ex.equipment}:${ex.type}` : null,
         resolvedStanceKey,
-        ex.bar !== null && ex.bar !== "standard" ? `bar:${ex.bar}:${ex.type}` : null,
+        ex.bar !== null && ex.bar !== 'standard' ? `bar:${ex.bar}:${ex.type}` : null,
       ].filter((k): k is string => k !== null);
 
       type PctEntry = Extract<ModifierEffectEntry, { min: number }>;
       const pctEntries = candidateKeys
         .map((k) => MODIFIER_EFFECTS[k])
-        .filter((e): e is PctEntry => e !== undefined && "min" in e);
+        .filter((e): e is PctEntry => e !== undefined && 'min' in e);
 
-      if (pctEntries.length === 0) continue;
+      if (pctEntries.length === 0) {
+        continue;
+      }
 
       const baseline = pctEntries.reduce(
         (acc, e) => ({
@@ -296,29 +310,33 @@ export function generateDiagnostics(
 
       // Aggregate effects from all active modifiers (bar + resolved stance + equipment + addlWts).
       const stanceForEffects: string | null =
-        ex.type === "deadlift" && (ex.stance === null || ex.stance === "opposite")
+        ex.type === 'deadlift' && (ex.stance === null || ex.stance === 'opposite')
           ? resolveDeadliftStance(effectiveCategory)
           : ex.stance;
 
       const allEffects = new Set<EffectEnum>();
       const effectKeys: Array<string | null> = [
-        ex.bar !== null && ex.bar !== "standard" ? `bar:${ex.bar}:${ex.type}` : null,
-        stanceForEffects !== null && stanceForEffects !== "competition"
+        ex.bar !== null && ex.bar !== 'standard' ? `bar:${ex.bar}:${ex.type}` : null,
+        stanceForEffects !== null && stanceForEffects !== 'competition'
           ? `stance:${stanceForEffects}:${ex.type}`
           : null,
         ex.equipment !== null ? `equipment:${ex.equipment}:${ex.type}` : null,
         ...ex.addlWts.map((w) => `addl_wt:${w}:${ex.type}`),
       ];
       for (const k of effectKeys) {
-        if (k !== null) MODIFIER_EFFECTS[k]?.effects.forEach((e) => allEffects.add(e));
+        if (k !== null) {
+          for (const e of MODIFIER_EFFECTS[k]?.effects ?? []) {
+            allEffects.add(e);
+          }
+        }
       }
 
       const status =
         averageIndex < baseline.min
-          ? "weakness"
+          ? 'weakness'
           : averageIndex > baseline.max
-            ? "overtrained"
-            : "optimal";
+            ? 'overtrained'
+            : 'optimal';
       results.push({
         primaryLift: lift,
         name,
@@ -339,55 +357,71 @@ export function toMovementCategory(
   ex: ExerciseShape,
   options?: DiagnosticsOptions
 ): MovementCategory[] {
-  if (ex.type === "accessory") return ["unclassified"];
+  if (ex.type === 'accessory') {
+    return ['unclassified'];
+  }
 
   const cats = new Set<MovementCategory>();
 
   // ROM modifier dimension: captures where in the lift's range the exercise emphasizes work.
   // These are independent of the underlying movement pattern and can combine with it.
-  if (ex.equipment !== null && LOCKOUT_EQUIPMENT.has(ex.equipment)) cats.add("lockout");
+  if (ex.equipment !== null && LOCKOUT_EQUIPMENT.has(ex.equipment)) {
+    cats.add('lockout');
+  }
   if (
-    ex.stance === "close" ||
-    ex.stance === "slingshot" ||
-    ex.stance === "builder" ||
-    ex.stance === "narrow"
-  )
-    cats.add("lockout");
-  if (ex.equipment !== null && BOTTOM_RANGE_EQUIPMENT.has(ex.equipment)) cats.add("bottom_range");
-  if (ex.type === "squat" && ex.bar === "cambered") cats.add("bottom_range");
-  if (ex.type === "squat" && ex.equipment === "box") cats.add("bottom_range");
+    ex.stance === 'close' ||
+    ex.stance === 'slingshot' ||
+    ex.stance === 'builder' ||
+    ex.stance === 'narrow'
+  ) {
+    cats.add('lockout');
+  }
+  if (ex.equipment !== null && BOTTOM_RANGE_EQUIPMENT.has(ex.equipment)) {
+    cats.add('bottom_range');
+  }
+  if (ex.type === 'squat' && ex.bar === 'cambered') {
+    cats.add('bottom_range');
+  }
+  if (ex.type === 'squat' && ex.equipment === 'box') {
+    cats.add('bottom_range');
+  }
 
   // Movement pattern dimension: captures the muscular emphasis determined by stance, bar, and type.
   // "anchor" is only added when no ROM modifier is present — competition stance is the parser
   // fallback, so it shouldn't override equipment-based classification.
-  if (ex.type === "squat") {
-    if (ex.stance === "sumo" || ex.stance === "wide") cats.add("posterior_chain");
-    else if ((ex.bar !== null && QUAD_DOMINANT_BARS.has(ex.bar)) || ex.stance === "front")
-      cats.add("quad_dominant");
-    else if (ex.stance === "competition" && cats.size === 0) cats.add("anchor");
-  } else if (ex.type === "bench") {
-    if (ex.stance === "competition" && cats.size === 0) cats.add("anchor");
-  } else if (ex.type === "deadlift") {
-    if (ex.stance === "romanian") {
-      cats.add("posterior_chain");
+  if (ex.type === 'squat') {
+    if (ex.stance === 'sumo' || ex.stance === 'wide') {
+      cats.add('posterior_chain');
+    } else if ((ex.bar !== null && QUAD_DOMINANT_BARS.has(ex.bar)) || ex.stance === 'front') {
+      cats.add('quad_dominant');
+    } else if (ex.stance === 'competition' && cats.size === 0) {
+      cats.add('anchor');
+    }
+  } else if (ex.type === 'bench') {
+    if (ex.stance === 'competition' && cats.size === 0) {
+      cats.add('anchor');
+    }
+  } else if (ex.type === 'deadlift') {
+    if (ex.stance === 'romanian') {
+      cats.add('posterior_chain');
     } else if (
       ex.stance === null ||
-      ex.stance === "sumo" ||
-      ex.stance === "conventional" ||
-      ex.stance === "opposite"
+      ex.stance === 'sumo' ||
+      ex.stance === 'conventional' ||
+      ex.stance === 'opposite'
     ) {
-      const primary = options?.deadliftStance ?? "conventional";
-      const nonPrimary = primary === "conventional" ? "sumo" : "conventional";
+      const primary = options?.deadliftStance ?? 'conventional';
+      const nonPrimary = primary === 'conventional' ? 'sumo' : 'conventional';
       // Resolve to the actual stance: "opposite" = the non-primary stance; null = the primary stance.
-      const actualStance: "sumo" | "conventional" =
-        ex.stance === "opposite" ? nonPrimary : ex.stance === null ? primary : ex.stance;
+      const actualStance: 'sumo' | 'conventional' =
+        ex.stance === 'opposite' ? nonPrimary : ex.stance === null ? primary : ex.stance;
       // sumo = posterior chain (hip abductor/glute dominant)
       // conventional = quad dominant (leg drive, more knee extension at the start)
-      cats.add(actualStance === "sumo" ? "posterior_chain" : "quad_dominant");
-    } else if (ex.stance === "competition" && cats.size === 0) {
-      cats.add("anchor");
+      cats.add(actualStance === 'sumo' ? 'posterior_chain' : 'quad_dominant');
+    } else if (ex.stance === 'competition' && cats.size === 0) {
+      cats.add('anchor');
     }
   }
 
-  return cats.size > 0 ? [...cats] : ["unclassified"];
+  return cats.size > 0 ? [...cats] : ['unclassified'];
 }

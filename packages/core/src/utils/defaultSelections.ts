@@ -1,4 +1,4 @@
-import type { ConjugateDataPair } from "../types/conjugate";
+import type { ConjugateDataPair } from '../types/conjugate';
 
 export function defaultBaselineName(rows: ConjugateDataPair[]): string | null {
   let first: string | null = null;
@@ -9,7 +9,9 @@ export function defaultBaselineName(rows: ConjugateDataPair[]): string | null {
 
   for (const [ex, session] of rows) {
     const name = ex.displayName;
-    if (first === null) first = name;
+    if (first === null) {
+      first = name;
+    }
 
     const prev = last.get(name);
     if (!prev || session.date > prev.date) {
@@ -40,12 +42,16 @@ export function defaultTargetName(rows: ConjugateDataPair[]): string | null {
   const seen = new Set<string>();
 
   for (const [ex] of rows) {
-    if (seen.has(ex.displayName)) continue;
+    if (seen.has(ex.displayName)) {
+      continue;
+    }
     seen.add(ex.displayName);
-    if (first === null) first = ex.displayName;
+    if (first === null) {
+      first = ex.displayName;
+    }
 
-    if (ex.bar === "standard" && ex.stance === "competition" && ex.addlWts.length === 0) {
-      if (ex.type === "bench" && ex.equipment === "pause" && commandsBench === null) {
+    if (ex.bar === 'standard' && ex.stance === 'competition' && ex.addlWts.length === 0) {
+      if (ex.type === 'bench' && ex.equipment === 'pause' && commandsBench === null) {
         commandsBench = ex.displayName;
       } else if (ex.equipment === null && competition === null) {
         competition = ex.displayName;

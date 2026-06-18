@@ -1,14 +1,14 @@
-import { memo, useMemo, useState } from "react";
-import type { FilterState } from "@dyel/core";
-import type { ConjugateDataPair } from "../hooks/useConjugateData";
+import { memo, useMemo, useState } from 'react';
+import type { FilterState } from '@dyel/core';
+import type { ConjugateDataPair } from '../hooks/useConjugateData';
 
 type SetFacet = keyof FilterState;
 
 const FACET_LABELS: Record<SetFacet, string> = {
-  bar: "Bar",
-  stance: "Stance",
-  addlWts: "Additional Weight",
-  equipment: "Equipment",
+  bar: 'Bar',
+  stance: 'Stance',
+  addlWts: 'Additional Weight',
+  equipment: 'Equipment',
 };
 
 const FilterButton = memo(function FilterButton({
@@ -24,16 +24,16 @@ const FilterButton = memo(function FilterButton({
     <button
       onClick={onClick}
       style={{
-        marginRight: "0.35rem",
-        marginBottom: "0.25rem",
-        padding: "0.2rem 0.6rem",
-        fontSize: "0.75rem",
-        border: "1px solid",
-        borderRadius: "999px",
-        cursor: "pointer",
-        background: active ? "var(--accent)" : "transparent",
-        borderColor: active ? "var(--accent)" : "var(--border)",
-        color: active ? "var(--bg)" : "var(--text-h)",
+        marginRight: '0.35rem',
+        marginBottom: '0.25rem',
+        padding: '0.2rem 0.6rem',
+        fontSize: '0.75rem',
+        border: '1px solid',
+        borderRadius: '999px',
+        cursor: 'pointer',
+        background: active ? 'var(--accent)' : 'transparent',
+        borderColor: active ? 'var(--accent)' : 'var(--border)',
+        color: active ? 'var(--bg)' : 'var(--text-h)',
       }}
     >
       {value}
@@ -62,10 +62,18 @@ export function ExerciseFilters({
       equipment: new Set(),
     };
     for (const [ex] of rows) {
-      if (ex.bar) result.bar.add(ex.bar);
-      if (ex.stance) result.stance.add(ex.stance);
-      for (const w of ex.addlWts) result.addlWts.add(w);
-      if (ex.equipment) result.equipment.add(ex.equipment);
+      if (ex.bar) {
+        result.bar.add(ex.bar);
+      }
+      if (ex.stance) {
+        result.stance.add(ex.stance);
+      }
+      for (const w of ex.addlWts) {
+        result.addlWts.add(w);
+      }
+      if (ex.equipment) {
+        result.equipment.add(ex.equipment);
+      }
     }
     return result;
   }, [rows]);
@@ -75,7 +83,9 @@ export function ExerciseFilters({
     [available]
   );
 
-  if (activeFacets.length === 0) return null;
+  if (activeFacets.length === 0) {
+    return null;
+  }
 
   const activeCount = (Object.keys(FACET_LABELS) as SetFacet[]).reduce(
     (n, k) => n + filters[k].size,
@@ -83,33 +93,33 @@ export function ExerciseFilters({
   );
 
   return (
-    <div style={{ marginBottom: "1rem" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+    <div style={{ marginBottom: '1rem' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
         <button
           onClick={() => setOpen((v) => !v)}
           style={{
-            background: "none",
-            border: "none",
+            background: 'none',
+            border: 'none',
             padding: 0,
-            cursor: "pointer",
-            fontSize: "0.8rem",
-            color: "var(--text)",
-            marginBottom: open ? "0.75rem" : 0,
+            cursor: 'pointer',
+            fontSize: '0.8rem',
+            color: 'var(--text)',
+            marginBottom: open ? '0.75rem' : 0,
           }}
         >
-          {open ? "▲" : "▼"} Filters{activeCount > 0 ? ` (${activeCount} active)` : ""}
+          {open ? '▲' : '▼'} Filters{activeCount > 0 ? ` (${activeCount} active)` : ''}
         </button>
         {open && activeCount > 0 && onClearAll && (
           <button
             onClick={onClearAll}
             style={{
-              background: "none",
-              border: "none",
+              background: 'none',
+              border: 'none',
               padding: 0,
-              cursor: "pointer",
-              fontSize: "0.75rem",
-              color: "var(--accent)",
-              marginBottom: "0.75rem",
+              cursor: 'pointer',
+              fontSize: '0.75rem',
+              color: 'var(--accent)',
+              marginBottom: '0.75rem',
             }}
           >
             Clear all
@@ -118,8 +128,8 @@ export function ExerciseFilters({
       </div>
       {open &&
         activeFacets.map((facet) => (
-          <div key={facet} style={{ marginBottom: "0.5rem" }}>
-            <span style={{ fontSize: "0.75rem", color: "var(--text)", marginRight: "0.5rem" }}>
+          <div key={facet} style={{ marginBottom: '0.5rem' }}>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text)', marginRight: '0.5rem' }}>
               {FACET_LABELS[facet]}:
             </span>
             {[...available[facet]].sort().map((value) => (

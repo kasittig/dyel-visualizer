@@ -1,4 +1,4 @@
-import Papa from "papaparse";
+import Papa from 'papaparse';
 
 export type RawRow = Record<string, string>;
 
@@ -9,11 +9,13 @@ export type RawRow = Record<string, string>;
  * parser and the validator, so they can never disagree on what counts as a parseable sheet.
  */
 export function parseSheetRows(csv: string): { headerIdx: number; rows: RawRow[] } | null {
-  const lines = csv.trim().split("\n");
-  const headerIdx = lines.findIndex((l) => l.toLowerCase().includes("exercise"));
-  if (headerIdx === -1 || headerIdx >= lines.length - 1) return null;
+  const lines = csv.trim().split('\n');
+  const headerIdx = lines.findIndex((l) => l.toLowerCase().includes('exercise'));
+  if (headerIdx === -1 || headerIdx >= lines.length - 1) {
+    return null;
+  }
 
-  const { data } = Papa.parse<RawRow>(lines.slice(headerIdx).join("\n"), {
+  const { data } = Papa.parse<RawRow>(lines.slice(headerIdx).join('\n'), {
     header: true,
     skipEmptyLines: true,
     transformHeader: (h) => h.trim().toLowerCase(),
@@ -23,10 +25,16 @@ export function parseSheetRows(csv: string): { headerIdx: number; rows: RawRow[]
 }
 
 /** Reads the weight unit from a `weight (lbs)` / `weight (kg)` style column header. */
-export function detectWeightUnit(keys: string[]): "lbs" | "kg" | null {
+export function detectWeightUnit(keys: string[]): 'lbs' | 'kg' | null {
   const key = keys.find((k) => /^weight(\W|$)/.test(k));
-  if (!key) return null;
-  if (key.includes("kg")) return "kg";
-  if (key.includes("lb")) return "lbs";
+  if (!key) {
+    return null;
+  }
+  if (key.includes('kg')) {
+    return 'kg';
+  }
+  if (key.includes('lb')) {
+    return 'lbs';
+  }
   return null;
 }

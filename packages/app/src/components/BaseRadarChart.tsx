@@ -1,4 +1,4 @@
-import type React from "react";
+import type React from 'react';
 import {
   PolarAngleAxis,
   PolarGrid,
@@ -7,7 +7,7 @@ import {
   RadarChart,
   ResponsiveContainer,
   Tooltip,
-} from "recharts";
+} from 'recharts';
 
 export function BaseRadarChart({
   label,
@@ -25,18 +25,18 @@ export function BaseRadarChart({
   onClick?: (label: string) => void;
 }) {
   return (
-    <section style={{ marginTop: "1rem" }}>
+    <section style={{ marginTop: '1rem' }}>
       <p
         style={{
-          fontSize: "0.8rem",
-          color: "var(--text)",
-          marginBottom: "0.25rem",
-          textAlign: "center",
+          fontSize: '0.8rem',
+          color: 'var(--text)',
+          marginBottom: '0.25rem',
+          textAlign: 'center',
         }}
       >
         {label}
       </p>
-      <div style={{ width: "80%", margin: "0 auto" }}>
+      <div style={{ width: '80%', margin: '0 auto' }}>
         <ResponsiveContainer width="100%" height={340}>
           <RadarChart
             data={data}
@@ -44,11 +44,13 @@ export function BaseRadarChart({
               onClick
                 ? (chartData) => {
                     const name = chartData?.activeLabel;
-                    if (typeof name === "string" && name) onClick(name);
+                    if (typeof name === 'string' && name) {
+                      onClick(name);
+                    }
                   }
                 : undefined
             }
-            style={{ cursor: onClick ? "pointer" : undefined }}
+            style={{ cursor: onClick ? 'pointer' : undefined }}
           >
             <PolarGrid />
             <PolarAngleAxis dataKey={angleKey} tick={{ fontSize: 11 }} />
