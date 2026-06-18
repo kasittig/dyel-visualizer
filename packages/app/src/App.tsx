@@ -29,6 +29,7 @@ function App() {
       import.meta.env.VITE_SHEET_URL ??
       ""
   );
+  const [panelForcedOpen, setPanelForcedOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<PageTab>("sigma");
   const [shownResetToken, setShownResetToken] = useState(0);
   const [tabState, setTabState] = useState<Record<LiftType, TabState>>(initialTabState);
@@ -45,6 +46,8 @@ function App() {
   const invalidUrl = url.length > 0 && !sheetRef;
 
   const state = useConjugateData(sheetRef);
+
+  const showUrlPanel = panelForcedOpen || state.status !== "success";
 
   const pairs = useMemo(() => (state.status === "success" ? state.pairs : []), [state]);
 
@@ -96,6 +99,7 @@ function App() {
 
   function handleUrlChange(newUrl: string) {
     setUrl(newUrl);
+    setPanelForcedOpen(false);
     setShownResetToken((t) => t + 1);
     setTabState(initialTabState());
     setExcludeVolumeWork(true);
@@ -131,42 +135,91 @@ function App() {
     <main style={{ padding: "2rem", fontFamily: "sans-serif", textAlign: "left" }}>
       <div style={{ textAlign: "center" }}>
         <h1>DYEL Visualizer</h1>
-        <p style={{ fontSize: "0.85rem", color: "var(--text)", marginTop: "-0.5rem" }}>
-          <a href="?page=conjugate" style={{ color: "var(--accent)" }}>
-            What is the conjugate method?
-          </a>
-          {" · "}
-          <a href="?page=validator" style={{ color: "var(--accent)" }}>
-            Check if my spreadsheet will work
-          </a>
-        </p>
-        <div
-          style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.5rem" }}
-        >
-          <label htmlFor="sheet-url" style={{ whiteSpace: "nowrap" }}>
-            Your Google Sheet
-          </label>
-          <input
-            id="sheet-url"
-            type="text"
-            value={url}
-            onChange={(e) => handleUrlChange(e.target.value)}
-            placeholder="https://docs.google.com/spreadsheets/d/…"
-            style={{ flex: 1, padding: "0.5rem", boxSizing: "border-box" }}
-          />
-        </div>
-        {invalidUrl && (
-          <p style={{ color: "red", marginTop: "0.5rem" }}>
-            That doesn't look like a Google Sheet URL.
+        {!showUrlPanel ? (
+          <p style={{ fontSize: "0.85rem", color: "var(--text)", marginTop: "-0.5rem" }}>
+            <button
+              onClick={() => setPanelForcedOpen(true)}
+              style={{
+                background: "none",
+                border: "none",
+                padding: 0,
+                cursor: "pointer",
+                color: "var(--accent)",
+                fontSize: "inherit",
+                textDecoration: "underline",
+              }}
+            >
+              Change sheet URL
+            </button>
+            {" · "}
+            <a href="?page=conjugate" style={{ color: "var(--accent)" }}>
+              What is the conjugate method?
+            </a>
           </p>
+        ) : (
+          <>
+            <p style={{ fontSize: "0.85rem", color: "var(--text)", marginTop: "-0.5rem" }}>
+              {state.status === "success" ? (
+                <button
+                  onClick={() => setPanelForcedOpen(false)}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    padding: 0,
+                    cursor: "pointer",
+                    color: "var(--accent)",
+                    fontSize: "inherit",
+                    textDecoration: "underline",
+                  }}
+                >
+                  Cancel
+                </button>
+              ) : (
+                <a href="?page=conjugate" style={{ color: "var(--accent)" }}>
+                  What is the conjugate method?
+                </a>
+              )}
+              {" · "}
+              <a href="?page=validator" style={{ color: "var(--accent)" }}>
+                Check if my spreadsheet will work
+              </a>
+            </p>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "0.5rem",
+                marginBottom: "0.5rem",
+              }}
+            >
+              <label htmlFor="sheet-url" style={{ whiteSpace: "nowrap" }}>
+                Your Google Sheet
+              </label>
+              <input
+                id="sheet-url"
+                type="text"
+                value={url}
+                onChange={(e) => handleUrlChange(e.target.value)}
+                placeholder="https://docs.google.com/spreadsheets/d/…"
+                style={{ flex: 1, padding: "0.5rem", boxSizing: "border-box" }}
+                autoFocus={state.status === "success"}
+              />
+            </div>
+            {invalidUrl && (
+              <p style={{ color: "red", marginTop: "0.5rem" }}>
+                That doesn't look like a Google Sheet URL.
+              </p>
+            )}
+            <p style={{ fontSize: "0.85rem", color: "var(--text)", marginTop: "0.5rem" }}>
+              Don't have a sheet?{" "}
+              <a href={EXAMPLE_VISUALIZER_URL}>View an example in the visualizer</a>
+              {" · "}
+              <a href={EXAMPLE_SHEET_URL} target="_blank" rel="noreferrer">
+                View the example spreadsheet
+              </a>
+            </p>
+          </>
         )}
-        <p style={{ fontSize: "0.85rem", color: "var(--text)", marginTop: "0.5rem" }}>
-          Don't have a sheet? <a href={EXAMPLE_VISUALIZER_URL}>View an example in the visualizer</a>
-          {" · "}
-          <a href={EXAMPLE_SHEET_URL} target="_blank" rel="noreferrer">
-            View the example spreadsheet
-          </a>
-        </p>
       </div>
 
       <div style={{ marginTop: "1rem" }}>
