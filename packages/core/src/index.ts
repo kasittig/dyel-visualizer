@@ -53,6 +53,7 @@ export type { VariationChartResult } from './utils/buildVariationChartData';
 export { NORMALIZED_KEY, buildVariationChartData } from './utils/buildVariationChartData';
 
 export type { DiagnosticsOptions } from './utils/diagnostics';
+export { parseModifierEffectsCsv } from './utils/parseModifierEffectsCsv';
 export { generateDiagnostics } from './utils/diagnostics';
 
 export { defaultBaselineName, defaultTargetName } from './utils/defaultSelections';

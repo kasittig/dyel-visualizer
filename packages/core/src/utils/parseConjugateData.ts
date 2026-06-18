@@ -83,6 +83,48 @@ const parseStance = makeParser(STANCE_DETECTORS);
 const parseEquipment = makeParser(EQUIPMENT_DETECTORS);
 const parseLiftType = makeParser(TYPE_DETECTORS);
 
+// Derives the dimension:value:lift key used in ModifierEffectsMap from a human-readable
+// exercise name (e.g. "Deficit Deadlift" → "equipment:deficit:deadlift"). Returns null
+// when the name doesn't map to a known modifier entry.
+export function nameToModifierKey(name: string): string | null {
+  const lower = name.toLowerCase().trim();
+  const parenIdx = lower.indexOf('(');
+  const base = (parenIdx === -1 ? lower : lower.slice(0, parenIdx)).trim();
+  const tokens = new Set(lower.split(/\s+/));
+
+  const hasReverseBands =
+    lower.includes('reverse band') || lower.includes('rev. band') || lower.includes('rev band');
+  const hasChains = lower.includes('chain');
+  const hasBands = !hasReverseBands && lower.includes('band');
+  if (hasChains || hasBands || hasReverseBands) {
+    const addlWt: ConjugateAddlWt = hasChains ? 'chains' : hasBands ? 'bands' : 'rev. bands';
+    const liftType = parseLiftType(base, tokens);
+    return liftType ? `addl_wt:${addlWt}:${liftType}` : null;
+  }
+
+  const liftType = parseLiftType(base, tokens);
+
+  const equipment = parseEquipment(lower, tokens);
+  if (equipment) {
+    // "Block Pull" / "Rack Pull": no "deadlift" keyword, but blocks/rack only apply to deadlift.
+    const effectiveLift = liftType ?? (['blocks', 'rack'].includes(equipment) ? 'deadlift' : null);
+    return effectiveLift ? `equipment:${equipment}:${effectiveLift}` : null;
+  }
+
+  const bar = parseBar(lower, tokens);
+  if (bar && bar !== 'standard') {
+    // "Dumbbell Bench": nameToExercise marks it accessory, but parseLiftType still sees "bench".
+    return liftType ? `bar:${bar}:${liftType}` : null;
+  }
+
+  const stance = parseStance(lower, tokens);
+  if (stance && stance !== 'competition') {
+    return liftType ? `stance:${stance}:${liftType}` : null;
+  }
+
+  return null;
+}
+
 export function nameToExercise(name: string): ConjugateExercise | null {
   const displayName = name;
 
