@@ -2,7 +2,7 @@ import type { SheetRef } from './appUtils';
 
 // During dev the Vite proxy (sheetsProxyPlugin) forwards to Google and follows redirects
 // server-side, avoiding CORS. In production we hit Google directly (published sheets only).
-const SHEETS_BASE = import.meta.env.DEV
+export const SHEETS_BASE = import.meta.env.DEV
   ? '/sheets-proxy/spreadsheets'
   : 'https://docs.google.com/spreadsheets';
 

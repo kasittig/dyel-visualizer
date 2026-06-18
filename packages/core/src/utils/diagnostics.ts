@@ -1,3 +1,4 @@
+import Papa from 'papaparse';
 import type {
   ConjugateBar,
   ConjugateDataPair,
@@ -52,6 +53,49 @@ export const EFFECT_DESCRIPTIONS: Record<EffectEnum, string> = {
 type ModifierEffectEntry =
   | { effects: EffectEnum[]; min: number; max: number }
   | { effects: EffectEnum[] };
+
+export type ModifierEffectsMap = Record<string, ModifierEffectEntry>;
+
+interface ModifierEffectsRow {
+  dimension: string;
+  value: string;
+  base_exercise: string;
+  description: string;
+  effects: string;
+  'pct-low': string;
+  'pct-high': string;
+}
+
+export function parseModifierEffectsCsv(csv: string): ModifierEffectsMap {
+  const { data } = Papa.parse<ModifierEffectsRow>(csv, {
+    header: true,
+    skipEmptyLines: true,
+    transformHeader: (h) => h.trim().toLowerCase(),
+    transform: (v) => v.trim(),
+  });
+  const map: ModifierEffectsMap = {};
+  for (const row of data) {
+    const key = `${row.dimension}:${row.value}:${row.base_exercise}`;
+    const effects = row.effects
+      ? (row.effects
+          .split(',')
+          .map((e) => e.trim())
+          .filter(Boolean) as EffectEnum[])
+      : [];
+    const pctLow = row['pct-low'];
+    const pctHigh = row['pct-high'];
+    if (pctLow && pctHigh) {
+      map[key] = {
+        effects,
+        min: Math.round(parseFloat(pctLow) * 100),
+        max: Math.round(parseFloat(pctHigh) * 100),
+      };
+    } else {
+      map[key] = { effects };
+    }
+  }
+  return map;
+}
 
 // When multiple pct-bearing modifiers are simultaneously active (e.g. SSB + pause squat),
 // their ranges are combined multiplicatively: each modifier independently scales performance
@@ -170,6 +214,7 @@ export const MODIFIER_EFFECTS: Record<string, ModifierEffectEntry> = {
 
 export interface DiagnosticsOptions {
   deadliftStance?: DeadliftStancePreference;
+  modifierEffects?: ModifierEffectsMap;
 }
 
 /**
@@ -195,6 +240,7 @@ export function generateDiagnostics(
   pairs: ConjugateDataPair[],
   options?: DiagnosticsOptions
 ): DiagnosticResult[] {
+  const effectsMap = options?.modifierEffects ?? MODIFIER_EFFECTS;
   const byLift = new Map<PrimaryLift, ConjugateDataPair[]>();
   for (const pair of pairs) {
     const [ex] = pair;
@@ -291,7 +337,7 @@ export function generateDiagnostics(
 
       type PctEntry = Extract<ModifierEffectEntry, { min: number }>;
       const pctEntries = candidateKeys
-        .map((k) => MODIFIER_EFFECTS[k])
+        .map((k) => effectsMap[k])
         .filter((e): e is PctEntry => e !== undefined && 'min' in e);
 
       if (pctEntries.length === 0) {
@@ -325,7 +371,7 @@ export function generateDiagnostics(
       ];
       for (const k of effectKeys) {
         if (k !== null) {
-          for (const e of MODIFIER_EFFECTS[k]?.effects ?? []) {
+          for (const e of effectsMap[k]?.effects ?? []) {
             allEffects.add(e);
           }
         }
