@@ -218,10 +218,14 @@ export function generateDiagnostics(
 
     for (const [ex, session] of liftPairs) {
       const effectiveCategory = resolveCategory(ex, options);
+      // Accommodating resistance (bands/chains) changes the loading curve, so those
+      // sessions are not comparable to straight-bar max and must not seed the anchor grid.
       const isAnchor =
         commandsBenchName !== null
           ? ex.displayName === commandsBenchName
-          : effectiveCategory.length === 1 && effectiveCategory[0] === "anchor";
+          : effectiveCategory.length === 1 &&
+            effectiveCategory[0] === "anchor" &&
+            ex.addlWts.length === 0;
       if (isAnchor) {
         anchorSessions.push(session);
       } else if (!effectiveCategory.every((c) => c === "unclassified")) {

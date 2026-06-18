@@ -669,6 +669,47 @@ describe("generateDiagnostics", () => {
     expect(results[0].name).toBe("board press");
   });
 
+  it("deadlift with addlWts is not treated as anchor (prevents phantom anchor from bands e1RM)", () => {
+    // Bands e1RM is far below straight-bar max; if included in the anchor grid it creates a
+    // steep negative slope that backward-extrapolates into absurd predicted anchors.
+    const pairs: ConjugateDataPair[] = [
+      pair(
+        {
+          type: "deadlift",
+          movementCategory: ["anchor"],
+          displayName: "deadlift",
+          addlWts: [],
+        },
+        session("2024-02-01", 250)
+      ),
+      pair(
+        {
+          type: "deadlift",
+          movementCategory: ["anchor"], // would be anchor by category alone — addlWts must block it
+          displayName: "deadlift (bands)",
+          addlWts: ["bands"],
+        },
+        session("2024-02-08", 190)
+      ),
+      pair(
+        {
+          type: "deadlift",
+          movementCategory: ["bottom_range"],
+          displayName: "deficit deadlift",
+          equipment: "deficit",
+          addlWts: [],
+        },
+        session("2024-02-01", 220)
+      ),
+    ];
+    const results = generateDiagnostics(pairs);
+    const deficit = results.find((r) => r.name === "deficit deadlift");
+    expect(deficit).toBeDefined();
+    // Anchor grid should only contain the straight-bar session (250).
+    // deficit factor = 220/250 = 88% → within 85–95% → optimal
+    expect(deficit!.status).toBe("optimal");
+  });
+
   it("handles multiple lifts and returns results for each", () => {
     const benchPairs: ConjugateDataPair[] = [
       pair(
