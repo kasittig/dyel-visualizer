@@ -3,8 +3,8 @@ import type { DateRange } from 'react-day-picker';
 import { DateRangePicker } from './DateRangePicker';
 import { findBestE1RM, predictWeightForReps, predictRepsForWeight } from '@dyel/core';
 import type { ConjugateDataPair } from '../hooks/useConjugateData';
-import type { E1RMEstimate, RepCalcStats } from '@dyel/core';
-import { distinctDisplayNames, type LiftType } from '../utils/appUtils';
+import type { E1RMEstimate, RepCalcStats, LiftType } from '@dyel/core';
+import { distinctDisplayNames } from '../utils/appUtils';
 
 const LIFT_LABELS: Record<LiftType, string> = {
   squat: 'Squat',

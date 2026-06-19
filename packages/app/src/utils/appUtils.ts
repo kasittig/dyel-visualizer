@@ -1,11 +1,10 @@
+import type { ConjugateDataPair, FilterState, LiftType } from '@dyel/core';
 import { emptyFilters } from '@dyel/core';
-import type { FilterState, ConjugateDataPair } from '@dyel/core';
 
 export interface SheetRef {
   id: string;
   published: boolean;
 }
-export type LiftType = 'squat' | 'bench' | 'deadlift' | 'accessory';
 export type PageTab = LiftType | 'calculator' | 'sigma';
 
 export const LIFT_TABS: LiftType[] = ['squat', 'bench', 'deadlift', 'accessory'];

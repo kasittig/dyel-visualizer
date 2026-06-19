@@ -2,10 +2,10 @@ import { useMemo } from 'react';
 import { useLastSessionStats } from '../hooks/useLastSessionStats';
 import { useBaselineTargetExercises } from '../hooks/useBaselineTargetExercises';
 import { buildChartData } from '@dyel/core';
+import type { LiftType } from '@dyel/core';
 import { TotalChart } from './TotalChart';
 import { SigmaRadarChart } from './SigmaRadarChart';
 import type { ConjugateDataPair } from '../hooks/useConjugateData';
-import type { LiftType } from '../utils/appUtils';
 
 export function SigmaTab({
   pairs,
