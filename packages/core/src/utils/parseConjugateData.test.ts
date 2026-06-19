@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { findCol, nameToExercise, parseConjugateData } from './parseConjugateData';
+import type { ConjugateExercise } from '../types/conjugate.ts';
 
 function csv(...rows: string[]): string {
   return ['Date,Exercise,Sets,Reps,Weight (lbs)', ...rows].join('\n');
@@ -11,6 +12,24 @@ function csvKg(...rows: string[]): string {
 
 function csvBareWeight(...rows: string[]): string {
   return ['Date,Exercise,Sets,Reps,Weight', ...rows].join('\n');
+}
+
+function ex(overrides: Partial<ConjugateExercise> = {}): ConjugateExercise {
+  return {
+    type: 'squat',
+    bar: 'standard',
+    stance: 'competition',
+    addlWts: [],
+    equipment: null,
+    displayName: 'squat',
+    movementCategory: ['anchor'],
+    averageIndex: null,
+    expectedBaseline: null,
+    status: null,
+    diagnostic: null,
+    effects: [],
+    ...overrides,
+  };
 }
 
 describe('parseConjugateData', () => {
@@ -148,20 +167,14 @@ describe('parseConjugateData', () => {
 describe('nameToExercise', () => {
   describe('squat', () => {
     it('parses plain Squat', () => {
-      expect(nameToExercise('Squat')).toEqual({
-        type: 'squat',
-        bar: 'standard',
-        stance: 'competition',
-        addlWts: [],
-        equipment: null,
-        displayName: 'Squat',
-        movementCategory: ['anchor'],
-        averageIndex: null,
-        diagnostic: null,
-        effects: [],
-        expectedBaseline: null,
-        status: null,
-      });
+      expect(nameToExercise('Squat')).toEqual(
+        ex({
+          type: 'squat',
+          bar: 'standard',
+          stance: 'competition',
+          displayName: 'Squat',
+        })
+      );
     });
 
     it('parses Box Squat', () => {
@@ -192,20 +205,14 @@ describe('nameToExercise', () => {
 
   describe('bench', () => {
     it('parses plain Bench', () => {
-      expect(nameToExercise('Bench')).toEqual({
-        type: 'bench',
-        bar: 'standard',
-        stance: 'competition',
-        addlWts: [],
-        equipment: null,
-        displayName: 'Bench',
-        movementCategory: ['anchor'],
-        averageIndex: null,
-        diagnostic: null,
-        effects: [],
-        expectedBaseline: null,
-        status: null,
-      });
+      expect(nameToExercise('Bench')).toEqual(
+        ex({
+          type: 'bench',
+          bar: 'standard',
+          stance: 'competition',
+          displayName: 'Bench',
+        })
+      );
     });
 
     it('parses Bench (American Bar)', () => {
@@ -342,20 +349,14 @@ describe('nameToExercise', () => {
 
   describe('deadlift', () => {
     it('parses plain Deadlift', () => {
-      expect(nameToExercise('Deadlift')).toEqual({
-        type: 'deadlift',
-        bar: 'standard',
-        stance: 'competition',
-        addlWts: [],
-        equipment: null,
-        displayName: 'Deadlift',
-        movementCategory: ['anchor'],
-        averageIndex: null,
-        diagnostic: null,
-        effects: [],
-        expectedBaseline: null,
-        status: null,
-      });
+      expect(nameToExercise('Deadlift')).toEqual(
+        ex({
+          type: 'deadlift',
+          bar: 'standard',
+          stance: 'competition',
+          displayName: 'Deadlift',
+        })
+      );
     });
 
     it('parses Deadlift (opposite)', () => {
@@ -447,37 +448,27 @@ describe('nameToExercise', () => {
 
   describe('accessory exercises', () => {
     it('classifies Lat Pulldown as accessory', () => {
-      expect(nameToExercise('Lat Pulldown')).toEqual({
-        type: 'accessory',
-        bar: null,
-        stance: null,
-        addlWts: [],
-        equipment: null,
-        displayName: 'Lat Pulldown',
-        movementCategory: ['unclassified'],
-        averageIndex: null,
-        diagnostic: null,
-        effects: [],
-        expectedBaseline: null,
-        status: null,
-      });
+      expect(nameToExercise('Lat Pulldown')).toEqual(
+        ex({
+          type: 'accessory',
+          bar: null,
+          stance: null,
+          displayName: 'Lat Pulldown',
+          movementCategory: ['unclassified'],
+        })
+      );
     });
 
     it('classifies Overhead Press as accessory', () => {
-      expect(nameToExercise('Overhead Press')).toEqual({
-        type: 'accessory',
-        bar: null,
-        stance: null,
-        addlWts: [],
-        equipment: null,
-        displayName: 'Overhead Press',
-        movementCategory: ['unclassified'],
-        averageIndex: null,
-        diagnostic: null,
-        effects: [],
-        expectedBaseline: null,
-        status: null,
-      });
+      expect(nameToExercise('Overhead Press')).toEqual(
+        ex({
+          type: 'accessory',
+          bar: null,
+          stance: null,
+          displayName: 'Overhead Press',
+          movementCategory: ['unclassified'],
+        })
+      );
     });
   });
 });
