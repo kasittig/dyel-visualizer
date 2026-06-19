@@ -67,7 +67,6 @@ export function App() {
     }),
     [dataMap]
   );
-  console.log(JSON.stringify(tabRows));
 
   const { effectiveBaselineNames, effectiveTargetNames } = useMemo(() => {
     const baseline: Partial<Record<LiftType, string>> = {};

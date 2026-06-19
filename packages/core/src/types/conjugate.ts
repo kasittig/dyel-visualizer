@@ -79,8 +79,7 @@ export type GroupedConjugatePairs = Record<LiftType, ConjugateDataPair[]>;
 
 export type MovementCategory =
   | 'anchor'
-  | 'lockout'
-  | 'bottom_range'
+  | 'xxx'
   | 'quad_dominant'
   | 'posterior_chain'
   | 'unclassified';

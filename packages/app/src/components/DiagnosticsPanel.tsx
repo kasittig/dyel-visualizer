@@ -29,7 +29,7 @@ export function DiagnosticsPanel({ rows }: { rows: ConjugateDataPair[] }) {
     [rows, deadliftStance]
   );
 
-  if (results.length === 0 && !hasDeadlift) {
+  if (results.length === 0) {
     return null;
   }
 

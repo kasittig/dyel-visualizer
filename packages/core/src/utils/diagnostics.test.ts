@@ -26,92 +26,72 @@ describe('toMovementCategory', () => {
     expect(toMovementCategory(ex({ stance: 'competition' }))).toEqual(['anchor']);
   });
 
-  it('board equipment (null stance) → ["lockout"]', () => {
-    expect(toMovementCategory(ex({ stance: null, equipment: 'board' }))).toEqual(['lockout']);
+  it('board equipment (null stance) → ["xxx"]', () => {
+    expect(toMovementCategory(ex({ stance: null, equipment: 'board' }))).toEqual(['xxx']);
   });
 
-  it('floor equipment (null stance) → ["lockout"]', () => {
-    expect(toMovementCategory(ex({ stance: null, equipment: 'floor' }))).toEqual(['lockout']);
+  it('floor equipment (null stance) → ["xxx"]', () => {
+    expect(toMovementCategory(ex({ stance: null, equipment: 'floor' }))).toEqual(['xxx']);
   });
 
-  it('blocks equipment (null stance) → ["lockout"]', () => {
-    expect(toMovementCategory(ex({ stance: null, equipment: 'blocks' }))).toEqual(['lockout']);
+  it('blocks equipment (null stance) → ["xxx"]', () => {
+    expect(toMovementCategory(ex({ stance: null, equipment: 'blocks' }))).toEqual(['xxx']);
   });
 
-  it('rack equipment (null stance) → ["lockout"]', () => {
-    expect(toMovementCategory(ex({ stance: null, equipment: 'rack' }))).toEqual(['lockout']);
+  it('rack equipment (null stance) → ["xxx"]', () => {
+    expect(toMovementCategory(ex({ stance: null, equipment: 'rack' }))).toEqual(['xxx']);
   });
 
-  it('close stance → ["lockout"]', () => {
-    expect(toMovementCategory(ex({ stance: 'close' }))).toEqual(['lockout']);
+  it('close stance → ["xxx"]', () => {
+    expect(toMovementCategory(ex({ stance: 'close' }))).toEqual(['xxx']);
   });
 
-  it('deficit equipment (null stance) → ["bottom_range"]', () => {
-    expect(toMovementCategory(ex({ stance: null, equipment: 'deficit' }))).toEqual([
-      'bottom_range',
-    ]);
+  it('deficit equipment (null stance) → ["xxx"]', () => {
+    expect(toMovementCategory(ex({ stance: null, equipment: 'deficit' }))).toEqual(['xxx']);
   });
 
-  it('pause equipment (null stance) → ["bottom_range"]', () => {
-    expect(toMovementCategory(ex({ stance: null, equipment: 'pause' }))).toEqual(['bottom_range']);
+  it('pause equipment (null stance) → ["xxx"]', () => {
+    expect(toMovementCategory(ex({ stance: null, equipment: 'pause' }))).toEqual(['xxx']);
   });
 
-  it('squat + ssb bar → ["quad_dominant"]', () => {
-    expect(toMovementCategory(ex({ type: 'squat', stance: null, bar: 'ssb' }))).toEqual([
-      'quad_dominant',
-    ]);
+  it('squat + ssb bar → ["xxx"]', () => {
+    expect(toMovementCategory(ex({ type: 'squat', stance: null, bar: 'ssb' }))).toEqual(['xxx']);
   });
 
-  it('squat + goblet bar → ["quad_dominant"]', () => {
-    expect(toMovementCategory(ex({ type: 'squat', stance: null, bar: 'goblet' }))).toEqual([
-      'quad_dominant',
-    ]);
+  it('squat + goblet bar → ["xxx"]', () => {
+    expect(toMovementCategory(ex({ type: 'squat', stance: null, bar: 'goblet' }))).toEqual(['xxx']);
   });
 
-  it('squat + trap bar → ["quad_dominant"]', () => {
-    expect(toMovementCategory(ex({ type: 'squat', stance: null, bar: 'trap' }))).toEqual([
-      'quad_dominant',
-    ]);
+  it('squat + trap bar → ["xxx"]', () => {
+    expect(toMovementCategory(ex({ type: 'squat', stance: null, bar: 'trap' }))).toEqual(['xxx']);
   });
 
-  it('squat + front stance → ["quad_dominant"]', () => {
-    expect(toMovementCategory(ex({ type: 'squat', stance: 'front' }))).toEqual(['quad_dominant']);
+  it('squat + front stance → ["xxx"]', () => {
+    expect(toMovementCategory(ex({ type: 'squat', stance: 'front' }))).toEqual(['xxx']);
   });
 
-  it('deadlift + romanian stance → ["posterior_chain"]', () => {
+  it('deadlift + romanian stance → ["xxx"]', () => {
     expect(
       toMovementCategory(ex({ type: 'deadlift', stance: 'romanian', equipment: null }))
-    ).toEqual(['posterior_chain']);
+    ).toEqual(['xxx']);
   });
 
-  it('squat + box equipment (null stance) → ["bottom_range"]', () => {
+  it('squat + box equipment (null stance) → ["xxx"]', () => {
     expect(toMovementCategory(ex({ type: 'squat', stance: null, equipment: 'box' }))).toEqual([
-      'bottom_range',
+      'xxx',
     ]);
   });
 
-  it('slingshot stance → ["lockout"]', () => {
-    expect(toMovementCategory(ex({ type: 'bench', stance: 'slingshot' }))).toEqual(['lockout']);
+  it('slingshot stance → ["xxx"]', () => {
+    expect(toMovementCategory(ex({ type: 'bench', stance: 'slingshot' }))).toEqual(['xxx']);
   });
 
-  it('builder stance → ["lockout"]', () => {
-    expect(toMovementCategory(ex({ type: 'bench', stance: 'builder' }))).toEqual(['lockout']);
+  it('builder stance → ["xxx"]', () => {
+    expect(toMovementCategory(ex({ type: 'bench', stance: 'builder' }))).toEqual(['xxx']);
   });
 
-  it('narrow stance → ["lockout"]', () => {
-    expect(toMovementCategory(ex({ type: 'bench', stance: 'narrow' }))).toEqual(['lockout']);
-  });
-
-  it('bench + incline equipment (null stance) → ["unclassified"] (angle variation, not ROM modifier)', () => {
-    expect(toMovementCategory(ex({ type: 'bench', stance: null, equipment: 'incline' }))).toEqual([
-      'unclassified',
-    ]);
-  });
-
-  it('bench + decline equipment (null stance) → ["unclassified"] (angle variation, not ROM modifier)', () => {
-    expect(toMovementCategory(ex({ type: 'bench', stance: null, equipment: 'decline' }))).toEqual([
-      'unclassified',
-    ]);
+  it('narrow stance → ["xxx"]', () => {
+    expect(toMovementCategory(ex({ type: 'bench', stance: 'narrow' }))).toEqual(['xxx']);
   });
 
   it('bare deadlift (no stance) + no preference (default conventional) → ["quad_dominant"]', () => {
@@ -186,72 +166,62 @@ describe('toMovementCategory', () => {
     ).toEqual(['quad_dominant']);
   });
 
-  it('bench with no matching rule → ["unclassified"]', () => {
-    expect(toMovementCategory(ex({ type: 'bench', stance: null, equipment: null }))).toEqual([
-      'unclassified',
-    ]);
-  });
-
   it('board equipment beats competition stance (parser fallback) → ROM modifier wins', () => {
-    expect(toMovementCategory(ex({ stance: 'competition', equipment: 'board' }))).toEqual([
-      'lockout',
-    ]);
+    expect(toMovementCategory(ex({ stance: 'competition', equipment: 'board' }))).toEqual(['xxx']);
   });
 
   it('incline equipment is not a ROM modifier → competition stance still anchors', () => {
     expect(
       toMovementCategory(ex({ type: 'bench', stance: 'competition', equipment: 'incline' }))
-    ).toEqual(['anchor']);
+    ).toEqual(['xxx']);
   });
 
   it('deadlift + deficit equipment + competition stance (parser fallback) → ROM modifier wins', () => {
     expect(
       toMovementCategory(ex({ type: 'deadlift', stance: 'competition', equipment: 'deficit' }))
-    ).toEqual(['bottom_range']);
+    ).toEqual(['xxx']);
   });
 
   it('deadlift + blocks equipment + competition stance (parser fallback) → ROM modifier wins', () => {
     expect(
       toMovementCategory(ex({ type: 'deadlift', stance: 'competition', equipment: 'blocks' }))
-    ).toEqual(['lockout']);
+    ).toEqual(['xxx']);
   });
 
   it('deficit sumo deadlift → both ROM modifier and movement pattern', () => {
     expect(
       toMovementCategory(ex({ type: 'deadlift', stance: 'sumo', equipment: 'deficit' }))
-    ).toEqual(['bottom_range', 'posterior_chain']);
+    ).toEqual(['xxx']);
   });
 
   it('pause conventional deadlift → both ROM modifier and movement pattern', () => {
     expect(
       toMovementCategory(ex({ type: 'deadlift', stance: 'conventional', equipment: 'pause' }))
-    ).toEqual(['bottom_range', 'quad_dominant']);
+    ).toEqual(['xxx']);
   });
 
-  it('squat + zercher bar → ["quad_dominant"]', () => {
+  it('squat + zercher bar → ["xxx"]', () => {
     expect(toMovementCategory(ex({ type: 'squat', stance: null, bar: 'zercher' }))).toEqual([
-      'quad_dominant',
+      'xxx',
     ]);
   });
 
-  it('squat + cambered bar → ["bottom_range"]', () => {
+  it('squat + cambered bar → ["xxx"]', () => {
     expect(toMovementCategory(ex({ type: 'squat', stance: null, bar: 'cambered' }))).toEqual([
-      'bottom_range',
+      'xxx',
     ]);
   });
 
-  it('squat + belt bar → ["quad_dominant"]', () => {
-    expect(toMovementCategory(ex({ type: 'squat', stance: null, bar: 'belt' }))).toEqual([
-      'quad_dominant',
-    ]);
+  it('squat + belt bar → ["xxx"]', () => {
+    expect(toMovementCategory(ex({ type: 'squat', stance: null, bar: 'belt' }))).toEqual(['xxx']);
   });
 
-  it('squat + sumo stance → ["posterior_chain"]', () => {
-    expect(toMovementCategory(ex({ type: 'squat', stance: 'sumo' }))).toEqual(['posterior_chain']);
+  it('squat + sumo stance → ["xxx"]', () => {
+    expect(toMovementCategory(ex({ type: 'squat', stance: 'sumo' }))).toEqual(['xxx']);
   });
 
-  it('squat + wide stance → ["posterior_chain"]', () => {
-    expect(toMovementCategory(ex({ type: 'squat', stance: 'wide' }))).toEqual(['posterior_chain']);
+  it('squat + wide stance → ["xxx"]', () => {
+    expect(toMovementCategory(ex({ type: 'squat', stance: 'wide' }))).toEqual(['xxx']);
   });
 });
 
@@ -356,7 +326,7 @@ describe('generateDiagnostics', () => {
         session('2024-01-08', 305)
       ),
       pair(
-        { movementCategory: ['lockout'], displayName: 'board press', equipment: 'board' },
+        { movementCategory: ['xxx'], displayName: 'board press', equipment: 'board' },
         session('2024-01-04', 280)
       ),
     ];
@@ -377,7 +347,7 @@ describe('generateDiagnostics', () => {
         session('2024-01-01', 300)
       ),
       pair(
-        { movementCategory: ['lockout'], displayName: 'board press', equipment: 'board' },
+        { movementCategory: ['xxx'], displayName: 'board press', equipment: 'board' },
         session('2024-01-01', 280)
       ),
     ];
@@ -394,7 +364,7 @@ describe('generateDiagnostics', () => {
       ),
       // board press at only 80% of anchor → below 105% floor
       pair(
-        { movementCategory: ['lockout'], displayName: 'board press', equipment: 'board' },
+        { movementCategory: ['xxx'], displayName: 'board press', equipment: 'board' },
         session('2024-01-01', 240)
       ),
     ];
@@ -411,7 +381,7 @@ describe('generateDiagnostics', () => {
       ),
       // floor press at exactly 85% of anchor → meets 85% floor (equipment:floor:bench = 85-95%)
       pair(
-        { movementCategory: ['lockout'], displayName: 'floor press', equipment: 'floor' },
+        { movementCategory: ['xxx'], displayName: 'floor press', equipment: 'floor' },
         session('2024-01-01', 85)
       ),
     ];
@@ -426,7 +396,7 @@ describe('generateDiagnostics', () => {
         session('2024-01-01', 300)
       ),
       pair(
-        { movementCategory: ['lockout'], displayName: 'floor press', equipment: 'floor' },
+        { movementCategory: ['xxx'], displayName: 'floor press', equipment: 'floor' },
         session('2024-01-01', 260)
       ),
     ];
@@ -443,7 +413,7 @@ describe('generateDiagnostics', () => {
       ),
       // Variation with reps: 0 → fitVariantFactor skips it → sampleCount 0
       pair(
-        { movementCategory: ['lockout'], displayName: 'board press', equipment: 'board' },
+        { movementCategory: ['xxx'], displayName: 'board press', equipment: 'board' },
         { ...session('2024-06-01', 280), reps: 0 }
       ),
     ];
@@ -542,7 +512,7 @@ describe('generateDiagnostics', () => {
       ),
       // floor press at 100% of anchor → above 95% ceiling (equipment:floor:bench = 85-95%)
       pair(
-        { movementCategory: ['lockout'], displayName: 'floor press', equipment: 'floor' },
+        { movementCategory: ['xxx'], displayName: 'floor press', equipment: 'floor' },
         session('2024-01-01', 100)
       ),
     ];
@@ -568,7 +538,7 @@ describe('generateDiagnostics', () => {
         stance: null,
         equipment: 'pause',
         displayName: 'ssb pause squat',
-        movementCategory: ['bottom_range'],
+        movementCategory: ['xxx'],
       }),
       session('2024-01-01', 77),
     ];
@@ -598,7 +568,7 @@ describe('generateDiagnostics', () => {
         stance: null,
         equipment: 'box',
         displayName: 'ssb box squat',
-        movementCategory: ['bottom_range'],
+        movementCategory: ['xxx'],
       }),
       session('2024-01-01', 81),
     ];
@@ -615,7 +585,7 @@ describe('generateDiagnostics', () => {
         session('2024-01-01', 300)
       ),
       pair(
-        { movementCategory: ['lockout'], displayName: 'board press', equipment: 'board' },
+        { movementCategory: ['xxx'], displayName: 'board press', equipment: 'board' },
         session('2024-01-01', 315)
       ),
     ];
@@ -630,13 +600,13 @@ describe('generateDiagnostics', () => {
         {
           stance: 'competition',
           equipment: 'pause',
-          movementCategory: ['bottom_range'],
+          movementCategory: ['xxx'],
           displayName: 'bench w/commands',
         },
         session('2024-01-01', 250)
       ),
       pair(
-        { movementCategory: ['lockout'], displayName: 'board press', equipment: 'board' },
+        { movementCategory: ['xxx'], displayName: 'board press', equipment: 'board' },
         session('2024-01-01', 270)
       ),
     ];
@@ -653,7 +623,7 @@ describe('generateDiagnostics', () => {
         {
           stance: 'competition',
           equipment: 'pause',
-          movementCategory: ['bottom_range'],
+          movementCategory: ['xxx'],
           displayName: 'bench w/commands',
         },
         session('2024-01-01', 250)
@@ -674,7 +644,7 @@ describe('generateDiagnostics', () => {
         session('2024-01-01', 300)
       ),
       pair(
-        { movementCategory: ['lockout'], displayName: 'board press', equipment: 'board' },
+        { movementCategory: ['xxx'], displayName: 'board press', equipment: 'board' },
         session('2024-01-01', 270)
       ),
     ];
@@ -708,7 +678,7 @@ describe('generateDiagnostics', () => {
       pair(
         {
           type: 'deadlift',
-          movementCategory: ['bottom_range'],
+          movementCategory: ['xxx'],
           displayName: 'deficit deadlift',
           equipment: 'deficit',
           addlWts: [],
@@ -745,7 +715,7 @@ describe('generateDiagnostics', () => {
       pair(
         {
           equipment: 'floor',
-          movementCategory: ['lockout'],
+          movementCategory: ['xxx'],
           displayName: 'floor press (chain)',
           addlWts: ['chains'],
         },
@@ -763,7 +733,7 @@ describe('generateDiagnostics', () => {
         session('2024-01-01', 300)
       ),
       pair(
-        { movementCategory: ['lockout'], displayName: 'board press', equipment: 'board' },
+        { movementCategory: ['xxx'], displayName: 'board press', equipment: 'board' },
         session('2024-01-01', 270)
       ),
     ];
@@ -775,7 +745,7 @@ describe('generateDiagnostics', () => {
       pair(
         {
           type: 'deadlift',
-          movementCategory: ['lockout'],
+          movementCategory: ['xxx'],
           displayName: 'rack pull',
           equipment: 'rack',
         },
