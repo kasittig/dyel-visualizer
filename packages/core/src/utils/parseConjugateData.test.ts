@@ -156,6 +156,11 @@ describe('nameToExercise', () => {
         equipment: null,
         displayName: 'Squat',
         movementCategory: ['anchor'],
+        averageIndex: null,
+        diagnostic: null,
+        effects: [],
+        expectedBaseline: null,
+        status: null,
       });
     });
 
@@ -195,6 +200,11 @@ describe('nameToExercise', () => {
         equipment: null,
         displayName: 'Bench',
         movementCategory: ['anchor'],
+        averageIndex: null,
+        diagnostic: null,
+        effects: [],
+        expectedBaseline: null,
+        status: null,
       });
     });
 
@@ -340,6 +350,11 @@ describe('nameToExercise', () => {
         equipment: null,
         displayName: 'Deadlift',
         movementCategory: ['anchor'],
+        averageIndex: null,
+        diagnostic: null,
+        effects: [],
+        expectedBaseline: null,
+        status: null,
       });
     });
 
@@ -440,6 +455,11 @@ describe('nameToExercise', () => {
         equipment: null,
         displayName: 'Lat Pulldown',
         movementCategory: ['unclassified'],
+        averageIndex: null,
+        diagnostic: null,
+        effects: [],
+        expectedBaseline: null,
+        status: null,
       });
     });
 
@@ -452,6 +472,11 @@ describe('nameToExercise', () => {
         equipment: null,
         displayName: 'Overhead Press',
         movementCategory: ['unclassified'],
+        averageIndex: null,
+        diagnostic: null,
+        effects: [],
+        expectedBaseline: null,
+        status: null,
       });
     });
   });

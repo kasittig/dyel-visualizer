@@ -7,7 +7,6 @@ import type {
   ConjugateEquipment,
   ConjugateExercise,
   DeadliftStancePreference,
-  DiagnosticResult,
   EffectEnum,
   MovementCategory,
   PrimaryLift,
@@ -51,7 +50,7 @@ function resolveCategory(ex: ConjugateExercise, options?: DiagnosticsOptions): M
 export function generateDiagnostics(
   pairs: ConjugateDataPair[],
   options?: DiagnosticsOptions
-): DiagnosticResult[] {
+): ConjugateExercise[] {
   const byLift = new Map<PrimaryLift, ConjugateDataPair[]>();
   for (const pair of pairs) {
     const [ex] = pair;
@@ -65,7 +64,7 @@ export function generateDiagnostics(
     byLift.get(lift)!.push(pair);
   }
 
-  const results: DiagnosticResult[] = [];
+  const results: ConjugateExercise[] = [];
 
   for (const [lift, liftPairs] of byLift) {
     const anchorSessions: TrainingSession[] = [];
@@ -194,15 +193,12 @@ export function generateDiagnostics(
           : averageIndex > baseline.max
             ? 'overtrained'
             : 'optimal';
-      results.push({
-        primaryLift: lift,
-        name,
-        averageIndex,
-        expectedBaseline,
-        status,
-        diagnostic: `${name} at ${Math.round(averageIndex)}%`,
-        effects: [...allEffects],
-      });
+      ex.averageIndex = averageIndex;
+      ex.expectedBaseline = expectedBaseline;
+      ex.status = status;
+      ex.diagnostic = `${name} at ${Math.round(averageIndex)}%`;
+      ex.effects = [...allEffects];
+      results.push(ex);
     }
   }
 

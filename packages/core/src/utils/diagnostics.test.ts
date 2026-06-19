@@ -12,6 +12,11 @@ function ex(overrides: Partial<ConjugateExercise> = {}): ConjugateExercise {
     equipment: null,
     displayName: 'squat',
     movementCategory: ['anchor'],
+    averageIndex: null,
+    expectedBaseline: null,
+    status: null,
+    diagnostic: null,
+    effects: [],
     ...overrides,
   };
 }
@@ -329,6 +334,11 @@ function pair(overrides: Partial<ConjugateExercise>, s: TrainingSession): Conjug
     equipment: null,
     displayName: 'bench press',
     movementCategory: ['anchor'],
+    averageIndex: null,
+    expectedBaseline: null,
+    status: null,
+    diagnostic: null,
+    effects: [],
     ...overrides,
   };
   return [base, s];
@@ -353,8 +363,8 @@ describe('generateDiagnostics', () => {
     const results = generateDiagnostics(pairs);
     expect(results).toHaveLength(1);
     const r = results[0];
-    expect(r.primaryLift).toBe('bench');
-    expect(r.name).toBe('board press');
+    expect(r.type).toBe('bench');
+    expect(r.displayName).toBe('board press');
     expect(r.expectedBaseline).toBe('105–115%');
     expect(['optimal', 'weakness', 'overtrained']).toContain(r.status);
     expect(r.diagnostic).toMatch(/^board press at \d+%$/);
@@ -498,7 +508,7 @@ describe('generateDiagnostics', () => {
     ];
     const results = generateDiagnostics(pairs);
     expect(results).toHaveLength(1);
-    expect(results[0].name).toBe('deadlift (opposite)');
+    expect(results[0].displayName).toBe('deadlift (opposite)');
   });
 
   it('sumo-stance DL with sumo primary produces posterior_chain result', () => {
@@ -520,7 +530,7 @@ describe('generateDiagnostics', () => {
     // stance:sumo:deadlift has a baseline (90–100%)
     const results = generateDiagnostics(pairs, { deadliftStance: 'sumo' });
     expect(results).toHaveLength(1);
-    expect(results[0].name).toBe('deadlift (sumo)');
+    expect(results[0].displayName).toBe('deadlift (sumo)');
     expect(results[0].effects).toContain('POSTERIOR_CHAIN');
   });
 
@@ -632,8 +642,8 @@ describe('generateDiagnostics', () => {
     ];
     const results = generateDiagnostics(pairs);
     expect(results).toHaveLength(1);
-    expect(results[0].name).toBe('board press');
-    expect(results[0].primaryLift).toBe('bench');
+    expect(results[0].displayName).toBe('board press');
+    expect(results[0].type).toBe('bench');
     expect(results[0].expectedBaseline).toBe('105–115%');
   });
 
@@ -670,7 +680,7 @@ describe('generateDiagnostics', () => {
     ];
     const results = generateDiagnostics(pairs);
     expect(results).toHaveLength(1);
-    expect(results[0].name).toBe('board press');
+    expect(results[0].displayName).toBe('board press');
   });
 
   it('deadlift with addlWts is not treated as anchor (prevents phantom anchor from bands e1RM)', () => {
@@ -707,7 +717,7 @@ describe('generateDiagnostics', () => {
       ),
     ];
     const results = generateDiagnostics(pairs);
-    const deficit = results.find((r) => r.name === 'deficit deadlift');
+    const deficit = results.find((r) => r.displayName === 'deficit deadlift');
     expect(deficit).toBeDefined();
     // Anchor grid should only contain the straight-bar session (250).
     // deficit factor = 220/250 = 88% → within 85–95% → optimal
@@ -774,6 +784,6 @@ describe('generateDiagnostics', () => {
     ];
     const results = generateDiagnostics([...benchPairs, ...deadPairs]);
     expect(results).toHaveLength(2);
-    expect(results.map((r) => r.primaryLift).sort()).toEqual(['bench', 'deadlift']);
+    expect(results.map((r) => r.type).sort()).toEqual(['bench', 'deadlift']);
   });
 });

@@ -8,7 +8,6 @@ export type {
   ConjugateDataPair,
   MovementCategory,
   DeadliftStancePreference,
-  DiagnosticResult,
   PrimaryLift,
   EffectEnum,
 } from './types/conjugate';
