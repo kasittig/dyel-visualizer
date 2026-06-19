@@ -64,6 +64,11 @@ export interface ConjugateExercise {
   equipment: ConjugateEquipment | null;
   displayName: string;
   movementCategory: MovementCategory[];
+  averageIndex: number | null;
+  expectedBaseline: string | null;
+  status: 'optimal' | 'weakness' | 'overtrained' | null;
+  diagnostic: string | null; // description only, no status prefix
+  effects: EffectEnum[];
 }
 
 export type PrimaryLift = Exclude<ConjugateExercise['type'], 'accessory'>;
@@ -105,16 +110,6 @@ export type EffectEnum =
   | 'UPRIGHT_TORSO';
 
 export type DeadliftStancePreference = 'sumo' | 'conventional';
-
-export interface DiagnosticResult {
-  primaryLift: PrimaryLift;
-  name: string;
-  averageIndex: number;
-  expectedBaseline: string;
-  status: 'optimal' | 'weakness' | 'overtrained';
-  diagnostic: string; // description only, no status prefix
-  effects: EffectEnum[];
-}
 
 export function variantLabel(ex: ConjugateExercise): string {
   const parts: string[] = [];

@@ -123,7 +123,16 @@ export function nameToExercise(name: string): ConjugateExercise | null {
           addlWts,
           equipment: parseEquipment(lower, tokens),
         };
-  return { ...core, displayName, movementCategory: toMovementCategory(core) };
+  return {
+    ...core,
+    displayName,
+    movementCategory: toMovementCategory(core),
+    averageIndex: null,
+    expectedBaseline: null,
+    diagnostic: null,
+    status: null,
+    effects: [],
+  };
 }
 
 type RawSession = Omit<TrainingSession, 'unit'> & { unit: 'lbs' | 'kg' | null };

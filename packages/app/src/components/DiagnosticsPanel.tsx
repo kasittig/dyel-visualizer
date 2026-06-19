@@ -86,12 +86,12 @@ export function DiagnosticsPanel({ rows }: { rows: ConjugateDataPair[] }) {
                     ? 'Overtrained'
                     : 'Weakness';
               return (
-                <tr key={r.name} style={{ borderBottom: '1px solid var(--border)' }}>
-                  <td style={cellStyle}>{r.name}</td>
+                <tr key={r.displayName} style={{ borderBottom: '1px solid var(--border)' }}>
+                  <td style={cellStyle}>{r.displayName}</td>
                   <td style={{ ...cellStyle, color: 'var(--text)' }}>
                     {r.effects.map(formatEffect).join(', ')}
                   </td>
-                  <td style={monoStyle}>{r.averageIndex.toFixed(1)}%</td>
+                  <td style={monoStyle}>{r.averageIndex?.toFixed(1) ?? '-'}%</td>
                   <td style={monoStyle}>{r.expectedBaseline}</td>
                   <td
                     style={{
