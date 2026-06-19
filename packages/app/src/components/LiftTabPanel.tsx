@@ -42,7 +42,11 @@ export function LiftTabPanel({
         stats={chartStats}
         onVariationClick={handleVariationClick}
       />
-      <DiagnosticsPanel rows={filteredRows} />
+      <DiagnosticsPanel
+        rows={filteredRows}
+        targetName={targetName}
+        onTargetChange={onTargetChange}
+      />
     </>
   );
 }

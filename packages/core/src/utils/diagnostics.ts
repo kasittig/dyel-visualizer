@@ -42,17 +42,18 @@ function resolveCategory(ex: ConjugateExercise, options?: DiagnosticsOptions): M
 
 function isCompVariation(
   ex: ConjugateExercise,
-  commandsBenchName: string | null,
-  effectiveCategories: MovementCategory[],
-  compDeadliftName: string | null
+  anchorName: string | null,
+  effectiveCategories: MovementCategory[]
 ): boolean {
-  if (commandsBenchName) {
-    return ex.displayName === commandsBenchName;
+  if (anchorName) {
+    return ex.displayName === anchorName;
   }
-  if (compDeadliftName) {
-    return ex.displayName === compDeadliftName;
-  }
-  if (ex.addlWts.length > 0 || effectiveCategories.length != 1) {
+  if (
+    ex.addlWts.length > 0 ||
+    effectiveCategories.length != 1 ||
+    ex.bar != 'standard' ||
+    ex.equipment
+  ) {
     return false;
   }
   return effectiveCategories[0] === 'anchor';
@@ -60,43 +61,18 @@ function isCompVariation(
 
 export function generateDiagnostics(
   pairs: ConjugateDataPair[],
+  anchorName: string | null = null,
   options?: DiagnosticsOptions
 ): ConjugateExercise[] {
   const results: ConjugateExercise[] = [];
   const anchorSessions: TrainingSession[] = [];
   const variationGroups = new Map<string, { ex: ConjugateExercise; sessions: TrainingSession[] }>();
 
-  // For bench, prefer w/commands (equipment: "pause", standard bar, competition stance, no
-  // addlWts) as the anchor when present. Competition bench is always performed to judge's
-  // commands, so this IS the competition lift.
-  const lift = pairs[0][0].type;
-  const commandsBenchName =
-    lift === 'bench'
-      ? (pairs.find(
-          ([ex]) =>
-            ex.type === 'bench' &&
-            ex.bar === 'standard' &&
-            ex.stance === 'competition' &&
-            ex.equipment === 'pause' &&
-            ex.addlWts.length === 0
-        )?.[0].displayName ?? null)
-      : null;
-  const compDeadliftName =
-    lift === 'deadlift'
-      ? (pairs.find(
-          ([ex]) =>
-            ex.stance === 'competition' &&
-            ex.bar === 'standard' &&
-            !ex.equipment &&
-            ex.addlWts.length === 0
-        )?.[0].displayName ?? null)
-      : null;
-
   for (const [ex, session] of pairs) {
     const effectiveCategory = resolveCategory(ex, options);
     // Accommodating resistance (bands/chains) changes the loading curve, so those
     // sessions are not comparable to straight-bar max and must not seed the anchor grid.
-    const isAnchor = isCompVariation(ex, commandsBenchName, effectiveCategory, compDeadliftName);
+    const isAnchor = isCompVariation(ex, anchorName, effectiveCategory);
     if (isAnchor) {
       anchorSessions.push(session);
     } else if (!effectiveCategory.every((c) => c === 'unclassified')) {

@@ -498,7 +498,7 @@ describe('generateDiagnostics', () => {
       ),
     ];
     // stance:sumo:deadlift has a baseline (90–100%)
-    const results = generateDiagnostics(pairs, { deadliftStance: 'sumo' });
+    const results = generateDiagnostics(pairs, null, { deadliftStance: 'sumo' });
     expect(results).toHaveLength(1);
     expect(results[0].displayName).toBe('deadlift (sumo)');
     expect(results[0].effects).toContain('POSTERIOR_CHAIN');
@@ -610,31 +610,11 @@ describe('generateDiagnostics', () => {
         session('2024-01-01', 270)
       ),
     ];
-    const results = generateDiagnostics(pairs);
+    const results = generateDiagnostics(pairs, 'bench w/commands');
     expect(results).toHaveLength(1);
     expect(results[0].displayName).toBe('board press');
     expect(results[0].type).toBe('bench');
     expect(results[0].expectedBaseline).toBe('105–115%');
-  });
-
-  it('plain bench does not produce a diagnostic result when bench w/commands is the anchor', () => {
-    const pairs: ConjugateDataPair[] = [
-      pair(
-        {
-          stance: 'competition',
-          equipment: 'pause',
-          movementCategory: ['xxx'],
-          displayName: 'bench w/commands',
-        },
-        session('2024-01-01', 250)
-      ),
-      pair(
-        { stance: 'competition', movementCategory: ['anchor'], displayName: 'bench press' },
-        session('2024-01-01', 260)
-      ),
-    ];
-    const results = generateDiagnostics(pairs);
-    expect(results).toHaveLength(0);
   });
 
   it('falls back to plain bench as anchor when no bench w/commands is present', () => {
