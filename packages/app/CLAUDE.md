@@ -42,7 +42,6 @@ Single-page React app with no backend. All data comes from a user-supplied Googl
 | `src/components/DiagnosticsPanel.tsx`     | Diagnostics panel using `generateDiagnostics` from `@dyel/core`                                                                                                   |
 | `src/components/DateRangePicker.tsx`      | Date range input using `react-day-picker` + Radix Popover                                                                                                         |
 | `src/components/IndexPage.tsx`            | Landing page listing linked sheets; fetches from a hardcoded published index sheet via `useIndexData`                                                             |
-| `src/components/VolumeWorkToggle.tsx`     | Checkbox toggle for excluding volume work (sets > 1)                                                                                                              |
 | `src/hooks/useBaselineTargetExercises.ts` | Builds `baselineExByType` and `targetExByType` maps; shared by `TotalChart` and `SigmaRadarChart`                                                                 |
 | `src/hooks/useConjugateChartData.ts`      | All data aggregation for `ConjugateCharts` (grouping, normalization, forward-fill); the component itself is presentation-only                                     |
 | `src/hooks/useIndexData.ts`               | Fetches and parses the published index sheet CSV; returns `IndexEntry[]`                                                                                          |

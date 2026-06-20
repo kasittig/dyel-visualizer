@@ -6,7 +6,6 @@ import { BaselineSelect } from './components/BaselineSelect';
 import { RepCalculator } from './components/RepCalculator';
 import { SigmaTab } from './components/SigmaTab';
 import { LiftTabPanel } from './components/LiftTabPanel';
-import { VolumeWorkToggle } from './components/VolumeWorkToggle';
 import { SheetUrlPanel } from './components/SheetUrlPanel';
 import { GettingStarted } from './components/GettingStarted';
 import { applyFilters, defaultBaselineName, defaultTargetName, emptyFilters } from '@dyel/core';
@@ -33,7 +32,6 @@ export function App() {
   const [activeTab, setActiveTab] = useState<PageTab>('sigma');
   const [shownResetToken, setShownResetToken] = useState(0);
   const [tabState, setTabState] = useState<Record<LiftType, TabState>>(initialTabState);
-  const [excludeVolumeWork, setExcludeVolumeWork] = useState(true);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -94,11 +92,8 @@ export function App() {
   const activeRows = useMemo(() => (liftTab ? tabRows[liftTab] : []), [liftTab, tabRows]);
 
   const calcPairs = useMemo(
-    () =>
-      LIFT_TABS.flatMap((tab) =>
-        applyFilters(tabRows[tab], tabState[tab].filters, excludeVolumeWork)
-      ),
-    [tabRows, tabState, excludeVolumeWork]
+    () => LIFT_TABS.flatMap((tab) => applyFilters(tabRows[tab], tabState[tab].filters)),
+    [tabRows, tabState]
   );
 
   const filteredRows = useMemo(
@@ -113,7 +108,6 @@ export function App() {
     setPanelForcedOpen(false);
     setShownResetToken((t) => t + 1);
     setTabState(initialTabState());
-    setExcludeVolumeWork(true);
   }
 
   function toggleFilter(facet: keyof FilterState, value: string) {
@@ -140,10 +134,6 @@ export function App() {
       ...prev,
       [liftTab]: { ...prev[liftTab], filters: emptyFilters() },
     }));
-  }
-
-  function toggleVolumeWork() {
-    setExcludeVolumeWork((prev) => !prev);
   }
 
   return (
@@ -204,7 +194,6 @@ export function App() {
                 </button>
               ))}
             </div>
-            <VolumeWorkToggle checked={excludeVolumeWork} onChange={toggleVolumeWork} />
             {activeTab === 'calculator' ? (
               <>
                 <RepCalculator
@@ -216,7 +205,6 @@ export function App() {
             ) : activeTab === 'sigma' ? (
               <SigmaTab
                 pairs={pairs}
-                excludeVolumeWork={excludeVolumeWork}
                 effectiveBaselineNames={effectiveBaselineNames}
                 effectiveTargetNames={effectiveTargetNames}
               />

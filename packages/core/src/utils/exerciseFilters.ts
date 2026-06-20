@@ -19,7 +19,7 @@ export function emptyFilters(): FilterState {
 export function applyFilters(
   rows: ConjugateDataPair[],
   filters: FilterState,
-  excludeVolumeWork = false
+  excludeVolumeWork = true
 ): ConjugateDataPair[] {
   return rows.filter(([ex, session]) => {
     if (filters.bar.size > 0 && (ex.bar === null || !filters.bar.has(ex.bar))) {

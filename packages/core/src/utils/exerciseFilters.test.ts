@@ -11,7 +11,12 @@ function pair(type: 'squat' | 'bench' | 'deadlift' | 'accessory', sets: number):
       addlWts: [],
       equipment: null,
       displayName: type,
-      movementCategory: 'anchor',
+      movementCategory: ['anchor'],
+      averageIndex: null,
+      expectedBaseline: null,
+      status: null,
+      diagnostic: null,
+      effects: [],
     },
     { date: new Date('2024-01-01T00:00:00'), sets, reps: 5, weight: 100, e1rm: 120, unit: 'lbs' },
   ];
@@ -25,7 +30,7 @@ describe('applyFilters — excludeVolumeWork', () => {
       pair('deadlift', 1),
       pair('accessory', 4),
     ];
-    expect(applyFilters(rows, emptyFilters())).toHaveLength(4);
+    expect(applyFilters(rows, emptyFilters(), false)).toHaveLength(4);
   });
 
   it('removes compound sets > 1 when true', () => {
