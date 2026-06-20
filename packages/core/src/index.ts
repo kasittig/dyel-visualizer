@@ -10,6 +10,8 @@ export type {
   DeadliftStancePreference,
   PrimaryLift,
   EffectEnum,
+  LiftType,
+  GroupedConjugatePairs,
 } from './types/conjugate';
 export { variantLabel, familyKey } from './types/conjugate';
 

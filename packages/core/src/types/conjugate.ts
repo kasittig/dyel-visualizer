@@ -57,7 +57,7 @@ export interface TrainingSession {
 }
 
 export interface ConjugateExercise {
-  type: 'squat' | 'bench' | 'deadlift' | 'accessory';
+  type: LiftType;
   bar: ConjugateBar | null;
   stance: ConjugateStance | null;
   addlWts: ConjugateAddlWt[];
@@ -75,10 +75,11 @@ export type PrimaryLift = Exclude<ConjugateExercise['type'], 'accessory'>;
 
 export type ConjugateDataPair = [ConjugateExercise, TrainingSession];
 
+export type GroupedConjugatePairs = Record<LiftType, ConjugateDataPair[]>;
+
 export type MovementCategory =
   | 'anchor'
-  | 'lockout'
-  | 'bottom_range'
+  | 'xxx'
   | 'quad_dominant'
   | 'posterior_chain'
   | 'unclassified';
@@ -129,3 +130,5 @@ export function variantLabel(ex: ConjugateExercise): string {
 export function familyKey(ex: ConjugateExercise): string {
   return [ex.type, ex.bar ?? '', ex.stance ?? '', ex.equipment ?? ''].join('|');
 }
+
+export type LiftType = 'squat' | 'bench' | 'deadlift' | 'accessory';

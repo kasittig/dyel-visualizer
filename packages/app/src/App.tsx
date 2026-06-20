@@ -11,7 +11,7 @@ import { SheetUrlPanel } from './components/SheetUrlPanel';
 import { GettingStarted } from './components/GettingStarted';
 import { applyFilters, defaultBaselineName, defaultTargetName, emptyFilters } from '@dyel/core';
 import type { ConjugateDataPair } from './hooks/useConjugateData';
-import type { FilterState } from '@dyel/core';
+import type { FilterState, LiftType, GroupedConjugatePairs } from '@dyel/core';
 import {
   extractSheetRef,
   initialTabState,
@@ -20,7 +20,7 @@ import {
   MAIN_TABS,
   ACCESSORY_TAB,
 } from './utils/appUtils';
-import type { LiftType, PageTab, TabState } from './utils/appUtils';
+import type { PageTab, TabState } from './utils/appUtils';
 
 export function App() {
   const [url, setUrl] = useState(
@@ -53,15 +53,19 @@ export function App() {
   const showUrlPanel = panelForcedOpen || state.status !== 'success';
 
   const pairs = useMemo(() => (state.status === 'success' ? state.pairs : []), [state]);
+  const dataMap = useMemo<Partial<GroupedConjugatePairs>>(
+    () => Object.groupBy(pairs, (pair) => pair[0].type),
+    [pairs]
+  );
 
   const tabRows = useMemo<Record<LiftType, ConjugateDataPair[]>>(
     () => ({
-      squat: pairs.filter(([ex]) => ex.type === 'squat'),
-      bench: pairs.filter(([ex]) => ex.type === 'bench'),
-      deadlift: pairs.filter(([ex]) => ex.type === 'deadlift'),
-      accessory: pairs.filter(([ex]) => ex.type === 'accessory'),
+      squat: dataMap['squat'] ?? [],
+      bench: dataMap['bench'] ?? [],
+      deadlift: dataMap['deadlift'] ?? [],
+      accessory: dataMap['accessory'] ?? [],
     }),
-    [pairs]
+    [dataMap]
   );
 
   const { effectiveBaselineNames, effectiveTargetNames } = useMemo(() => {

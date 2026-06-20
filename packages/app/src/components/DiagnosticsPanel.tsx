@@ -17,7 +17,14 @@ const monoStyle: React.CSSProperties = {
   textAlign: 'right',
 };
 
-export function DiagnosticsPanel({ rows }: { rows: ConjugateDataPair[] }) {
+export function DiagnosticsPanel({
+  rows,
+  targetName,
+}: {
+  rows: ConjugateDataPair[];
+  targetName: string | null;
+  onTargetChange: (name: string | null) => void;
+}) {
   const [deadliftStance, setDeadliftStance] = useState<DeadliftStancePreference | undefined>(
     undefined
   );
@@ -25,11 +32,11 @@ export function DiagnosticsPanel({ rows }: { rows: ConjugateDataPair[] }) {
   const hasDeadlift = useMemo(() => rows.some(([ex]) => ex.type === 'deadlift'), [rows]);
 
   const results = useMemo(
-    () => generateDiagnostics(rows, { deadliftStance }),
-    [rows, deadliftStance]
+    () => generateDiagnostics(rows, targetName, { deadliftStance }),
+    [rows, targetName, deadliftStance]
   );
 
-  if (results.length === 0 && !hasDeadlift) {
+  if (results.length === 0) {
     return null;
   }
 
