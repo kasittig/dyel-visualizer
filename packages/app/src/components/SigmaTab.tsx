@@ -16,8 +16,10 @@ export function SigmaTab({
   effectiveBaselineNames: Partial<Record<LiftType, string>>;
   effectiveTargetNames: Partial<Record<LiftType, string>>;
 }) {
-  const sigmaPairs = useMemo(() => pairs.filter(([, session]) => session.sets <= 1), [pairs]);
-
+  const sigmaPairs = useMemo(
+    () => pairs.filter(([ex, session]) => ex.type !== 'accessory' && session.sets === 1),
+    [pairs]
+  );
   const sigmaStats = useLastSessionStats(sigmaPairs, effectiveBaselineNames);
 
   const { baselineExByType, targetExByType } = useBaselineTargetExercises(
