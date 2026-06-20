@@ -31,6 +31,7 @@ export function buildSessionStats(
   const dataByName = new Map<string, ExData>();
   const straightByFamily = new Map<string, TrainingSession[]>();
 
+  pairs = pairs.filter((pair) => pair[0].type != 'accessory');
   for (const [exercise, session] of pairs) {
     const name = exercise.displayName;
     const fk = familyKey(exercise);
@@ -91,9 +92,6 @@ export function buildSessionStats(
     { factor: number; sampleCount: number; label: string; baselineName: string }
   >();
   for (const [name, data] of dataByName) {
-    if (data.type === 'accessory') {
-      continue;
-    }
     const baselineName = baselineNames[data.type];
     if (name === baselineName) {
       continue;

@@ -36,28 +36,30 @@ export function defaultBaselineName(rows: ConjugateDataPair[]): string | null {
 }
 
 export function defaultTargetName(rows: ConjugateDataPair[]): string | null {
-  let first: string | null = null;
-  let competition: string | null = null;
-  let commandsBench: string | null = null;
-  const seen = new Set<string>();
+  if (rows.length === 0) {
+    return null;
+  }
+  const first = rows[0][0].displayName;
 
-  for (const [ex] of rows) {
-    if (seen.has(ex.displayName)) {
-      continue;
-    }
-    seen.add(ex.displayName);
-    if (first === null) {
-      first = ex.displayName;
-    }
-
-    if (ex.bar === 'standard' && ex.stance === 'competition' && ex.addlWts.length === 0) {
-      if (ex.type === 'bench' && ex.equipment === 'pause' && commandsBench === null) {
-        commandsBench = ex.displayName;
-      } else if (ex.equipment === null && competition === null) {
-        competition = ex.displayName;
-      }
-    }
+  const all_competition = rows.filter(
+    (row) =>
+      row[0].bar === 'standard' && row[0].stance === 'competition' && row[0].addlWts.length === 0
+  );
+  if (all_competition.length === 0) {
+    return first;
   }
 
-  return commandsBench ?? competition ?? first;
+  const commandsBench = all_competition.filter(
+    (row) => row[0].equipment === 'pause' && row[0].type === 'bench'
+  );
+  if (commandsBench.length > 0) {
+    return commandsBench[0][0].displayName;
+  }
+
+  const competition = all_competition.filter((row) => row[0].equipment === null);
+  if (competition.length > 0) {
+    return competition[0][0].displayName;
+  }
+
+  return first;
 }

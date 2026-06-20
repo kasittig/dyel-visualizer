@@ -20,7 +20,6 @@ export function SigmaTab({
     () => pairs.filter(([ex, session]) => ex.type !== 'accessory' && session.sets === 1),
     [pairs]
   );
-
   const sigmaStats = useLastSessionStats(sigmaPairs, effectiveBaselineNames);
 
   const { baselineExByType, targetExByType } = useBaselineTargetExercises(
