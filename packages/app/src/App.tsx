@@ -2,7 +2,6 @@ import { useState, useMemo, useEffect } from 'react';
 import { useConjugateData } from './hooks/useConjugateData';
 import { useLastSessionStats } from './hooks/useLastSessionStats';
 import { ExerciseFilters } from './components/ExerciseFilters';
-import { BaselineSelect } from './components/BaselineSelect';
 import { RepCalculator } from './components/RepCalculator';
 import { SigmaTab } from './components/SigmaTab';
 import { LiftTabPanel } from './components/LiftTabPanel';
@@ -70,9 +69,9 @@ export function App() {
     const baseline: Partial<Record<LiftType, string>> = {};
     const target: Partial<Record<LiftType, string>> = {};
     for (const tab of LIFT_TABS) {
-      const b = tabState[tab].baselineName ?? defaultBaselineName(tabRows[tab]);
-      if (b) {
-        baseline[tab] = b;
+      const baselineName = defaultBaselineName(tabRows[tab]);
+      if (baselineName) {
+        baseline[tab] = baselineName;
       }
       const t = tabState[tab].targetName ?? defaultTargetName(tabRows[tab]);
       if (t) {
@@ -210,16 +209,6 @@ export function App() {
               />
             ) : liftTab !== null ? (
               <>
-                <BaselineSelect
-                  rows={activeRows}
-                  selectedName={effectiveBaselineNames[liftTab] ?? null}
-                  onSelect={(name) =>
-                    setTabState((prev) => ({
-                      ...prev,
-                      [liftTab]: { ...prev[liftTab], baselineName: name ?? undefined },
-                    }))
-                  }
-                />
                 <ExerciseFilters
                   rows={activeRows}
                   filters={tabState[liftTab].filters}
