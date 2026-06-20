@@ -9,21 +9,16 @@ import type { ConjugateDataPair } from '../hooks/useConjugateData';
 
 export function SigmaTab({
   pairs,
-  excludeVolumeWork,
   effectiveBaselineNames,
   effectiveTargetNames,
 }: {
   pairs: ConjugateDataPair[];
-  excludeVolumeWork: boolean;
   effectiveBaselineNames: Partial<Record<LiftType, string>>;
   effectiveTargetNames: Partial<Record<LiftType, string>>;
 }) {
   const sigmaPairs = useMemo(
-    () =>
-      excludeVolumeWork
-        ? pairs.filter(([ex, session]) => ex.type === 'accessory' || session.sets <= 1)
-        : pairs,
-    [pairs, excludeVolumeWork]
+    () => pairs.filter(([ex, session]) => ex.type !== 'accessory' && session.sets === 1),
+    [pairs]
   );
 
   const sigmaStats = useLastSessionStats(sigmaPairs, effectiveBaselineNames);
