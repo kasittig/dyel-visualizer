@@ -102,7 +102,7 @@ export function ConjugateCharts({
           }}
         >
           <label>
-            Normalize to:{' '}
+            Competition variation:{' '}
             <select
               value={effectiveTargetName ?? ''}
               onChange={(e) => onTargetChange(e.target.value)}
