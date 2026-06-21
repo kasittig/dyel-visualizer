@@ -1,9 +1,9 @@
 import { useMemo } from 'react';
-import type { ConjugateDataPair } from '../hooks/useConjugateData';
-import type { SessionStats } from '../hooks/useLastSessionStats';
+import type { ConjugateDataPair } from '../../hooks/conjugate/useConjugateData';
+import type { SessionStats } from '../../hooks/data/useLastSessionStats';
 import { BaseRadarChart } from './BaseRadarChart';
 import { TooltipCard } from './TooltipCard';
-import { distinctDisplayNames } from '../utils/appUtils';
+import { distinctDisplayNames } from '../../utils/appUtils';
 
 const MIN_VARIATIONS = 3;
 

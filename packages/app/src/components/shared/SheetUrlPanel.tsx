@@ -1,5 +1,5 @@
 import type React from 'react';
-import { EXAMPLE_SHEET_URL, EXAMPLE_VISUALIZER_URL } from '../utils/appUtils';
+import { EXAMPLE_SHEET_URL, EXAMPLE_VISUALIZER_URL } from '../../utils/appUtils';
 
 const linkButtonStyle: React.CSSProperties = {
   background: 'none',

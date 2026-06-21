@@ -3,18 +3,20 @@ import { StrictMode, lazy, Suspense } from 'react';
 import { createRoot } from 'react-dom/client';
 import './index.css';
 import { App } from './App.tsx';
-import { ErrorBoundary } from './components/ErrorBoundary.tsx';
+import { ErrorBoundary } from './components/shared/ErrorBoundary.tsx';
 
 const ConjugateInfoPage = lazy(() =>
-  import('./components/ConjugateInfoPage.tsx').then((m) => ({ default: m.ConjugateInfoPage }))
+  import('./components/conjugate/ConjugateInfoPage.tsx').then((m) => ({
+    default: m.ConjugateInfoPage,
+  }))
 );
 
 const IndexPage = lazy(() =>
-  import('./components/IndexPage.tsx').then((m) => ({ default: m.IndexPage }))
+  import('./components/pages/IndexPage.tsx').then((m) => ({ default: m.IndexPage }))
 );
 
 const ValidatorPage = lazy(() =>
-  import('./components/ValidatorPage.tsx').then((m) => ({ default: m.ValidatorPage }))
+  import('./components/pages/ValidatorPage.tsx').then((m) => ({ default: m.ValidatorPage }))
 );
 
 function resolvePageComponent(page: string | null) {

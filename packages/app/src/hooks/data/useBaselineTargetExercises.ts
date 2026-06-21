@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import type { ConjugateExercise } from '@dyel/core';
-import type { ConjugateDataPair } from './useConjugateData';
+import type { ConjugateDataPair } from '../conjugate/useConjugateData';
 
 export function useBaselineTargetExercises(
   pairs: ConjugateDataPair[],

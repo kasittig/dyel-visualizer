@@ -30,21 +30,42 @@ Single-page React app with no backend. All data comes from a user-supplied Googl
 
 **Tab state:** `App.tsx` owns `tabState: Record<LiftType, TabState>` (initialized via `initialTabState()`) plus a separate `excludeVolumeWork: boolean` state. `excludeVolumeWork` is passed directly to `applyFilters` as a parameter — it is NOT part of `FilterState` or `TabState`. Active non-lift tabs: `"sigma"` and `"calculator"`.
 
+**Component subdirectories** (`src/components/`):
+
+| Subdirectory | Contents                                                                                                                               |
+| ------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `charts/`    | Reusable Recharts components: `BaseRadarChart`, `DateLineChart`, `SigmaRadarChart`, `TotalChart`, `TooltipCard`, `VariationRadarChart` |
+| `conjugate/` | Conjugate-feature components: `ConjugateCharts`, `ConjugateInfoPage`                                                                   |
+| `pages/`     | Page/tab-panel entry points: `GettingStarted`, `IndexPage`, `LiftTabPanel`, `SigmaTab`, `ValidatorPage`                                |
+| `shared/`    | Cross-feature UI: `DateRangePicker`, `DiagnosticsPanel`, `ErrorBoundary`, `ExerciseFilters`, `RepCalculator`, `SheetUrlPanel`          |
+
+Each subdirectory has an `index.ts` barrel and a `CLAUDE.md` with per-file descriptions.
+
+**Hook subdirectories** (`src/hooks/`):
+
+| Subdirectory | Contents                                                            |
+| ------------ | ------------------------------------------------------------------- |
+| `conjugate/` | `useConjugateData`, `useConjugateChartData`                         |
+| `data/`      | `useBaselineTargetExercises`, `useIndexData`, `useLastSessionStats` |
+| `infra/`     | `useCsvResource`, `useSheetValidation`                              |
+
+Each subdirectory has an `index.ts` barrel and a `CLAUDE.md` with per-file descriptions.
+
 **Key modules:**
 
-| Path                                      | Purpose                                                                                                                                                           |
-| ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `src/utils/appUtils.ts`                   | Pure helpers (`extractSheetRef`, `toggleInSet`, `initialTabState`), type aliases (`LiftType`, `PageTab`, `TabState`), and URL/tab constants — no React dependency |
-| `src/components/BaseRadarChart.tsx`       | Shared Recharts wrapper used by `SigmaRadarChart` and `VariationRadarChart`; accepts `angleKey`, `unit`, `tooltip`, optional `onClick`                            |
-| `src/components/SigmaTab.tsx`             | "Σ" overview tab: `TotalChart` + `SigmaRadarChart` across all lift types                                                                                          |
-| `src/components/LiftTabPanel.tsx`         | Per-lift tab content: `ConjugateCharts` + `VariationRadarChart` with shared variation-highlight state                                                             |
-| `src/components/RepCalculator.tsx`        | Calculator tab: predicts weight-for-reps and reps-for-weight using `findBestE1RM` from `@dyel/core`                                                               |
-| `src/components/DiagnosticsPanel.tsx`     | Diagnostics panel using `generateDiagnostics` from `@dyel/core`                                                                                                   |
-| `src/components/DateRangePicker.tsx`      | Date range input using `react-day-picker` + Radix Popover                                                                                                         |
-| `src/components/IndexPage.tsx`            | Landing page listing linked sheets; fetches from a hardcoded published index sheet via `useIndexData`                                                             |
-| `src/hooks/useBaselineTargetExercises.ts` | Builds `baselineExByType` and `targetExByType` maps; shared by `TotalChart` and `SigmaRadarChart`                                                                 |
-| `src/hooks/useConjugateChartData.ts`      | All data aggregation for `ConjugateCharts` (grouping, normalization, forward-fill); the component itself is presentation-only                                     |
-| `src/hooks/useIndexData.ts`               | Fetches and parses the published index sheet CSV; returns `IndexEntry[]`                                                                                          |
+| Path                                           | Purpose                                                                                                                                                           |
+| ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/utils/appUtils.ts`                        | Pure helpers (`extractSheetRef`, `toggleInSet`, `initialTabState`), type aliases (`LiftType`, `PageTab`, `TabState`), and URL/tab constants — no React dependency |
+| `src/components/charts/BaseRadarChart.tsx`     | Shared Recharts radar wrapper; accepts `angleKey`, `unit`, `tooltip`, optional `onClick`                                                                          |
+| `src/components/pages/SigmaTab.tsx`            | "Σ" overview tab: `TotalChart` + `SigmaRadarChart` across all lift types                                                                                          |
+| `src/components/pages/LiftTabPanel.tsx`        | Per-lift tab content: `ConjugateCharts` + `VariationRadarChart` with shared variation-highlight state                                                             |
+| `src/components/shared/RepCalculator.tsx`      | Calculator tab: predicts weight-for-reps and reps-for-weight using `findBestE1RM` from `@dyel/core`                                                               |
+| `src/components/shared/DiagnosticsPanel.tsx`   | Diagnostics panel using `generateDiagnostics` from `@dyel/core`                                                                                                   |
+| `src/components/shared/DateRangePicker.tsx`    | Date range input using `react-day-picker` + Radix Popover                                                                                                         |
+| `src/components/pages/IndexPage.tsx`           | Landing page listing linked sheets; fetches from a hardcoded published index sheet via `useIndexData`                                                             |
+| `src/hooks/data/useBaselineTargetExercises.ts` | Builds `baselineExByType` and `targetExByType` maps; shared by `TotalChart` and `SigmaRadarChart`                                                                 |
+| `src/hooks/conjugate/useConjugateChartData.ts` | All data aggregation for `ConjugateCharts` (grouping, normalization, forward-fill); the component itself is presentation-only                                     |
+| `src/hooks/data/useIndexData.ts`               | Fetches and parses the published index sheet CSV; returns `IndexEntry[]`                                                                                          |
 
 **Dev proxy:** `vite.config.ts` defines a `sheetsProxyPlugin` that forwards `/sheets-proxy/*` to `https://docs.google.com/*` using Node's `fetch`, which follows redirects server-side and avoids CORS issues. In production `useConjugateData` hits Google directly — this only works with published sheets.
 

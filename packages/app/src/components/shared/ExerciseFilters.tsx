@@ -1,6 +1,6 @@
 import { memo, useMemo, useState } from 'react';
 import type { FilterState } from '@dyel/core';
-import type { ConjugateDataPair } from '../hooks/useConjugateData';
+import type { ConjugateDataPair } from '../../hooks/conjugate/useConjugateData';
 
 type SetFacet = keyof FilterState;
 

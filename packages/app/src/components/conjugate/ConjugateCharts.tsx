@@ -2,15 +2,15 @@ import { useCallback } from 'react';
 import { Line, Tooltip } from 'recharts';
 import { LINE_COLORS } from '@dyel/core';
 import type { RepCalcStats } from '@dyel/core';
-import type { ConjugateDataPair } from '../hooks/useConjugateData';
+import type { ConjugateDataPair } from '../../hooks/conjugate/useConjugateData';
 import {
   useConjugateChartData,
   NORMALIZED_KEY,
   NORMALIZED_COLOR,
   NORMALIZED_LABEL,
-} from '../hooks/useConjugateChartData';
-import { DateLineChart, ChartEmpty } from './DateLineChart';
-import { TooltipCard } from './TooltipCard';
+} from '../../hooks/conjugate/useConjugateChartData';
+import { DateLineChart, ChartEmpty } from '../charts/DateLineChart';
+import { TooltipCard } from '../charts/TooltipCard';
 
 export function ConjugateCharts({
   rows,

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { fetchSheetCsv } from '../utils/sheetFetch';
+import { fetchSheetCsv } from '../../utils/sheetFetch';
 
 export type CsvResource<T> =
   | { status: 'idle' }

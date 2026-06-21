@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { generateDiagnostics } from '@dyel/core';
 import type { DeadliftStancePreference } from '@dyel/core';
-import type { ConjugateDataPair } from '../hooks/useConjugateData';
+import type { ConjugateDataPair } from '../../hooks/conjugate/useConjugateData';
 
 function formatEffect(effect: string): string {
   return effect

@@ -1,8 +1,8 @@
 import { parseConjugateData } from '@dyel/core';
 import type { ConjugateDataPair } from '@dyel/core';
-import type { SheetRef } from '../utils/appUtils';
-import { sheetCsvUrl } from '../utils/sheetFetch';
-import { useCsvResource } from './useCsvResource';
+import type { SheetRef } from '../../utils/appUtils';
+import { sheetCsvUrl } from '../../utils/sheetFetch';
+import { useCsvResource } from '../infra/useCsvResource';
 
 export type { ConjugateDataPair } from '@dyel/core';
 

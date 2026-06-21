@@ -1,4 +1,4 @@
-import { EXAMPLE_SHEET_URL } from '../utils/appUtils';
+import { EXAMPLE_SHEET_URL } from '../../utils/appUtils';
 
 /** Onboarding checklist shown before any sheet URL has been entered. */
 export function GettingStarted() {
