@@ -20,6 +20,19 @@ Everything re-exported from `src/index.ts` is public. Key exports:
 | Selections     | `defaultBaselineName`, `defaultTargetName`                                                                                                                                                                           |
 | Utilities      | `setsRepsLabel`, `formatDate`, `LINE_COLORS`                                                                                                                                                                         |
 
+## utils/ subdirectory layout
+
+`src/utils/` is organized into four subdirectories by data-flow layer. Each has its own `CLAUDE.md`.
+
+| Directory  | Responsibility                                                        |
+| ---------- | --------------------------------------------------------------------- |
+| `math/`    | Epley formula, session-grid interpolation, variant factor/offset math |
+| `parsing/` | CSV ingestion, exercise name detection, sheet validation              |
+| `stats/`   | Session aggregation, diagnostics, filtering, default selections       |
+| `chart/`   | Chart data builders, grid helpers, display utilities                  |
+
+Data flows in order: `parsing/` → `math/` → `stats/` → `chart/`. Dependencies only go forward (or sideways within a layer) — `math/` does not import from `stats/` or `chart/`.
+
 ## Movement category model
 
 `ConjugateExercise.movementCategory` is a `MovementCategory[]`. `toMovementCategory` collects into two independent dimensions:
