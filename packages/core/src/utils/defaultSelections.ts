@@ -1,38 +1,26 @@
 import type { ConjugateDataPair } from '../types/conjugate';
 
+// Always default to the most recent exercise performed
 export function defaultBaselineName(rows: ConjugateDataPair[]): string | null {
-  let first: string | null = null;
-  const last = new Map<string, { date: Date; e1rm: number }>();
-  let bestName: string | null = null;
-  let bestDate: Date | null = null;
-  let bestE1RM = -Infinity;
+  let name: string | null = null;
+  let date: Date | null = null;
+  let e1rm: number | null = null;
 
   for (const [ex, session] of rows) {
-    const name = ex.displayName;
-    if (first === null) {
-      first = name;
-    }
+    name = name ?? ex.displayName;
+    date = date ?? session.date;
+    e1rm = e1rm ?? session.e1rm;
 
-    const prev = last.get(name);
-    if (!prev || session.date > prev.date) {
-      last.set(name, { date: session.date, e1rm: session.e1rm });
-    } else if (session.date.getTime() === prev.date.getTime() && session.e1rm > prev.e1rm) {
-      last.set(name, { date: prev.date, e1rm: session.e1rm });
-    }
-
-    const cur = last.get(name)!;
     if (
-      !bestDate ||
-      cur.date > bestDate ||
-      (cur.date.getTime() === bestDate.getTime() && cur.e1rm > bestE1RM)
+      session.date.getTime() > date.getTime() ||
+      (session.date.getTime() === date.getTime() && session.e1rm > e1rm)
     ) {
-      bestName = name;
-      bestDate = cur.date;
-      bestE1RM = cur.e1rm;
+      name = ex.displayName;
+      date = session.date;
+      e1rm = session.e1rm;
     }
   }
-
-  return bestName ?? first;
+  return name;
 }
 
 export function defaultTargetName(rows: ConjugateDataPair[]): string | null {
