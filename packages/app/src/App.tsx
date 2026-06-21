@@ -1,14 +1,14 @@
 import { useState, useMemo, useEffect } from 'react';
-import { useConjugateData } from './hooks/useConjugateData';
-import { useLastSessionStats } from './hooks/useLastSessionStats';
-import { ExerciseFilters } from './components/ExerciseFilters';
-import { RepCalculator } from './components/RepCalculator';
-import { SigmaTab } from './components/SigmaTab';
-import { LiftTabPanel } from './components/LiftTabPanel';
-import { SheetUrlPanel } from './components/SheetUrlPanel';
-import { GettingStarted } from './components/GettingStarted';
+import { useConjugateData } from './hooks/conjugate/useConjugateData';
+import { useLastSessionStats } from './hooks/data/useLastSessionStats';
+import { ExerciseFilters } from './components/shared/ExerciseFilters';
+import { RepCalculator } from './components/shared/RepCalculator';
+import { SigmaTab } from './components/pages/SigmaTab';
+import { LiftTabPanel } from './components/pages/LiftTabPanel';
+import { SheetUrlPanel } from './components/shared/SheetUrlPanel';
+import { GettingStarted } from './components/pages/GettingStarted';
 import { applyFilters, defaultBaselineName, defaultTargetName, emptyFilters } from '@dyel/core';
-import type { ConjugateDataPair } from './hooks/useConjugateData';
+import type { ConjugateDataPair } from './hooks/conjugate/useConjugateData';
 import type { FilterState, LiftType, GroupedConjugatePairs } from '@dyel/core';
 import {
   extractSheetRef,

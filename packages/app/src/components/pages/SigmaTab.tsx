@@ -1,11 +1,11 @@
 import { useMemo } from 'react';
-import { useLastSessionStats } from '../hooks/useLastSessionStats';
-import { useBaselineTargetExercises } from '../hooks/useBaselineTargetExercises';
+import { useLastSessionStats } from '../../hooks/data/useLastSessionStats';
+import { useBaselineTargetExercises } from '../../hooks/data/useBaselineTargetExercises';
 import { buildChartData } from '@dyel/core';
 import type { LiftType } from '@dyel/core';
-import { TotalChart } from './TotalChart';
-import { SigmaRadarChart } from './SigmaRadarChart';
-import type { ConjugateDataPair } from '../hooks/useConjugateData';
+import { TotalChart } from '../charts/TotalChart';
+import { SigmaRadarChart } from '../charts/SigmaRadarChart';
+import type { ConjugateDataPair } from '../../hooks/conjugate/useConjugateData';
 
 export function SigmaTab({
   pairs,

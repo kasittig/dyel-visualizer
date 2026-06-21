@@ -1,4 +1,4 @@
-import { useIndexData } from '../hooks/useIndexData';
+import { useIndexData } from '../../hooks/data/useIndexData';
 
 export function IndexPage() {
   const state = useIndexData();

@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import type { ConjugateDataPair } from '../hooks/useConjugateData';
-import type { SessionStats } from '../hooks/useLastSessionStats';
-import { ConjugateCharts } from './ConjugateCharts';
-import { DiagnosticsPanel } from './DiagnosticsPanel';
-import { VariationRadarChart } from './VariationRadarChart';
+import type { ConjugateDataPair } from '../../hooks/conjugate/useConjugateData';
+import type { SessionStats } from '../../hooks/data/useLastSessionStats';
+import { ConjugateCharts } from '../conjugate/ConjugateCharts';
+import { DiagnosticsPanel } from '../shared/DiagnosticsPanel';
+import { VariationRadarChart } from '../charts/VariationRadarChart';
 
 import type { LiftType } from '@dyel/core';
 

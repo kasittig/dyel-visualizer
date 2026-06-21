@@ -1,5 +1,5 @@
 import ReactMarkdown from 'react-markdown';
-import conjugateContent from '../../CONJUGATE.md?raw';
+import conjugateContent from '../../../CONJUGATE.md?raw';
 import './ConjugateInfoPage.css';
 
 export function ConjugateInfoPage() {

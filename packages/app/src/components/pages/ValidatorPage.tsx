@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { useSheetValidation } from '../hooks/useSheetValidation';
+import { useSheetValidation } from '../../hooks/infra/useSheetValidation';
 import type { SheetValidationResult, ColumnInfo } from '@dyel/core';
-import { EXAMPLE_SHEET_URL } from '../utils/appUtils';
+import { EXAMPLE_SHEET_URL } from '../../utils/appUtils';
 
 function Check({ ok }: { ok: boolean }) {
   return (
