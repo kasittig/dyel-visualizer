@@ -62,4 +62,4 @@ export { NORMALIZED_KEY, buildVariationChartData } from './utils/chart/buildVari
 export type { DiagnosticsOptions } from './utils/stats/diagnostics';
 export { generateDiagnostics } from './utils/stats/diagnostics';
 
-export { defaultBaselineName, defaultTargetName } from './utils/stats/defaultSelections';
+export { defaultBaselineName, defaultCompExerciseName } from './utils/stats/defaultSelections';

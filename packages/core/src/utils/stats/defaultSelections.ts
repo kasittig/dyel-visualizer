@@ -23,7 +23,10 @@ export function defaultBaselineName(rows: ConjugateDataPair[]): string | null {
   return name;
 }
 
-export function defaultTargetName(rows: ConjugateDataPair[]): string | null {
+export function defaultCompExerciseName(
+  rows: ConjugateDataPair[],
+  deadliftStance: string = 'sumo'
+): string | null {
   if (rows.length === 0) {
     return null;
   }
@@ -47,6 +50,15 @@ export function defaultTargetName(rows: ConjugateDataPair[]): string | null {
   const competition = all_competition.filter((row) => row[0].equipment === null);
   if (competition.length > 0) {
     return competition[0][0].displayName;
+  }
+  if (rows.some((row) => row[0].type === 'deadlift')) {
+    const all_competition_dl = rows.filter(
+      (row) =>
+        row[0].bar === 'standard' && row[0].stance === deadliftStance && row[0].addlWts.length === 0
+    );
+    if (all_competition_dl.length > 0) {
+      return all_competition_dl[0][0].displayName;
+    }
   }
 
   return first;
