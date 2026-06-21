@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { generateDiagnostics } from '@dyel/core';
 import type { DeadliftStancePreference } from '@dyel/core';
 import type { ConjugateDataPair } from '../../hooks/conjugate/useConjugateData';
@@ -20,15 +20,15 @@ const monoStyle: React.CSSProperties = {
 export function DiagnosticsPanel({
   rows,
   targetName,
+  deadliftStance,
+  onDeadliftStanceChange,
 }: {
   rows: ConjugateDataPair[];
   targetName: string | null;
   onTargetChange: (name: string | null) => void;
+  deadliftStance?: DeadliftStancePreference;
+  onDeadliftStanceChange: (s: DeadliftStancePreference) => void;
 }) {
-  const [deadliftStance, setDeadliftStance] = useState<DeadliftStancePreference | undefined>(
-    undefined
-  );
-
   const hasDeadlift = useMemo(() => rows.some(([ex]) => ex.type === 'deadlift'), [rows]);
 
   const results = useMemo(
@@ -52,7 +52,7 @@ export function DiagnosticsPanel({
                 type="radio"
                 name="deadlift-stance"
                 checked={(deadliftStance ?? 'conventional') === s}
-                onChange={() => setDeadliftStance(s)}
+                onChange={() => onDeadliftStanceChange(s)}
                 style={{ marginRight: '0.3rem' }}
               />
               {s[0].toUpperCase() + s.slice(1)}

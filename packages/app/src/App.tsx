@@ -14,7 +14,12 @@ import {
   emptyFilters,
 } from '@dyel/core';
 import type { ConjugateDataPair } from './hooks/conjugate/useConjugateData';
-import type { FilterState, LiftType, GroupedConjugatePairs } from '@dyel/core';
+import type {
+  DeadliftStancePreference,
+  FilterState,
+  LiftType,
+  GroupedConjugatePairs,
+} from '@dyel/core';
 import {
   extractSheetRef,
   initialTabState,
@@ -36,6 +41,9 @@ export function App() {
   const [activeTab, setActiveTab] = useState<PageTab>('sigma');
   const [shownResetToken, setShownResetToken] = useState(0);
   const [tabState, setTabState] = useState<Record<LiftType, TabState>>(initialTabState);
+  const [deadliftStance, setDeadliftStance] = useState<DeadliftStancePreference | undefined>(
+    undefined
+  );
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -232,6 +240,8 @@ export function App() {
                       [liftTab]: { ...prev[liftTab], targetName: name ?? undefined },
                     }))
                   }
+                  deadliftStance={deadliftStance}
+                  onDeadliftStanceChange={setDeadliftStance}
                 />
               </>
             ) : null}
