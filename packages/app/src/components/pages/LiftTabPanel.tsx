@@ -5,7 +5,7 @@ import { ConjugateCharts } from '../conjugate/ConjugateCharts';
 import { DiagnosticsPanel } from '../shared/DiagnosticsPanel';
 import { VariationRadarChart } from '../charts/VariationRadarChart';
 
-import type { LiftType } from '@dyel/core';
+import type { DeadliftStancePreference, LiftType } from '@dyel/core';
 
 export function LiftTabPanel({
   filteredRows,
@@ -13,12 +13,16 @@ export function LiftTabPanel({
   chartStats,
   targetName,
   onTargetChange,
+  deadliftStance,
+  onDeadliftStanceChange,
 }: {
   filteredRows: ConjugateDataPair[];
   effectiveBaselineNames: Partial<Record<LiftType, string>>;
   chartStats: SessionStats;
   targetName: string | null;
   onTargetChange: (name: string | null) => void;
+  deadliftStance?: DeadliftStancePreference;
+  onDeadliftStanceChange: (s: DeadliftStancePreference) => void;
 }) {
   const [selectedVariation, setSelectedVariation] = useState<string | null>(null);
 
@@ -46,6 +50,8 @@ export function LiftTabPanel({
         rows={filteredRows}
         targetName={targetName}
         onTargetChange={onTargetChange}
+        deadliftStance={deadliftStance}
+        onDeadliftStanceChange={onDeadliftStanceChange}
       />
     </>
   );
