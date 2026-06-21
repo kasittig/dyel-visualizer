@@ -7,7 +7,12 @@ import { SigmaTab } from './components/pages/SigmaTab';
 import { LiftTabPanel } from './components/pages/LiftTabPanel';
 import { SheetUrlPanel } from './components/shared/SheetUrlPanel';
 import { GettingStarted } from './components/pages/GettingStarted';
-import { applyFilters, defaultBaselineName, defaultTargetName, emptyFilters } from '@dyel/core';
+import {
+  applyFilters,
+  defaultBaselineName,
+  defaultCompExerciseName,
+  emptyFilters,
+} from '@dyel/core';
 import type { ConjugateDataPair } from './hooks/conjugate/useConjugateData';
 import type { FilterState, LiftType, GroupedConjugatePairs } from '@dyel/core';
 import {
@@ -73,7 +78,7 @@ export function App() {
       if (baselineName) {
         baseline[tab] = baselineName;
       }
-      const t = tabState[tab].targetName ?? defaultTargetName(tabRows[tab]);
+      const t = tabState[tab].targetName ?? defaultCompExerciseName(tabRows[tab]);
       if (t) {
         target[tab] = t;
       }
