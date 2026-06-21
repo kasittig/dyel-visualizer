@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { normalizeToBaseE1RM } from './repCalculator';
 import { calcE1RM } from './e1rm';
-import type { ConjugateExercise } from '../types/conjugate';
+import type { ConjugateExercise } from '../../types/conjugate';
 import type { RepCalcStats } from './repCalculator';
 
 const competitionSquat: ConjugateExercise = {

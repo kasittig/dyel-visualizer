@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { applyFilters, emptyFilters } from './exerciseFilters';
-import type { ConjugateDataPair } from '../types/conjugate';
+import type { ConjugateDataPair } from '../../types/conjugate';
 
 function pair(type: 'squat' | 'bench' | 'deadlift' | 'accessory', sets: number): ConjugateDataPair {
   return [

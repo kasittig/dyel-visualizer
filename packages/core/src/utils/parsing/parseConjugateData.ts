@@ -5,9 +5,9 @@ import {
   type ConjugateExercise,
   type ConjugateStance,
   type TrainingSession,
-} from '../types/conjugate';
-import { calcE1RM } from './e1rm';
-import { toMovementCategory } from './diagnostics';
+} from '../../types/conjugate';
+import { calcE1RM } from '../math/e1rm';
+import { toMovementCategory } from '../stats/diagnostics';
 import { parseSheetRows, detectWeightUnit, type RawRow } from './sheetRows';
 
 export function findCol(row: RawRow, keyword: string): string | undefined {

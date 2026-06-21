@@ -1,6 +1,6 @@
-import type { ConjugateDataPair, ConjugateExercise, PrimaryLift } from '../types/conjugate';
-import type { RepCalcStats } from './repCalculator';
-import { normalizeToBaseE1RM } from './repCalculator';
+import type { ConjugateDataPair, ConjugateExercise, PrimaryLift } from '../../types/conjugate';
+import type { RepCalcStats } from '../math/repCalculator';
+import { normalizeToBaseE1RM } from '../math/repCalculator';
 import { isoDate, recordMax, sortedGridDates, type DateValueGrid } from './chartGrid';
 
 export type ChartPoint = Record<string, string | number>;

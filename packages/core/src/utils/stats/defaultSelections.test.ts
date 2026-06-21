@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { defaultBaselineName, defaultTargetName } from './defaultSelections';
-import type { ConjugateDataPair } from '../types/conjugate';
+import type { ConjugateDataPair } from '../../types/conjugate';
 
 function pair(
   displayName: string,

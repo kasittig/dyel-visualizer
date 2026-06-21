@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { buildChartData } from './buildChartData';
-import type { ConjugateDataPair, ConjugateExercise } from '../types/conjugate';
+import type { ConjugateDataPair, ConjugateExercise } from '../../types/conjugate';
 import type { RepCalcStats } from './repCalculator';
 
 const emptyStats: RepCalcStats = {

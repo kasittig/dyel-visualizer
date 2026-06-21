@@ -1,4 +1,4 @@
-import type { ConjugateDataPair } from '../types/conjugate';
+import type { ConjugateDataPair } from '../../types/conjugate';
 
 export interface FilterState {
   bar: Set<string>;

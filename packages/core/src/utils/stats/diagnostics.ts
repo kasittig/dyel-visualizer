@@ -1,5 +1,5 @@
 // eslint-disable-next-line @typescript-eslint/triple-slash-reference
-/// <reference path="../../../../global.d.ts" />
+/// <reference path="../../../../../global.d.ts" />
 
 import type {
   ConjugateDataPair,
@@ -8,8 +8,8 @@ import type {
   EffectEnum,
   MovementCategory,
   TrainingSession,
-} from '../types/conjugate';
-import { fitVariantFactor } from './e1rm';
+} from '../../types/conjugate';
+import { fitVariantFactor } from '../math/e1rm';
 
 type ExerciseShape = Pick<ConjugateExercise, 'type' | 'bar' | 'stance' | 'equipment'>;
 

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { toMovementCategory, generateDiagnostics } from './diagnostics';
-import { calcE1RM } from './e1rm';
-import type { ConjugateDataPair, ConjugateExercise, TrainingSession } from '../types/conjugate';
+import { calcE1RM } from '../math/e1rm';
+import type { ConjugateDataPair, ConjugateExercise, TrainingSession } from '../../types/conjugate';
 
 function ex(overrides: Partial<ConjugateExercise> = {}): ConjugateExercise {
   return {

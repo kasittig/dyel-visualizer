@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { buildVariationChartData, NORMALIZED_KEY } from './buildVariationChartData';
-import type { ConjugateDataPair } from '../types/conjugate';
+import type { ConjugateDataPair } from '../../types/conjugate';
 import type { RepCalcStats } from './repCalculator';
 
 const emptyStats: RepCalcStats = {

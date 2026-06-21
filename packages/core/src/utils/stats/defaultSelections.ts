@@ -1,4 +1,4 @@
-import type { ConjugateDataPair } from '../types/conjugate';
+import type { ConjugateDataPair } from '../../types/conjugate';
 
 // Always default to the most recent exercise performed
 export function defaultBaselineName(rows: ConjugateDataPair[]): string | null {
