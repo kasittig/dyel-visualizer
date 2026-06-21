@@ -149,4 +149,21 @@ describe('defaultTargetName', () => {
     ];
     expect(defaultCompExerciseName(rows)).toBe('Squat');
   });
+  it('returns competition deadlift when it exists', () => {
+    const rows = [
+      pair('Deadlift', '2024-01-01', 300, { type: 'deadlift', stance: 'competition' }),
+      pair('Sumo Deadlift', '2024-01-02', 260, { type: 'deadlift', stance: 'sumo' }),
+    ];
+    expect(defaultCompExerciseName(rows)).toBe('Deadlift');
+  });
+  it('returns preferred deadlift when one is given', () => {
+    const rows = [
+      pair('Conventional Deadlift', '2024-01-01', 300, {
+        type: 'deadlift',
+        stance: 'conventional',
+      }),
+      pair('Sumo Deadlift', '2024-01-02', 260, { type: 'deadlift', stance: 'sumo' }),
+    ];
+    expect(defaultCompExerciseName(rows, 'conventional')).toBe('Conventional Deadlift');
+  });
 });
