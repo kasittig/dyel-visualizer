@@ -1,4 +1,4 @@
-import type { TrainingSession } from '../types/conjugate';
+import type { TrainingSession } from '../../types/conjugate';
 
 export function calcE1RM(weight: number, reps: number): number {
   if (reps === 1) {

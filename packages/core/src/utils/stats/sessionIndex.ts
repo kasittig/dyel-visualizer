@@ -1,7 +1,7 @@
-import { familyKey, variantLabel } from '../types/conjugate';
-import type { ConjugateDataPair, TrainingSession } from '../types/conjugate';
-import { fitAddlWtOffset, fitVariantFactor, predictE1RM } from './e1rm';
-import type { RepCalcStats } from './repCalculator';
+import { familyKey, variantLabel } from '../../types/conjugate';
+import type { ConjugateDataPair, TrainingSession } from '../../types/conjugate';
+import { fitAddlWtOffset, fitVariantFactor, predictE1RM } from '../math/e1rm';
+import type { RepCalcStats } from '../math/repCalculator';
 
 export interface LastSession {
   date: Date;

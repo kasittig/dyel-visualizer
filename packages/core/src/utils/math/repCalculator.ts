@@ -1,6 +1,6 @@
 import { calcE1RM, invertE1RM } from './e1rm';
-import { familyKey } from '../types/conjugate';
-import type { ConjugateExercise, ConjugateDataPair } from '../types/conjugate';
+import { familyKey } from '../../types/conjugate';
+import type { ConjugateExercise, ConjugateDataPair } from '../../types/conjugate';
 
 export interface E1RMEstimate {
   e1rm: number;

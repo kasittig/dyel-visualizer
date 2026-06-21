@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { calcE1RM, predictE1RM, fitAddlWtOffset, fitVariantFactor } from './e1rm';
-import type { TrainingSession } from '../types/conjugate';
+import type { TrainingSession } from '../../types/conjugate';
 
 const d = (dateStr: string) => new Date(dateStr + 'T00:00:00');
 
