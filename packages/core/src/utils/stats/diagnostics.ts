@@ -171,28 +171,3 @@ export function generateDiagnostics(
   }
   return results;
 }
-
-export function isAnchor(
-  ex: ConjugateExercise,
-  anchorName: string,
-  deadliftStance: DeadliftStancePreference = 'sumo'
-): boolean {
-  return isCompVariation(ex, anchorName, deadliftStance);
-}
-
-export function getDeadliftStance(
-  ex: Pick<ConjugateExercise, 'type' | 'stance'>,
-  deadliftStance: DeadliftStancePreference = 'sumo'
-): string {
-  if (ex.type != 'deadlift') {
-    return 'unclassified';
-  }
-  const oppStance = deadliftStance === 'sumo' ? 'conventional' : 'sumo';
-  if (ex.stance === 'competition' || ex.stance === null) {
-    return deadliftStance;
-  } else if (ex.stance === 'opposite') {
-    return oppStance;
-  } else {
-    return ex.stance;
-  }
-}
