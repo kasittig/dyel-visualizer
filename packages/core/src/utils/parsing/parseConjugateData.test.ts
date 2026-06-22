@@ -47,8 +47,18 @@ describe('parseConjugateData', () => {
     expect(result[0][0].displayName).toBe('Lat Pulldown');
   });
 
-  it('skips rows with missing or invalid date', () => {
-    const result = parseConjugateData(csv(',Squat,3,5,315', 'bad-date,Squat,3,5,315'));
+  it("uses today's date for rows with a missing date", () => {
+    const result = parseConjugateData(csv(',Squat,3,5,315'));
+    expect(result).toHaveLength(1);
+    const today = new Date();
+    const d = result[0][1].date;
+    expect(d.getFullYear()).toBe(today.getFullYear());
+    expect(d.getMonth()).toBe(today.getMonth());
+    expect(d.getDate()).toBe(today.getDate());
+  });
+
+  it('skips rows with an invalid (non-empty) date', () => {
+    const result = parseConjugateData(csv('bad-date,Squat,3,5,315'));
     expect(result).toHaveLength(0);
   });
 

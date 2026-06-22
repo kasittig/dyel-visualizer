@@ -137,11 +137,17 @@ type RawSession = Omit<TrainingSession, 'unit'> & { unit: 'lbs' | 'kg' | null };
 
 function parseSession(row: RawRow): RawSession | null {
   const dateStr = row['date']?.trim() ?? '';
-  const date = /^\d{4}-\d{2}-\d{2}$/.test(dateStr)
-    ? new Date(dateStr + 'T00:00:00')
-    : new Date(dateStr);
-  if (!dateStr || isNaN(date.getTime())) {
-    return null;
+  let date: Date;
+  if (!dateStr) {
+    const t = new Date();
+    date = new Date(t.getFullYear(), t.getMonth(), t.getDate());
+  } else {
+    date = /^\d{4}-\d{2}-\d{2}$/.test(dateStr)
+      ? new Date(dateStr + 'T00:00:00')
+      : new Date(dateStr);
+    if (isNaN(date.getTime())) {
+      return null;
+    }
   }
 
   const weight = parseFloat(findCol(row, 'weight') ?? '');

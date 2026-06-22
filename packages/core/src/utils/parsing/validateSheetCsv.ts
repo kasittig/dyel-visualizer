@@ -81,7 +81,7 @@ export function validateSheetCsv(csv: string): SheetValidationResult {
     issues.push("Missing required column: 'exercise'");
   }
   if (!hasDate) {
-    issues.push("Missing required column: 'date'");
+    warnings.push("Missing column: 'date'. All sessions will be assigned today's date.");
   }
   if (!hasWeight) {
     issues.push("Missing required column: 'weight' — add a 'weight (lbs)' or 'weight (kg)' column");
@@ -117,6 +117,7 @@ export function validateSheetCsv(csv: string): SheetValidationResult {
     const exerciseName = row['exercise']?.trim() ?? '';
     const rowNum = i + 1;
     const rowProblems: string[] = [];
+    const rowWarnings: string[] = [];
 
     if (!exerciseName) {
       rowProblems.push('Exercise name is empty');
@@ -124,7 +125,7 @@ export function validateSheetCsv(csv: string): SheetValidationResult {
 
     const dateStr = row['date']?.trim() ?? '';
     if (!dateStr) {
-      rowProblems.push('Date is missing');
+      rowWarnings.push('Date is missing');
     } else if (isNaN(new Date(dateStr).getTime())) {
       rowProblems.push(`Invalid date: "${dateStr}"`);
     }
@@ -150,6 +151,9 @@ export function validateSheetCsv(csv: string): SheetValidationResult {
         rowIssues.push({ row: rowNum, exercise: exerciseName || '(empty)', issues: rowProblems });
       }
     } else {
+      if (rowWarnings.length > 0) {
+        rowIssues.push({ row: rowNum, exercise: exerciseName, issues: rowWarnings });
+      }
       num_parsed++;
       const ex = nameToExercise(exerciseName);
       if (ex) {
