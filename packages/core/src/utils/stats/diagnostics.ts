@@ -17,15 +17,6 @@ type ModifierEffectEntry =
   | { effects: EffectEnum[]; min: number; max: number }
   | { effects: EffectEnum[] };
 
-/**
- * Resolves a deadlift's effective stance to sumo vs. conventional from whether its movement
- * categories landed on the posterior chain. Shared by the pct-baseline lookup and the
- * effect-aggregation step so they can never disagree.
- */
-function resolveDeadliftStance(effectiveCategory: MovementCategory[]): 'sumo' | 'conventional' {
-  return effectiveCategory.includes('posterior_chain') ? 'sumo' : 'conventional';
-}
-
 function resolveCategory(
   ex: ConjugateExercise,
   deadliftStance: DeadliftStancePreference = 'sumo'
@@ -39,28 +30,9 @@ function resolveCategory(
   return ex.movementCategory;
 }
 
-function isCompVariation(
-  ex: ConjugateExercise,
-  anchorName: string | null,
-  effectiveCategories: MovementCategory[]
-): boolean {
-  if (anchorName) {
-    return ex.displayName === anchorName;
-  }
-  if (
-    ex.addlWts.length > 0 ||
-    effectiveCategories.length != 1 ||
-    ex.bar != 'standard' ||
-    ex.equipment
-  ) {
-    return false;
-  }
-  return effectiveCategories[0] === 'anchor';
-}
-
 export function generateDiagnostics(
   pairs: ConjugateDataPair[],
-  anchorName: string | null = null,
+  anchorName: string,
   deadliftStance: DeadliftStancePreference = 'sumo'
 ): ConjugateExercise[] {
   const results: ConjugateExercise[] = [];
@@ -71,8 +43,8 @@ export function generateDiagnostics(
     const effectiveCategory = resolveCategory(ex, deadliftStance);
     // Accommodating resistance (bands/chains) changes the loading curve, so those
     // sessions are not comparable to straight-bar max and must not seed the anchor grid.
-    const isAnchor = isCompVariation(ex, anchorName, effectiveCategory);
-    if (isAnchor) {
+    const isAnchorEx = isAnchor(ex, anchorName, deadliftStance);
+    if (isAnchorEx) {
       anchorSessions.push(session);
     } else if (!effectiveCategory.every((c) => c === 'unclassified')) {
       const key = ex.displayName;
@@ -89,7 +61,6 @@ export function generateDiagnostics(
     if (ex.addlWts.length > 0) {
       continue;
     }
-    const effectiveCategory = resolveCategory(ex, deadliftStance);
     const { factor, sampleCount } = fitVariantFactor(anchorSessions, sessions);
     if (sampleCount === 0) {
       continue;
@@ -106,7 +77,7 @@ export function generateDiagnostics(
           ex.stance === 'conventional' ||
           ex.stance === 'opposite')
       ) {
-        return `stance:${resolveDeadliftStance(effectiveCategory)}:deadlift`;
+        return `stance:${getDeadliftStance(ex, deadliftStance)}:deadlift`;
       }
       if (ex.stance !== null && ex.stance !== 'competition') {
         return `stance:${ex.stance}:${ex.type}`;
@@ -142,7 +113,7 @@ export function generateDiagnostics(
     // Aggregate effects from all active modifiers (bar + resolved stance + equipment + addlWts).
     const stanceForEffects: string | null =
       ex.type === 'deadlift' && (ex.stance === null || ex.stance === 'opposite')
-        ? resolveDeadliftStance(effectiveCategory)
+        ? getDeadliftStance(ex, deadliftStance)
         : ex.stance;
 
     const allEffects = new Set<EffectEnum>();
@@ -204,4 +175,45 @@ export function toMovementCategory(
     }
   }
   return ['xxx'];
+}
+
+export function isAnchor(
+  ex: ConjugateExercise,
+  anchorName: string,
+  deadliftStance: DeadliftStancePreference = 'sumo'
+): boolean {
+  if (ex.displayName === anchorName) {
+    return true;
+  }
+  if (ex.type === 'accessory' || ex.bar != 'standard' || ex.addlWts.length > 0) {
+    return false;
+  }
+  if (ex.equipment !== null) {
+    return ex.equipment === 'pause' && ex.type === 'bench';
+  }
+
+  if (ex.stance === 'competition' || ex.stance === null) {
+    return true;
+  }
+  if (ex.type === 'deadlift') {
+    return ex.stance === deadliftStance;
+  }
+  return false;
+}
+
+export function getDeadliftStance(
+  ex: ExerciseShape,
+  deadliftStance: DeadliftStancePreference = 'sumo'
+): string {
+  if (ex.type != 'deadlift') {
+    return 'unclassified';
+  }
+  const oppStance = deadliftStance === 'sumo' ? 'conventional' : 'sumo';
+  if (ex.stance === 'competition' || ex.stance === null) {
+    return deadliftStance;
+  } else if (ex.stance === 'opposite') {
+    return oppStance;
+  } else {
+    return ex.stance;
+  }
 }

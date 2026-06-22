@@ -231,7 +231,7 @@ export function App() {
                   filteredRows={filteredRows}
                   effectiveBaselineNames={effectiveBaselineNames}
                   chartStats={chartStats}
-                  targetName={effectiveTargetNames[liftTab] ?? null}
+                  targetName={effectiveTargetNames[liftTab]!}
                   onTargetChange={(name) =>
                     setTabState((prev) => ({
                       ...prev,

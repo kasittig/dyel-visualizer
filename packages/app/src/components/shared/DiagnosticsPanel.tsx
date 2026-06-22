@@ -24,7 +24,7 @@ export function DiagnosticsPanel({
   onDeadliftStanceChange,
 }: {
   rows: ConjugateDataPair[];
-  targetName: string | null;
+  targetName: string;
   onTargetChange: (name: string | null) => void;
   deadliftStance: DeadliftStancePreference;
   onDeadliftStanceChange: (s: DeadliftStancePreference) => void;
