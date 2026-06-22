@@ -60,13 +60,16 @@ describe('buildSessionStats', () => {
     expect(off!.offset).toBeCloseTo(40, 0);
   });
 
-  it('skips variant factor for accessory exercises', () => {
+  it('computes no variantFactor for an exercise whose type has no baseline', () => {
     const pairs: ConjugateDataPair[] = [
       pair('Squat', session('2024-01-01', 300, 1)),
-      pair('DB Romanian Deadlift', session('2024-01-01', 80, 10)),
+      pair('Deadlift', session('2024-01-01', 350, 1)),
     ];
+    // baselineNames has squat but not deadlift — Deadlift should still get a
+    // variantFactor entry (factor computed against empty baseline sessions)
     const stats = buildSessionStats(pairs, { squat: 'Squat' }, today);
-    expect(stats.variantFactor.has('DB Romanian Deadlift')).toBe(false);
+    expect(stats.variantFactor.has('Deadlift')).toBe(true);
+    expect(stats.variantFactor.has('Squat')).toBe(false); // baseline skipped
   });
 
   it('computes variantFactor for a non-baseline lift', () => {

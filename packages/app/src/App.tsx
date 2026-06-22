@@ -58,25 +58,22 @@ export function App() {
   );
 
   const stats = useLastSessionStats(
-    [...tabRows.squat, ...tabRows.bench, ...tabRows.deadlift],
+    [...tabRows.squat.all, ...tabRows.bench.all, ...tabRows.deadlift.all],
     effectiveBaselineNames
   );
 
-  const tabs = [...MAIN_TABS, ...(tabRows.accessory.length > 0 ? [ACCESSORY_TAB] : [])];
+  const tabs = [...MAIN_TABS, ...(tabRows.accessory.all.length > 0 ? [ACCESSORY_TAB] : [])];
 
   const liftTab: LiftType | null =
     activeTab !== 'calculator' && activeTab !== 'sigma' ? activeTab : null;
 
   const sigmaPairs = useMemo(
-    () =>
-      [...tabRows.squat, ...tabRows.bench, ...tabRows.deadlift].filter(
-        ([, session]) => session.sets === 1 || session.rpe
-      ),
+    () => [...tabRows.squat.maxEffort, ...tabRows.bench.maxEffort, ...tabRows.deadlift.maxEffort],
     [tabRows]
   );
 
   const calcPairs = useMemo(
-    () => LIFT_TABS.flatMap((tab) => applyFilters(tabRows[tab], tabState[tab].filters)),
+    () => LIFT_TABS.flatMap((tab) => applyFilters(tabRows[tab].maxEffort, tabState[tab].filters)),
     [tabRows, tabState]
   );
 
@@ -188,14 +185,14 @@ export function App() {
             ) : liftTab !== null ? (
               <>
                 <ExerciseFilters
-                  rows={tabRows[liftTab]}
+                  rows={tabRows[liftTab].maxEffort}
                   filters={tabState[liftTab].filters}
                   onToggle={toggleFilter}
                   onClearAll={clearFilters}
                 />
                 <LiftTabPanel
                   key={shownResetToken}
-                  rows={tabRows[liftTab]}
+                  rows={tabRows[liftTab].maxEffort}
                   filters={tabState[liftTab].filters}
                   effectiveBaselineNames={effectiveBaselineNames}
                   targetName={effectiveTargetNames[liftTab]!}

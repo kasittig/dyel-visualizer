@@ -16,12 +16,8 @@ export function emptyFilters(): FilterState {
   };
 }
 
-export function applyFilters(
-  rows: ConjugateDataPair[],
-  filters: FilterState,
-  excludeVolumeWork = true
-): ConjugateDataPair[] {
-  return rows.filter(([ex, session]) => {
+export function applyFilters(rows: ConjugateDataPair[], filters: FilterState): ConjugateDataPair[] {
+  return rows.filter(([ex]) => {
     if (filters.bar.size > 0 && (ex.bar === null || !filters.bar.has(ex.bar))) {
       return false;
     }
@@ -34,14 +30,6 @@ export function applyFilters(
     if (
       filters.equipment.size > 0 &&
       (ex.equipment === null || !filters.equipment.has(ex.equipment))
-    ) {
-      return false;
-    }
-    if (
-      excludeVolumeWork &&
-      (ex.type === 'squat' || ex.type === 'bench' || ex.type === 'deadlift') &&
-      session.sets > 1 &&
-      !session.rpe
     ) {
       return false;
     }

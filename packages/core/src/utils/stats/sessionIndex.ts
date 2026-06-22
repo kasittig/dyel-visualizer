@@ -31,10 +31,7 @@ export function buildSessionStats(
   const dataByName = new Map<string, ExData>();
   const straightByFamily = new Map<string, TrainingSession[]>();
 
-  // 1. Initial collection pass (Filtered to skip accessories)
-  const mainExercisePairs = pairs.filter(([exercise]) => exercise.type !== 'accessory');
-
-  for (const [exercise, session] of mainExercisePairs) {
+  for (const [exercise, session] of pairs) {
     const name = exercise.displayName;
     const fk = familyKey(exercise);
 
