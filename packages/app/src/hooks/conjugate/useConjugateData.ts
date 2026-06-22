@@ -6,7 +6,7 @@ import { useCsvResource } from '../infra/useCsvResource';
 
 export type { ConjugateDataPair } from '@dyel/core';
 
-type ConjugateDataState =
+export type ConjugateDataState =
   | { status: 'idle' }
   | { status: 'loading' }
   | { status: 'error'; message: string }
