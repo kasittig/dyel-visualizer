@@ -9,24 +9,45 @@ import type { ConjugateDataState } from '../hooks/conjugate/useConjugateData';
 import { LIFT_TABS } from './appUtils';
 import type { TabState } from './appUtils';
 
+export interface SplitRows {
+  all: ConjugateDataPair[];
+  maxEffort: ConjugateDataPair[];
+  volume: ConjugateDataPair[];
+}
+
 export function extractPairs(state: ConjugateDataState): Partial<GroupedConjugatePairs> {
   const pairs = state.status === 'success' ? state.pairs : [];
   return Object.groupBy(pairs, (pair) => pair[0].type);
 }
 
-export function buildTabRows(
-  dataMap: Partial<GroupedConjugatePairs>
-): Record<LiftType, ConjugateDataPair[]> {
+function splitByEffort(pairs: ConjugateDataPair[], type: LiftType): SplitRows {
+  if (type === 'accessory') {
+    return { all: pairs, maxEffort: pairs, volume: [] };
+  }
+  const maxEffort: ConjugateDataPair[] = [];
+  const volume: ConjugateDataPair[] = [];
+  for (const pair of pairs) {
+    const [, session] = pair;
+    if (session.sets === 1 || session.rpe !== null) {
+      maxEffort.push(pair);
+    } else {
+      volume.push(pair);
+    }
+  }
+  return { all: pairs, maxEffort, volume };
+}
+
+export function buildTabRows(dataMap: Partial<GroupedConjugatePairs>): Record<LiftType, SplitRows> {
   return {
-    squat: dataMap['squat'] ?? [],
-    bench: dataMap['bench'] ?? [],
-    deadlift: dataMap['deadlift'] ?? [],
-    accessory: dataMap['accessory'] ?? [],
+    squat: splitByEffort(dataMap['squat'] ?? [], 'squat'),
+    bench: splitByEffort(dataMap['bench'] ?? [], 'bench'),
+    deadlift: splitByEffort(dataMap['deadlift'] ?? [], 'deadlift'),
+    accessory: splitByEffort(dataMap['accessory'] ?? [], 'accessory'),
   };
 }
 
 export function computeEffectiveNames(
-  tabRows: Record<LiftType, ConjugateDataPair[]>,
+  tabRows: Record<LiftType, SplitRows>,
   tabState: Record<LiftType, TabState>,
   deadliftStance: DeadliftStancePreference
 ): {
@@ -36,11 +57,11 @@ export function computeEffectiveNames(
   const baseline: Partial<Record<LiftType, string>> = {};
   const target: Partial<Record<LiftType, string>> = {};
   for (const tab of LIFT_TABS) {
-    const baselineName = defaultBaselineName(tabRows[tab]);
+    const baselineName = defaultBaselineName(tabRows[tab].all);
     if (baselineName) {
       baseline[tab] = baselineName;
     }
-    const t = tabState[tab].targetName ?? defaultCompExerciseName(tabRows[tab], deadliftStance);
+    const t = tabState[tab].targetName ?? defaultCompExerciseName(tabRows[tab].all, deadliftStance);
     if (t) {
       target[tab] = t;
     }
