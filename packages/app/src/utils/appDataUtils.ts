@@ -9,11 +9,8 @@ import type { ConjugateDataState } from '../hooks/conjugate/useConjugateData';
 import { LIFT_TABS } from './appUtils';
 import type { TabState } from './appUtils';
 
-export function extractPairs(state: ConjugateDataState): ConjugateDataPair[] {
-  return state.status === 'success' ? state.pairs : [];
-}
-
-export function groupPairsByType(pairs: ConjugateDataPair[]): Partial<GroupedConjugatePairs> {
+export function extractPairs(state: ConjugateDataState): Partial<GroupedConjugatePairs> {
+  const pairs = state.status === 'success' ? state.pairs : [];
   return Object.groupBy(pairs, (pair) => pair[0].type);
 }
 

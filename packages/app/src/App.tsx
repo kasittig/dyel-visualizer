@@ -18,12 +18,7 @@ import {
   ACCESSORY_TAB,
 } from './utils/appUtils';
 import type { PageTab, TabState } from './utils/appUtils';
-import {
-  buildTabRows,
-  computeEffectiveNames,
-  extractPairs,
-  groupPairsByType,
-} from './utils/appDataUtils';
+import { buildTabRows, computeEffectiveNames, extractPairs } from './utils/appDataUtils';
 
 export function App() {
   const [url, setUrl] = useState(
@@ -55,15 +50,17 @@ export function App() {
 
   const showUrlPanel = panelForcedOpen || state.status !== 'success';
 
-  const pairs = useMemo(() => extractPairs(state), [state]);
-  const dataMap = useMemo(() => groupPairsByType(pairs), [pairs]);
+  const dataMap = useMemo(() => extractPairs(state), [state]);
   const tabRows = useMemo(() => buildTabRows(dataMap), [dataMap]);
   const { effectiveBaselineNames, effectiveTargetNames } = useMemo(
     () => computeEffectiveNames(tabRows, tabState, deadliftStance),
     [tabRows, tabState, deadliftStance]
   );
 
-  const stats = useLastSessionStats(pairs, effectiveBaselineNames);
+  const stats = useLastSessionStats(
+    [...tabRows.squat, ...tabRows.bench, ...tabRows.deadlift],
+    effectiveBaselineNames
+  );
 
   const tabs = [...MAIN_TABS, ...(tabRows.accessory.length > 0 ? [ACCESSORY_TAB] : [])];
 
