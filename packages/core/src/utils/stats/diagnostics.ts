@@ -137,12 +137,14 @@ export function generateDiagnostics(
         : averageIndex > baseline.max
           ? 'overtrained'
           : 'optimal';
-    ex.averageIndex = averageIndex;
-    ex.expectedBaseline = expectedBaseline;
-    ex.status = status;
-    ex.diagnostic = `${name} at ${Math.round(averageIndex)}%`;
-    ex.effects = [...allEffects];
-    results.push(ex);
+    results.push({
+      ...ex,
+      averageIndex,
+      expectedBaseline,
+      status,
+      diagnostic: `${name} at ${Math.round(averageIndex)}%`,
+      effects: [...allEffects],
+    });
   }
   return results;
 }
