@@ -146,6 +146,21 @@ describe('parseConjugateData', () => {
     expect(result.every(([, s]) => s.unit === 'kg')).toBe(true);
   });
 
+  it('parses a valid RPE from the RPE column', () => {
+    const input = 'Date,Exercise,Sets,Reps,Weight (lbs),RPE\n2024-01-15,Squat,3,5,315,8';
+    expect(parseConjugateData(input)[0][1].rpe).toBe(8);
+  });
+
+  it('sets rpe to null for an out-of-range RPE', () => {
+    const input = 'Date,Exercise,Sets,Reps,Weight (lbs),RPE\n2024-01-15,Squat,3,5,315,11';
+    expect(parseConjugateData(input)[0][1].rpe).toBeNull();
+  });
+
+  it('sets rpe to null when RPE column is absent', () => {
+    const result = parseConjugateData(csv('2024-01-15,Squat,3,5,315'));
+    expect(result[0][1].rpe).toBeNull();
+  });
+
   it('defaults sets to 1 when sets column is absent', () => {
     const noSets = ['Date,Exercise,Reps,Weight (lbs)', '2024-01-15,Squat,5,315'].join('\n');
     expect(parseConjugateData(noSets)[0][1].sets).toBe(1);

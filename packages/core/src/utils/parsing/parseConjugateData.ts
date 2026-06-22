@@ -157,6 +157,8 @@ function parseSession(row: RawRow): RawSession | null {
   }
 
   const sets = parseInt(findCol(row, 'sets') ?? '') || 1;
+  const rpeRaw = parseFloat(row['rpe']?.trim() ?? '');
+  const rpe = !isNaN(rpeRaw) && rpeRaw >= 1 && rpeRaw <= 10 ? rpeRaw : null;
   return {
     date,
     sets,
@@ -164,6 +166,7 @@ function parseSession(row: RawRow): RawSession | null {
     weight,
     e1rm: calcE1RM(weight, reps),
     unit: detectWeightUnit(Object.keys(row)),
+    rpe,
   };
 }
 

@@ -54,6 +54,7 @@ export interface TrainingSession {
   weight: number;
   e1rm: number;
   unit: 'lbs' | 'kg';
+  rpe: number | null;
 }
 
 export interface ConjugateExercise {
