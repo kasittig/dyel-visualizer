@@ -40,7 +40,8 @@ export function applyFilters(
     if (
       excludeVolumeWork &&
       (ex.type === 'squat' || ex.type === 'bench' || ex.type === 'deadlift') &&
-      session.sets > 1
+      session.sets > 1 &&
+      !session.rpe
     ) {
       return false;
     }

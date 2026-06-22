@@ -1,8 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import { normalizeToBaseE1RM } from './repCalculator';
 import { calcE1RM } from './e1rm';
-import type { ConjugateExercise } from '../../types/conjugate';
+import type { ConjugateExercise, TrainingSession } from '../../types/conjugate';
 import type { RepCalcStats } from './repCalculator';
+
+function sess(weight: number, reps: number, rpe?: number | null): TrainingSession {
+  return { weight, reps, rpe: rpe ?? null, sets: 1, e1rm: 0, unit: 'lbs', date: new Date() };
+}
 
 const competitionSquat: ConjugateExercise = {
   type: 'squat',
@@ -74,13 +78,33 @@ const statsWithFactor: RepCalcStats = {
 describe('normalizeToBaseE1RM', () => {
   describe('exact match', () => {
     it('returns calcE1RM when source and target are the same exercise', () => {
-      const result = normalizeToBaseE1RM(315, 3, competitionSquat, competitionSquat, emptyStats);
+      const result = normalizeToBaseE1RM(
+        sess(315, 3),
+        competitionSquat,
+        competitionSquat,
+        emptyStats
+      );
       expect(result).toBeCloseTo(calcE1RM(315, 3));
     });
 
     it('works for a single rep', () => {
-      const result = normalizeToBaseE1RM(405, 1, competitionSquat, competitionSquat, emptyStats);
+      const result = normalizeToBaseE1RM(
+        sess(405, 1),
+        competitionSquat,
+        competitionSquat,
+        emptyStats
+      );
       expect(result).toBe(405);
+    });
+
+    it('uses RPE to adjust e1RM for exact match', () => {
+      const result = normalizeToBaseE1RM(
+        sess(120, 1, 9.5),
+        competitionSquat,
+        competitionSquat,
+        emptyStats
+      );
+      expect(result).toBeCloseTo(calcE1RM(120, 1, 9.5));
     });
   });
 
@@ -88,13 +112,23 @@ describe('normalizeToBaseE1RM', () => {
     it('strips chain offset when source has chains and target does not', () => {
       // offset = -20: chain bar weight contributes 20 lbs less than straight
       // effective straight weight = 315 + (-20) = 295
-      const result = normalizeToBaseE1RM(315, 3, chainSquat, competitionSquat, statsWithOffset);
+      const result = normalizeToBaseE1RM(
+        sess(315, 3),
+        chainSquat,
+        competitionSquat,
+        statsWithOffset
+      );
       expect(result).toBeCloseTo(calcE1RM(295, 3));
     });
 
     it('applies chain offset when source is straight and target has chains', () => {
       // chain equivalent of 315 straight = 315 - (-20) = 335
-      const result = normalizeToBaseE1RM(315, 3, competitionSquat, chainSquat, statsWithOffset);
+      const result = normalizeToBaseE1RM(
+        sess(315, 3),
+        competitionSquat,
+        chainSquat,
+        statsWithOffset
+      );
       expect(result).toBeCloseTo(calcE1RM(335, 3));
     });
 
@@ -103,11 +137,13 @@ describe('normalizeToBaseE1RM', () => {
         addlWtOffset: new Map([['Competition Squat + Chains', { offset: -20, sampleCount: 0 }]]),
         variantFactor: new Map(),
       };
-      expect(normalizeToBaseE1RM(315, 3, chainSquat, competitionSquat, stats)).toBeNull();
+      expect(normalizeToBaseE1RM(sess(315, 3), chainSquat, competitionSquat, stats)).toBeNull();
     });
 
     it('returns null when no offset entry exists for the addlWt exercise', () => {
-      expect(normalizeToBaseE1RM(315, 3, chainSquat, competitionSquat, emptyStats)).toBeNull();
+      expect(
+        normalizeToBaseE1RM(sess(315, 3), chainSquat, competitionSquat, emptyStats)
+      ).toBeNull();
     });
 
     it('clamps to zero when applying offset would go negative', () => {
@@ -116,7 +152,7 @@ describe('normalizeToBaseE1RM', () => {
         variantFactor: new Map(),
       };
       // source=straight, target=chains: max(0, 100 - 400) = 0
-      const result = normalizeToBaseE1RM(100, 3, competitionSquat, chainSquat, stats);
+      const result = normalizeToBaseE1RM(sess(100, 3), competitionSquat, chainSquat, stats);
       expect(result).toBeCloseTo(calcE1RM(0, 3));
     });
   });
@@ -126,8 +162,7 @@ describe('normalizeToBaseE1RM', () => {
       // SSB factor = 0.9 relative to competition squat → competition e1RM = SSB e1RM / 0.9
       const rawE1RM = calcE1RM(315, 3);
       const result = normalizeToBaseE1RM(
-        315,
-        3,
+        sess(315, 3),
         ssbSquat,
         competitionSquat,
         statsWithFactor,
@@ -140,8 +175,7 @@ describe('normalizeToBaseE1RM', () => {
       // Wide factor = 1.05 → wide e1RM = competition e1RM * 1.05
       const rawE1RM = calcE1RM(315, 3);
       const result = normalizeToBaseE1RM(
-        315,
-        3,
+        sess(315, 3),
         competitionSquat,
         wideSquat,
         statsWithFactor,
@@ -154,8 +188,7 @@ describe('normalizeToBaseE1RM', () => {
       // SSB (0.9) → Wide (1.05): wide = (e1rm / 0.9) * 1.05
       const rawE1RM = calcE1RM(315, 3);
       const result = normalizeToBaseE1RM(
-        315,
-        3,
+        sess(315, 3),
         ssbSquat,
         wideSquat,
         statsWithFactor,
@@ -187,8 +220,7 @@ describe('normalizeToBaseE1RM', () => {
       };
       const effectiveE1RM = calcE1RM(315 + -20, 3);
       const result = normalizeToBaseE1RM(
-        315,
-        3,
+        sess(315, 3),
         ssbChainSquat,
         competitionSquat,
         stats,
@@ -215,8 +247,7 @@ describe('normalizeToBaseE1RM', () => {
         ]),
       };
       const result = normalizeToBaseE1RM(
-        315,
-        3,
+        sess(315, 3),
         ssbChainSquat,
         competitionSquat,
         stats,
@@ -227,8 +258,7 @@ describe('normalizeToBaseE1RM', () => {
 
     it('returns null when source factor is missing', () => {
       const result = normalizeToBaseE1RM(
-        315,
-        3,
+        sess(315, 3),
         ssbSquat,
         competitionSquat,
         emptyStats,
@@ -239,8 +269,7 @@ describe('normalizeToBaseE1RM', () => {
 
     it('returns null when target factor is missing', () => {
       const result = normalizeToBaseE1RM(
-        315,
-        3,
+        sess(315, 3),
         competitionSquat,
         ssbSquat,
         emptyStats,
@@ -260,18 +289,20 @@ describe('normalizeToBaseE1RM', () => {
         ]),
       };
       expect(
-        normalizeToBaseE1RM(315, 3, ssbSquat, competitionSquat, stats, competitionSquat)
+        normalizeToBaseE1RM(sess(315, 3), ssbSquat, competitionSquat, stats, competitionSquat)
       ).toBeNull();
     });
 
     it('returns null when neither exercise is the baseline and no baseline is provided', () => {
-      expect(normalizeToBaseE1RM(315, 3, ssbSquat, competitionSquat, statsWithFactor)).toBeNull();
+      expect(
+        normalizeToBaseE1RM(sess(315, 3), ssbSquat, competitionSquat, statsWithFactor)
+      ).toBeNull();
     });
 
     it('works between two variants without a baseline when both have factor entries', () => {
       // Both SSB and Wide have factor entries — no baseline param needed
       const rawE1RM = calcE1RM(315, 3);
-      const result = normalizeToBaseE1RM(315, 3, ssbSquat, wideSquat, statsWithFactor);
+      const result = normalizeToBaseE1RM(sess(315, 3), ssbSquat, wideSquat, statsWithFactor);
       expect(result).toBeCloseTo((rawE1RM / 0.9) * 1.05);
     });
   });

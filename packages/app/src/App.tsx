@@ -70,7 +70,7 @@ export function App() {
   const sigmaPairs = useMemo(
     () =>
       [...tabRows.squat, ...tabRows.bench, ...tabRows.deadlift].filter(
-        ([, session]) => session.sets === 1
+        ([, session]) => session.sets === 1 || session.rpe
       ),
     [tabRows]
   );

@@ -25,14 +25,7 @@ export function buildChartData(
     const targetEx = targetExByType.get(exercise.type) ?? baselineEx;
     let e1rm: number;
     if (targetEx) {
-      const normalized = normalizeToBaseE1RM(
-        session.weight,
-        session.reps,
-        exercise,
-        targetEx,
-        stats,
-        baselineEx
-      );
+      const normalized = normalizeToBaseE1RM(session, exercise, targetEx, stats, baselineEx);
       if (normalized === null) {
         continue;
       }
