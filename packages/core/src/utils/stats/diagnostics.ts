@@ -17,10 +17,6 @@ type ModifierEffectEntry =
   | { effects: EffectEnum[]; min: number; max: number }
   | { effects: EffectEnum[] };
 
-export interface DiagnosticsOptions {
-  deadliftStance?: DeadliftStancePreference;
-}
-
 /**
  * Resolves a deadlift's effective stance to sumo vs. conventional from whether its movement
  * categories landed on the posterior chain. Shared by the pct-baseline lookup and the
@@ -30,12 +26,15 @@ function resolveDeadliftStance(effectiveCategory: MovementCategory[]): 'sumo' | 
   return effectiveCategory.includes('posterior_chain') ? 'sumo' : 'conventional';
 }
 
-function resolveCategory(ex: ConjugateExercise, options?: DiagnosticsOptions): MovementCategory[] {
+function resolveCategory(
+  ex: ConjugateExercise,
+  deadliftStance: DeadliftStancePreference = 'sumo'
+): MovementCategory[] {
   if (
     ex.type === 'deadlift' &&
     (ex.stance === 'sumo' || ex.stance === 'conventional' || ex.stance === 'opposite')
   ) {
-    return toMovementCategory(ex, options);
+    return toMovementCategory(ex, deadliftStance);
   }
   return ex.movementCategory;
 }
@@ -62,14 +61,14 @@ function isCompVariation(
 export function generateDiagnostics(
   pairs: ConjugateDataPair[],
   anchorName: string | null = null,
-  options?: DiagnosticsOptions
+  deadliftStance: DeadliftStancePreference = 'sumo'
 ): ConjugateExercise[] {
   const results: ConjugateExercise[] = [];
   const anchorSessions: TrainingSession[] = [];
   const variationGroups = new Map<string, { ex: ConjugateExercise; sessions: TrainingSession[] }>();
 
   for (const [ex, session] of pairs) {
-    const effectiveCategory = resolveCategory(ex, options);
+    const effectiveCategory = resolveCategory(ex, deadliftStance);
     // Accommodating resistance (bands/chains) changes the loading curve, so those
     // sessions are not comparable to straight-bar max and must not seed the anchor grid.
     const isAnchor = isCompVariation(ex, anchorName, effectiveCategory);
@@ -90,7 +89,7 @@ export function generateDiagnostics(
     if (ex.addlWts.length > 0) {
       continue;
     }
-    const effectiveCategory = resolveCategory(ex, options);
+    const effectiveCategory = resolveCategory(ex, deadliftStance);
     const { factor, sampleCount } = fitVariantFactor(anchorSessions, sessions);
     if (sampleCount === 0) {
       continue;
@@ -181,13 +180,11 @@ export function generateDiagnostics(
 
 export function toMovementCategory(
   ex: ExerciseShape,
-  options?: DiagnosticsOptions
+  deadliftStance: DeadliftStancePreference = 'sumo'
 ): MovementCategory[] {
   if (ex.type === 'accessory') {
     return ['unclassified'];
   }
-
-  const cats = new Set<MovementCategory>();
 
   if (ex.equipment !== null || ex.bar !== 'standard') {
     return ['xxx'];
@@ -195,29 +192,16 @@ export function toMovementCategory(
   if (ex.stance === 'competition') {
     return ['anchor'];
   }
-  if (ex.type !== 'deadlift') {
-    return ['xxx'];
-  } else if (ex.type === 'deadlift') {
-    if (ex.stance === 'romanian') {
-      return ['xxx'];
-    } else if (
-      ex.stance === null ||
-      ex.stance === 'sumo' ||
-      ex.stance === 'conventional' ||
-      ex.stance === 'opposite'
-    ) {
-      const primary = options?.deadliftStance ?? 'conventional';
-      const nonPrimary = primary === 'conventional' ? 'sumo' : 'conventional';
-      // Resolve to the actual stance: "opposite" = the non-primary stance; null = the primary stance.
-      const actualStance: 'sumo' | 'conventional' =
-        ex.stance === 'opposite' ? nonPrimary : ex.stance === null ? primary : ex.stance;
-      // sumo = posterior chain (hip abductor/glute dominant)
-      // conventional = quad dominant (leg drive, more knee extension at the start)
-      cats.add(actualStance === 'sumo' ? 'posterior_chain' : 'quad_dominant');
-    } else if (cats.size === 0) {
-      cats.add('anchor');
+  if (ex.type === 'deadlift') {
+    if (ex.stance === 'conventional') {
+      return ['quad_dominant'];
+    } else if (ex.stance === 'sumo') {
+      return ['posterior_chain'];
+    } else if (ex.stance === 'opposite') {
+      return [deadliftStance === 'sumo' ? 'quad_dominant' : 'posterior_chain'];
+    } else if (ex.stance === null) {
+      return [deadliftStance === 'sumo' ? 'posterior_chain' : 'quad_dominant'];
     }
   }
-
-  return cats.size > 0 ? [...cats] : ['unclassified'];
+  return ['xxx'];
 }

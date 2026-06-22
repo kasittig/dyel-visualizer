@@ -41,9 +41,7 @@ export function App() {
   const [activeTab, setActiveTab] = useState<PageTab>('sigma');
   const [shownResetToken, setShownResetToken] = useState(0);
   const [tabState, setTabState] = useState<Record<LiftType, TabState>>(initialTabState);
-  const [deadliftStance, setDeadliftStance] = useState<DeadliftStancePreference | undefined>(
-    undefined
-  );
+  const [deadliftStance, setDeadliftStance] = useState<DeadliftStancePreference>('sumo');
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);

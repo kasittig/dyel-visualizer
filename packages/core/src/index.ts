@@ -59,7 +59,6 @@ export { buildChartData } from './utils/chart/buildChartData';
 export type { VariationChartResult } from './utils/chart/buildVariationChartData';
 export { NORMALIZED_KEY, buildVariationChartData } from './utils/chart/buildVariationChartData';
 
-export type { DiagnosticsOptions } from './utils/stats/diagnostics';
 export { generateDiagnostics } from './utils/stats/diagnostics';
 
 export { defaultBaselineName, defaultCompExerciseName } from './utils/stats/defaultSelections';
