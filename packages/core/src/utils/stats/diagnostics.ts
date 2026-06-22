@@ -6,28 +6,53 @@ import type {
   ConjugateExercise,
   DeadliftStancePreference,
   EffectEnum,
-  MovementCategory,
   TrainingSession,
 } from '../../types/conjugate';
 import { fitVariantFactor } from '../math/e1rm';
-
-type ExerciseShape = Pick<ConjugateExercise, 'type' | 'bar' | 'stance' | 'equipment'>;
 
 type ModifierEffectEntry =
   | { effects: EffectEnum[]; min: number; max: number }
   | { effects: EffectEnum[] };
 
-function resolveCategory(
+// Resolves a deadlift's actual stance (sumo or conventional) accounting for
+// 'opposite' and null stances relative to the user's primary preference.
+function resolveDeadliftStance(
   ex: ConjugateExercise,
-  deadliftStance: DeadliftStancePreference = 'sumo'
-): MovementCategory[] {
-  if (
-    ex.type === 'deadlift' &&
-    (ex.stance === 'sumo' || ex.stance === 'conventional' || ex.stance === 'opposite')
-  ) {
-    return toMovementCategory(ex, deadliftStance);
+  deadliftStance: DeadliftStancePreference
+): 'sumo' | 'conventional' {
+  if (ex.stance === 'sumo') {
+    return 'sumo';
   }
-  return ex.movementCategory;
+  if (ex.stance === 'conventional') {
+    return 'conventional';
+  }
+  if (ex.stance === 'opposite') {
+    return deadliftStance === 'sumo' ? 'conventional' : 'sumo';
+  }
+  return deadliftStance;
+}
+
+function isCompVariation(
+  ex: ConjugateExercise,
+  anchorName: string,
+  deadliftStance: DeadliftStancePreference
+): boolean {
+  if (ex.displayName === anchorName) {
+    return true;
+  }
+  if (ex.type === 'accessory' || ex.bar != 'standard' || ex.addlWts.length > 0) {
+    return false;
+  }
+  if (ex.equipment !== null) {
+    return ex.equipment === 'pause' && ex.type === 'bench';
+  }
+  if (ex.stance === 'competition' || ex.stance === null) {
+    return true;
+  }
+  if (ex.type === 'deadlift') {
+    return ex.stance === deadliftStance;
+  }
+  return false;
 }
 
 export function generateDiagnostics(
@@ -40,13 +65,11 @@ export function generateDiagnostics(
   const variationGroups = new Map<string, { ex: ConjugateExercise; sessions: TrainingSession[] }>();
 
   for (const [ex, session] of pairs) {
-    const effectiveCategory = resolveCategory(ex, deadliftStance);
     // Accommodating resistance (bands/chains) changes the loading curve, so those
     // sessions are not comparable to straight-bar max and must not seed the anchor grid.
-    const isAnchorEx = isAnchor(ex, anchorName, deadliftStance);
-    if (isAnchorEx) {
+    if (isCompVariation(ex, anchorName, deadliftStance)) {
       anchorSessions.push(session);
-    } else if (!effectiveCategory.every((c) => c === 'unclassified')) {
+    } else if (ex.type !== 'accessory') {
       const key = ex.displayName;
       if (!variationGroups.has(key)) {
         variationGroups.set(key, { ex, sessions: [] });
@@ -77,7 +100,7 @@ export function generateDiagnostics(
           ex.stance === 'conventional' ||
           ex.stance === 'opposite')
       ) {
-        return `stance:${getDeadliftStance(ex, deadliftStance)}:deadlift`;
+        return `stance:${resolveDeadliftStance(ex, deadliftStance)}:deadlift`;
       }
       if (ex.stance !== null && ex.stance !== 'competition') {
         return `stance:${ex.stance}:${ex.type}`;
@@ -113,7 +136,7 @@ export function generateDiagnostics(
     // Aggregate effects from all active modifiers (bar + resolved stance + equipment + addlWts).
     const stanceForEffects: string | null =
       ex.type === 'deadlift' && (ex.stance === null || ex.stance === 'opposite')
-        ? getDeadliftStance(ex, deadliftStance)
+        ? resolveDeadliftStance(ex, deadliftStance)
         : ex.stance;
 
     const allEffects = new Set<EffectEnum>();
@@ -149,60 +172,16 @@ export function generateDiagnostics(
   return results;
 }
 
-export function toMovementCategory(
-  ex: ExerciseShape,
-  deadliftStance: DeadliftStancePreference = 'sumo'
-): MovementCategory[] {
-  if (ex.type === 'accessory') {
-    return ['unclassified'];
-  }
-
-  if (ex.equipment !== null || ex.bar !== 'standard') {
-    return ['xxx'];
-  }
-  if (ex.stance === 'competition') {
-    return ['anchor'];
-  }
-  if (ex.type === 'deadlift') {
-    if (ex.stance === 'conventional') {
-      return ['quad_dominant'];
-    } else if (ex.stance === 'sumo') {
-      return ['posterior_chain'];
-    } else if (ex.stance === 'opposite') {
-      return [deadliftStance === 'sumo' ? 'quad_dominant' : 'posterior_chain'];
-    } else if (ex.stance === null) {
-      return [deadliftStance === 'sumo' ? 'posterior_chain' : 'quad_dominant'];
-    }
-  }
-  return ['xxx'];
-}
-
 export function isAnchor(
   ex: ConjugateExercise,
   anchorName: string,
   deadliftStance: DeadliftStancePreference = 'sumo'
 ): boolean {
-  if (ex.displayName === anchorName) {
-    return true;
-  }
-  if (ex.type === 'accessory' || ex.bar != 'standard' || ex.addlWts.length > 0) {
-    return false;
-  }
-  if (ex.equipment !== null) {
-    return ex.equipment === 'pause' && ex.type === 'bench';
-  }
-
-  if (ex.stance === 'competition' || ex.stance === null) {
-    return true;
-  }
-  if (ex.type === 'deadlift') {
-    return ex.stance === deadliftStance;
-  }
-  return false;
+  return isCompVariation(ex, anchorName, deadliftStance);
 }
 
 export function getDeadliftStance(
-  ex: ExerciseShape,
+  ex: Pick<ConjugateExercise, 'type' | 'stance'>,
   deadliftStance: DeadliftStancePreference = 'sumo'
 ): string {
   if (ex.type != 'deadlift') {

@@ -27,7 +27,6 @@ function pair(
       stance: 'competition',
       addlWts: [],
       equipment: null,
-      movementCategory: 'anchor',
     },
     {
       date: new Date(date + 'T00:00:00'),

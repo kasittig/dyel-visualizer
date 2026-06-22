@@ -13,8 +13,6 @@ Session-level aggregation, diagnostics, filtering, and default selection logic.
 
 `diagnostics.ts` references `__MODIFIER__EFFECTS__` as a global. It is **not** a runtime import — it is injected by the Vite build via `vite.config.ts` `define`. The type declaration lives in `global.d.ts` at the repo root. The triple-slash reference at the top of `diagnostics.ts` pulls in that declaration for `tsc`.
 
-## Movement category and anchor detection
+## Anchor detection
 
-`toMovementCategory` is the canonical classifier used both at parse time (to populate `ConjugateExercise.movementCategory`) and again inside `generateDiagnostics` for deadlifts whose stance needs to be resolved against the user's `deadliftStance` preference. Always call `toMovementCategory` — never re-implement the logic inline.
-
-An exercise is the anchor baseline in `generateDiagnostics` only when its effective categories are exactly `["anchor"]` (standard bar, competition stance, no equipment, no addlWts).
+`generateDiagnostics` uses the private `isCompVariation` helper to decide whether an exercise seeds the anchor grid. An exercise is a competition variation (anchor) when: its `displayName` matches `anchorName`, OR it has standard bar + no addlWts + (no equipment OR pause bench) + (competition/null stance OR deadlift matching the user's primary stance). `isAnchor` is the exported wrapper around this logic.

@@ -6,7 +6,6 @@ export type {
   TrainingSession,
   ConjugateExercise,
   ConjugateDataPair,
-  MovementCategory,
   DeadliftStancePreference,
   PrimaryLift,
   EffectEnum,

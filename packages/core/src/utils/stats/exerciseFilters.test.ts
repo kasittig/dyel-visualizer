@@ -11,7 +11,6 @@ function pair(type: 'squat' | 'bench' | 'deadlift' | 'accessory', sets: number):
       addlWts: [],
       equipment: null,
       displayName: type,
-      movementCategory: ['anchor'],
       averageIndex: null,
       expectedBaseline: null,
       status: null,
