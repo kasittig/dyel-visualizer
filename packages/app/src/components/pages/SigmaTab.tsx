@@ -8,18 +8,14 @@ import { SigmaRadarChart } from '../charts/SigmaRadarChart';
 import type { ConjugateDataPair } from '../../hooks/conjugate/useConjugateData';
 
 export function SigmaTab({
-  pairs,
+  sigmaPairs,
   effectiveBaselineNames,
   effectiveTargetNames,
 }: {
-  pairs: ConjugateDataPair[];
+  sigmaPairs: ConjugateDataPair[];
   effectiveBaselineNames: Partial<Record<LiftType, string>>;
   effectiveTargetNames: Partial<Record<LiftType, string>>;
 }) {
-  const sigmaPairs = useMemo(
-    () => pairs.filter(([ex, session]) => ex.type !== 'accessory' && session.sets === 1),
-    [pairs]
-  );
   const sigmaStats = useLastSessionStats(sigmaPairs, effectiveBaselineNames);
 
   const { baselineExByType, targetExByType } = useBaselineTargetExercises(

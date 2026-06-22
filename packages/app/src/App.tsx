@@ -70,6 +70,14 @@ export function App() {
   const liftTab: LiftType | null =
     activeTab !== 'calculator' && activeTab !== 'sigma' ? activeTab : null;
 
+  const sigmaPairs = useMemo(
+    () =>
+      [...tabRows.squat, ...tabRows.bench, ...tabRows.deadlift].filter(
+        ([, session]) => session.sets === 1
+      ),
+    [tabRows]
+  );
+
   const calcPairs = useMemo(
     () => LIFT_TABS.flatMap((tab) => applyFilters(tabRows[tab], tabState[tab].filters)),
     [tabRows, tabState]
@@ -176,7 +184,7 @@ export function App() {
               </>
             ) : activeTab === 'sigma' ? (
               <SigmaTab
-                pairs={pairs}
+                sigmaPairs={sigmaPairs}
                 effectiveBaselineNames={effectiveBaselineNames}
                 effectiveTargetNames={effectiveTargetNames}
               />
