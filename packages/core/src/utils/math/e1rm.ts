@@ -1,11 +1,12 @@
 import type { TrainingSession } from '../../types/conjugate';
 
-export function calcE1RM(weight: number, reps: number): number {
-  if (reps === 1) {
+export function calcE1RM(weight: number, reps: number, rpe?: number | null): number {
+  const effectiveReps = rpe != null ? reps + (10 - rpe) : reps;
+  if (effectiveReps <= 1) {
     return weight;
   }
   // Epley formula
-  return weight * (1 + reps / 30);
+  return weight * (1 + effectiveReps / 30);
 }
 
 interface SessionGridPoint {
@@ -97,7 +98,7 @@ export function fitVariantFactor(
     if (predicted === null || predicted === 0) {
       continue;
     }
-    factors.push(calcE1RM(session.weight, session.reps) / predicted);
+    factors.push(calcE1RM(session.weight, session.reps, session.rpe) / predicted);
   }
   if (factors.length === 0) {
     return { factor: 0, sampleCount: 0 };

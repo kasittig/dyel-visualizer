@@ -12,6 +12,7 @@ const s = (dateStr: string, e1rm: number): TrainingSession => ({
   weight: e1rm,
   e1rm,
   unit: 'lbs',
+  rpe: null,
 });
 
 const w = (dateStr: string, weight: number, reps: number): TrainingSession => ({
@@ -21,6 +22,7 @@ const w = (dateStr: string, weight: number, reps: number): TrainingSession => ({
   weight,
   e1rm: calcE1RM(weight, reps),
   unit: 'lbs',
+  rpe: null,
 });
 
 describe('calcE1RM', () => {
@@ -42,6 +44,23 @@ describe('calcE1RM', () => {
 
   it('returns 0 when weight is 0', () => {
     expect(calcE1RM(0, 10)).toBe(0);
+  });
+
+  it('returns weight unchanged for a true 1RM (1 rep at RPE 10)', () => {
+    expect(calcE1RM(100, 1, 10)).toBe(100);
+  });
+
+  it('adjusts upward when reps in reserve are available', () => {
+    // 5 reps @ RPE 8 → 2 RIR → effectiveReps=7 → 100*(1+7/30) ≈ 123.33
+    expect(calcE1RM(100, 5, 8)).toBeCloseTo(123.33, 1);
+  });
+
+  it('matches the no-RPE result when RPE is 10 (0 RIR)', () => {
+    expect(calcE1RM(100, 5, 10)).toBeCloseTo(calcE1RM(100, 5), 5);
+  });
+
+  it('ignores RPE when it is null', () => {
+    expect(calcE1RM(100, 5, null)).toBeCloseTo(calcE1RM(100, 5), 5);
   });
 });
 

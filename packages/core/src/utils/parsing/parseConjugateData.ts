@@ -164,7 +164,7 @@ function parseSession(row: RawRow): RawSession | null {
     sets,
     reps,
     weight,
-    e1rm: calcE1RM(weight, reps),
+    e1rm: calcE1RM(weight, reps, rpe),
     unit: detectWeightUnit(Object.keys(row)),
     rpe,
   };
