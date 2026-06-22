@@ -1,24 +1,23 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import type { ConjugateDataPair } from '../../hooks/conjugate/useConjugateData';
-import { useLastSessionStats } from '../../hooks/data/useLastSessionStats';
+import type { SessionStats } from '../../hooks/data/useLastSessionStats';
 import { ConjugateCharts } from '../conjugate/ConjugateCharts';
 import { DiagnosticsPanel } from '../shared/DiagnosticsPanel';
 import { VariationRadarChart } from '../charts/VariationRadarChart';
-import { applyFilters } from '@dyel/core';
 
-import type { DeadliftStancePreference, FilterState, LiftType } from '@dyel/core';
+import type { DeadliftStancePreference, LiftType } from '@dyel/core';
 
 export function LiftTabPanel({
-  rows,
-  filters,
+  filteredRows,
+  stats,
   effectiveBaselineNames,
   targetName,
   onTargetChange,
   deadliftStance,
   onDeadliftStanceChange,
 }: {
-  rows: ConjugateDataPair[];
-  filters: FilterState;
+  filteredRows: ConjugateDataPair[];
+  stats: SessionStats;
   effectiveBaselineNames: Partial<Record<LiftType, string>>;
   targetName: string;
   onTargetChange: (name: string | null) => void;
@@ -26,9 +25,6 @@ export function LiftTabPanel({
   onDeadliftStanceChange: (s: DeadliftStancePreference) => void;
 }) {
   const [selectedVariation, setSelectedVariation] = useState<string | null>(null);
-
-  const filteredRows = useMemo(() => applyFilters(rows, filters), [rows, filters]);
-  const chartStats = useLastSessionStats(filteredRows, effectiveBaselineNames);
 
   function handleVariationClick(variation: string) {
     setSelectedVariation((v) => (v === variation ? null : variation));
@@ -39,7 +35,7 @@ export function LiftTabPanel({
       <ConjugateCharts
         rows={filteredRows}
         baselineNames={effectiveBaselineNames}
-        stats={chartStats}
+        stats={stats}
         targetName={targetName}
         onTargetChange={onTargetChange}
         highlightedVariation={selectedVariation}
@@ -47,7 +43,7 @@ export function LiftTabPanel({
       />
       <VariationRadarChart
         rows={filteredRows}
-        stats={chartStats}
+        stats={stats}
         onVariationClick={handleVariationClick}
       />
       <DiagnosticsPanel

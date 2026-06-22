@@ -3,7 +3,8 @@ import type { DateRange } from 'react-day-picker';
 import { DateRangePicker } from './DateRangePicker';
 import { findBestE1RM, predictWeightForReps, predictRepsForWeight } from '@dyel/core';
 import type { ConjugateDataPair } from '../../hooks/conjugate/useConjugateData';
-import type { E1RMEstimate, RepCalcStats, LiftType } from '@dyel/core';
+import type { SessionStats } from '../../hooks/data/useLastSessionStats';
+import type { E1RMEstimate, LiftType } from '@dyel/core';
 import { distinctDisplayNames } from '../../utils/appUtils';
 
 const LIFT_LABELS: Record<LiftType, string> = {
@@ -30,13 +31,13 @@ function sourceNote(estimate: E1RMEstimate): string {
 }
 
 export function RepCalculator({
-  pairs,
+  pairsByTab,
   baselineNames,
-  stats,
+  statsByTab,
 }: {
-  pairs: ConjugateDataPair[];
+  pairsByTab: Record<LiftType, ConjugateDataPair[]>;
   baselineNames: Partial<Record<string, string>>;
-  stats: RepCalcStats;
+  statsByTab: Record<LiftType, SessionStats>;
 }) {
   const [liftType, setLiftType] = useState<LiftType>('squat');
   const [selectedName, setSelectedName] = useState('');
@@ -47,16 +48,16 @@ export function RepCalculator({
     to: new Date(),
   }));
 
+  const pairs = pairsByTab[liftType];
+  const stats = statsByTab[liftType];
+
   const unit = pairs[0]?.[1].unit ?? 'lbs';
 
-  const hasAccessories = useMemo(() => pairs.some(([ex]) => ex.type === 'accessory'), [pairs]);
+  const hasAccessories = pairsByTab.accessory.length > 0;
 
   const exercisesForType = useMemo(
-    () =>
-      distinctDisplayNames(pairs.filter(([ex]) => ex.type === liftType)).sort((a, b) =>
-        a.localeCompare(b)
-      ),
-    [pairs, liftType]
+    () => distinctDisplayNames(pairs).sort((a, b) => a.localeCompare(b)),
+    [pairs]
   );
 
   useEffect(() => {
@@ -69,10 +70,7 @@ export function RepCalculator({
   const sessionDates = useMemo(() => {
     const seen = new Set<string>();
     const dates: Date[] = [];
-    for (const [ex, session] of pairs) {
-      if (ex.type !== liftType) {
-        continue;
-      }
+    for (const [, session] of pairs) {
       const key = session.date.toDateString();
       if (!seen.has(key)) {
         seen.add(key);
@@ -80,7 +78,7 @@ export function RepCalculator({
       }
     }
     return dates;
-  }, [pairs, liftType]);
+  }, [pairs]);
 
   const selectedExercise = useMemo(
     () => pairs.find(([ex]) => ex.displayName === selectedName)?.[0] ?? null,
