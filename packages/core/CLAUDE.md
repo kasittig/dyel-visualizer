@@ -6,19 +6,19 @@ Pure TypeScript domain logic for the DYEL workout visualizer. No React dependenc
 
 Everything re-exported from `src/index.ts` is public. Key exports:
 
-| Category       | Exports                                                                                                                                                                                                              |
-| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Types          | `ConjugateExercise`, `TrainingSession`, `ConjugateDataPair`, `ConjugateBar`, `ConjugateStance`, `ConjugateEquipment`, `ConjugateAddlWt`, `MovementCategory`, `DeadliftStancePreference`, `PrimaryLift`, `EffectEnum` |
-| Type helpers   | `variantLabel`, `familyKey`                                                                                                                                                                                          |
-| Parsing        | `parseConjugateData(csv): ConjugateDataPair[]`, `parseIndexCsv(csv): IndexEntry[]`                                                                                                                                   |
-| e1RM math      | `calcE1RM`, `invertE1RM`, `predictE1RM`, `fitVariantFactor`, `fitAddlWtOffset`, `normalizeToBaseE1RM`                                                                                                                |
-| Filters        | `applyFilters`, `emptyFilters`, `FilterState`                                                                                                                                                                        |
-| Rep calculator | `findBestE1RM`, `predictWeightForReps`, `predictRepsForWeight`, `E1RMEstimate`, `RepCalcStats`                                                                                                                       |
-| Session stats  | `buildSessionStats`, `SessionStats`, `LastSession`                                                                                                                                                                   |
-| Chart data     | `buildChartData`, `ChartPoint`, `buildVariationChartData`, `VariationChartResult`, `NORMALIZED_KEY`                                                                                                                  |
-| Diagnostics    | `generateDiagnostics`, `toMovementCategory`, `DiagnosticsOptions`                                                                                                                                                    |
-| Selections     | `defaultBaselineName`, `defaultTargetName`                                                                                                                                                                           |
-| Utilities      | `setsRepsLabel`, `formatDate`, `LINE_COLORS`                                                                                                                                                                         |
+| Category       | Exports                                                                                                                                                                                          |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Types          | `ConjugateExercise`, `TrainingSession`, `ConjugateDataPair`, `ConjugateBar`, `ConjugateStance`, `ConjugateEquipment`, `ConjugateAddlWt`, `DeadliftStancePreference`, `PrimaryLift`, `EffectEnum` |
+| Type helpers   | `variantLabel`, `familyKey`                                                                                                                                                                      |
+| Parsing        | `parseConjugateData(csv): ConjugateDataPair[]`, `parseIndexCsv(csv): IndexEntry[]`                                                                                                               |
+| e1RM math      | `calcE1RM`, `invertE1RM`, `predictE1RM`, `fitVariantFactor`, `fitAddlWtOffset`, `normalizeToBaseE1RM`                                                                                            |
+| Filters        | `applyFilters`, `emptyFilters`, `FilterState`                                                                                                                                                    |
+| Rep calculator | `findBestE1RM`, `predictWeightForReps`, `predictRepsForWeight`, `E1RMEstimate`, `RepCalcStats`                                                                                                   |
+| Session stats  | `buildSessionStats`, `SessionStats`, `LastSession`                                                                                                                                               |
+| Chart data     | `buildChartData`, `ChartPoint`, `buildVariationChartData`, `VariationChartResult`, `NORMALIZED_KEY`                                                                                              |
+| Diagnostics    | `generateDiagnostics`                                                                                                                                                                            |
+| Selections     | `defaultBaselineName`, `defaultTargetName`                                                                                                                                                       |
+| Utilities      | `setsRepsLabel`, `formatDate`, `LINE_COLORS`                                                                                                                                                     |
 
 ## utils/ subdirectory layout
 
@@ -33,16 +33,9 @@ Everything re-exported from `src/index.ts` is public. Key exports:
 
 Data flows in order: `parsing/` → `math/` → `stats/` → `chart/`. Dependencies only go forward (or sideways within a layer) — `math/` does not import from `stats/` or `chart/`.
 
-## Movement category model
+## Anchor detection
 
-`ConjugateExercise.movementCategory` is a `MovementCategory[]`. `toMovementCategory` collects into two independent dimensions:
-
-- **ROM modifier** (lockout/bottom_range): from equipment (board/floor/blocks/rack → lockout; deficit/pause → bottom_range), certain stances (close/narrow/slingshot/builder → lockout), cambered bar squat, box squat
-- **Movement pattern** (anchor/quad_dominant/posterior_chain): from stance and bar type
-
-An exercise can carry both (e.g. deficit sumo deadlift → `["bottom_range", "posterior_chain"]`). `"anchor"` is only added when no ROM modifier is present — competition stance is the parser fallback and must not override equipment-based classification.
-
-In `generateDiagnostics`, an exercise is treated as the anchor baseline only when its categories are exactly `["anchor"]`.
+`generateDiagnostics` uses `isCompVariation` (internal to `diagnostics.ts`) to determine the anchor baseline. An exercise is the anchor when: `anchorName` matches `ex.displayName`, OR (when no `anchorName` is given) `stance === 'competition'`, standard bar, no equipment, no addlWts. Accessory exercises (`type === 'accessory'`) are excluded from both anchor and variation groups.
 
 ## Commands
 

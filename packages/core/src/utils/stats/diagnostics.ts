@@ -6,12 +6,9 @@ import type {
   ConjugateExercise,
   DeadliftStancePreference,
   EffectEnum,
-  MovementCategory,
   TrainingSession,
 } from '../../types/conjugate';
 import { fitVariantFactor } from '../math/e1rm';
-
-type ExerciseShape = Pick<ConjugateExercise, 'type' | 'bar' | 'stance' | 'equipment'>;
 
 type ModifierEffectEntry =
   | { effects: EffectEnum[]; min: number; max: number }
@@ -149,34 +146,6 @@ export function generateDiagnostics(
   return results;
 }
 
-export function toMovementCategory(
-  ex: ExerciseShape,
-  deadliftStance: DeadliftStancePreference = 'sumo'
-): MovementCategory[] {
-  if (ex.type === 'accessory') {
-    return ['unclassified'];
-  }
-
-  if (ex.equipment !== null || ex.bar !== 'standard') {
-    return ['xxx'];
-  }
-  if (ex.stance === 'competition') {
-    return ['anchor'];
-  }
-  if (ex.type === 'deadlift') {
-    if (ex.stance === 'conventional') {
-      return ['quad_dominant'];
-    } else if (ex.stance === 'sumo') {
-      return ['posterior_chain'];
-    } else if (ex.stance === 'opposite') {
-      return [deadliftStance === 'sumo' ? 'quad_dominant' : 'posterior_chain'];
-    } else if (ex.stance === null) {
-      return [deadliftStance === 'sumo' ? 'posterior_chain' : 'quad_dominant'];
-    }
-  }
-  return ['xxx'];
-}
-
 export function isAnchor(
   ex: ConjugateExercise,
   anchorName: string,
@@ -202,7 +171,7 @@ export function isAnchor(
 }
 
 export function getDeadliftStance(
-  ex: ExerciseShape,
+  ex: ConjugateExercise,
   deadliftStance: DeadliftStancePreference = 'sumo'
 ): string {
   if (ex.type != 'deadlift') {

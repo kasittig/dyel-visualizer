@@ -22,7 +22,6 @@ function ex(overrides: Partial<ConjugateExercise> = {}): ConjugateExercise {
     addlWts: [],
     equipment: null,
     displayName: 'squat',
-    movementCategory: ['anchor'],
     averageIndex: null,
     expectedBaseline: null,
     status: null,
@@ -454,7 +453,6 @@ describe('nameToExercise', () => {
           bar: null,
           stance: null,
           displayName: 'Lat Pulldown',
-          movementCategory: ['unclassified'],
         })
       );
     });
@@ -466,7 +464,6 @@ describe('nameToExercise', () => {
           bar: null,
           stance: null,
           displayName: 'Overhead Press',
-          movementCategory: ['unclassified'],
         })
       );
     });

@@ -22,7 +22,6 @@ function pair(
       stance: opts.stance ?? 'competition',
       addlWts: opts.addlWts ?? [],
       equipment: opts.equipment ?? null,
-      movementCategory: ['anchor'],
       averageIndex: null,
       expectedBaseline: null,
       status: null,

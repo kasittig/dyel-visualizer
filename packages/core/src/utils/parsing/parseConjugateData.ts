@@ -7,7 +7,6 @@ import {
   type TrainingSession,
 } from '../../types/conjugate';
 import { calcE1RM } from '../math/e1rm';
-import { toMovementCategory } from '../stats/diagnostics';
 import { parseSheetRows, detectWeightUnit, type RawRow } from './sheetRows';
 
 export function findCol(row: RawRow, keyword: string): string | undefined {
@@ -126,7 +125,6 @@ export function nameToExercise(name: string): ConjugateExercise | null {
   return {
     ...core,
     displayName,
-    movementCategory: toMovementCategory(core),
     averageIndex: null,
     expectedBaseline: null,
     diagnostic: null,

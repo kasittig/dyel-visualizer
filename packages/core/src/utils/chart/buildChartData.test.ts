@@ -20,7 +20,6 @@ function ex(
     stance: opts.stance ?? 'competition',
     equipment: opts.equipment ?? null,
     addlWts: opts.addlWts ?? [],
-    movementCategory: ['anchor'],
   };
 }
 

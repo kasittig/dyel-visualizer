@@ -63,7 +63,6 @@ export interface ConjugateExercise {
   addlWts: ConjugateAddlWt[];
   equipment: ConjugateEquipment | null;
   displayName: string;
-  movementCategory: MovementCategory[];
   averageIndex: number | null;
   expectedBaseline: string | null;
   status: 'optimal' | 'weakness' | 'overtrained' | null;
@@ -76,13 +75,6 @@ export type PrimaryLift = Exclude<ConjugateExercise['type'], 'accessory'>;
 export type ConjugateDataPair = [ConjugateExercise, TrainingSession];
 
 export type GroupedConjugatePairs = Record<LiftType, ConjugateDataPair[]>;
-
-export type MovementCategory =
-  | 'anchor'
-  | 'xxx'
-  | 'quad_dominant'
-  | 'posterior_chain'
-  | 'unclassified';
 
 export type EffectEnum =
   | 'QUAD_DOMINANT'
