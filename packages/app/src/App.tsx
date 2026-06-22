@@ -84,13 +84,13 @@ export function App() {
       if (baselineName) {
         baseline[tab] = baselineName;
       }
-      const t = tabState[tab].targetName ?? defaultCompExerciseName(tabRows[tab]);
+      const t = tabState[tab].targetName ?? defaultCompExerciseName(tabRows[tab], deadliftStance);
       if (t) {
         target[tab] = t;
       }
     }
     return { effectiveBaselineNames: baseline, effectiveTargetNames: target };
-  }, [tabRows, tabState]);
+  }, [tabRows, tabState, deadliftStance]);
 
   const stats = useLastSessionStats(pairs, effectiveBaselineNames);
 
