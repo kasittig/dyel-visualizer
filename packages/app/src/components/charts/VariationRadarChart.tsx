@@ -1,4 +1,6 @@
 import { useMemo } from 'react';
+import type { ConjugateExercise } from '@dyel/core';
+import { normalizeToBaseE1RM } from '@dyel/core';
 import type { ConjugateDataPair } from '../../hooks/conjugate/useConjugateData';
 import type { SessionStats } from '../../hooks/data/useLastSessionStats';
 import { BaseRadarChart } from './BaseRadarChart';
@@ -10,21 +12,38 @@ const MIN_VARIATIONS = 3;
 export function VariationRadarChart({
   rows,
   stats,
+  targetName,
+  baselineName,
   onVariationClick,
 }: {
   rows: ConjugateDataPair[];
   stats: SessionStats;
+  targetName: string;
+  baselineName?: string;
   onVariationClick?: (variation: string) => void;
 }) {
   const unit = rows[0]?.[1].unit ?? 'lbs';
 
-  const data = useMemo(
-    () =>
-      distinctDisplayNames(rows)
-        .map((name) => ({ variation: name, e1rm: stats.projectedE1RM.get(name) }))
-        .filter((d): d is { variation: string; e1rm: number } => d.e1rm !== undefined),
-    [rows, stats.projectedE1RM]
-  );
+  const data = useMemo(() => {
+    const exerciseByName = new Map<string, ConjugateExercise>(
+      rows.map(([ex]) => [ex.displayName, ex])
+    );
+    const targetEx = exerciseByName.get(targetName);
+    const baselineEx = baselineName ? exerciseByName.get(baselineName) : undefined;
+
+    return distinctDisplayNames(rows)
+      .map((name) => {
+        const sourceEx = exerciseByName.get(name);
+        const lastSess = stats.lastSession.get(name);
+        if (!sourceEx || !lastSess || !targetEx) return { variation: name, e1rm: undefined };
+        return {
+          variation: name,
+          e1rm:
+            normalizeToBaseE1RM(lastSess, sourceEx, targetEx, stats, baselineEx) ?? undefined,
+        };
+      })
+      .filter((d): d is { variation: string; e1rm: number } => d.e1rm !== undefined);
+  }, [rows, stats, targetName, baselineName]);
 
   if (data.length < MIN_VARIATIONS) {
     return null;
@@ -32,7 +51,7 @@ export function VariationRadarChart({
 
   return (
     <BaseRadarChart
-      label="Projected e1RM by variation (today)"
+      label="Normalized e1RM by variation"
       data={data}
       angleKey="variation"
       unit={unit}
@@ -59,7 +78,7 @@ export function VariationRadarChart({
             <TooltipCard>
               <div style={{ fontWeight: 600 }}>{name}</div>
               <div>
-                Projected e1RM: {Number(item.value).toFixed(2)} {unit}
+                Normalized e1RM: {Number(item.value).toFixed(2)} {unit}
               </div>
               <div style={{ opacity: 0.7 }}>
                 Last session: {lastE1RM !== undefined ? `${lastE1RM.toFixed(2)} ${unit} · ` : ''}
