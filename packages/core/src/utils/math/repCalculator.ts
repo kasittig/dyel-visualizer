@@ -1,6 +1,6 @@
 import { calcE1RM, invertE1RM } from './e1rm';
 import { familyKey } from '../../types/conjugate';
-import type { ConjugateExercise, ConjugateDataPair } from '../../types/conjugate';
+import type { ConjugateExercise, ConjugateDataPair, TrainingSession } from '../../types/conjugate';
 
 export interface E1RMEstimate {
   e1rm: number;
@@ -236,17 +236,17 @@ export function findBestE1RM(
 }
 
 export function normalizeToBaseE1RM(
-  weight: number,
-  reps: number,
+  session: TrainingSession,
   source: ConjugateExercise,
   target: ConjugateExercise,
   stats: RepCalcStats,
   baseline?: ConjugateExercise
 ): number | null {
+  const { weight, reps, rpe } = session;
   const { addlWtOffset, variantFactor } = stats;
 
   if (source.displayName === target.displayName) {
-    return calcE1RM(weight, reps);
+    return calcE1RM(weight, reps, rpe);
   }
 
   if (familyKey(source) === familyKey(target)) {
@@ -256,12 +256,12 @@ export function normalizeToBaseE1RM(
     if (sourceHasAddl && !targetHasAddl) {
       const off = addlWtOffset.get(source.displayName);
       if (off && off.sampleCount > 0) {
-        return calcE1RM(weight + off.offset, reps);
+        return calcE1RM(weight + off.offset, reps, rpe);
       }
     } else if (!sourceHasAddl && targetHasAddl) {
       const off = addlWtOffset.get(target.displayName);
       if (off && off.sampleCount > 0) {
-        return calcE1RM(Math.max(0, weight - off.offset), reps);
+        return calcE1RM(Math.max(0, weight - off.offset), reps, rpe);
       }
     }
     return null;
@@ -270,11 +270,11 @@ export function normalizeToBaseE1RM(
   // For cross-family normalization, variantFactors for addlWt exercises are fitted
   // against chain-stripped weights (see useLastSessionStats pass 4), so the source
   // weight must be adjusted by the same offset before dividing by the factor.
-  let sourceE1RM = calcE1RM(weight, reps);
+  let sourceE1RM = calcE1RM(weight, reps, rpe);
   if (source.addlWts.length > 0) {
     const off = addlWtOffset.get(source.displayName);
     if (off && off.sampleCount > 0) {
-      sourceE1RM = calcE1RM(weight + off.offset, reps);
+      sourceE1RM = calcE1RM(weight + off.offset, reps, rpe);
     }
   }
 

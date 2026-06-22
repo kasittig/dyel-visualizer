@@ -67,8 +67,7 @@ export function buildVariationChartData(
     for (const [exercise, session] of rows) {
       const date = isoDate(session.date);
       const normalized = normalizeToBaseE1RM(
-        session.weight,
-        session.reps,
+        session,
         exercise,
         targetExercise,
         stats,
