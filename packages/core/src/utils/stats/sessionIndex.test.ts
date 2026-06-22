@@ -36,7 +36,9 @@ describe('buildSessionStats', () => {
     expect(last?.date).toEqual(new Date('2024-03-01T00:00:00'));
     // 315 × (1 + 2/30) = 336 > 320 × (1 + 1/30) ≈ 330.67, so 315×2r wins
     expect(last?.e1rm).toBeCloseTo(315 * (1 + 2 / 30));
-    expect(last?.bestSet).toEqual({ weight: 315, reps: 2, sets: 1 });
+    expect(last?.weight).toBe(315);
+    expect(last?.reps).toBe(2);
+    expect(last?.sets).toBe(1);
   });
 
   it('returns addlWtOffset of 0 samples when no straight sessions exist', () => {

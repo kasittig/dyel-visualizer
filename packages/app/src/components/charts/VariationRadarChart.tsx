@@ -47,7 +47,7 @@ export function VariationRadarChart({
           const last = stats.lastSession.get(name);
           const lastDate = last?.date;
           const lastE1RM = last?.e1rm;
-          const bestSet = last?.bestSet;
+          const bestSet = last;
           const dateStr = lastDate
             ? lastDate.toLocaleDateString(undefined, {
                 month: 'short',

@@ -7,19 +7,8 @@ import { SigmaTab } from './components/pages/SigmaTab';
 import { LiftTabPanel } from './components/pages/LiftTabPanel';
 import { SheetUrlPanel } from './components/shared/SheetUrlPanel';
 import { GettingStarted } from './components/pages/GettingStarted';
-import {
-  applyFilters,
-  defaultBaselineName,
-  defaultCompExerciseName,
-  emptyFilters,
-} from '@dyel/core';
-import type { ConjugateDataPair } from './hooks/conjugate/useConjugateData';
-import type {
-  DeadliftStancePreference,
-  FilterState,
-  LiftType,
-  GroupedConjugatePairs,
-} from '@dyel/core';
+import { applyFilters, emptyFilters } from '@dyel/core';
+import type { DeadliftStancePreference, FilterState, LiftType } from '@dyel/core';
 import {
   extractSheetRef,
   initialTabState,
@@ -29,6 +18,7 @@ import {
   ACCESSORY_TAB,
 } from './utils/appUtils';
 import type { PageTab, TabState } from './utils/appUtils';
+import { buildTabRows, computeEffectiveNames, extractPairs } from './utils/appDataUtils';
 
 export function App() {
   const [url, setUrl] = useState(
@@ -60,58 +50,35 @@ export function App() {
 
   const showUrlPanel = panelForcedOpen || state.status !== 'success';
 
-  const pairs = useMemo(() => (state.status === 'success' ? state.pairs : []), [state]);
-  const dataMap = useMemo<Partial<GroupedConjugatePairs>>(
-    () => Object.groupBy(pairs, (pair) => pair[0].type),
-    [pairs]
+  const dataMap = useMemo(() => extractPairs(state), [state]);
+  const tabRows = useMemo(() => buildTabRows(dataMap), [dataMap]);
+  const { effectiveBaselineNames, effectiveTargetNames } = useMemo(
+    () => computeEffectiveNames(tabRows, tabState, deadliftStance),
+    [tabRows, tabState, deadliftStance]
   );
 
-  const tabRows = useMemo<Record<LiftType, ConjugateDataPair[]>>(
-    () => ({
-      squat: dataMap['squat'] ?? [],
-      bench: dataMap['bench'] ?? [],
-      deadlift: dataMap['deadlift'] ?? [],
-      accessory: dataMap['accessory'] ?? [],
-    }),
-    [dataMap]
+  const stats = useLastSessionStats(
+    [...tabRows.squat, ...tabRows.bench, ...tabRows.deadlift],
+    effectiveBaselineNames
   );
-
-  const { effectiveBaselineNames, effectiveTargetNames } = useMemo(() => {
-    const baseline: Partial<Record<LiftType, string>> = {};
-    const target: Partial<Record<LiftType, string>> = {};
-    for (const tab of LIFT_TABS) {
-      const baselineName = defaultBaselineName(tabRows[tab]);
-      if (baselineName) {
-        baseline[tab] = baselineName;
-      }
-      const t = tabState[tab].targetName ?? defaultCompExerciseName(tabRows[tab], deadliftStance);
-      if (t) {
-        target[tab] = t;
-      }
-    }
-    return { effectiveBaselineNames: baseline, effectiveTargetNames: target };
-  }, [tabRows, tabState, deadliftStance]);
-
-  const stats = useLastSessionStats(pairs, effectiveBaselineNames);
 
   const tabs = [...MAIN_TABS, ...(tabRows.accessory.length > 0 ? [ACCESSORY_TAB] : [])];
 
   const liftTab: LiftType | null =
     activeTab !== 'calculator' && activeTab !== 'sigma' ? activeTab : null;
 
-  const activeRows = useMemo(() => (liftTab ? tabRows[liftTab] : []), [liftTab, tabRows]);
+  const sigmaPairs = useMemo(
+    () =>
+      [...tabRows.squat, ...tabRows.bench, ...tabRows.deadlift].filter(
+        ([, session]) => session.sets === 1
+      ),
+    [tabRows]
+  );
 
   const calcPairs = useMemo(
     () => LIFT_TABS.flatMap((tab) => applyFilters(tabRows[tab], tabState[tab].filters)),
     [tabRows, tabState]
   );
-
-  const filteredRows = useMemo(
-    () => (liftTab ? calcPairs.filter(([ex]) => ex.type === liftTab) : []),
-    [calcPairs, liftTab]
-  );
-
-  const chartStats = useLastSessionStats(filteredRows, effectiveBaselineNames);
 
   function handleUrlChange(newUrl: string) {
     setUrl(newUrl);
@@ -214,23 +181,23 @@ export function App() {
               </>
             ) : activeTab === 'sigma' ? (
               <SigmaTab
-                pairs={pairs}
+                sigmaPairs={sigmaPairs}
                 effectiveBaselineNames={effectiveBaselineNames}
                 effectiveTargetNames={effectiveTargetNames}
               />
             ) : liftTab !== null ? (
               <>
                 <ExerciseFilters
-                  rows={activeRows}
+                  rows={tabRows[liftTab]}
                   filters={tabState[liftTab].filters}
                   onToggle={toggleFilter}
                   onClearAll={clearFilters}
                 />
                 <LiftTabPanel
                   key={shownResetToken}
-                  filteredRows={filteredRows}
+                  rows={tabRows[liftTab]}
+                  filters={tabState[liftTab].filters}
                   effectiveBaselineNames={effectiveBaselineNames}
-                  chartStats={chartStats}
                   targetName={effectiveTargetNames[liftTab]!}
                   onTargetChange={(name) =>
                     setTabState((prev) => ({

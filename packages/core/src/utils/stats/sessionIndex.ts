@@ -6,11 +6,11 @@ import type { RepCalcStats } from '../math/repCalculator';
 export interface LastSession {
   date: Date;
   e1rm: number;
-  bestSet: { weight: number; reps: number; sets: number; rpe: number | null };
+  bestSet: TrainingSession;
 }
 
 export interface SessionStats extends RepCalcStats {
-  lastSession: Map<string, LastSession>;
+  lastSession: Map<string, TrainingSession>;
   projectedE1RM: Map<string, number>;
 }
 
@@ -27,89 +27,86 @@ export function buildSessionStats(
   baselineNames: Partial<Record<string, string>>,
   today: Date
 ): SessionStats {
-  const lastSession = new Map<string, LastSession>();
+  const lastSession = new Map<string, TrainingSession>();
   const dataByName = new Map<string, ExData>();
   const straightByFamily = new Map<string, TrainingSession[]>();
 
-  pairs = pairs.filter((pair) => pair[0].type != 'accessory');
-  for (const [exercise, session] of pairs) {
+  // 1. Initial collection pass (Filtered to skip accessories)
+  const mainExercisePairs = pairs.filter(([exercise]) => exercise.type !== 'accessory');
+
+  for (const [exercise, session] of mainExercisePairs) {
     const name = exercise.displayName;
     const fk = familyKey(exercise);
 
+    // Track latest session (or better e1rm if identical date)
     const prev = lastSession.get(name);
-    if (
-      !prev ||
-      session.date > prev.date ||
-      (session.date.getTime() === prev.date.getTime() && session.e1rm > prev.e1rm)
-    ) {
-      lastSession.set(name, {
-        date: session.date,
-        e1rm: session.e1rm,
-        bestSet: {
-          weight: session.weight,
-          reps: Math.round(session.reps),
-          sets: session.sets,
-          rpe: session.rpe,
-        },
-      });
+    const isNewer = !prev || session.date > prev.date;
+    const isSameTimeBetterMax =
+      prev && session.date.getTime() === prev.date.getTime() && session.e1rm > prev.e1rm;
+
+    if (isNewer || isSameTimeBetterMax) {
+      lastSession.set(name, session);
     }
 
-    let data = dataByName.get(name);
-    if (!data) {
-      data = {
+    // Build unique data metrics map
+    if (!dataByName.has(name)) {
+      dataByName.set(name, {
         sessions: [],
         label: variantLabel(exercise),
         type: exercise.type,
         isAddlWt: exercise.addlWts.length > 0,
         family: fk,
-      };
-      dataByName.set(name, data);
+      });
     }
-    data.sessions.push(session);
+    dataByName.get(name)!.sessions.push(session);
 
+    // Track family sessions without additional weight
     if (exercise.addlWts.length === 0) {
-      const arr = straightByFamily.get(fk);
-      if (arr) {
-        arr.push(session);
-      } else {
-        straightByFamily.set(fk, [session]);
+      if (!straightByFamily.has(fk)) {
+        straightByFamily.set(fk, []);
       }
+      straightByFamily.get(fk)!.push(session);
     }
   }
 
   const addlWtOffset = new Map<string, { offset: number; sampleCount: number }>();
   const projectedE1RM = new Map<string, number>();
-  for (const [name, data] of dataByName) {
-    if (data.isAddlWt) {
-      addlWtOffset.set(
-        name,
-        fitAddlWtOffset(straightByFamily.get(data.family) ?? [], data.sessions)
-      );
-    }
-    const projected = predictE1RM(data.sessions, today);
-    if (projected !== null) {
-      projectedE1RM.set(name, projected);
-    }
-  }
-
   const variantFactor = new Map<
     string,
     { factor: number; sampleCount: number; label: string; baselineName: string }
   >();
+
+  // 2. Calculations Pass (Combined the two separate loops over dataByName into one)
   for (const [name, data] of dataByName) {
+    // A. Handle Offset Adjustments
+    if (data.isAddlWt) {
+      const familySessions = straightByFamily.get(data.family) ?? [];
+      addlWtOffset.set(name, fitAddlWtOffset(familySessions, data.sessions));
+    }
+
+    // B. Project e1RM Maxes
+    const projected = predictE1RM(data.sessions, today);
+    if (projected !== null) {
+      projectedE1RM.set(name, projected);
+    }
+
+    // C. Evaluate Variant Deviation Factors
     const baselineName = baselineNames[data.type];
     if (name === baselineName) {
       continue;
-    }
+    } // Skip identical baselines
+
+    const offsetEntry = addlWtOffset.get(name);
+    const hasValidOffset = offsetEntry && offsetEntry.sampleCount > 0;
+
+    // Shift weight calculations only if we have sampled offset calculations
+    const adjustedSessions = hasValidOffset
+      ? data.sessions.map((s) => ({ ...s, weight: s.weight + offsetEntry.offset }))
+      : data.sessions;
 
     const baselineSessions = baselineName ? (dataByName.get(baselineName)?.sessions ?? []) : [];
-    const offsetEntry = addlWtOffset.get(name);
-    const adjustedSessions =
-      offsetEntry && offsetEntry.sampleCount > 0
-        ? data.sessions.map((s) => ({ ...s, weight: s.weight + offsetEntry.offset }))
-        : data.sessions;
-
     const { factor, sampleCount } = fitVariantFactor(baselineSessions, adjustedSessions);
+
     variantFactor.set(name, {
       factor,
       sampleCount,
