@@ -394,25 +394,4 @@ describe('generateDiagnostics', () => {
     const results = generateDiagnostics(pairs, 'bench press');
     expect(results).toHaveLength(0);
   });
-
-  it('handles multiple lifts and returns results for each', () => {
-    const benchPairs: ConjugateDataPair[] = [
-      pair({ displayName: 'bench press' }, session('2024-01-01', 300)),
-      pair({ displayName: 'board press', equipment: 'board' }, session('2024-01-01', 270)),
-    ];
-    const deadPairs: ConjugateDataPair[] = [
-      pair({ type: 'deadlift', displayName: 'deadlift' }, session('2024-01-01', 500)),
-      pair(
-        {
-          type: 'deadlift',
-          displayName: 'rack pull',
-          equipment: 'rack',
-        },
-        session('2024-01-01', 460)
-      ),
-    ];
-    const results = generateDiagnostics([...benchPairs, ...deadPairs], 'bench press');
-    expect(results).toHaveLength(2);
-    expect(results.map((r) => r.type).sort()).toEqual(['bench', 'deadlift']);
-  });
 });

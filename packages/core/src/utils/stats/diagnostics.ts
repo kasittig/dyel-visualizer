@@ -32,29 +32,6 @@ function resolveDeadliftStance(
   return deadliftStance;
 }
 
-function isCompVariation(
-  ex: ConjugateExercise,
-  anchorName: string,
-  deadliftStance: DeadliftStancePreference
-): boolean {
-  if (ex.displayName === anchorName) {
-    return true;
-  }
-  if (ex.type === 'accessory' || ex.bar != 'standard' || ex.addlWts.length > 0) {
-    return false;
-  }
-  if (ex.equipment !== null) {
-    return ex.equipment === 'pause' && ex.type === 'bench';
-  }
-  if (ex.stance === 'competition' || ex.stance === null) {
-    return true;
-  }
-  if (ex.type === 'deadlift') {
-    return ex.stance === deadliftStance;
-  }
-  return false;
-}
-
 export function generateDiagnostics(
   pairs: ConjugateDataPair[],
   anchorName: string,
@@ -65,9 +42,7 @@ export function generateDiagnostics(
   const variationGroups = new Map<string, { ex: ConjugateExercise; sessions: TrainingSession[] }>();
 
   for (const [ex, session] of pairs) {
-    // Accommodating resistance (bands/chains) changes the loading curve, so those
-    // sessions are not comparable to straight-bar max and must not seed the anchor grid.
-    if (isCompVariation(ex, anchorName, deadliftStance)) {
+    if (ex.displayName === anchorName) {
       anchorSessions.push(session);
     } else if (ex.type !== 'accessory') {
       const key = ex.displayName;
