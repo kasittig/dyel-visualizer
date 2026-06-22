@@ -10,6 +10,11 @@ function sheetsProxyPlugin(): Plugin {
     name: 'sheets-proxy',
     configureServer(server) {
       server.middlewares.use('/sheets-proxy', async (req, res) => {
+        if (!req.url?.startsWith('/spreadsheets/')) {
+          res.statusCode = 400;
+          res.end('Invalid path');
+          return;
+        }
         const targetUrl = `https://docs.google.com${req.url}`;
         try {
           // Node's built-in fetch follows redirects, so Google's auth redirects
