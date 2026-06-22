@@ -16,7 +16,7 @@ Everything re-exported from `src/index.ts` is public. Key exports:
 | Rep calculator | `findBestE1RM`, `predictWeightForReps`, `predictRepsForWeight`, `E1RMEstimate`, `RepCalcStats`                                                                                                   |
 | Session stats  | `buildSessionStats`, `SessionStats`, `LastSession`                                                                                                                                               |
 | Chart data     | `buildChartData`, `ChartPoint`, `buildVariationChartData`, `VariationChartResult`, `NORMALIZED_KEY`                                                                                              |
-| Diagnostics    | `generateDiagnostics`, `isAnchor`, `getDeadliftStance`, `DiagnosticsOptions`                                                                                                                     |
+| Diagnostics    | `generateDiagnostics`                                                                                                                                                                            |
 | Selections     | `defaultBaselineName`, `defaultTargetName`                                                                                                                                                       |
 | Utilities      | `setsRepsLabel`, `formatDate`, `LINE_COLORS`                                                                                                                                                     |
 
