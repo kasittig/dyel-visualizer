@@ -6,7 +6,7 @@ import type { RepCalcStats } from '../math/repCalculator';
 export interface LastSession {
   date: Date;
   e1rm: number;
-  bestSet: { weight: number; reps: number; sets: number };
+  bestSet: { weight: number; reps: number; sets: number; rpe: number | null };
 }
 
 export interface SessionStats extends RepCalcStats {
@@ -45,7 +45,12 @@ export function buildSessionStats(
       lastSession.set(name, {
         date: session.date,
         e1rm: session.e1rm,
-        bestSet: { weight: session.weight, reps: Math.round(session.reps), sets: session.sets },
+        bestSet: {
+          weight: session.weight,
+          reps: Math.round(session.reps),
+          sets: session.sets,
+          rpe: session.rpe,
+        },
       });
     }
 

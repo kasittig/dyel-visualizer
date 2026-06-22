@@ -64,7 +64,9 @@ export function VariationRadarChart({
               <div style={{ opacity: 0.7 }}>
                 Last session: {lastE1RM !== undefined ? `${lastE1RM.toFixed(2)} ${unit} · ` : ''}
                 {dateStr}
-                {bestSet ? ` · ${bestSet.sets}×${bestSet.reps} @ ${bestSet.weight} ${unit}` : ''}
+                {bestSet
+                  ? ` · ${bestSet.sets}×${bestSet.reps} @ ${bestSet.weight} ${unit}${bestSet.rpe != null ? ` · RPE ${bestSet.rpe}` : ''}`
+                  : ''}
               </div>
             </TooltipCard>
           );

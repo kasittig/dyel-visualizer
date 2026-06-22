@@ -10,6 +10,7 @@ interface BestSet {
   sets: number;
   reps: number;
   weight: number;
+  rpe: number | null;
 }
 
 export interface VariationChartResult {
@@ -43,6 +44,7 @@ export function buildVariationChartData(
         sets: session.sets,
         reps: session.reps,
         weight: session.weight,
+        rpe: session.rpe,
       });
     }
   }
