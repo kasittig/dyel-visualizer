@@ -146,6 +146,14 @@ export function validateSheetCsv(csv: string): SheetValidationResult {
       rowProblems.push(`Invalid reps: "${repsStr}" (must be a positive whole number)`);
     }
 
+    const rpeStr = row['rpe']?.trim() ?? '';
+    if (rpeStr) {
+      const rpeVal = parseFloat(rpeStr);
+      if (isNaN(rpeVal) || rpeVal < 1 || rpeVal > 10) {
+        rowWarnings.push(`Invalid RPE: "${rpeStr}" (must be a number between 1 and 10)`);
+      }
+    }
+
     if (rowProblems.length > 0) {
       if (rowIssues.length < MAX_ROW_ISSUES) {
         rowIssues.push({ row: rowNum, exercise: exerciseName || '(empty)', issues: rowProblems });
