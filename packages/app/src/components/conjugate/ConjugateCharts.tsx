@@ -75,6 +75,7 @@ export function ConjugateCharts({
                 {bestSet && (
                   <div style={{ opacity: 0.7 }}>
                     {bestSet.sets}×{bestSet.reps} @ {bestSet.weight} {unit}
+                    {bestSet.rpe != null ? ` · RPE ${bestSet.rpe}` : ''}
                   </div>
                 )}
               </div>
