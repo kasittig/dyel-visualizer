@@ -19,7 +19,7 @@ export function LiftTabPanel({
   filteredRows: ConjugateDataPair[];
   effectiveBaselineNames: Partial<Record<LiftType, string>>;
   chartStats: SessionStats;
-  targetName: string | null;
+  targetName: string;
   onTargetChange: (name: string | null) => void;
   deadliftStance: DeadliftStancePreference;
   onDeadliftStanceChange: (s: DeadliftStancePreference) => void;

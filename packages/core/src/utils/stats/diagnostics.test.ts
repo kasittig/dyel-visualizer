@@ -321,7 +321,7 @@ describe('generateDiagnostics', () => {
         session('2024-01-04', 280)
       ),
     ];
-    const results = generateDiagnostics(pairs);
+    const results = generateDiagnostics(pairs, 'bench press');
     expect(results).toHaveLength(1);
     const r = results[0];
     expect(r.type).toBe('bench');
@@ -342,7 +342,7 @@ describe('generateDiagnostics', () => {
         session('2024-01-01', 280)
       ),
     ];
-    const results = generateDiagnostics(pairs);
+    const results = generateDiagnostics(pairs, 'bench press');
     expect(results[0].effects).toContain('LOCKOUT');
     expect(results[0].effects).toContain('REDUCED_ROM');
   });
@@ -359,7 +359,7 @@ describe('generateDiagnostics', () => {
         session('2024-01-01', 240)
       ),
     ];
-    const results = generateDiagnostics(pairs);
+    const results = generateDiagnostics(pairs, 'bench press');
     expect(results).toHaveLength(1);
     expect(results[0].status).toBe('weakness');
   });
@@ -376,7 +376,7 @@ describe('generateDiagnostics', () => {
         session('2024-01-01', 85)
       ),
     ];
-    const results = generateDiagnostics(pairs);
+    const results = generateDiagnostics(pairs, 'bench press');
     expect(results[0].status).toBe('optimal');
   });
 
@@ -391,7 +391,7 @@ describe('generateDiagnostics', () => {
         session('2024-01-01', 260)
       ),
     ];
-    const results = generateDiagnostics(pairs);
+    const results = generateDiagnostics(pairs, 'bench press');
     expect(results).toHaveLength(1);
     expect(results[0].expectedBaseline).toBe('85–95%');
   });
@@ -408,7 +408,7 @@ describe('generateDiagnostics', () => {
         { ...session('2024-06-01', 280), reps: 0 }
       ),
     ];
-    const results = generateDiagnostics(pairs);
+    const results = generateDiagnostics(pairs, 'bench press');
     expect(results).toHaveLength(0);
   });
 
@@ -423,7 +423,7 @@ describe('generateDiagnostics', () => {
         session('2024-01-01', 100)
       ),
     ];
-    expect(generateDiagnostics(pairs)).toHaveLength(0);
+    expect(generateDiagnostics(pairs, 'bench press')).toHaveLength(0);
   });
 
   it('skips accessory exercises entirely', () => {
@@ -433,7 +433,7 @@ describe('generateDiagnostics', () => {
         session('2024-01-01', 100)
       ),
     ];
-    expect(generateDiagnostics(pairs)).toHaveLength(0);
+    expect(generateDiagnostics(pairs, 'bench press')).toHaveLength(0);
   });
 
   it('skips variations with no non-standard modifier to look up', () => {
@@ -448,7 +448,7 @@ describe('generateDiagnostics', () => {
         session('2024-01-01', 260)
       ),
     ];
-    expect(generateDiagnostics(pairs)).toHaveLength(0);
+    expect(generateDiagnostics(pairs, 'bench press')).toHaveLength(0);
   });
 
   it('opposite-stance DL with default conventional primary produces posterior_chain result (opposite = sumo)', () => {
@@ -467,7 +467,7 @@ describe('generateDiagnostics', () => {
         session('2024-01-01', 460)
       ),
     ];
-    const results = generateDiagnostics(pairs);
+    const results = generateDiagnostics(pairs, 'deadlift');
     expect(results).toHaveLength(1);
     expect(results[0].displayName).toBe('deadlift (opposite)');
   });
@@ -489,7 +489,7 @@ describe('generateDiagnostics', () => {
       ),
     ];
     // stance:sumo:deadlift has a baseline (90–100%)
-    const results = generateDiagnostics(pairs, null, 'sumo');
+    const results = generateDiagnostics(pairs, 'deadlift', 'conventional');
     expect(results).toHaveLength(1);
     expect(results[0].displayName).toBe('deadlift (sumo)');
     expect(results[0].effects).toContain('POSTERIOR_CHAIN');
@@ -507,7 +507,7 @@ describe('generateDiagnostics', () => {
         session('2024-01-01', 100)
       ),
     ];
-    const results = generateDiagnostics(pairs);
+    const results = generateDiagnostics(pairs, 'bench press');
     expect(results[0].status).toBe('overtrained');
   });
 
@@ -533,7 +533,7 @@ describe('generateDiagnostics', () => {
       }),
       session('2024-01-01', 77),
     ];
-    const results = generateDiagnostics([anchor, variation]);
+    const results = generateDiagnostics([anchor, variation], 'squat');
     expect(results).toHaveLength(1);
     // bar:ssb:squat (90–95%) × equipment:pause:squat (85–95%) = 77–90%
     expect(results[0].expectedBaseline).toBe('77–90%');
@@ -563,7 +563,7 @@ describe('generateDiagnostics', () => {
       }),
       session('2024-01-01', 81),
     ];
-    const results = generateDiagnostics([anchor, variation]);
+    const results = generateDiagnostics([anchor, variation], 'squat');
     expect(results).toHaveLength(1);
     // equipment:box:squat (90–100%) × bar:ssb:squat (90–95%) = 81–95%
     expect(results[0].expectedBaseline).toBe('81–95%');
@@ -580,7 +580,7 @@ describe('generateDiagnostics', () => {
         session('2024-01-01', 315)
       ),
     ];
-    const results = generateDiagnostics(pairs);
+    const results = generateDiagnostics(pairs, 'bench press');
     expect(results).toHaveLength(1);
     expect(results[0].expectedBaseline).toBe('105–115%');
   });
@@ -619,7 +619,7 @@ describe('generateDiagnostics', () => {
         session('2024-01-01', 270)
       ),
     ];
-    const results = generateDiagnostics(pairs);
+    const results = generateDiagnostics(pairs, 'bench press');
     expect(results).toHaveLength(1);
     expect(results[0].displayName).toBe('board press');
   });
@@ -657,7 +657,7 @@ describe('generateDiagnostics', () => {
         session('2024-02-01', 220)
       ),
     ];
-    const results = generateDiagnostics(pairs);
+    const results = generateDiagnostics(pairs, 'deadlift');
     const deficit = results.find((r) => r.displayName === 'deficit deadlift');
     expect(deficit).toBeDefined();
     // Anchor grid should only contain the straight-bar session (250).
@@ -693,7 +693,7 @@ describe('generateDiagnostics', () => {
         session('2024-01-01', 255)
       ),
     ];
-    const results = generateDiagnostics(pairs);
+    const results = generateDiagnostics(pairs, 'bench press');
     expect(results).toHaveLength(0);
   });
 
@@ -723,7 +723,7 @@ describe('generateDiagnostics', () => {
         session('2024-01-01', 460)
       ),
     ];
-    const results = generateDiagnostics([...benchPairs, ...deadPairs]);
+    const results = generateDiagnostics([...benchPairs, ...deadPairs], 'bench press');
     expect(results).toHaveLength(2);
     expect(results.map((r) => r.type).sort()).toEqual(['bench', 'deadlift']);
   });
