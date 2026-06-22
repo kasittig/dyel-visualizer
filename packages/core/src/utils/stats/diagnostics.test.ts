@@ -94,25 +94,21 @@ describe('toMovementCategory', () => {
     expect(toMovementCategory(ex({ type: 'bench', stance: 'narrow' }))).toEqual(['xxx']);
   });
 
-  it('bare deadlift (no stance) + no preference (default conventional) → ["quad_dominant"]', () => {
+  it('bare deadlift (no stance) + no preference (default sumo) → ["posterior_chain"]', () => {
     expect(toMovementCategory(ex({ type: 'deadlift', stance: null, equipment: null }))).toEqual([
-      'quad_dominant',
+      'posterior_chain',
     ]);
   });
 
   it('bare deadlift (no stance) + conventional primary → ["quad_dominant"]', () => {
     expect(
-      toMovementCategory(ex({ type: 'deadlift', stance: null, equipment: null }), {
-        deadliftStance: 'conventional',
-      })
+      toMovementCategory(ex({ type: 'deadlift', stance: null, equipment: null }), 'conventional')
     ).toEqual(['quad_dominant']);
   });
 
   it('bare deadlift (no stance) + sumo primary → ["posterior_chain"]', () => {
     expect(
-      toMovementCategory(ex({ type: 'deadlift', stance: null, equipment: null }), {
-        deadliftStance: 'sumo',
-      })
+      toMovementCategory(ex({ type: 'deadlift', stance: null, equipment: null }), 'sumo')
     ).toEqual(['posterior_chain']);
   });
 
@@ -124,9 +120,7 @@ describe('toMovementCategory', () => {
 
   it('deadlift + sumo stance + sumo primary → ["posterior_chain"]', () => {
     expect(
-      toMovementCategory(ex({ type: 'deadlift', stance: 'sumo', equipment: null }), {
-        deadliftStance: 'sumo',
-      })
+      toMovementCategory(ex({ type: 'deadlift', stance: 'sumo', equipment: null }), 'sumo')
     ).toEqual(['posterior_chain']);
   });
 
@@ -138,31 +132,28 @@ describe('toMovementCategory', () => {
 
   it('deadlift + conventional stance + sumo primary → ["quad_dominant"]', () => {
     expect(
-      toMovementCategory(ex({ type: 'deadlift', stance: 'conventional', equipment: null }), {
-        deadliftStance: 'sumo',
-      })
+      toMovementCategory(ex({ type: 'deadlift', stance: 'conventional', equipment: null }), 'sumo')
     ).toEqual(['quad_dominant']);
   });
 
-  it('deadlift + opposite stance + conventional primary → ["posterior_chain"] (opposite = sumo)', () => {
+  it('deadlift + opposite stance + sumo primary (default) → ["quad_dominant"] (opposite = conventional)', () => {
     expect(
       toMovementCategory(ex({ type: 'deadlift', stance: 'opposite', equipment: null }))
-    ).toEqual(['posterior_chain']);
+    ).toEqual(['quad_dominant']);
   });
 
   it('deadlift + opposite stance + conventional primary (explicit) → ["posterior_chain"] (opposite = sumo)', () => {
     expect(
-      toMovementCategory(ex({ type: 'deadlift', stance: 'opposite', equipment: null }), {
-        deadliftStance: 'conventional',
-      })
+      toMovementCategory(
+        ex({ type: 'deadlift', stance: 'opposite', equipment: null }),
+        'conventional'
+      )
     ).toEqual(['posterior_chain']);
   });
 
   it('deadlift + opposite stance + sumo primary → ["quad_dominant"] (opposite = conventional)', () => {
     expect(
-      toMovementCategory(ex({ type: 'deadlift', stance: 'opposite', equipment: null }), {
-        deadliftStance: 'sumo',
-      })
+      toMovementCategory(ex({ type: 'deadlift', stance: 'opposite', equipment: null }), 'sumo')
     ).toEqual(['quad_dominant']);
   });
 
@@ -498,7 +489,7 @@ describe('generateDiagnostics', () => {
       ),
     ];
     // stance:sumo:deadlift has a baseline (90–100%)
-    const results = generateDiagnostics(pairs, null, { deadliftStance: 'sumo' });
+    const results = generateDiagnostics(pairs, null, 'sumo');
     expect(results).toHaveLength(1);
     expect(results[0].displayName).toBe('deadlift (sumo)');
     expect(results[0].effects).toContain('POSTERIOR_CHAIN');

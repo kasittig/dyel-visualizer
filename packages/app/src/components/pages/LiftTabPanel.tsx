@@ -21,7 +21,7 @@ export function LiftTabPanel({
   chartStats: SessionStats;
   targetName: string | null;
   onTargetChange: (name: string | null) => void;
-  deadliftStance?: DeadliftStancePreference;
+  deadliftStance: DeadliftStancePreference;
   onDeadliftStanceChange: (s: DeadliftStancePreference) => void;
 }) {
   const [selectedVariation, setSelectedVariation] = useState<string | null>(null);

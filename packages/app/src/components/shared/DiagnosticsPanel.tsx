@@ -26,13 +26,13 @@ export function DiagnosticsPanel({
   rows: ConjugateDataPair[];
   targetName: string | null;
   onTargetChange: (name: string | null) => void;
-  deadliftStance?: DeadliftStancePreference;
+  deadliftStance: DeadliftStancePreference;
   onDeadliftStanceChange: (s: DeadliftStancePreference) => void;
 }) {
   const hasDeadlift = useMemo(() => rows.some(([ex]) => ex.type === 'deadlift'), [rows]);
 
   const results = useMemo(
-    () => generateDiagnostics(rows, targetName, { deadliftStance }),
+    () => generateDiagnostics(rows, targetName, deadliftStance),
     [rows, targetName, deadliftStance]
   );
 
@@ -51,7 +51,7 @@ export function DiagnosticsPanel({
               <input
                 type="radio"
                 name="deadlift-stance"
-                checked={(deadliftStance ?? 'conventional') === s}
+                checked={deadliftStance === s}
                 onChange={() => onDeadliftStanceChange(s)}
                 style={{ marginRight: '0.3rem' }}
               />
