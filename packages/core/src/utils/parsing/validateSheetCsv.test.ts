@@ -46,6 +46,14 @@ describe('validateSheetCsv', () => {
     expect(r.rowIssues.length).toBeGreaterThan(0);
   });
 
+  it('warns when date column is absent', () => {
+    const noDate = `exercise,weight (lbs),reps\nSquat,315,5`;
+    const r = validateSheetCsv(noDate);
+    expect(r.verdict).toBe('warning');
+    expect(r.columns.hasDate).toBe(false);
+    expect(r.warnings.some((w) => w.includes("today's date"))).toBe(true);
+  });
+
   it('warns when no unit on weight column', () => {
     const noUnit = `date,exercise,weight,reps\n2024-01-01,Squat,400,2`;
     const r = validateSheetCsv(noUnit);
