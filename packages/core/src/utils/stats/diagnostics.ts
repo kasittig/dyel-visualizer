@@ -186,37 +186,22 @@ export function toMovementCategory(
     return ['unclassified'];
   }
 
-  const cats = new Set<MovementCategory>();
-
   if (ex.equipment !== null || ex.bar !== 'standard') {
     return ['xxx'];
   }
   if (ex.stance === 'competition') {
     return ['anchor'];
   }
-  if (ex.type !== 'deadlift') {
-    return ['xxx'];
-  } else if (ex.type === 'deadlift') {
-    if (ex.stance === 'romanian') {
-      return ['xxx'];
-    } else if (
-      ex.stance === null ||
-      ex.stance === 'sumo' ||
-      ex.stance === 'conventional' ||
-      ex.stance === 'opposite'
-    ) {
-      const primary = deadliftStance;
-      const nonPrimary = primary === 'conventional' ? 'sumo' : 'conventional';
-      // Resolve to the actual stance: "opposite" = the non-primary stance; null = the primary stance.
-      const actualStance: 'sumo' | 'conventional' =
-        ex.stance === 'opposite' ? nonPrimary : ex.stance === null ? primary : ex.stance;
-      // sumo = posterior chain (hip abductor/glute dominant)
-      // conventional = quad dominant (leg drive, more knee extension at the start)
-      cats.add(actualStance === 'sumo' ? 'posterior_chain' : 'quad_dominant');
-    } else if (cats.size === 0) {
-      cats.add('anchor');
+  if (ex.type === 'deadlift') {
+    if (ex.stance === 'conventional') {
+      return ['quad_dominant'];
+    } else if (ex.stance === 'sumo') {
+      return ['posterior_chain'];
+    } else if (ex.stance === 'opposite') {
+      return [deadliftStance === 'sumo' ? 'quad_dominant' : 'posterior_chain'];
+    } else if (ex.stance === null) {
+      return [deadliftStance === 'sumo' ? 'posterior_chain' : 'quad_dominant'];
     }
   }
-
-  return cats.size > 0 ? [...cats] : ['unclassified'];
+  return ['xxx'];
 }
