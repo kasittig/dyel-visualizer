@@ -196,13 +196,14 @@ export function App() {
                   {label}
                 </button>
               ))}
-            </div>
-            <div className={styles.dateFilter}>
-              <DateRangePicker
-                value={dateRange}
-                onChange={setDateRange}
-                sessionDates={allSessionDates}
-              />
+              <div className={styles.tabSpacer} />
+              <div className={styles.datePickerWrap}>
+                <DateRangePicker
+                  value={dateRange}
+                  onChange={setDateRange}
+                  sessionDates={allSessionDates}
+                />
+              </div>
             </div>
             {activeTab === 'calculator' ? (
               <>
@@ -218,6 +219,8 @@ export function App() {
                 sigmaPairs={filteredSigmaPairs}
                 effectiveBaselineNames={effectiveBaselineNames}
                 effectiveTargetNames={effectiveTargetNames}
+                dateRange={dateRange}
+                onDateRangeChange={setDateRange}
               />
             ) : liftTab !== null ? (
               <>
@@ -232,6 +235,7 @@ export function App() {
                   rows={tabRows[liftTab].maxEffort}
                   filters={tabState[liftTab].filters}
                   effectiveBaselineNames={effectiveBaselineNames}
+                  liftType={liftTab}
                   targetName={effectiveTargetNames[liftTab]!}
                   baselineName={effectiveBaselineNames[liftTab]}
                   onTargetChange={(name) =>
@@ -243,6 +247,7 @@ export function App() {
                   deadliftStance={deadliftStance}
                   onDeadliftStanceChange={setDeadliftStance}
                   dateRange={dateRange}
+                  onDateRangeChange={setDateRange}
                 />
               </>
             ) : null}

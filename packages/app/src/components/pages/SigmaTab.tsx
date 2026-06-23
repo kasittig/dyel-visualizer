@@ -1,4 +1,6 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
+import type { DateRange } from 'react-day-picker';
+import { EditableDateChip } from '../shared/EditableDateChip';
 import { useLastSessionStats } from '../../hooks/data/useLastSessionStats';
 import { useBaselineTargetExercises } from '../../hooks/data/useBaselineTargetExercises';
 import { buildChartData } from '@dyel/core';
@@ -11,10 +13,14 @@ export function SigmaTab({
   sigmaPairs,
   effectiveBaselineNames,
   effectiveTargetNames,
+  dateRange,
+  onDateRangeChange,
 }: {
   sigmaPairs: ConjugateDataPair[];
   effectiveBaselineNames: Partial<Record<LiftType, string>>;
   effectiveTargetNames: Partial<Record<LiftType, string>>;
+  dateRange: DateRange;
+  onDateRangeChange: (range: DateRange) => void;
 }) {
   const sigmaStats = useLastSessionStats(sigmaPairs, effectiveBaselineNames);
 
@@ -29,12 +35,22 @@ export function SigmaTab({
     [sigmaPairs, baselineExByType, targetExByType, sigmaStats]
   );
 
+  const [isExpanded, setIsExpanded] = useState(true);
   const unit = sigmaPairs[0]?.[1].unit ?? 'lbs';
 
   return (
     <>
-      <TotalChart chartData={chartData} unit={unit} />
-      <SigmaRadarChart chartData={chartData} unit={unit} />
+      <button className="tab-title" onClick={() => setIsExpanded((v) => !v)}>
+        <span className="tab-title-toggle">{isExpanded ? '▾' : '▸'}</span>
+        <span className="tab-title-label">Overview</span>
+        <EditableDateChip dateRange={dateRange} onDateRangeChange={onDateRangeChange} />
+      </button>
+      {isExpanded && (
+        <>
+          <TotalChart chartData={chartData} unit={unit} />
+          <SigmaRadarChart chartData={chartData} unit={unit} />
+        </>
+      )}
     </>
   );
 }

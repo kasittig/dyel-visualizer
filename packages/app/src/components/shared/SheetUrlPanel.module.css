@@ -1,11 +1,17 @@
-.wrapper { text-align: center; }
+.wrapper {
+  text-align: center;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid var(--border);
+}
 
 .subtitle {
   font-size: 0.85rem;
   color: var(--text);
   margin-top: -0.5rem;
 }
-.accentLink { color: var(--accent); }
+.accentLink {
+  color: var(--accent);
+}
 
 .linkButton {
   background: none;

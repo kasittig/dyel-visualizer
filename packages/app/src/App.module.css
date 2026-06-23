@@ -4,7 +4,7 @@
   text-align: left;
 }
 .content {
-  margin-top: 1rem;
+  margin-top: 1.25rem;
 }
 .errorMsg {
   color: red;
@@ -15,30 +15,38 @@
 
 .tabNav {
   display: flex;
-  gap: 1.5rem;
-  border-bottom: 2px solid var(--border);
-  margin-bottom: 1rem;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
 }
 .tab {
   background: none;
-  border: none;
-  border-bottom: 2px solid transparent;
-  margin-bottom: -2px;
-  padding: 0.4rem 0;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 0.45rem 1rem;
   cursor: pointer;
   font-weight: 400;
-  font-size: 1rem;
+  font-size: 0.95rem;
   color: var(--text-h);
+  transition:
+    border-color 0.15s,
+    background 0.15s,
+    color 0.15s;
+}
+.tab:hover {
+  border-color: var(--border);
 }
 .tabActive {
-  border-bottom-color: var(--accent);
-  font-weight: 700;
+  border-color: var(--accent-border);
+  background: var(--accent-bg);
   color: var(--accent);
+  font-weight: 600;
 }
 
-.dateFilter {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
+.tabSpacer {
+  flex: 1;
+}
+
+.datePickerWrap {
+  align-self: center;
 }

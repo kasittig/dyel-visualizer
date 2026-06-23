@@ -57,7 +57,7 @@ export function BaseRadarChart({
   tooltip = {},
   onClick,
 }: {
-  label: string;
+  label?: string;
   data: object[];
   angleKey: string;
   unit: string;
@@ -66,7 +66,7 @@ export function BaseRadarChart({
 }) {
   return (
     <section className={styles.section}>
-      <p className={styles.label}>{label}</p>
+      {label && <p className={styles.label}>{label}</p>}
       <div className={styles.chartWrapper}>
         <ResponsiveContainer width="100%" height={340}>
           <RadarChart
