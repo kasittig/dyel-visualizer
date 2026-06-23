@@ -1,4 +1,4 @@
-import Papa from 'papaparse';
+import { parseCsvRows } from './csvUtils';
 
 export interface IndexEntry {
   name: string;
@@ -6,16 +6,12 @@ export interface IndexEntry {
 }
 
 export function parseIndexCsv(csv: string): IndexEntry[] {
-  const { data } = Papa.parse<{ name: string; url: string }>(csv, {
-    header: true,
-    skipEmptyLines: true,
-  });
-  return data.flatMap((row) => {
-    const name = row.name?.trim();
-    const url = row.url?.trim();
+  return parseCsvRows(csv, ['name', 'url'], (row) => {
+    const name = row['name'];
+    const url = row['url'];
     if (!name || !url) {
-      return [];
+      return null;
     }
-    return [{ name, url }];
+    return { name, url };
   });
 }
