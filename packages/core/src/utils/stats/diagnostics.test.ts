@@ -368,10 +368,9 @@ describe('generateDiagnostics', () => {
     expect(deficit!.status).toBe('optimal');
   });
 
-  it('variations with addlWts are excluded from diagnostic results', () => {
-    // Chains/bands add variable load not captured in recorded weight, so e1RM comparison
-    // against the straight-bar anchor is unreliable. They must not appear in results even
-    // when they have a pct-bearing key from another modifier (e.g. swiss bar, floor press).
+  it('addlWt variations without straight-family sessions are skipped (cannot estimate offset)', () => {
+    // Without any same-family straight sessions to fit against, applyAddlWtOffset returns
+    // sampleCount 0 and the variation is skipped.
     const pairs: ConjugateDataPair[] = [
       pair({ displayName: 'bench press' }, session('2024-01-01', 300)),
       pair(
@@ -392,6 +391,108 @@ describe('generateDiagnostics', () => {
       ),
     ];
     const results = generateDiagnostics(pairs, 'bench press');
+    // No straight swiss-bar bench or straight floor press sessions exist,
+    // so both chain variants cannot get an offset estimate and are skipped.
     expect(results).toHaveLength(0);
+  });
+
+  it('chains squat appears in results when straight-family sessions exist for offset fitting', () => {
+    // The anchor (standard squat) serves as the straight-family reference for the chains
+    // squat (same familyKey). After offset adjustment, the chains squat compares against
+    // the anchor at ~100% → baseline of 100–100%.
+    const STRAIGHT_WEIGHT = 500;
+    const CHAIN_WEIGHT = 50; // estimated chain load
+    const pairs: ConjugateDataPair[] = [
+      pair(
+        { type: 'squat', bar: 'standard', stance: 'competition', displayName: 'squat' },
+        session('2024-01-01', STRAIGHT_WEIGHT)
+      ),
+      pair(
+        {
+          type: 'squat',
+          bar: 'standard',
+          stance: 'competition',
+          addlWts: ['chains'],
+          displayName: 'squat w/chains',
+        },
+        session('2024-01-01', STRAIGHT_WEIGHT - CHAIN_WEIGHT)
+      ),
+    ];
+    const results = generateDiagnostics(pairs, 'squat');
+    expect(results).toHaveLength(1);
+    const r = results[0];
+    expect(r.displayName).toBe('squat w/chains');
+    expect(r.expectedBaseline).toBe('100–100%');
+    expect(r.averageIndex).toBeCloseTo(100, 0);
+    expect(r.status).toBe('optimal');
+    expect(r.effects).toContain('ACCOMMODATING_RESISTANCE');
+    expect(r.effects).toContain('BAR_SPEED');
+  });
+
+  it('chains squat shows weakness when offset-adjusted factor is below 100%', () => {
+    // Use distinct familyKeys for anchor (stance:'competition') and chains squat
+    // (stance:null) so the chains offset is fitted against a separate straight squat
+    // session (not the anchor). This lets the anchor be stronger than the straight
+    // reference, making the chains squat look like a weakness after adjustment.
+    const pairs: ConjugateDataPair[] = [
+      // Anchor: competition squat at 500
+      pair(
+        { type: 'squat', bar: 'standard', stance: 'competition', displayName: 'squat' },
+        session('2024-01-01', 500)
+      ),
+      // Straight reference for offset fitting (no stance → different familyKey than anchor)
+      pair(
+        { type: 'squat', bar: 'standard', stance: null, displayName: 'straight squat' },
+        session('2024-01-01', 470)
+      ),
+      // Chains squat (no stance, same family as straight reference)
+      // offset = invertE1RM(470,1) - 420 = 470 - 420 = 50
+      // adjusted weight = 420 + 50 = 470
+      // factor = calcE1RM(470,1) / 500 = 94% → weakness
+      pair(
+        {
+          type: 'squat',
+          bar: 'standard',
+          stance: null,
+          addlWts: ['chains'],
+          displayName: 'squat w/chains',
+        },
+        session('2024-01-01', 420)
+      ),
+    ];
+    const results = generateDiagnostics(pairs, 'squat');
+    expect(results).toHaveLength(1);
+    expect(results[0].status).toBe('weakness');
+  });
+
+  it('SSB chains squat uses SSB pct range (90–95%) after offset adjustment', () => {
+    // familyKey of SSB chains squat = squat|ssb||
+    // Offset is fitted against straight SSB sessions (same family, no addlWts).
+    const STRAIGHT_SSB_WEIGHT = 400;
+    const CHAIN_WEIGHT = 40;
+    const anchor: ConjugateDataPair = [
+      ex({ type: 'squat', bar: 'standard', stance: 'competition', displayName: 'squat' }),
+      session('2024-01-01', 500),
+    ];
+    const straightSsb: ConjugateDataPair = [
+      ex({ type: 'squat', bar: 'ssb', stance: null, displayName: 'ssb squat' }),
+      session('2024-01-01', STRAIGHT_SSB_WEIGHT),
+    ];
+    const ssbChains: ConjugateDataPair = [
+      ex({
+        type: 'squat',
+        bar: 'ssb',
+        stance: null,
+        addlWts: ['chains'],
+        displayName: 'ssb squat w/chains',
+      }),
+      session('2024-01-01', STRAIGHT_SSB_WEIGHT - CHAIN_WEIGHT),
+    ];
+    const results = generateDiagnostics([anchor, straightSsb, ssbChains], 'squat');
+    const r = results.find((x) => x.displayName === 'ssb squat w/chains');
+    expect(r).toBeDefined();
+    expect(r!.expectedBaseline).toBe('90–95%');
+    expect(r!.effects).toContain('UPPER_BACK_DEMAND'); // from SSB
+    expect(r!.effects).toContain('ACCOMMODATING_RESISTANCE'); // from chains
   });
 });
