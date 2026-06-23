@@ -66,7 +66,9 @@ export function generateDiagnostics(
         familyStraight,
         sessions
       );
-      if (offsetSamples === 0) continue;
+      if (offsetSamples === 0) {
+        continue;
+      }
       effectiveSessions = adj;
     }
 
@@ -110,7 +112,9 @@ export function generateDiagnostics(
     // as the baseline. Exercises with no modifiers at all are still skipped.
     let baseline: { min: number; max: number };
     if (pctEntries.length === 0) {
-      if (ex.addlWts.length === 0) continue;
+      if (ex.addlWts.length === 0) {
+        continue;
+      }
       baseline = { min: 100, max: 100 };
     } else {
       baseline = pctEntries.reduce(

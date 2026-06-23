@@ -14,14 +14,14 @@ export interface SessionStats extends RepCalcStats {
   projectedE1RM: Map<string, number>;
 }
 
-export function buildStraightByFamily(
-  pairs: ConjugateDataPair[]
-): Map<string, TrainingSession[]> {
+export function buildStraightByFamily(pairs: ConjugateDataPair[]): Map<string, TrainingSession[]> {
   const map = new Map<string, TrainingSession[]>();
   for (const [ex, session] of pairs) {
     if (ex.addlWts.length === 0 && ex.type !== 'accessory') {
       const fk = familyKey(ex);
-      if (!map.has(fk)) map.set(fk, []);
+      if (!map.has(fk)) {
+        map.set(fk, []);
+      }
       map.get(fk)!.push(session);
     }
   }
