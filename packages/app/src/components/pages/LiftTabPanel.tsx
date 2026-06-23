@@ -4,7 +4,8 @@ import { useLastSessionStats } from '../../hooks/data/useLastSessionStats';
 import { ConjugateCharts } from '../conjugate/ConjugateCharts';
 import { DiagnosticsPanel } from '../shared/DiagnosticsPanel';
 import { VariationRadarChart } from '../charts/VariationRadarChart';
-import { applyFilters } from '@dyel/core';
+import { applyFilters, filterByDateRange } from '@dyel/core';
+import type { DateRange } from 'react-day-picker';
 import type { DeadliftStancePreference, FilterState, LiftType } from '@dyel/core';
 
 export function LiftTabPanel({
@@ -16,6 +17,7 @@ export function LiftTabPanel({
   onTargetChange,
   deadliftStance,
   onDeadliftStanceChange,
+  dateRange,
 }: {
   rows: ConjugateDataPair[];
   filters: FilterState;
@@ -25,10 +27,14 @@ export function LiftTabPanel({
   onTargetChange: (name: string | null) => void;
   deadliftStance: DeadliftStancePreference;
   onDeadliftStanceChange: (s: DeadliftStancePreference) => void;
+  dateRange: DateRange;
 }) {
   const [selectedVariation, setSelectedVariation] = useState<string | null>(null);
 
-  const filteredRows = useMemo(() => applyFilters(rows, filters), [rows, filters]);
+  const filteredRows = useMemo(
+    () => filterByDateRange(applyFilters(rows, filters), dateRange.from, dateRange.to),
+    [rows, filters, dateRange]
+  );
   const stats = useLastSessionStats(filteredRows, effectiveBaselineNames);
 
   function handleVariationClick(variation: string) {

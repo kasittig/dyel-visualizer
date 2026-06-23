@@ -1,6 +1,7 @@
 import { calcE1RM, invertE1RM } from './e1rm';
 import { familyKey } from '../../types/conjugate';
 import type { ConjugateExercise, ConjugateDataPair, TrainingSession } from '../../types/conjugate';
+import { filterByDateRange } from '../stats/exerciseFilters';
 
 export interface E1RMEstimate {
   e1rm: number;
@@ -41,25 +42,15 @@ export function findBestE1RM(
 ): E1RMEstimate | null {
   const { addlWtOffset, variantFactor } = stats;
 
-  // Normalize to local day boundaries so sessions on the start/end dates are always included.
-  // Both CSV dates and DayPicker dates are local midnight, but expanding to full-day ranges
-  // ensures start/end sessions aren't clipped by sub-millisecond timestamp differences.
-  const dayStart = new Date(
-    windowStart.getFullYear(),
-    windowStart.getMonth(),
-    windowStart.getDate()
-  );
-  const dayEnd = new Date(
-    windowEnd.getFullYear(),
-    windowEnd.getMonth(),
-    windowEnd.getDate(),
-    23,
-    59,
-    59,
-    999
-  );
+  const filteredPairs = filterByDateRange(pairs, windowStart, windowEnd);
 
   const exerciseByName = new Map<string, ConjugateExercise>();
+  for (const [ex] of pairs) {
+    if (!exerciseByName.has(ex.displayName)) {
+      exerciseByName.set(ex.displayName, ex);
+    }
+  }
+
   const targetFamily = familyKey(target);
 
   // Pre-scan: for each exercise name find the most recent session within the window,
@@ -70,13 +61,7 @@ export function findBestE1RM(
     set: { weight: number; reps: number };
   }
   const windowBestByName = new Map<string, WindowBest>();
-  for (const [ex, session] of pairs) {
-    if (!exerciseByName.has(ex.displayName)) {
-      exerciseByName.set(ex.displayName, ex);
-    }
-    if (session.date < dayStart || session.date > dayEnd) {
-      continue;
-    }
+  for (const [ex, session] of filteredPairs) {
     const prev = windowBestByName.get(ex.displayName);
     const t = session.date.getTime();
     const prevT = prev?.date.getTime() ?? -Infinity;

@@ -3,9 +3,15 @@
   font-family: sans-serif;
   text-align: left;
 }
-.content { margin-top: 1rem; }
-.errorMsg { color: red; }
-.accentLink { color: var(--accent); }
+.content {
+  margin-top: 1rem;
+}
+.errorMsg {
+  color: red;
+}
+.accentLink {
+  color: var(--accent);
+}
 
 .tabNav {
   display: flex;
@@ -28,4 +34,11 @@
   border-bottom-color: var(--accent);
   font-weight: 700;
   color: var(--accent);
+}
+
+.dateFilter {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
 }
