@@ -1,14 +1,12 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useConjugateData } from './hooks/conjugate/useConjugateData';
-import type { ConjugateDataPair } from './hooks/conjugate/useConjugateData';
-import { useLastSessionStats } from './hooks/data/useLastSessionStats';
 import { ExerciseFilters } from './components/shared/ExerciseFilters';
 import { RepCalculator } from './components/shared/RepCalculator';
 import { SigmaTab } from './components/pages/SigmaTab';
 import { LiftTabPanel } from './components/pages/LiftTabPanel';
 import { SheetUrlPanel } from './components/shared/SheetUrlPanel';
 import { GettingStarted } from './components/pages/GettingStarted';
-import { applyFilters, emptyFilters } from '@dyel/core';
+import { emptyFilters } from '@dyel/core';
 import type { DeadliftStancePreference, FilterState, LiftType } from '@dyel/core';
 import {
   extractSheetRef,
@@ -68,21 +66,13 @@ export function App() {
     [tabRows]
   );
 
-  const filteredRowsByTab = useMemo(
+  const tabFilters = useMemo(
     () =>
-      Object.fromEntries(
-        LIFT_TABS.map((tab) => [tab, applyFilters(tabRows[tab].maxEffort, tabState[tab].filters)])
-      ) as Record<LiftType, ConjugateDataPair[]>,
-    [tabRows, tabState]
-  );
-
-  const sqStats = useLastSessionStats(filteredRowsByTab.squat, effectiveBaselineNames);
-  const bpStats = useLastSessionStats(filteredRowsByTab.bench, effectiveBaselineNames);
-  const dlStats = useLastSessionStats(filteredRowsByTab.deadlift, effectiveBaselineNames);
-  const acStats = useLastSessionStats(filteredRowsByTab.accessory, effectiveBaselineNames);
-  const statsByTab = useMemo(
-    () => ({ squat: sqStats, bench: bpStats, deadlift: dlStats, accessory: acStats }),
-    [sqStats, bpStats, dlStats, acStats]
+      Object.fromEntries(LIFT_TABS.map((t) => [t, tabState[t].filters])) as Record<
+        LiftType,
+        FilterState
+      >,
+    [tabState]
   );
 
   function handleUrlChange(newUrl: string) {
@@ -179,9 +169,9 @@ export function App() {
             {activeTab === 'calculator' ? (
               <>
                 <RepCalculator
-                  pairsByTab={filteredRowsByTab}
+                  tabRows={tabRows}
                   baselineNames={effectiveBaselineNames}
-                  statsByTab={statsByTab}
+                  tabFilters={tabFilters}
                 />
               </>
             ) : activeTab === 'sigma' ? (
@@ -200,8 +190,8 @@ export function App() {
                 />
                 <LiftTabPanel
                   key={shownResetToken}
-                  filteredRows={filteredRowsByTab[liftTab]}
-                  stats={statsByTab[liftTab]}
+                  rows={tabRows[liftTab].maxEffort}
+                  filters={tabState[liftTab].filters}
                   effectiveBaselineNames={effectiveBaselineNames}
                   targetName={effectiveTargetNames[liftTab]!}
                   baselineName={effectiveBaselineNames[liftTab]}
