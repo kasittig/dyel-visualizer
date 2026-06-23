@@ -21,13 +21,14 @@ The app reads a **published Google Sheet** as CSV. Your sheet must be published 
 
 Your sheet needs a header row that contains at minimum:
 
-| Column     | Notes                                                                                                                              |
-| ---------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| `exercise` | Name of the exercise (see naming rules below)                                                                                      |
-| `date`     | Any standard date format (e.g. `2024-11-15` or `11/15/2024`)                                                                       |
-| `weight`   | The weight lifted. Rename to `weight (lbs)` or `weight (kg)` to set the unit. If you don't annotate the unit, the app assumes lbs. |
-| `reps`     | Number of reps performed                                                                                                           |
-| `sets`     | _(optional)_ Number of sets — defaults to 1 if omitted                                                                             |
+| Column     | Notes                                                                                                                                                                                                                                                                                                                                                |
+| ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `exercise` | Name of the exercise (see naming rules below)                                                                                                                                                                                                                                                                                                        |
+| `date`     | Any standard date format (e.g. `2024-11-15` or `11/15/2024`)                                                                                                                                                                                                                                                                                         |
+| `weight`   | The weight lifted. Rename to `weight (lbs)` or `weight (kg)` to set the unit. If you don't annotate the unit, the app assumes lbs.                                                                                                                                                                                                                   |
+| `reps`     | Number of reps performed                                                                                                                                                                                                                                                                                                                             |
+| `sets`     | _(optional)_ Number of sets — defaults to 1 if omitted                                                                                                                                                                                                                                                                                               |
+| `rpe`      | _(optional)_ Rate of Perceived Exertion on a **1–10 scale**. Without RPE, the app assumes every set was a rep max (0 reps in reserve). Adding RPE lets you include volume work in e1RM calculations — e.g. a 5-rep set at RPE 7 (3 RIR) is adjusted to an equivalent 8-rep max before the Epley formula is applied. Out-of-range values are ignored. |
 
 You can have rows above the header (for notes, a title, etc.) — the parser skips everything before the first row that contains the word "exercise".
 
@@ -67,12 +68,12 @@ Deadlift (deficit, conventional)
 ### Example Rows
 
 ```
-date,       exercise,                   weight (lbs), reps, sets
-2024-11-04, Squat,                      405,          2,    1
-2024-11-04, SSB Squat,                  335,          3,    1
-2024-11-06, Bench w/Commands,           245,          2,    1
+date,       exercise,                   weight (lbs), reps, sets, rpe
+2024-11-04, Squat,                      405,          2,    1,    9
+2024-11-04, SSB Squat,                  335,          3,    1,    8
+2024-11-06, Bench w/Commands,           245,          2,    1,    9.5
 2024-11-06, Floor Press,                205,          3,    1
-2024-11-08, Deadlift,                   455,          2,    1
+2024-11-08, Deadlift,                   455,          2,    1,    9
 2024-11-08, Deadlift (deficit),         385,          3,    1
 ```
 
@@ -146,9 +147,9 @@ Click "▼ Filters" to show filter chips. You can narrow the line chart to speci
 
 ### Variation Radar Chart
 
-A spider chart with one spoke per exercise variation, showing the **projected e1RM today** for each. Unlike the line chart (which shows history), this shows where the app estimates each variation is right now, using a linear trend fit to recent sessions.
+A spider chart with one spoke per exercise variation, showing the **normalized e1RM today** for each — expressed as a percentage of your selected target exercise's projected e1RM. A dashed reference ring marks 100% (the target e1RM). Unlike the line chart (which shows history), this shows where the app estimates each variation is right now, using a linear trend fit to recent sessions.
 
-**How to use it:** If one variation's spoke is noticeably shorter than the others, you haven't trained it recently or you're relatively weaker there. Clicking a spoke highlights that variation in the line chart above so you can see its history.
+**How to use it:** Spokes that fall outside the reference ring are running stronger than your target lift; spokes inside it are relatively weaker. Clicking a spoke highlights that variation in the line chart above so you can see its history.
 
 ### Diagnostics Panel
 
