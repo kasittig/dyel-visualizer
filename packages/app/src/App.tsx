@@ -204,6 +204,7 @@ export function App() {
                   stats={statsByTab[liftTab]}
                   effectiveBaselineNames={effectiveBaselineNames}
                   targetName={effectiveTargetNames[liftTab]!}
+                  baselineName={effectiveBaselineNames[liftTab]}
                   onTargetChange={(name) =>
                     setTabState((prev) => ({
                       ...prev,

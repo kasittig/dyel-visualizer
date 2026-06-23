@@ -12,6 +12,7 @@ export function LiftTabPanel({
   stats,
   effectiveBaselineNames,
   targetName,
+  baselineName,
   onTargetChange,
   deadliftStance,
   onDeadliftStanceChange,
@@ -20,6 +21,7 @@ export function LiftTabPanel({
   stats: SessionStats;
   effectiveBaselineNames: Partial<Record<LiftType, string>>;
   targetName: string;
+  baselineName?: string;
   onTargetChange: (name: string | null) => void;
   deadliftStance: DeadliftStancePreference;
   onDeadliftStanceChange: (s: DeadliftStancePreference) => void;
@@ -44,6 +46,8 @@ export function LiftTabPanel({
       <VariationRadarChart
         rows={filteredRows}
         stats={stats}
+        targetName={targetName}
+        baselineName={baselineName}
         onVariationClick={handleVariationClick}
       />
       <DiagnosticsPanel
