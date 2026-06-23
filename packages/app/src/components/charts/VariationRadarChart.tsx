@@ -53,6 +53,7 @@ export function VariationRadarChart({
 
   return (
     <BaseRadarChart
+      key={targetName}
       label="Normalized e1RM by variation"
       data={data}
       angleKey="variation"
