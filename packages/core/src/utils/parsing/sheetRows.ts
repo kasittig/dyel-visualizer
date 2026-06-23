@@ -1,4 +1,4 @@
-import Papa from 'papaparse';
+import { extractCsvHeaders, parseCsvRows } from './csvUtils';
 
 export type RawRow = Record<string, string>;
 
@@ -10,18 +10,14 @@ export type RawRow = Record<string, string>;
  */
 export function parseSheetRows(csv: string): { headerIdx: number; rows: RawRow[] } | null {
   const lines = csv.trim().split('\n');
-  const headerIdx = lines.findIndex((l) => l.toLowerCase().includes('exercise'));
-  if (headerIdx === -1 || headerIdx >= lines.length - 1) {
+  const result = extractCsvHeaders(csv, 'exercise');
+  if (result === null || result.lineIndex >= lines.length - 1) {
     return null;
   }
+  const { lineIndex: headerIdx } = result;
 
-  const { data } = Papa.parse<RawRow>(lines.slice(headerIdx).join('\n'), {
-    header: true,
-    skipEmptyLines: true,
-    transformHeader: (h) => h.trim().toLowerCase(),
-    transform: (v) => v.trim(),
-  });
-  return { headerIdx, rows: data };
+  const rows = parseCsvRows<RawRow>(lines.slice(headerIdx).join('\n'), [], (row) => row);
+  return { headerIdx, rows };
 }
 
 /** Reads the weight unit from a `weight (lbs)` / `weight (kg)` style column header. */

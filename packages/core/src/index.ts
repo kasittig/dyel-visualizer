@@ -35,6 +35,8 @@ export { validateSheetCsv } from './utils/parsing/validateSheetCsv';
 export type { IndexEntry } from './utils/parsing/parseIndexCsv';
 export { parseIndexCsv } from './utils/parsing/parseIndexCsv';
 
+export { extractCsvHeaders, parseCsvRows } from './utils/parsing/csvUtils';
+
 export type { FilterState } from './utils/stats/exerciseFilters';
 export { emptyFilters, applyFilters } from './utils/stats/exerciseFilters';
 
