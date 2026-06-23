@@ -60,16 +60,19 @@ export function generateDiagnostics(
     // For exercises with accommodating resistance (chains/bands), adjust recorded
     // weights by the estimated addlWt contribution before comparing to the anchor.
     let effectiveSessions = sessions;
+    let addlWtOffset: number | undefined;
     if (ex.addlWts.length > 0) {
       const familyStraight = straightByFamily.get(familyKey(ex)) ?? [];
-      const { sessions: adj, sampleCount: offsetSamples } = applyAddlWtOffset(
-        familyStraight,
-        sessions
-      );
+      const {
+        sessions: adj,
+        sampleCount: offsetSamples,
+        offset,
+      } = applyAddlWtOffset(familyStraight, sessions);
       if (offsetSamples === 0) {
         continue;
       }
       effectiveSessions = adj;
+      addlWtOffset = offset;
     }
 
     const { factor, sampleCount } = fitVariantFactor(anchorSessions, effectiveSessions);
@@ -165,6 +168,7 @@ export function generateDiagnostics(
       status,
       diagnostic: `${name} at ${Math.round(averageIndex)}%`,
       effects: [...allEffects],
+      addlWtOffset,
     });
   }
   return results;

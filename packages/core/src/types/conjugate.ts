@@ -69,6 +69,7 @@ export interface ConjugateExercise {
   status: 'optimal' | 'weakness' | 'overtrained' | null;
   diagnostic: string | null; // description only, no status prefix
   effects: EffectEnum[];
+  addlWtOffset?: number;
 }
 
 export type PrimaryLift = Exclude<ConjugateExercise['type'], 'accessory'>;
