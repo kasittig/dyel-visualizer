@@ -1,0 +1,9 @@
+.main {
+  padding: 2rem;
+  font-family: sans-serif;
+}
+.errorPre {
+  color: red;
+  font-size: 0.85rem;
+  white-space: pre-wrap;
+}

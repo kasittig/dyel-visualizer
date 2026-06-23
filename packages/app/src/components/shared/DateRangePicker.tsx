@@ -3,6 +3,7 @@ import * as Popover from '@radix-ui/react-popover';
 import { DayPicker } from 'react-day-picker';
 import type { DateRange } from 'react-day-picker';
 import 'react-day-picker/style.css';
+import styles from './DateRangePicker.module.css';
 
 function formatDate(d: Date | undefined): string {
   if (!d) {
@@ -22,22 +23,6 @@ function parseDate(text: string): Date | null {
   const d = t.includes('-') ? new Date(t + 'T12:00:00') : new Date(t);
   return isNaN(d.getTime()) ? null : d;
 }
-
-const inputStyle: React.CSSProperties = {
-  width: '7rem',
-  padding: '0.35rem 0.5rem',
-  fontSize: '0.9rem',
-  textAlign: 'center',
-  cursor: 'pointer',
-};
-
-const popoverStyle: React.CSSProperties = {
-  background: 'var(--bg)',
-  border: '1px solid var(--border)',
-  borderRadius: '0.5rem',
-  boxShadow: 'var(--shadow)',
-  zIndex: 50,
-};
 
 export function DateRangePicker({
   value,
@@ -110,20 +95,15 @@ export function DateRangePicker({
     }
   }
 
-  const muted: React.CSSProperties = { color: 'var(--text)', fontSize: '0.85rem' };
-
   return (
     <Popover.Root open={open} onOpenChange={setOpen}>
       <Popover.Anchor asChild>
-        <div
-          ref={containerRef}
-          style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}
-        >
+        <div ref={containerRef} className={styles.container}>
           <input
             type="text"
             value={startText}
             placeholder="M/D/YYYY"
-            style={inputStyle}
+            className={styles.input}
             onChange={(e) => handleStartChange(e.target.value)}
             onFocus={() => {
               setFocused('start');
@@ -134,12 +114,12 @@ export function DateRangePicker({
             }}
             onBlur={handleStartBlur}
           />
-          <span style={muted}>–</span>
+          <span className={styles.separator}>–</span>
           <input
             type="text"
             value={endText}
             placeholder="M/D/YYYY"
-            style={inputStyle}
+            className={styles.input}
             onChange={(e) => handleEndChange(e.target.value)}
             onFocus={() => {
               setFocused('end');
@@ -167,7 +147,7 @@ export function DateRangePicker({
               e.preventDefault();
             }
           }}
-          style={popoverStyle}
+          className={styles.popover}
         >
           <DayPicker
             mode="range"

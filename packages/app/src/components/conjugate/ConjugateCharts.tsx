@@ -11,6 +11,7 @@ import {
 } from '../../hooks/conjugate/useConjugateChartData';
 import { DateLineChart, ChartEmpty } from '../charts/DateLineChart';
 import { TooltipCard } from '../charts/TooltipCard';
+import styles from './ConjugateCharts.module.css';
 
 export function ConjugateCharts({
   rows,
@@ -61,19 +62,19 @@ export function ConjugateCharts({
       const isoDate = payload[0].payload!.date;
       return (
         <TooltipCard>
-          <div style={{ fontWeight: 600, marginBottom: '0.2rem' }}>{label}</div>
+          <div className={styles.tooltipDate}>{label}</div>
           {payload.map((item) => {
             const name = String(item.name);
             const bestSet =
               name !== NORMALIZED_KEY ? bestSetByLabelAndDate.get(name)?.get(isoDate) : undefined;
             return (
-              <div key={name} style={{ marginTop: '0.2rem' }}>
+              <div key={name} className={styles.tooltipItem}>
                 <div style={{ color: item.color }}>{name}</div>
                 <div>
                   e1RM: {String(item.value)} {unit}
                 </div>
                 {bestSet && (
-                  <div style={{ opacity: 0.7 }}>
+                  <div className={styles.tooltipMuted}>
                     {bestSet.sets}×{bestSet.reps} @ {bestSet.weight} {unit}
                     {bestSet.rpe != null ? ` · RPE ${bestSet.rpe}` : ''}
                   </div>
@@ -94,20 +95,13 @@ export function ConjugateCharts({
   return (
     <section>
       {baselineExercise && (
-        <div
-          style={{
-            fontSize: '0.8rem',
-            color: 'var(--text)',
-            marginBottom: '0.5rem',
-            textAlign: 'center',
-          }}
-        >
+        <div className={styles.targetRow}>
           <label>
             Competition variation:{' '}
             <select
               value={effectiveTargetName ?? ''}
               onChange={(e) => onTargetChange(e.target.value)}
-              style={{ fontSize: '0.8rem' }}
+              className={styles.targetSelect}
             >
               {variations.map((v) => (
                 <option key={v} value={v}>

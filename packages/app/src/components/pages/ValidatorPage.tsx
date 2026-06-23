@@ -1,17 +1,13 @@
-import { useState } from 'react';
+import { useState, type CSSProperties } from 'react';
+import clsx from 'clsx';
 import { useSheetValidation } from '../../hooks/infra/useSheetValidation';
 import type { SheetValidationResult, ColumnInfo } from '@dyel/core';
 import { EXAMPLE_SHEET_URL } from '../../utils/appUtils';
+import styles from './ValidatorPage.module.css';
 
 function Check({ ok }: { ok: boolean }) {
   return (
-    <span
-      style={{
-        color: ok ? 'var(--success)' : 'var(--danger)',
-        fontWeight: 600,
-        marginRight: '0.4rem',
-      }}
-    >
+    <span className={clsx(styles.check, ok ? styles.checkOk : styles.checkFail)}>
       {ok ? '✓' : '✗'}
     </span>
   );
@@ -34,19 +30,11 @@ function VerdictBanner({ result }: { result: SheetValidationResult }) {
 
   return (
     <div
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: '0.75rem',
-        padding: '1rem 1.25rem',
-        borderRadius: '8px',
-        border: `1.5px solid ${color}`,
-        background: `color-mix(in srgb, ${color} 8%, var(--bg))`,
-        marginBottom: '1.5rem',
-      }}
+      className={styles.verdictBanner}
+      style={{ '--verdict-color': color } as CSSProperties}
     >
-      <span style={{ fontSize: '1.5rem', color, lineHeight: 1 }}>{icon}</span>
-      <span style={{ color: 'var(--text-h)', fontWeight: 500 }}>{message}</span>
+      <span className={styles.verdictIcon}>{icon}</span>
+      <span className={styles.verdictMessage}>{message}</span>
     </div>
   );
 }
@@ -59,9 +47,9 @@ function ColumnChecklist({ columns }: { columns: ColumnInfo }) {
       : 'weight';
 
   return (
-    <section style={{ marginBottom: '1.5rem' }}>
-      <h2 style={{ marginBottom: '0.75rem' }}>Columns</h2>
-      <ul style={{ listStyle: 'none', padding: 0, margin: 0, fontSize: '0.95rem' }}>
+    <section className={styles.section}>
+      <h2 className={styles.sectionHeading}>Columns</h2>
+      <ul className={styles.checklistUl}>
         {(
           [
             { label: 'exercise', ok: columns.hasExercise },
@@ -74,7 +62,7 @@ function ColumnChecklist({ columns }: { columns: ColumnInfo }) {
             },
           ] as const
         ).map(({ label, ok }) => (
-          <li key={label} style={{ padding: '0.3rem 0', color: 'var(--text-h)' }}>
+          <li key={label} className={styles.checklistLi}>
             <Check ok={ok} />
             <code>{label}</code>
           </li>
@@ -92,31 +80,21 @@ function RowSummary({ rows }: { rows: SheetValidationResult['rows'] }) {
   const skipped = total - parsed;
 
   return (
-    <section style={{ marginBottom: '1.5rem' }}>
-      <h2 style={{ marginBottom: '0.75rem' }}>Rows</h2>
-      <p style={{ color: 'var(--text-h)', marginBottom: '0.5rem' }}>
+    <section className={styles.section}>
+      <h2 className={styles.sectionHeading}>Rows</h2>
+      <p className={styles.rowCountP}>
         <strong>
           {parsed} of {total}
         </strong>{' '}
         row{total === 1 ? '' : 's'} parsed successfully
-        {skipped > 0 && (
-          <span style={{ color: 'var(--danger)', marginLeft: '0.4rem' }}>({skipped} skipped)</span>
-        )}
+        {skipped > 0 && <span className={styles.skipped}>({skipped} skipped)</span>}
       </p>
       {parsed > 0 && (
-        <ul
-          style={{
-            listStyle: 'none',
-            padding: 0,
-            margin: 0,
-            fontSize: '0.9rem',
-            color: 'var(--text)',
-          }}
-        >
+        <ul className={styles.liftTypeUl}>
           {(['squat', 'bench', 'deadlift', 'accessory'] as const).map((t) => (
-            <li key={t} style={{ padding: '0.2rem 0' }}>
-              <span style={{ textTransform: 'capitalize', marginRight: '0.4rem' }}>{t}:</span>
-              <strong style={{ color: 'var(--text-h)' }}>{liftTypes[t]}</strong>
+            <li key={t} className={styles.liftTypeLi}>
+              <span className={styles.liftTypeLabel}>{t}:</span>
+              <strong className={styles.liftTypeCount}>{liftTypes[t]}</strong>
             </li>
           ))}
         </ul>
@@ -130,13 +108,13 @@ function IssueList({ title, items, color }: { title: string; items: string[]; co
     return null;
   }
   return (
-    <section style={{ marginBottom: '1.5rem' }}>
-      <h2 style={{ marginBottom: '0.75rem', color }}>{title}</h2>
-      <ul
-        style={{ padding: '0 0 0 1.25rem', margin: 0, fontSize: '0.95rem', color: 'var(--text-h)' }}
-      >
+    <section className={styles.section}>
+      <h2 className={styles.issueHeading} style={{ '--issue-color': color } as CSSProperties}>
+        {title}
+      </h2>
+      <ul className={styles.issueUl}>
         {items.map((item, i) => (
-          <li key={i} style={{ padding: '0.25rem 0' }}>
+          <li key={i} className={styles.issueLi}>
             {item}
           </li>
         ))}
@@ -150,29 +128,19 @@ function RowIssueList({ rowIssues }: { rowIssues: SheetValidationResult['rowIssu
     return null;
   }
   return (
-    <section style={{ marginBottom: '1.5rem' }}>
-      <h2 style={{ marginBottom: '0.75rem', color: 'var(--danger)' }}>Row Issues</h2>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+    <section className={styles.section}>
+      <h2 className={styles.dangerHeading}>Row Issues</h2>
+      <div className={styles.rowIssueStack}>
         {rowIssues.map(
           ({ row, exercise, issues }: { row: number; exercise: string; issues: string[] }) => (
-            <div
-              key={row}
-              style={{
-                padding: '0.75rem 1rem',
-                borderRadius: '6px',
-                border: '1px solid var(--border)',
-                background: 'var(--code-bg)',
-                fontSize: '0.9rem',
-                textAlign: 'left',
-              }}
-            >
-              <div style={{ fontWeight: 600, color: 'var(--text-h)', marginBottom: '0.3rem' }}>
+            <div key={row} className={styles.rowIssueCard}>
+              <div className={styles.rowIssueHeader}>
                 Data row {row}{' '}
-                <span style={{ fontWeight: 400, color: 'var(--text)' }}>— {exercise}</span>
+                <span className={styles.rowIssueExercise}>— {exercise}</span>
               </div>
-              <ul style={{ margin: 0, padding: '0 0 0 1.25rem' }}>
+              <ul className={styles.rowIssueUl}>
                 {issues.map((issue: string, i: number) => (
-                  <li key={i} style={{ color: 'var(--text-h)', padding: '0.1rem 0' }}>
+                  <li key={i} className={styles.rowIssueLi}>
                     {issue}
                   </li>
                 ))}
@@ -203,20 +171,7 @@ function ValidationResults({
       <RowIssueList rowIssues={result.rowIssues} />
       <IssueList title="Warnings" items={result.warnings} color="var(--warning)" />
       {result.rows.parsed > 0 && (
-        <a
-          href={visualizerUrl}
-          style={{
-            display: 'inline-block',
-            marginTop: '0.5rem',
-            padding: '0.6rem 1.25rem',
-            background: 'var(--accent)',
-            color: '#fff',
-            borderRadius: '6px',
-            textDecoration: 'none',
-            fontWeight: 500,
-            fontSize: '0.95rem',
-          }}
-        >
+        <a href={visualizerUrl} className={styles.visualizerLink}>
           View in Visualizer →
         </a>
       )}
@@ -233,64 +188,52 @@ export function ValidatorPage() {
     validate(url);
   }
 
+  const isDisabled = !url.trim() || validationState.status === 'loading';
+
   return (
-    <main style={{ padding: '2rem', fontFamily: 'sans-serif', textAlign: 'left' }}>
-      <div style={{ textAlign: 'center' }}>
+    <main className={styles.main}>
+      <div className={styles.header}>
         <h1>Sheet Validator</h1>
-        <p style={{ fontSize: '0.85rem', color: 'var(--text)', marginTop: '-0.5rem' }}>
-          <a href="./" style={{ color: 'var(--accent)' }}>
+        <p className={styles.backLinkP}>
+          <a href="./" className={styles.accentLink}>
             ← Back to DYEL Visualizer
           </a>
         </p>
       </div>
       <br />
 
-      <p style={{ color: 'var(--text)', marginBottom: '1.25rem', textAlign: 'center' }}>
+      <p className={styles.introP}>
         Paste your published Google Sheet URL below to check if it's compatible with DYEL
         Visualizer.
         <br /> <br />
         Don't have a sheet yet?{' '}
-        <a
-          href={EXAMPLE_SHEET_URL}
-          target="_blank"
-          rel="noreferrer"
-          style={{ color: 'var(--accent)' }}
-        >
+        <a href={EXAMPLE_SHEET_URL} target="_blank" rel="noreferrer" className={styles.accentLink}>
           View the example spreadsheet.
         </a>
       </p>
 
-      <form
-        onSubmit={handleSubmit}
-        style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}
-      >
+      <form onSubmit={handleSubmit} className={styles.form}>
         <input
           type="text"
           value={url}
           onChange={(e) => setUrl(e.target.value)}
           placeholder="https://docs.google.com/spreadsheets/d/…"
-          style={{ flex: 1, minWidth: '200px', padding: '0.5rem', boxSizing: 'border-box' }}
+          className={styles.urlInput}
         />
         <button
           type="submit"
-          disabled={!url.trim() || validationState.status === 'loading'}
-          style={{
-            padding: '0.5rem 1.25rem',
-            background: 'var(--accent)',
-            color: '#fff',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: url.trim() && validationState.status !== 'loading' ? 'pointer' : 'not-allowed',
-            fontWeight: 500,
-            opacity: !url.trim() || validationState.status === 'loading' ? 0.6 : 1,
-          }}
+          disabled={isDisabled}
+          className={clsx(
+            styles.submitButton,
+            isDisabled ? styles.submitButtonDisabled : styles.submitButtonEnabled
+          )}
         >
           {validationState.status === 'loading' ? 'Checking…' : 'Check Sheet'}
         </button>
       </form>
 
       {validationState.status === 'error' && (
-        <p style={{ color: 'var(--danger)', marginBottom: '1rem' }}>{validationState.message}</p>
+        <p className={styles.errorP}>{validationState.message}</p>
       )}
 
       {validationState.status === 'success' && (

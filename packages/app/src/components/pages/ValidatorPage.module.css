@@ -1,0 +1,171 @@
+.check {
+  font-weight: 600;
+  margin-right: 0.4rem;
+}
+.checkOk { color: var(--success); }
+.checkFail { color: var(--danger); }
+
+.verdictBanner {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  border-radius: 8px;
+  border: 1.5px solid var(--verdict-color);
+  background: color-mix(in srgb, var(--verdict-color) 8%, var(--bg));
+  margin-bottom: 1.5rem;
+}
+.verdictIcon {
+  font-size: 1.5rem;
+  color: var(--verdict-color);
+  line-height: 1;
+}
+.verdictMessage {
+  color: var(--text-h);
+  font-weight: 500;
+}
+
+.section { margin-bottom: 1.5rem; }
+.sectionHeading { margin-bottom: 0.75rem; }
+
+.checklistUl {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  font-size: 0.95rem;
+}
+.checklistLi {
+  padding: 0.3rem 0;
+  color: var(--text-h);
+}
+
+.rowCountP {
+  color: var(--text-h);
+  margin-bottom: 0.5rem;
+}
+.skipped {
+  color: var(--danger);
+  margin-left: 0.4rem;
+}
+.liftTypeUl {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--text);
+}
+.liftTypeLi { padding: 0.2rem 0; }
+.liftTypeLabel {
+  text-transform: capitalize;
+  margin-right: 0.4rem;
+}
+.liftTypeCount { color: var(--text-h); }
+
+.issueHeading {
+  margin-bottom: 0.75rem;
+  color: var(--issue-color);
+}
+.issueUl {
+  padding: 0 0 0 1.25rem;
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--text-h);
+}
+.issueLi { padding: 0.25rem 0; }
+
+.dangerHeading {
+  margin-bottom: 0.75rem;
+  color: var(--danger);
+}
+.rowIssueStack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.rowIssueCard {
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--code-bg);
+  font-size: 0.9rem;
+  text-align: left;
+}
+.rowIssueHeader {
+  font-weight: 600;
+  color: var(--text-h);
+  margin-bottom: 0.3rem;
+}
+.rowIssueExercise {
+  font-weight: 400;
+  color: var(--text);
+}
+.rowIssueUl {
+  margin: 0;
+  padding: 0 0 0 1.25rem;
+}
+.rowIssueLi {
+  color: var(--text-h);
+  padding: 0.1rem 0;
+}
+
+.visualizerLink {
+  display: inline-block;
+  margin-top: 0.5rem;
+  padding: 0.6rem 1.25rem;
+  background: var(--accent);
+  color: #fff;
+  border-radius: 6px;
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 0.95rem;
+}
+
+.main {
+  padding: 2rem;
+  font-family: sans-serif;
+  text-align: left;
+}
+.header { text-align: center; }
+.backLinkP {
+  font-size: 0.85rem;
+  color: var(--text);
+  margin-top: -0.5rem;
+}
+.accentLink { color: var(--accent); }
+.introP {
+  color: var(--text);
+  margin-bottom: 1.25rem;
+  text-align: center;
+}
+.form {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+.urlInput {
+  flex: 1;
+  min-width: 200px;
+  padding: 0.5rem;
+  box-sizing: border-box;
+}
+.submitButton {
+  padding: 0.5rem 1.25rem;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  font-weight: 500;
+}
+.submitButtonEnabled {
+  cursor: pointer;
+  opacity: 1;
+}
+.submitButtonDisabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+.errorP {
+  color: var(--danger);
+  margin-bottom: 1rem;
+}
