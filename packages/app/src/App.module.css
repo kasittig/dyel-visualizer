@@ -1,0 +1,31 @@
+.main {
+  padding: 2rem;
+  font-family: sans-serif;
+  text-align: left;
+}
+.content { margin-top: 1rem; }
+.errorMsg { color: red; }
+.accentLink { color: var(--accent); }
+
+.tabNav {
+  display: flex;
+  gap: 1.5rem;
+  border-bottom: 2px solid var(--border);
+  margin-bottom: 1rem;
+}
+.tab {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  padding: 0.4rem 0;
+  cursor: pointer;
+  font-weight: 400;
+  font-size: 1rem;
+  color: var(--text-h);
+}
+.tabActive {
+  border-bottom-color: var(--accent);
+  font-weight: 700;
+  color: var(--accent);
+}

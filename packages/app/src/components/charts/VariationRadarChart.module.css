@@ -1,0 +1,15 @@
+.section { margin-top: 1rem; }
+
+.label {
+  font-size: 0.8rem;
+  color: var(--text);
+  margin-bottom: 0.25rem;
+  text-align: center;
+}
+.chartWrapper {
+  width: 80%;
+  margin: 0 auto;
+}
+
+.tooltipName { font-weight: 600; }
+.tooltipMuted { opacity: 0.7; }

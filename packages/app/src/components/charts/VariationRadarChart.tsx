@@ -17,6 +17,7 @@ import type { ConjugateDataPair } from '../../hooks/conjugate/useConjugateData';
 import type { SessionStats } from '../../hooks/data/useLastSessionStats';
 import { TooltipCard } from './TooltipCard';
 import { distinctDisplayNames } from '../../utils/appUtils';
+import styles from './VariationRadarChart.module.css';
 
 const MIN_VARIATIONS = 3;
 
@@ -97,18 +98,9 @@ export function VariationRadarChart({
   const showTargetRing = data.some((d) => d.targetE1rm !== undefined);
 
   return (
-    <section style={{ marginTop: '1rem' }}>
-      <p
-        style={{
-          fontSize: '0.8rem',
-          color: 'var(--text)',
-          marginBottom: '0.25rem',
-          textAlign: 'center',
-        }}
-      >
-        Normalized e1RM by variation
-      </p>
-      <div style={{ width: '80%', margin: '0 auto' }}>
+    <section className={styles.section}>
+      <p className={styles.label}>Normalized e1RM by variation</p>
+      <div className={styles.chartWrapper}>
         <ResponsiveContainer width="100%" height={340}>
           <RadarChart
             key={targetName}
@@ -162,11 +154,11 @@ export function VariationRadarChart({
                   : 'Never';
                 return (
                   <TooltipCard>
-                    <div style={{ fontWeight: 600 }}>{name}</div>
+                    <div className={styles.tooltipName}>{name}</div>
                     <div>
                       Normalized e1RM: {Number(item.value).toFixed(2)} {unit}
                     </div>
-                    <div style={{ opacity: 0.7 }}>
+                    <div className={styles.tooltipMuted}>
                       Last session: {lastE1RM !== undefined ? `${lastE1RM.toFixed(2)} ${unit} · ` : ''}
                       {dateStr}
                       {bestSet

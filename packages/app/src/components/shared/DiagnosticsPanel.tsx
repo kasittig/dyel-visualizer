@@ -1,7 +1,8 @@
-import { useMemo } from 'react';
+import { useMemo, type CSSProperties } from 'react';
 import { generateDiagnostics } from '@dyel/core';
 import type { DeadliftStancePreference } from '@dyel/core';
 import type { ConjugateDataPair } from '../../hooks/conjugate/useConjugateData';
+import styles from './DiagnosticsPanel.module.css';
 
 function formatEffect(effect: string): string {
   return effect
@@ -9,13 +10,6 @@ function formatEffect(effect: string): string {
     .replace(/_/g, ' ')
     .replace(/\b\w/g, (c) => c.toUpperCase());
 }
-
-const cellStyle: React.CSSProperties = { padding: '0.5rem 0.75rem' };
-const monoStyle: React.CSSProperties = {
-  ...cellStyle,
-  fontFamily: 'var(--mono)',
-  textAlign: 'right',
-};
 
 export function DiagnosticsPanel({
   rows,
@@ -41,19 +35,19 @@ export function DiagnosticsPanel({
   }
 
   return (
-    <div style={{ marginTop: '1.5rem' }}>
+    <div className={styles.wrapper}>
       <h2>Diagnostics</h2>
       {hasDeadlift && (
-        <div style={{ marginBottom: '0.75rem', fontSize: '0.8rem', color: 'var(--text)' }}>
+        <div className={styles.stanceRow}>
           <span>Primary pull: </span>
           {(['conventional', 'sumo'] as const).map((s) => (
-            <label key={s} style={{ marginRight: '1rem', cursor: 'pointer' }}>
+            <label key={s} className={styles.stanceLabel}>
               <input
                 type="radio"
                 name="deadlift-stance"
                 checked={deadliftStance === s}
                 onChange={() => onDeadliftStanceChange(s)}
-                style={{ marginRight: '0.3rem' }}
+                className={styles.stanceRadio}
               />
               {s[0].toUpperCase() + s.slice(1)}
             </label>
@@ -61,20 +55,14 @@ export function DiagnosticsPanel({
         </div>
       )}
       {results.length > 0 && (
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
+        <table className={styles.table}>
           <thead>
-            <tr
-              style={{
-                borderBottom: '1px solid var(--border)',
-                color: 'var(--text)',
-                fontWeight: 600,
-              }}
-            >
-              <th style={{ ...cellStyle, textAlign: 'left' }}>Variation</th>
-              <th style={{ ...cellStyle, textAlign: 'left' }}>Effects</th>
-              <th style={{ ...monoStyle }}>Avg Index</th>
-              <th style={{ ...monoStyle }}>Baseline Range</th>
-              <th style={{ ...cellStyle, textAlign: 'left' }}>Diagnostic</th>
+            <tr className={styles.thead}>
+              <th className={styles.cellLeft}>Variation</th>
+              <th className={styles.cellLeft}>Effects</th>
+              <th className={styles.cellMono}>Avg Index</th>
+              <th className={styles.cellMono}>Baseline Range</th>
+              <th className={styles.cellLeft}>Diagnostic</th>
             </tr>
           </thead>
           <tbody>
@@ -93,19 +81,14 @@ export function DiagnosticsPanel({
                     ? 'Overtrained'
                     : 'Weakness';
               return (
-                <tr key={r.displayName} style={{ borderBottom: '1px solid var(--border)' }}>
-                  <td style={cellStyle}>{r.displayName}</td>
-                  <td style={{ ...cellStyle, color: 'var(--text)' }}>
-                    {r.effects.map(formatEffect).join(', ')}
-                  </td>
-                  <td style={monoStyle}>{r.averageIndex?.toFixed(1) ?? '-'}%</td>
-                  <td style={monoStyle}>{r.expectedBaseline}</td>
+                <tr key={r.displayName} className={styles.bodyRow}>
+                  <td className={styles.cell}>{r.displayName}</td>
+                  <td className={styles.cellText}>{r.effects.map(formatEffect).join(', ')}</td>
+                  <td className={styles.cellMono}>{r.averageIndex?.toFixed(1) ?? '-'}%</td>
+                  <td className={styles.cellMono}>{r.expectedBaseline}</td>
                   <td
-                    style={{
-                      ...cellStyle,
-                      color: diagnosticColor,
-                      fontWeight: 600,
-                    }}
+                    className={styles.cellDiagnostic}
+                    style={{ '--diagnostic-color': diagnosticColor } as CSSProperties}
                   >
                     {diagnosticLabel}
                   </td>

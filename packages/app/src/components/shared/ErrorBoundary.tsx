@@ -1,4 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
+import styles from './ErrorBoundary.module.css';
 
 interface Props {
   children: ReactNode;
@@ -22,12 +23,10 @@ export class ErrorBoundary extends Component<Props, State> {
   render() {
     if (this.state.error) {
       return (
-        <main style={{ padding: '2rem', fontFamily: 'sans-serif' }}>
+        <main className={styles.main}>
           <h1>Something went wrong</h1>
           <p>An unexpected error occurred. Try refreshing the page.</p>
-          <pre style={{ color: 'red', fontSize: '0.85rem', whiteSpace: 'pre-wrap' }}>
-            {this.state.error.message}
-          </pre>
+          <pre className={styles.errorPre}>{this.state.error.message}</pre>
         </main>
       );
     }

@@ -1,0 +1,17 @@
+.main {
+  padding: 2rem;
+  font-family: sans-serif;
+  text-align: left;
+}
+.header { text-align: center; }
+.errorMsg { color: red; }
+.list {
+  list-style: none;
+  padding: 0;
+  margin: 1.5rem 0;
+}
+.listItem {
+  padding: 0.4rem 0;
+  border-bottom: 1px solid var(--border);
+}
+.accentLink { color: var(--accent); }

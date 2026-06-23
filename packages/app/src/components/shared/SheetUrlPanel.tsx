@@ -1,15 +1,5 @@
-import type React from 'react';
 import { EXAMPLE_SHEET_URL, EXAMPLE_VISUALIZER_URL } from '../../utils/appUtils';
-
-const linkButtonStyle: React.CSSProperties = {
-  background: 'none',
-  border: 'none',
-  padding: 0,
-  cursor: 'pointer',
-  color: 'var(--accent)',
-  fontSize: 'inherit',
-  textDecoration: 'underline',
-};
+import styles from './SheetUrlPanel.module.css';
 
 /** App header: title plus the collapsible Google-Sheet URL input and helper links. */
 export function SheetUrlPanel({
@@ -30,43 +20,36 @@ export function SheetUrlPanel({
   onCancel: () => void;
 }) {
   return (
-    <div style={{ textAlign: 'center' }}>
+    <div className={styles.wrapper}>
       <h1>DYEL Visualizer</h1>
       {!showUrlPanel ? (
-        <p style={{ fontSize: '0.85rem', color: 'var(--text)', marginTop: '-0.5rem' }}>
-          <button onClick={onForceOpen} style={linkButtonStyle}>
+        <p className={styles.subtitle}>
+          <button onClick={onForceOpen} className={styles.linkButton}>
             Change sheet URL
           </button>
           {' · '}
-          <a href="?page=conjugate" style={{ color: 'var(--accent)' }}>
+          <a href="?page=conjugate" className={styles.accentLink}>
             What is the conjugate method?
           </a>
         </p>
       ) : (
         <>
-          <p style={{ fontSize: '0.85rem', color: 'var(--text)', marginTop: '-0.5rem' }}>
+          <p className={styles.subtitle}>
             {loaded ? (
-              <button onClick={onCancel} style={linkButtonStyle}>
+              <button onClick={onCancel} className={styles.linkButton}>
                 Cancel
               </button>
             ) : (
-              <a href="?page=conjugate" style={{ color: 'var(--accent)' }}>
+              <a href="?page=conjugate" className={styles.accentLink}>
                 What is the conjugate method?
               </a>
             )}
             {' · '}
-            <a href="?page=validator" style={{ color: 'var(--accent)' }}>
+            <a href="?page=validator" className={styles.accentLink}>
               Check if my spreadsheet will work
             </a>
           </p>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              marginBottom: '0.5rem',
-            }}
-          >
+          <div className={styles.urlRow}>
             <label htmlFor="sheet-url" style={{ whiteSpace: 'nowrap' }}>
               Your Google Sheet
             </label>
@@ -76,16 +59,14 @@ export function SheetUrlPanel({
               value={url}
               onChange={(e) => onUrlChange(e.target.value)}
               placeholder="https://docs.google.com/spreadsheets/d/…"
-              style={{ flex: 1, padding: '0.5rem', boxSizing: 'border-box' }}
+              className={styles.urlInput}
               autoFocus={loaded}
             />
           </div>
           {invalidUrl && (
-            <p style={{ color: 'red', marginTop: '0.5rem' }}>
-              That doesn't look like a Google Sheet URL.
-            </p>
+            <p className={styles.invalidUrl}>That doesn't look like a Google Sheet URL.</p>
           )}
-          <p style={{ fontSize: '0.85rem', color: 'var(--text)', marginTop: '0.5rem' }}>
+          <p className={styles.helperLinks}>
             Don't have a sheet?{' '}
             <a href={EXAMPLE_VISUALIZER_URL}>View an example in the visualizer</a>
             {' · '}

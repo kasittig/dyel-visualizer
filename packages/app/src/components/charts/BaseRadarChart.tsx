@@ -10,6 +10,7 @@ import {
   Tooltip,
   Text,
 } from 'recharts';
+import styles from './BaseRadarChart.module.css';
 
 // 1. Explicitly type every value as required to satisfy the "defined value" rule
 interface CustomAxisTickProps {
@@ -64,18 +65,9 @@ export function BaseRadarChart({
   onClick?: (label: string) => void;
 }) {
   return (
-    <section style={{ marginTop: '1rem' }}>
-      <p
-        style={{
-          fontSize: '0.8rem',
-          color: 'var(--text)',
-          marginBottom: '0.25rem',
-          textAlign: 'center',
-        }}
-      >
-        {label}
-      </p>
-      <div style={{ width: '80%', margin: '0 auto' }}>
+    <section className={styles.section}>
+      <p className={styles.label}>{label}</p>
+      <div className={styles.chartWrapper}>
         <ResponsiveContainer width="100%" height={340}>
           <RadarChart
             data={data}

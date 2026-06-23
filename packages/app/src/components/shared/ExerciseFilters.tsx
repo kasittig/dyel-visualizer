@@ -1,6 +1,8 @@
 import { memo, useMemo, useState } from 'react';
+import clsx from 'clsx';
 import type { FilterState } from '@dyel/core';
 import type { ConjugateDataPair } from '../../hooks/conjugate/useConjugateData';
+import styles from './ExerciseFilters.module.css';
 
 type SetFacet = keyof FilterState;
 
@@ -23,18 +25,7 @@ const FilterButton = memo(function FilterButton({
   return (
     <button
       onClick={onClick}
-      style={{
-        marginRight: '0.35rem',
-        marginBottom: '0.25rem',
-        padding: '0.2rem 0.6rem',
-        fontSize: '0.75rem',
-        border: '1px solid',
-        borderRadius: '999px',
-        cursor: 'pointer',
-        background: active ? 'var(--accent)' : 'transparent',
-        borderColor: active ? 'var(--accent)' : 'var(--border)',
-        color: active ? 'var(--bg)' : 'var(--text-h)',
-      }}
+      className={clsx(styles.filterButton, active && styles.filterButtonActive)}
     >
       {value}
     </button>
@@ -93,45 +84,24 @@ export function ExerciseFilters({
   );
 
   return (
-    <div style={{ marginBottom: '1rem' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+    <div className={styles.wrapper}>
+      <div className={styles.header}>
         <button
           onClick={() => setOpen((v) => !v)}
-          style={{
-            background: 'none',
-            border: 'none',
-            padding: 0,
-            cursor: 'pointer',
-            fontSize: '0.8rem',
-            color: 'var(--text)',
-            marginBottom: open ? '0.75rem' : 0,
-          }}
+          className={clsx(styles.toggleButton, open && styles.toggleButtonOpen)}
         >
           {open ? '▲' : '▼'} Filters{activeCount > 0 ? ` (${activeCount} active)` : ''}
         </button>
         {open && activeCount > 0 && onClearAll && (
-          <button
-            onClick={onClearAll}
-            style={{
-              background: 'none',
-              border: 'none',
-              padding: 0,
-              cursor: 'pointer',
-              fontSize: '0.75rem',
-              color: 'var(--accent)',
-              marginBottom: '0.75rem',
-            }}
-          >
+          <button onClick={onClearAll} className={styles.clearButton}>
             Clear all
           </button>
         )}
       </div>
       {open &&
         activeFacets.map((facet) => (
-          <div key={facet} style={{ marginBottom: '0.5rem' }}>
-            <span style={{ fontSize: '0.75rem', color: 'var(--text)', marginRight: '0.5rem' }}>
-              {FACET_LABELS[facet]}:
-            </span>
+          <div key={facet} className={styles.facetRow}>
+            <span className={styles.facetLabel}>{FACET_LABELS[facet]}:</span>
             {[...available[facet]].sort().map((value) => (
               <FilterButton
                 key={value}

@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
+import clsx from 'clsx';
 import { useConjugateData } from './hooks/conjugate/useConjugateData';
 import { ExerciseFilters } from './components/shared/ExerciseFilters';
 import { RepCalculator } from './components/shared/RepCalculator';
@@ -18,6 +19,7 @@ import {
 } from './utils/appUtils';
 import type { PageTab, TabState } from './utils/appUtils';
 import { buildTabRows, computeEffectiveNames, extractPairs } from './utils/appDataUtils';
+import styles from './App.module.css';
 
 export function App() {
   const [url, setUrl] = useState(
@@ -109,7 +111,7 @@ export function App() {
   }
 
   return (
-    <main style={{ padding: '2rem', fontFamily: 'sans-serif', textAlign: 'left' }}>
+    <main className={styles.main}>
       <SheetUrlPanel
         showUrlPanel={showUrlPanel}
         url={url}
@@ -120,27 +122,20 @@ export function App() {
         onCancel={() => setPanelForcedOpen(false)}
       />
 
-      <div style={{ marginTop: '1rem' }}>
+      <div className={styles.content}>
         {url.length === 0 && <GettingStarted />}
         {state.status === 'loading' && <p>Loading…</p>}
         {state.status === 'error' && (
-          <p style={{ color: 'red' }}>
+          <p className={styles.errorMsg}>
             {state.message}{' '}
-            <a href="?page=validator" style={{ color: 'var(--accent)' }}>
+            <a href="?page=validator" className={styles.accentLink}>
               Check your spreadsheet format
             </a>
           </p>
         )}
         {state.status === 'success' && (
           <>
-            <div
-              style={{
-                display: 'flex',
-                gap: '1.5rem',
-                borderBottom: '2px solid var(--border)',
-                marginBottom: '1rem',
-              }}
-            >
+            <div className={styles.tabNav}>
               {[
                 { id: 'sigma' as const, label: 'Σ' },
                 ...tabs,
@@ -149,18 +144,7 @@ export function App() {
                 <button
                   key={id}
                   onClick={() => setActiveTab(id)}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    borderBottom:
-                      activeTab === id ? '2px solid var(--accent)' : '2px solid transparent',
-                    marginBottom: '-2px',
-                    padding: '0.4rem 0',
-                    cursor: 'pointer',
-                    fontWeight: activeTab === id ? 700 : 400,
-                    fontSize: '1rem',
-                    color: activeTab === id ? 'var(--accent)' : 'var(--text-h)',
-                  }}
+                  className={clsx(styles.tab, activeTab === id && styles.tabActive)}
                 >
                   {label}
                 </button>

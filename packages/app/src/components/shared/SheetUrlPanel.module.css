@@ -1,0 +1,39 @@
+.wrapper { text-align: center; }
+
+.subtitle {
+  font-size: 0.85rem;
+  color: var(--text);
+  margin-top: -0.5rem;
+}
+.accentLink { color: var(--accent); }
+
+.linkButton {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: var(--accent);
+  font-size: inherit;
+  text-decoration: underline;
+}
+
+.urlRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+.urlInput {
+  flex: 1;
+  padding: 0.5rem;
+  box-sizing: border-box;
+}
+.invalidUrl {
+  color: red;
+  margin-top: 0.5rem;
+}
+.helperLinks {
+  font-size: 0.85rem;
+  color: var(--text);
+  margin-top: 0.5rem;
+}
