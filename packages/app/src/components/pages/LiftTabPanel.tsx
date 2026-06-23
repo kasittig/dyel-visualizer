@@ -4,6 +4,7 @@ import { useLastSessionStats } from '../../hooks/data/useLastSessionStats';
 import { ConjugateCharts } from '../conjugate/ConjugateCharts';
 import { DiagnosticsPanel } from '../shared/DiagnosticsPanel';
 import { VariationRadarChart } from '../charts/VariationRadarChart';
+import { CollapsibleSection } from '../shared/CollapsibleSection';
 import { EditableDateChip } from '../shared/EditableDateChip';
 import { applyFilters, filterByDateRange } from '@dyel/core';
 import type { DateRange } from 'react-day-picker';
@@ -35,7 +36,6 @@ export function LiftTabPanel({
   onDateRangeChange: (range: DateRange) => void;
 }) {
   const [selectedVariation, setSelectedVariation] = useState<string | null>(null);
-  const [performanceExpanded, setPerformanceExpanded] = useState(true);
 
   const filteredRows = useMemo(
     () => filterByDateRange(applyFilters(rows, filters), dateRange.from, dateRange.to),
@@ -51,12 +51,10 @@ export function LiftTabPanel({
 
   return (
     <>
-      <button className="tab-title" onClick={() => setPerformanceExpanded((v) => !v)}>
-        <span className="tab-title-toggle">{performanceExpanded ? '▾' : '▸'}</span>
-        <span className="tab-title-label">{label} performance</span>
-        <EditableDateChip dateRange={dateRange} onDateRangeChange={onDateRangeChange} />
-      </button>
-      {performanceExpanded && (
+      <CollapsibleSection
+        label={`${label} performance`}
+        trailing={<EditableDateChip dateRange={dateRange} onDateRangeChange={onDateRangeChange} />}
+      >
         <ConjugateCharts
           rows={filteredRows}
           baselineNames={effectiveBaselineNames}
@@ -66,7 +64,7 @@ export function LiftTabPanel({
           highlightedVariation={selectedVariation}
           onVariationClick={handleVariationClick}
         />
-      )}
+      </CollapsibleSection>
       <VariationRadarChart
         rows={filteredRows}
         stats={stats}

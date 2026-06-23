@@ -4,25 +4,7 @@ import { DayPicker } from 'react-day-picker';
 import type { DateRange } from 'react-day-picker';
 import 'react-day-picker/style.css';
 import styles from './DateRangePicker.module.css';
-
-function formatDate(d: Date | undefined): string {
-  if (!d) {
-    return '';
-  }
-  return d.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric' });
-}
-
-function parseDate(text: string): Date | null {
-  const t = text.trim();
-  if (!t) {
-    return null;
-  }
-  if (!/^(\d{1,2}\/\d{1,2}\/\d{4}|\d{4}-\d{1,2}-\d{1,2})$/.test(t)) {
-    return null;
-  }
-  const d = t.includes('-') ? new Date(t + 'T12:00:00') : new Date(t);
-  return isNaN(d.getTime()) ? null : d;
-}
+import { formatDate, parseDate } from '../../utils/dateUtils';
 
 const PRESETS: {
   label: string;
@@ -140,6 +122,22 @@ export function DateRangePicker({
       setEndText(formatDate(value.to));
     }
   }, [value.to]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // When value changes to match a preset (e.g. on initial data load), close the custom picker.
+  useEffect(() => {
+    if (
+      PRESETS.some((p) => {
+        const range = p.getRange(latestDate, earliestDate);
+        return (
+          value.from?.toDateString() === range.from?.toDateString() &&
+          value.to?.toDateString() === range.to?.toDateString()
+        );
+      })
+    ) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setShowCustomPicker(false);
+    }
+  }, [value.from, value.to, latestDate, earliestDate]);
 
   function handleStartChange(text: string) {
     setStartText(text);

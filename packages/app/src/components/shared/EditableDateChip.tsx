@@ -2,25 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import type React from 'react';
 import type { DateRange } from 'react-day-picker';
 import styles from './EditableDateChip.module.css';
-
-function formatFull(d: Date | undefined): string {
-  if (!d) {
-    return '';
-  }
-  return d.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric' });
-}
-
-function parseDate(text: string): Date | null {
-  const t = text.trim();
-  if (!t) {
-    return null;
-  }
-  if (!/^(\d{1,2}\/\d{1,2}\/\d{4}|\d{4}-\d{1,2}-\d{1,2})$/.test(t)) {
-    return null;
-  }
-  const d = t.includes('-') ? new Date(t + 'T12:00:00') : new Date(t);
-  return isNaN(d.getTime()) ? null : d;
-}
+import { formatDate, parseDate } from '../../utils/dateUtils';
 
 function shortDate(d: Date | undefined): string {
   if (!d) {
@@ -37,17 +19,16 @@ export function EditableDateChip({
   onDateRangeChange: (range: DateRange) => void;
 }) {
   const [isEditing, setIsEditing] = useState(false);
-  const [fromText, setFromText] = useState(() => formatFull(dateRange.from));
-  const [toText, setToText] = useState(() => formatFull(dateRange.to));
+  const [fromText, setFromText] = useState(() => formatDate(dateRange.from));
+  const [toText, setToText] = useState(() => formatDate(dateRange.to));
   const fromRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
     if (!isEditing) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
-      setFromText(formatFull(dateRange.from));
-
-      setToText(formatFull(dateRange.to));
+      setFromText(formatDate(dateRange.from));
+      setToText(formatDate(dateRange.to));
     }
   }, [dateRange.from, dateRange.to, isEditing]);
 
@@ -64,15 +45,15 @@ export function EditableDateChip({
     if (from && to) {
       onDateRangeChange({ from, to });
     } else {
-      setFromText(formatFull(dateRange.from));
-      setToText(formatFull(dateRange.to));
+      setFromText(formatDate(dateRange.from));
+      setToText(formatDate(dateRange.to));
     }
     setIsEditing(false);
   }
 
   function cancel() {
-    setFromText(formatFull(dateRange.from));
-    setToText(formatFull(dateRange.to));
+    setFromText(formatDate(dateRange.from));
+    setToText(formatDate(dateRange.to));
     setIsEditing(false);
   }
 
