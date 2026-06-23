@@ -42,3 +42,39 @@
   font-weight: 600;
   color: var(--diagnostic-color);
 }
+
+.summary {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-bottom: 1rem;
+  font-size: 0.85rem;
+}
+.summaryRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.summaryLabel {
+  color: var(--text);
+  font-weight: 600;
+  min-width: 6rem;
+}
+.chip {
+  display: inline-block;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  background-color: var(--chip-bg);
+  color: var(--chip-color);
+}
+.chipDanger {
+  --chip-bg: color-mix(in srgb, var(--danger) 15%, transparent);
+  --chip-color: var(--danger);
+}
+.chipWarning {
+  --chip-bg: color-mix(in srgb, var(--warning) 15%, transparent);
+  --chip-color: var(--warning);
+}

@@ -30,6 +30,17 @@ export function DiagnosticsPanel({
     [rows, targetName, deadliftStance]
   );
 
+  const weakEffects = useMemo(
+    () => [...new Set(results.filter((r) => r.status === 'weakness').flatMap((r) => r.effects))],
+    [results]
+  );
+  const overtrainedEffects = useMemo(
+    () => [
+      ...new Set(results.filter((r) => r.status === 'overtrained').flatMap((r) => r.effects)),
+    ],
+    [results]
+  );
+
   if (results.length === 0) {
     return null;
   }
@@ -37,6 +48,30 @@ export function DiagnosticsPanel({
   return (
     <div className={styles.wrapper}>
       <h2>Diagnostics</h2>
+      {(weakEffects.length > 0 || overtrainedEffects.length > 0) && (
+        <div className={styles.summary}>
+          {weakEffects.length > 0 && (
+            <div className={styles.summaryRow}>
+              <span className={styles.summaryLabel}>Weak spots:</span>
+              {weakEffects.map((e) => (
+                <span key={e} className={`${styles.chip} ${styles.chipDanger}`}>
+                  {formatEffect(e)}
+                </span>
+              ))}
+            </div>
+          )}
+          {overtrainedEffects.length > 0 && (
+            <div className={styles.summaryRow}>
+              <span className={styles.summaryLabel}>Overworked:</span>
+              {overtrainedEffects.map((e) => (
+                <span key={e} className={`${styles.chip} ${styles.chipWarning}`}>
+                  {formatEffect(e)}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
       {hasDeadlift && (
         <div className={styles.stanceRow}>
           <span>Primary pull: </span>
