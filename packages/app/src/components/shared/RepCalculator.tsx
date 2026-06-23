@@ -1,11 +1,10 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 import type { DateRange } from 'react-day-picker';
 import { DateRangePicker } from './DateRangePicker';
-import { findBestE1RM, predictWeightForReps, predictRepsForWeight } from '@dyel/core';
-import type { ConjugateDataPair } from '../../hooks/conjugate/useConjugateData';
-import type { SessionStats } from '../../hooks/data/useLastSessionStats';
-import type { E1RMEstimate, LiftType } from '@dyel/core';
-import { distinctDisplayNames } from '../../utils/appUtils';
+import { findBestE1RM, predictWeightForReps, predictRepsForWeight, applyFilters, buildSessionStats } from '@dyel/core';
+import type { ConjugateDataPair, E1RMEstimate, FilterState, LiftType, SessionStats } from '@dyel/core';
+import type { SplitRows } from '../../utils/appDataUtils';
+import { distinctDisplayNames, LIFT_TABS } from '../../utils/appUtils';
 
 const LIFT_LABELS: Record<LiftType, string> = {
   squat: 'Squat',
@@ -31,13 +30,13 @@ function sourceNote(estimate: E1RMEstimate): string {
 }
 
 export function RepCalculator({
-  pairsByTab,
+  tabRows,
   baselineNames,
-  statsByTab,
+  tabFilters,
 }: {
-  pairsByTab: Record<LiftType, ConjugateDataPair[]>;
+  tabRows: Record<LiftType, SplitRows>;
   baselineNames: Partial<Record<string, string>>;
-  statsByTab: Record<LiftType, SessionStats>;
+  tabFilters: Record<LiftType, FilterState>;
 }) {
   const [liftType, setLiftType] = useState<LiftType>('squat');
   const [selectedName, setSelectedName] = useState('');
@@ -48,12 +47,23 @@ export function RepCalculator({
     to: new Date(),
   }));
 
+  const { pairsByTab, statsByTab } = useMemo(() => {
+    const today = new Date();
+    const pairs = Object.fromEntries(
+      LIFT_TABS.map((tab) => [tab, applyFilters(tabRows[tab].maxEffort, tabFilters[tab])])
+    ) as Record<LiftType, ConjugateDataPair[]>;
+    const stats = Object.fromEntries(
+      LIFT_TABS.map((tab) => [tab, buildSessionStats(pairs[tab], baselineNames, today)])
+    ) as Record<LiftType, SessionStats>;
+    return { pairsByTab: pairs, statsByTab: stats };
+  }, [tabRows, tabFilters, baselineNames]);
+
   const pairs = pairsByTab[liftType];
   const stats = statsByTab[liftType];
 
   const unit = pairs[0]?.[1].unit ?? 'lbs';
 
-  const hasAccessories = pairsByTab.accessory.length > 0;
+  const hasAccessories = tabRows.accessory.all.length > 0;
 
   const exercisesForType = useMemo(
     () => distinctDisplayNames(pairs).sort((a, b) => a.localeCompare(b)),
