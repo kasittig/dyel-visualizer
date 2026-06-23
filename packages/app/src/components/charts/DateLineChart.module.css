@@ -1,5 +1,2 @@
 .emptyMsg { color: var(--text); }
-.chartWrapper {
-  width: 80%;
-  margin: 0 auto;
-}
+.chartWrapper { composes: chartWrapper from './charts.module.css'; }
