@@ -35,7 +35,9 @@ export function VariationRadarChart({
       .map((name) => {
         const sourceEx = exerciseByName.get(name);
         const lastSess = stats.lastSession.get(name);
-        if (!sourceEx || !lastSess || !targetEx) return { variation: name, e1rm: undefined };
+        if (!sourceEx || !lastSess || !targetEx) {
+          return { variation: name, e1rm: undefined };
+        }
         return {
           variation: name,
           e1rm:
