@@ -1,10 +1,6 @@
 # DYEL Visualizer
 
-This visualizer lets you quickly search your lifting spreadsheet for key information like:
-
-- When you last performed an exercise
-- Your best estimated 1RM
-- The last time you PRed
+This visualizer lets you easily view trends in your lifting spreadsheet so that you can see how your strength is developing. It's specifically designed to help lifters following the [Conjugate Method](CONJUGATE.md) who frequently perform variations of the squat, bench, and deadlift, but it can be used to get some insight into any lifting log that conforms to its input format.
 
 The visualizer can read any published Google Sheet in CSV format. It expects the following column names:
 
