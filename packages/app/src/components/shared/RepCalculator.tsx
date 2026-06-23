@@ -5,6 +5,7 @@ import { findBestE1RM, predictWeightForReps, predictRepsForWeight, applyFilters,
 import type { ConjugateDataPair, E1RMEstimate, FilterState, LiftType, SessionStats } from '@dyel/core';
 import type { SplitRows } from '../../utils/appDataUtils';
 import { distinctDisplayNames, LIFT_TABS } from '../../utils/appUtils';
+import styles from './RepCalculator.module.css';
 
 const LIFT_LABELS: Record<LiftType, string> = {
   squat: 'Squat',
@@ -142,36 +143,20 @@ export function RepCalculator({
     }
   }
 
-  const muted: React.CSSProperties = { color: 'var(--text)', fontSize: '0.85rem' };
-  const inputStyle: React.CSSProperties = {
-    width: '6rem',
-    padding: '0.4rem 0.5rem',
-    fontSize: '1rem',
-    textAlign: 'center',
-  };
-
   return (
     <section>
-      <h2 style={{ textAlign: 'center' }}>Rep Calculator</h2>
+      <h2 className={styles.heading}>Rep Calculator</h2>
 
-      <div
-        style={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          gap: '1rem',
-          alignItems: 'center',
-          marginBottom: '1.5rem',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <label htmlFor="calc-lift" style={muted}>
+      <div className={styles.controlsRow}>
+        <div className={styles.controlGroup}>
+          <label htmlFor="calc-lift" className={styles.muted}>
             Lift
           </label>
           <select
             id="calc-lift"
             value={liftType}
             onChange={(e) => setLiftType(e.target.value as LiftType)}
-            style={{ fontSize: '1rem' }}
+            className={styles.select}
           >
             {(Object.keys(LIFT_LABELS) as LiftType[])
               .filter((t) => t !== 'accessory' || hasAccessories)
@@ -183,8 +168,8 @@ export function RepCalculator({
           </select>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <label htmlFor="calc-exercise" style={muted}>
+        <div className={styles.controlGroup}>
+          <label htmlFor="calc-exercise" className={styles.muted}>
             Exercise
           </label>
           <select
@@ -193,7 +178,7 @@ export function RepCalculator({
             onChange={(e) => {
               setSelectedName(e.target.value);
             }}
-            style={{ fontSize: '1rem' }}
+            className={styles.select}
           >
             {exercisesForType.map((name) => (
               <option key={name} value={name}>
@@ -205,31 +190,18 @@ export function RepCalculator({
       </div>
 
       {exercisesForType.length === 0 ? (
-        <p style={muted}>No {LIFT_LABELS[liftType].toLowerCase()} exercises found in your data.</p>
+        <p className={styles.muted}>
+          No {LIFT_LABELS[liftType].toLowerCase()} exercises found in your data.
+        </p>
       ) : estimate === null ? (
-        <p style={muted}>
+        <p className={styles.muted}>
           No session data found in the selected window — try widening the date range.
         </p>
       ) : (
         <>
-          <div
-            style={{
-              display: 'flex',
-              flexWrap: 'wrap',
-              gap: '1.5rem',
-              alignItems: 'center',
-              marginBottom: '1rem',
-            }}
-          >
-            <div
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: '0.25rem',
-              }}
-            >
-              <label htmlFor="calc-reps" style={muted}>
+          <div className={styles.calcRow}>
+            <div className={styles.calcField}>
+              <label htmlFor="calc-reps" className={styles.muted}>
                 Reps
               </label>
               <input
@@ -240,30 +212,14 @@ export function RepCalculator({
                 value={reps}
                 onChange={(e) => handleRepsChange(e.target.value)}
                 placeholder="—"
-                style={inputStyle}
+                className={styles.input}
               />
             </div>
 
-            <span
-              style={{
-                fontSize: '1.25rem',
-                color: 'var(--text)',
-                alignSelf: 'flex-end',
-                paddingBottom: '0.35rem',
-              }}
-            >
-              ↔
-            </span>
+            <span className={styles.swapIcon}>↔</span>
 
-            <div
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: '0.25rem',
-              }}
-            >
-              <label htmlFor="calc-weight" style={muted}>
+            <div className={styles.calcField}>
+              <label htmlFor="calc-weight" className={styles.muted}>
                 Weight ({unit})
               </label>
               <input
@@ -273,21 +229,21 @@ export function RepCalculator({
                 value={weight}
                 onChange={(e) => handleWeightChange(e.target.value)}
                 placeholder="—"
-                style={inputStyle}
+                className={styles.input}
               />
             </div>
 
-            <div style={{ ...muted, alignSelf: 'flex-end', paddingBottom: '0.5rem' }}>
+            <div className={styles.e1rmDisplay}>
               e1RM: {Math.round(estimate.e1rm)} {unit}
             </div>
           </div>
 
-          <p style={{ ...muted, marginTop: 0 }}>{sourceNote(estimate)}</p>
+          <p className={styles.sourceNote}>{sourceNote(estimate)}</p>
         </>
       )}
 
-      <div style={{ marginTop: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-        <span style={muted}>Data window</span>
+      <div className={styles.dataWindowRow}>
+        <span className={styles.muted}>Data window</span>
         <DateRangePicker value={dateRange} onChange={setDateRange} sessionDates={sessionDates} />
       </div>
     </section>

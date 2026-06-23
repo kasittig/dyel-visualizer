@@ -1,0 +1,44 @@
+.wrapper { margin-top: 1.5rem; }
+
+.stanceRow {
+  margin-bottom: 0.75rem;
+  font-size: 0.8rem;
+  color: var(--text);
+}
+.stanceLabel {
+  margin-right: 1rem;
+  cursor: pointer;
+}
+.stanceRadio { margin-right: 0.3rem; }
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+.thead {
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  font-weight: 600;
+}
+.bodyRow { border-bottom: 1px solid var(--border); }
+
+.cell { padding: 0.5rem 0.75rem; }
+.cellLeft {
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+}
+.cellMono {
+  padding: 0.5rem 0.75rem;
+  font-family: var(--mono);
+  text-align: right;
+}
+.cellText {
+  padding: 0.5rem 0.75rem;
+  color: var(--text);
+}
+.cellDiagnostic {
+  padding: 0.5rem 0.75rem;
+  font-weight: 600;
+  color: var(--diagnostic-color);
+}
