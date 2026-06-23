@@ -107,6 +107,21 @@ export function fitVariantFactor(
   return { factor: mean, sampleCount: factors.length };
 }
 
+export function applyAddlWtOffset(
+  straightSessions: TrainingSession[],
+  variantSessions: TrainingSession[]
+): { sessions: TrainingSession[]; offset: number; sampleCount: number } {
+  const { offset, sampleCount } = fitAddlWtOffset(straightSessions, variantSessions);
+  return {
+    sessions:
+      sampleCount > 0
+        ? variantSessions.map((s) => ({ ...s, weight: s.weight + offset }))
+        : variantSessions,
+    offset,
+    sampleCount,
+  };
+}
+
 export function fitAddlWtOffset(
   straightSessions: TrainingSession[],
   variantSessions: TrainingSession[]

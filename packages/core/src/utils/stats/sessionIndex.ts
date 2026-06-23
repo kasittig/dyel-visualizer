@@ -1,6 +1,6 @@
 import { familyKey, variantLabel } from '../../types/conjugate';
 import type { ConjugateDataPair, TrainingSession } from '../../types/conjugate';
-import { fitAddlWtOffset, fitVariantFactor, predictE1RM } from '../math/e1rm';
+import { applyAddlWtOffset, fitVariantFactor, predictE1RM } from '../math/e1rm';
 import type { RepCalcStats } from '../math/repCalculator';
 
 export interface LastSession {
@@ -12,6 +12,20 @@ export interface LastSession {
 export interface SessionStats extends RepCalcStats {
   lastSession: Map<string, TrainingSession>;
   projectedE1RM: Map<string, number>;
+}
+
+export function buildStraightByFamily(pairs: ConjugateDataPair[]): Map<string, TrainingSession[]> {
+  const map = new Map<string, TrainingSession[]>();
+  for (const [ex, session] of pairs) {
+    if (ex.addlWts.length === 0 && ex.type !== 'accessory') {
+      const fk = familyKey(ex);
+      if (!map.has(fk)) {
+        map.set(fk, []);
+      }
+      map.get(fk)!.push(session);
+    }
+  }
+  return map;
 }
 
 interface ExData {
@@ -29,7 +43,7 @@ export function buildSessionStats(
 ): SessionStats {
   const lastSession = new Map<string, TrainingSession>();
   const dataByName = new Map<string, ExData>();
-  const straightByFamily = new Map<string, TrainingSession[]>();
+  const straightByFamily = buildStraightByFamily(pairs);
 
   for (const [exercise, session] of pairs) {
     const name = exercise.displayName;
@@ -56,14 +70,6 @@ export function buildSessionStats(
       });
     }
     dataByName.get(name)!.sessions.push(session);
-
-    // Track family sessions without additional weight
-    if (exercise.addlWts.length === 0) {
-      if (!straightByFamily.has(fk)) {
-        straightByFamily.set(fk, []);
-      }
-      straightByFamily.get(fk)!.push(session);
-    }
   }
 
   const addlWtOffset = new Map<string, { offset: number; sampleCount: number }>();
@@ -76,9 +82,12 @@ export function buildSessionStats(
   // 2. Calculations Pass (Combined the two separate loops over dataByName into one)
   for (const [name, data] of dataByName) {
     // A. Handle Offset Adjustments
+    let adjustedSessions = data.sessions;
     if (data.isAddlWt) {
       const familySessions = straightByFamily.get(data.family) ?? [];
-      addlWtOffset.set(name, fitAddlWtOffset(familySessions, data.sessions));
+      const { sessions, offset, sampleCount } = applyAddlWtOffset(familySessions, data.sessions);
+      addlWtOffset.set(name, { offset, sampleCount });
+      adjustedSessions = sessions;
     }
 
     // B. Project e1RM Maxes
@@ -92,14 +101,6 @@ export function buildSessionStats(
     if (name === baselineName) {
       continue;
     } // Skip identical baselines
-
-    const offsetEntry = addlWtOffset.get(name);
-    const hasValidOffset = offsetEntry && offsetEntry.sampleCount > 0;
-
-    // Shift weight calculations only if we have sampled offset calculations
-    const adjustedSessions = hasValidOffset
-      ? data.sessions.map((s) => ({ ...s, weight: s.weight + offsetEntry.offset }))
-      : data.sessions;
 
     const baselineSessions = baselineName ? (dataByName.get(baselineName)?.sessions ?? []) : [];
     const { factor, sampleCount } = fitVariantFactor(baselineSessions, adjustedSessions);

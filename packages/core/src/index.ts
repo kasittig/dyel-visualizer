@@ -19,6 +19,7 @@ export {
   invertE1RM,
   predictE1RM,
   fitAddlWtOffset,
+  applyAddlWtOffset,
   fitVariantFactor,
 } from './utils/math/e1rm';
 
@@ -46,7 +47,7 @@ export {
 } from './utils/math/repCalculator';
 
 export type { SessionStats, LastSession } from './utils/stats/sessionIndex';
-export { buildSessionStats } from './utils/stats/sessionIndex';
+export { buildSessionStats, buildStraightByFamily } from './utils/stats/sessionIndex';
 
 export { setsRepsLabel } from './utils/chart/setsRepsLabel';
 

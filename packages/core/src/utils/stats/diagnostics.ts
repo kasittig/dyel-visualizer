@@ -1,6 +1,7 @@
 // eslint-disable-next-line @typescript-eslint/triple-slash-reference
 /// <reference path="../../../../../global.d.ts" />
 
+import { familyKey } from '../../types/conjugate';
 import type {
   ConjugateDataPair,
   ConjugateExercise,
@@ -8,7 +9,8 @@ import type {
   EffectEnum,
   TrainingSession,
 } from '../../types/conjugate';
-import { fitVariantFactor } from '../math/e1rm';
+import { applyAddlWtOffset, fitVariantFactor } from '../math/e1rm';
+import { buildStraightByFamily } from './sessionIndex';
 
 type ModifierEffectEntry =
   | { effects: EffectEnum[]; min: number; max: number }
@@ -40,6 +42,7 @@ export function generateDiagnostics(
   const results: ConjugateExercise[] = [];
   const anchorSessions: TrainingSession[] = [];
   const variationGroups = new Map<string, { ex: ConjugateExercise; sessions: TrainingSession[] }>();
+  const straightByFamily = buildStraightByFamily(pairs);
 
   for (const [ex, session] of pairs) {
     if (ex.displayName === anchorName) {
@@ -54,12 +57,22 @@ export function generateDiagnostics(
   }
 
   for (const [name, { ex, sessions }] of variationGroups) {
-    // Accommodating resistance makes e1RM comparison against the straight-bar anchor
-    // unreliable (recorded weight excludes the variable chain/band load), so skip.
+    // For exercises with accommodating resistance (chains/bands), adjust recorded
+    // weights by the estimated addlWt contribution before comparing to the anchor.
+    let effectiveSessions = sessions;
     if (ex.addlWts.length > 0) {
-      continue;
+      const familyStraight = straightByFamily.get(familyKey(ex)) ?? [];
+      const { sessions: adj, sampleCount: offsetSamples } = applyAddlWtOffset(
+        familyStraight,
+        sessions
+      );
+      if (offsetSamples === 0) {
+        continue;
+      }
+      effectiveSessions = adj;
     }
-    const { factor, sampleCount } = fitVariantFactor(anchorSessions, sessions);
+
+    const { factor, sampleCount } = fitVariantFactor(anchorSessions, effectiveSessions);
     if (sampleCount === 0) {
       continue;
     }
@@ -94,17 +107,25 @@ export function generateDiagnostics(
       .map((k) => __MODIFIER__EFFECTS__[k])
       .filter((e): e is PctEntry => e !== undefined && 'min' in e);
 
+    // addl_wt:* entries carry only effects, no pct range. After offset adjustment,
+    // a chains/bands-only exercise is comparable to the straight bar, so use 100–100%
+    // as the baseline. Exercises with no modifiers at all are still skipped.
+    let baseline: { min: number; max: number };
     if (pctEntries.length === 0) {
-      continue;
+      if (ex.addlWts.length === 0) {
+        continue;
+      }
+      baseline = { min: 100, max: 100 };
+    } else {
+      baseline = pctEntries.reduce(
+        (acc, e) => ({
+          min: Math.round((acc.min * e.min) / 100),
+          max: Math.round((acc.max * e.max) / 100),
+        }),
+        { min: 100, max: 100 }
+      );
     }
 
-    const baseline = pctEntries.reduce(
-      (acc, e) => ({
-        min: Math.round((acc.min * e.min) / 100),
-        max: Math.round((acc.max * e.max) / 100),
-      }),
-      { min: 100, max: 100 }
-    );
     const expectedBaseline = `${baseline.min}–${baseline.max}%`;
     const averageIndex = factor * 100;
 
