@@ -18,7 +18,7 @@
   font-size: 0.8rem;
   cursor: pointer;
   color: var(--text-h);
-  font-family: var(--sans);
+  font-family: var(--heading);
   transition:
     border-color 0.15s,
     background 0.15s,

@@ -1,6 +1,5 @@
 .main {
   padding: 2rem;
-  font-family: sans-serif;
   text-align: left;
 }
 .content {
@@ -25,8 +24,10 @@
   border-radius: 6px;
   padding: 0.45rem 1rem;
   cursor: pointer;
+  font-family: var(--heading);
   font-weight: 400;
   font-size: 0.95rem;
+  text-transform: uppercase;
   color: var(--text-h);
   transition:
     border-color 0.15s,

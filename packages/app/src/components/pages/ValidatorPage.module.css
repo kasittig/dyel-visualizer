@@ -2,8 +2,12 @@
   font-weight: 600;
   margin-right: 0.4rem;
 }
-.checkOk { color: var(--success); }
-.checkFail { color: var(--danger); }
+.checkOk {
+  color: var(--success);
+}
+.checkFail {
+  color: var(--danger);
+}
 
 .verdictBanner {
   display: flex;
@@ -25,8 +29,12 @@
   font-weight: 500;
 }
 
-.section { margin-bottom: 1.5rem; }
-.sectionHeading { margin-bottom: 0.75rem; }
+.section {
+  margin-bottom: 1.5rem;
+}
+.sectionHeading {
+  margin-bottom: 0.75rem;
+}
 
 .checklistUl {
   list-style: none;
@@ -54,12 +62,16 @@
   font-size: 0.9rem;
   color: var(--text);
 }
-.liftTypeLi { padding: 0.2rem 0; }
+.liftTypeLi {
+  padding: 0.2rem 0;
+}
 .liftTypeLabel {
   text-transform: capitalize;
   margin-right: 0.4rem;
 }
-.liftTypeCount { color: var(--text-h); }
+.liftTypeCount {
+  color: var(--text-h);
+}
 
 .issueHeading {
   margin-bottom: 0.75rem;
@@ -71,7 +83,9 @@
   font-size: 0.95rem;
   color: var(--text-h);
 }
-.issueLi { padding: 0.25rem 0; }
+.issueLi {
+  padding: 0.25rem 0;
+}
 
 .dangerHeading {
   margin-bottom: 0.75rem;
@@ -122,16 +136,19 @@
 
 .main {
   padding: 2rem;
-  font-family: sans-serif;
   text-align: left;
 }
-.header { text-align: center; }
+.header {
+  text-align: center;
+}
 .backLinkP {
   font-size: 0.85rem;
   color: var(--text);
   margin-top: -0.5rem;
 }
-.accentLink { color: var(--accent); }
+.accentLink {
+  color: var(--accent);
+}
 .introP {
   color: var(--text);
   margin-bottom: 1.25rem;

@@ -11,7 +11,7 @@ const PRESETS: {
   getRange: (latest: Date, earliest: Date | null) => DateRange;
 }[] = [
   {
-    label: '2 wks',
+    label: '2 WKS',
     getRange: (latest) => {
       const from = new Date(latest);
       from.setDate(from.getDate() - 14);
@@ -19,7 +19,7 @@ const PRESETS: {
     },
   },
   {
-    label: '1 mo',
+    label: '1 MO',
     getRange: (latest) => {
       const from = new Date(latest);
       from.setMonth(from.getMonth() - 1);
@@ -27,7 +27,7 @@ const PRESETS: {
     },
   },
   {
-    label: '3 mo',
+    label: '3 MO',
     getRange: (latest) => {
       const from = new Date(latest);
       from.setMonth(from.getMonth() - 3);
@@ -35,7 +35,7 @@ const PRESETS: {
     },
   },
   {
-    label: 'All time',
+    label: 'ALL TIME',
     getRange: (latest, earliest) => ({ from: earliest ?? undefined, to: latest }),
   },
 ];
@@ -205,7 +205,7 @@ export function DateRangePicker({
               setOpen(true);
             }}
           >
-            Custom
+            CUSTOM
           </button>
         </div>
       )}
