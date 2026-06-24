@@ -39,6 +39,9 @@
 .bodyRow {
   border-bottom: 1px solid var(--border);
 }
+.bodyRowSelected {
+  background-color: color-mix(in srgb, var(--accent, #3b82f6) 12%, transparent);
+}
 
 .cell {
   padding: 0.5rem 0.75rem;
