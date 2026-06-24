@@ -24,6 +24,7 @@ export function TotalChart({ chartData, unit }: { chartData: ChartPoint[]; unit:
           dot={{ r: 3 }}
           activeDot={{ r: 5 }}
           connectNulls
+          isAnimationActive={false}
         />
         <Line
           type="monotone"
@@ -33,6 +34,7 @@ export function TotalChart({ chartData, unit }: { chartData: ChartPoint[]; unit:
           dot={{ r: 3 }}
           activeDot={{ r: 5 }}
           connectNulls
+          isAnimationActive={false}
         />
         <Line
           type="monotone"
@@ -42,6 +44,7 @@ export function TotalChart({ chartData, unit }: { chartData: ChartPoint[]; unit:
           dot={{ r: 3 }}
           activeDot={{ r: 5 }}
           connectNulls
+          isAnimationActive={false}
         />
         <Line
           type="monotone"
@@ -52,6 +55,7 @@ export function TotalChart({ chartData, unit }: { chartData: ChartPoint[]; unit:
           dot={{ r: 3 }}
           activeDot={{ r: 5 }}
           connectNulls
+          isAnimationActive={false}
         />
       </DateLineChart>
     </section>
