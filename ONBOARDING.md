@@ -103,8 +103,6 @@ If the sheet loads but you see no data, use the Sheet Validator (linked below th
 
 Once your data loads, you'll see tabs across the top: **Σ**, **Squat**, **Bench**, **Deadlift**, and **Calculator** (Accessory appears if you have accessory data).
 
-There is also an **"Exclude volume work"** checkbox at the top. When checked (the default), sets recorded with more than one set are excluded from the charts. This keeps Dynamic Effort volume from drowning out your Max Effort numbers — leave it checked unless you specifically want to see all your volume.
-
 ---
 
 ## Σ (Sigma) Tab — Your Total at a Glance
