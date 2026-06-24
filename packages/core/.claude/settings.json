@@ -3,7 +3,7 @@
     "typescript-lsp@claude-plugins-official": true
   },
   "worktree": {
-    "sparsePaths": [".claude", "src/**/**", "src/**/**/**"],
+    "sparsePaths": [".claude", "src/types", "src/utils"],
     "symlinkDirectories": ["node_modules"]
   },
   "hooks": {

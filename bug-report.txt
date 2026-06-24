@@ -1,6 +1,0 @@
-Significant findings
-B — DiagnosticsPanel accepts onTargetChange but never calls it
-App.tsx:182 → LiftTabPanel:45,59 → DiagnosticsPanel:22 — the callback is wired all the way through but the component body never invokes it. Clicking on a row should highlight that row, the corresponding segment of the VariationRadarChart, and the corresponding line on the ConjugateChart. all three should use the same callback function if possible.
-
-D — @dyel/core vitest config reads ../app/modifierEffects.json
-Core's tests depend on the app package's data file. Running npm test -w packages/core in isolation fails if the app directory isn't present. This violates the stated "standalone publishable" goal. Fix: copy the fixture into packages/core/ or restructure so core owns the data.
