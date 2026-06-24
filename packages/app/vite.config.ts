@@ -35,7 +35,7 @@ function sheetsProxyPlugin(): Plugin {
   };
 }
 
-const modifierEffectsPath = path.resolve(__dirname, './modifierEffects.json');
+const modifierEffectsPath = path.resolve(__dirname, '../core/modifierEffects.json');
 const modifierEffects = JSON.parse(fs.readFileSync(modifierEffectsPath, 'utf-8'));
 
 export default defineConfig({
