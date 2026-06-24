@@ -77,8 +77,8 @@ export function DiagnosticsPanel({
             </div>
           )}
           {hasDeadlift && (
-            <div className={styles.stanceRow}>
-              <span>Primary pull: </span>
+            <fieldset className={styles.stanceRow}>
+              <legend className={styles.stanceLegend}>Primary pull</legend>
               {(['conventional', 'sumo'] as const).map((s) => (
                 <label key={s} className={styles.stanceLabel}>
                   <input
@@ -91,7 +91,7 @@ export function DiagnosticsPanel({
                   {s[0].toUpperCase() + s.slice(1)}
                 </label>
               ))}
-            </div>
+            </fieldset>
           )}
           {results.length > 0 && (
             <table className={styles.table}>
