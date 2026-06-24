@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import type { ChartPoint } from '@dyel/core';
 import { BaseRadarChart } from './BaseRadarChart';
 
@@ -32,17 +32,26 @@ export function SigmaRadarChart({ chartData, unit }: { chartData: ChartPoint[]; 
     return points.length === 3 ? points : null;
   }, [chartData]);
 
+  const [isExpanded, setIsExpanded] = useState(true);
+
   if (!data) {
     return null;
   }
 
   return (
-    <BaseRadarChart
-      label="Current e1RM by lift (normalized)"
-      data={data}
-      angleKey="lift"
-      unit={unit}
-      tooltip={{ formatter: (v) => [`${v} ${unit}`, 'e1RM'] }}
-    />
+    <>
+      <button className="tab-title" onClick={() => setIsExpanded((v) => !v)}>
+        <span className="tab-title-toggle">{isExpanded ? '▾' : '▸'}</span>
+        <span className="tab-title-label">Current e1RM by lift (normalized)</span>
+      </button>
+      {isExpanded && (
+        <BaseRadarChart
+          data={data}
+          angleKey="lift"
+          unit={unit}
+          tooltip={{ formatter: (v) => [`${v} ${unit}`, 'e1RM'] }}
+        />
+      )}
+    </>
   );
 }

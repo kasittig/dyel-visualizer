@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
+import type { DateRange } from 'react-day-picker';
 import clsx from 'clsx';
 import { useConjugateData } from './hooks/conjugate/useConjugateData';
 import { ExerciseFilters } from './components/shared/ExerciseFilters';
@@ -7,7 +8,8 @@ import { SigmaTab } from './components/pages/SigmaTab';
 import { LiftTabPanel } from './components/pages/LiftTabPanel';
 import { SheetUrlPanel } from './components/shared/SheetUrlPanel';
 import { GettingStarted } from './components/pages/GettingStarted';
-import { emptyFilters } from '@dyel/core';
+import { DateRangePicker } from './components/shared/DateRangePicker';
+import { emptyFilters, filterByDateRange } from '@dyel/core';
 import type { DeadliftStancePreference, FilterState, LiftType } from '@dyel/core';
 import {
   extractSheetRef,
@@ -33,6 +35,7 @@ export function App() {
   const [shownResetToken, setShownResetToken] = useState(0);
   const [tabState, setTabState] = useState<Record<LiftType, TabState>>(initialTabState);
   const [deadliftStance, setDeadliftStance] = useState<DeadliftStancePreference>('sumo');
+  const [dateRange, setDateRange] = useState<DateRange>({ from: undefined, to: undefined });
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -63,9 +66,53 @@ export function App() {
   const liftTab: LiftType | null =
     activeTab !== 'calculator' && activeTab !== 'sigma' ? activeTab : null;
 
-  const sigmaPairs = useMemo(
-    () => [...tabRows.squat.maxEffort, ...tabRows.bench.maxEffort, ...tabRows.deadlift.maxEffort],
-    [tabRows]
+  const { sigmaPairs, allSessionDates, lastSessionDate } = useMemo(() => {
+    const allPairs = [
+      ...tabRows.squat.maxEffort,
+      ...tabRows.bench.maxEffort,
+      ...tabRows.deadlift.maxEffort,
+      ...tabRows.accessory.maxEffort,
+    ];
+    const seen = new Set<string>();
+    const dates: Date[] = [];
+    let last: Date | null = null;
+    for (const [, session] of allPairs) {
+      if (!last || session.date > last) {
+        last = session.date;
+      }
+      const key = session.date.toDateString();
+      if (!seen.has(key)) {
+        seen.add(key);
+        dates.push(session.date);
+      }
+    }
+    return {
+      sigmaPairs: [
+        ...tabRows.squat.maxEffort,
+        ...tabRows.bench.maxEffort,
+        ...tabRows.deadlift.maxEffort,
+      ],
+      allSessionDates: dates,
+      lastSessionDate: last,
+    };
+  }, [tabRows]);
+
+  useEffect(() => {
+    if (!lastSessionDate) {
+      return;
+    }
+    const from = new Date(
+      lastSessionDate.getFullYear(),
+      lastSessionDate.getMonth() - 3,
+      lastSessionDate.getDate()
+    );
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setDateRange({ from, to: lastSessionDate });
+  }, [lastSessionDate]);
+
+  const filteredSigmaPairs = useMemo(
+    () => filterByDateRange(sigmaPairs, dateRange.from, dateRange.to),
+    [sigmaPairs, dateRange]
   );
 
   const tabFilters = useMemo(
@@ -149,6 +196,14 @@ export function App() {
                   {label}
                 </button>
               ))}
+              <div className={styles.tabSpacer} />
+              <div className={styles.datePickerWrap}>
+                <DateRangePicker
+                  value={dateRange}
+                  onChange={setDateRange}
+                  sessionDates={allSessionDates}
+                />
+              </div>
             </div>
             {activeTab === 'calculator' ? (
               <>
@@ -156,13 +211,16 @@ export function App() {
                   tabRows={tabRows}
                   baselineNames={effectiveBaselineNames}
                   tabFilters={tabFilters}
+                  dateRange={dateRange}
                 />
               </>
             ) : activeTab === 'sigma' ? (
               <SigmaTab
-                sigmaPairs={sigmaPairs}
+                sigmaPairs={filteredSigmaPairs}
                 effectiveBaselineNames={effectiveBaselineNames}
                 effectiveTargetNames={effectiveTargetNames}
+                dateRange={dateRange}
+                onDateRangeChange={setDateRange}
               />
             ) : liftTab !== null ? (
               <>
@@ -177,6 +235,7 @@ export function App() {
                   rows={tabRows[liftTab].maxEffort}
                   filters={tabState[liftTab].filters}
                   effectiveBaselineNames={effectiveBaselineNames}
+                  liftType={liftTab}
                   targetName={effectiveTargetNames[liftTab]!}
                   baselineName={effectiveBaselineNames[liftTab]}
                   onTargetChange={(name) =>
@@ -187,6 +246,8 @@ export function App() {
                   }
                   deadliftStance={deadliftStance}
                   onDeadliftStanceChange={setDeadliftStance}
+                  dateRange={dateRange}
+                  onDateRangeChange={setDateRange}
                 />
               </>
             ) : null}

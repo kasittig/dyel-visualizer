@@ -1,0 +1,28 @@
+.editWrapper {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  border: 1px solid var(--accent-border);
+  border-radius: 4px;
+  padding: 0.1rem 0.35rem;
+  box-shadow: 0 0 0 2px var(--accent-bg);
+  background: var(--bg);
+}
+
+.editInput {
+  width: 6rem;
+  font-size: 0.78rem;
+  font-family: var(--mono);
+  border: none;
+  background: transparent;
+  color: var(--text-h);
+  outline: none;
+  letter-spacing: 0.02em;
+  padding: 0;
+}
+
+.sep {
+  color: var(--text);
+  font-size: 0.82rem;
+  flex-shrink: 0;
+}

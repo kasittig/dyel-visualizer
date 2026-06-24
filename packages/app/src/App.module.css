@@ -1,31 +1,53 @@
 .main {
   padding: 2rem;
-  font-family: sans-serif;
   text-align: left;
 }
-.content { margin-top: 1rem; }
-.errorMsg { color: red; }
-.accentLink { color: var(--accent); }
+.content {
+  margin-top: 1.25rem;
+}
+.errorMsg {
+  color: red;
+}
+.accentLink {
+  color: var(--accent);
+}
 
 .tabNav {
   display: flex;
-  gap: 1.5rem;
-  border-bottom: 2px solid var(--border);
-  margin-bottom: 1rem;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
 }
 .tab {
   background: none;
-  border: none;
-  border-bottom: 2px solid transparent;
-  margin-bottom: -2px;
-  padding: 0.4rem 0;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 0.45rem 1rem;
   cursor: pointer;
+  font-family: var(--heading);
   font-weight: 400;
-  font-size: 1rem;
+  font-size: 0.95rem;
+  text-transform: uppercase;
   color: var(--text-h);
+  transition:
+    border-color 0.15s,
+    background 0.15s,
+    color 0.15s;
+}
+.tab:hover {
+  border-color: var(--border);
 }
 .tabActive {
-  border-bottom-color: var(--accent);
-  font-weight: 700;
+  border-color: var(--accent-border);
+  background: var(--accent-bg);
   color: var(--accent);
+  font-weight: 600;
+}
+
+.tabSpacer {
+  flex: 1;
+}
+
+.datePickerWrap {
+  align-self: center;
 }

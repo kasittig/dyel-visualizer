@@ -1,3 +1,4 @@
+export { CollapsibleSection } from './CollapsibleSection';
 export { DateRangePicker } from './DateRangePicker';
 export { DiagnosticsPanel } from './DiagnosticsPanel';
 export { ErrorBoundary } from './ErrorBoundary';

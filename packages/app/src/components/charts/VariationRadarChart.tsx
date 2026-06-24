@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import type React from 'react';
 import type { ComponentProps } from 'react';
 import {
@@ -62,6 +62,7 @@ export function VariationRadarChart({
   baselineName?: string;
   onVariationClick?: (variation: string) => void;
 }) {
+  const [isExpanded, setIsExpanded] = useState(true);
   const unit = rows[0]?.[1].unit ?? 'lbs';
 
   const data = useMemo(() => {
@@ -99,79 +100,85 @@ export function VariationRadarChart({
 
   return (
     <section className={styles.section}>
-      <p className={styles.label}>Normalized e1RM by variation</p>
-      <div className={styles.chartWrapper}>
-        <ResponsiveContainer width="100%" height={340}>
-          <RadarChart
-            key={targetName}
-            data={data}
-            onClick={
-              onVariationClick
-                ? (chartData) => {
-                    const name = chartData?.activeLabel;
-                    if (typeof name === 'string' && name) {
-                      onVariationClick(name);
+      <button className="tab-title" onClick={() => setIsExpanded((v) => !v)}>
+        <span className="tab-title-toggle">{isExpanded ? '▾' : '▸'}</span>
+        <span className="tab-title-label">Normalized e1RM by variation</span>
+      </button>
+      {isExpanded && (
+        <div className={styles.chartWrapper}>
+          <ResponsiveContainer width="100%" height={340}>
+            <RadarChart
+              key={targetName}
+              data={data}
+              onClick={
+                onVariationClick
+                  ? (chartData) => {
+                      const name = chartData?.activeLabel;
+                      if (typeof name === 'string' && name) {
+                        onVariationClick(name);
+                      }
                     }
-                  }
-                : undefined
-            }
-            style={{ cursor: onVariationClick ? 'pointer' : undefined }}
-          >
-            <PolarGrid />
-            <PolarAngleAxis
-              dataKey="variation"
-              tick={(props: RechartsTickParam) => renderCustomAxis(props as CustomAxisTickProps)}
-            />
-            <PolarRadiusAxis tick={{ fontSize: 10 }} unit={` ${unit}`} angle={90} />
-            <Radar dataKey="e1rm" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.25} />
-            {showTargetRing && (
-              <Radar
-                dataKey="targetE1rm"
-                stroke="#f97316"
-                fill="none"
-                strokeWidth={2}
-                strokeDasharray="5 3"
-                dot={false}
+                  : undefined
+              }
+              style={{ cursor: onVariationClick ? 'pointer' : undefined }}
+            >
+              <PolarGrid />
+              <PolarAngleAxis
+                dataKey="variation"
+                tick={(props: RechartsTickParam) => renderCustomAxis(props as CustomAxisTickProps)}
               />
-            )}
-            <Tooltip
-              content={({ payload }) => {
-                const item = payload?.find((p) => p.dataKey === 'e1rm');
-                if (!item) {
-                  return null;
-                }
-                const name = (item.payload as { variation: string }).variation;
-                const last = stats.lastSession.get(name);
-                const lastDate = last?.date;
-                const lastE1RM = last?.e1rm;
-                const bestSet = last;
-                const dateStr = lastDate
-                  ? lastDate.toLocaleDateString(undefined, {
-                      month: 'short',
-                      day: 'numeric',
-                      year: 'numeric',
-                    })
-                  : 'Never';
-                return (
-                  <TooltipCard>
-                    <div className={styles.tooltipName}>{name}</div>
-                    <div>
-                      Normalized e1RM: {Number(item.value).toFixed(2)} {unit}
-                    </div>
-                    <div className={styles.tooltipMuted}>
-                      Last session: {lastE1RM !== undefined ? `${lastE1RM.toFixed(2)} ${unit} · ` : ''}
-                      {dateStr}
-                      {bestSet
-                        ? ` · ${bestSet.sets}×${bestSet.reps} @ ${bestSet.weight} ${unit}${bestSet.rpe != null ? ` · RPE ${bestSet.rpe}` : ''}`
-                        : ''}
-                    </div>
-                  </TooltipCard>
-                );
-              }}
-            />
-          </RadarChart>
-        </ResponsiveContainer>
-      </div>
+              <PolarRadiusAxis tick={{ fontSize: 10 }} unit={` ${unit}`} angle={90} />
+              <Radar dataKey="e1rm" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.25} />
+              {showTargetRing && (
+                <Radar
+                  dataKey="targetE1rm"
+                  stroke="#f97316"
+                  fill="none"
+                  strokeWidth={2}
+                  strokeDasharray="5 3"
+                  dot={false}
+                />
+              )}
+              <Tooltip
+                content={({ payload }) => {
+                  const item = payload?.find((p) => p.dataKey === 'e1rm');
+                  if (!item) {
+                    return null;
+                  }
+                  const name = (item.payload as { variation: string }).variation;
+                  const last = stats.lastSession.get(name);
+                  const lastDate = last?.date;
+                  const lastE1RM = last?.e1rm;
+                  const bestSet = last;
+                  const dateStr = lastDate
+                    ? lastDate.toLocaleDateString(undefined, {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric',
+                      })
+                    : 'Never';
+                  return (
+                    <TooltipCard>
+                      <div className={styles.tooltipName}>{name}</div>
+                      <div>
+                        Normalized e1RM: {Number(item.value).toFixed(2)} {unit}
+                      </div>
+                      <div className={styles.tooltipMuted}>
+                        Last session:{' '}
+                        {lastE1RM !== undefined ? `${lastE1RM.toFixed(2)} ${unit} · ` : ''}
+                        {dateStr}
+                        {bestSet
+                          ? ` · ${bestSet.sets}×${bestSet.reps} @ ${bestSet.weight} ${unit}${bestSet.rpe != null ? ` · RPE ${bestSet.rpe}` : ''}`
+                          : ''}
+                      </div>
+                    </TooltipCard>
+                  );
+                }}
+              />
+            </RadarChart>
+          </ResponsiveContainer>
+        </div>
+      )}
     </section>
   );
 }

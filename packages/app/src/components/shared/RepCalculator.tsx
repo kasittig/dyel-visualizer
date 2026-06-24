@@ -1,8 +1,19 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 import type { DateRange } from 'react-day-picker';
-import { DateRangePicker } from './DateRangePicker';
-import { findBestE1RM, predictWeightForReps, predictRepsForWeight, applyFilters, buildSessionStats } from '@dyel/core';
-import type { ConjugateDataPair, E1RMEstimate, FilterState, LiftType, SessionStats } from '@dyel/core';
+import {
+  findBestE1RM,
+  predictWeightForReps,
+  predictRepsForWeight,
+  applyFilters,
+  buildSessionStats,
+} from '@dyel/core';
+import type {
+  ConjugateDataPair,
+  E1RMEstimate,
+  FilterState,
+  LiftType,
+  SessionStats,
+} from '@dyel/core';
 import type { SplitRows } from '../../utils/appDataUtils';
 import { distinctDisplayNames, LIFT_TABS } from '../../utils/appUtils';
 import styles from './RepCalculator.module.css';
@@ -34,19 +45,17 @@ export function RepCalculator({
   tabRows,
   baselineNames,
   tabFilters,
+  dateRange,
 }: {
   tabRows: Record<LiftType, SplitRows>;
   baselineNames: Partial<Record<string, string>>;
   tabFilters: Record<LiftType, FilterState>;
+  dateRange: DateRange;
 }) {
   const [liftType, setLiftType] = useState<LiftType>('squat');
   const [selectedName, setSelectedName] = useState('');
   const [reps, setReps] = useState('');
   const [weight, setWeight] = useState('');
-  const [dateRange, setDateRange] = useState<DateRange>(() => ({
-    from: new Date(Date.now() - 28 * 24 * 60 * 60 * 1000),
-    to: new Date(),
-  }));
 
   const { pairsByTab, statsByTab } = useMemo(() => {
     const today = new Date();
@@ -77,19 +86,6 @@ export function RepCalculator({
     setReps('');
     setWeight('');
   }, [liftType, exercisesForType]);
-
-  const sessionDates = useMemo(() => {
-    const seen = new Set<string>();
-    const dates: Date[] = [];
-    for (const [, session] of pairs) {
-      const key = session.date.toDateString();
-      if (!seen.has(key)) {
-        seen.add(key);
-        dates.push(session.date);
-      }
-    }
-    return dates;
-  }, [pairs]);
 
   const selectedExercise = useMemo(
     () => pairs.find(([ex]) => ex.displayName === selectedName)?.[0] ?? null,
@@ -241,11 +237,6 @@ export function RepCalculator({
           <p className={styles.sourceNote}>{sourceNote(estimate)}</p>
         </>
       )}
-
-      <div className={styles.dataWindowRow}>
-        <span className={styles.muted}>Data window</span>
-        <DateRangePicker value={dateRange} onChange={setDateRange} sessionDates={sessionDates} />
-      </div>
     </section>
   );
 }

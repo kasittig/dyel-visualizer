@@ -88,9 +88,13 @@ export function ExerciseFilters({
       <div className={styles.header}>
         <button
           onClick={() => setOpen((v) => !v)}
-          className={clsx(styles.toggleButton, open && styles.toggleButtonOpen)}
+          className="tab-title"
+          style={{ marginBottom: open ? '0.75rem' : 0 }}
         >
-          {open ? '▲' : '▼'} Filters{activeCount > 0 ? ` (${activeCount} active)` : ''}
+          <span className="tab-title-toggle">{open ? '▾' : '▸'}</span>
+          <span className="tab-title-label">
+            Filters{activeCount > 0 ? ` (${activeCount})` : ''}
+          </span>
         </button>
         {open && activeCount > 0 && onClearAll && (
           <button onClick={onClearAll} className={styles.clearButton}>

@@ -1,4 +1,7 @@
 import { useMemo } from 'react';
+import type { DateRange } from 'react-day-picker';
+import { CollapsibleSection } from '../shared/CollapsibleSection';
+import { EditableDateChip } from '../shared/EditableDateChip';
 import { useLastSessionStats } from '../../hooks/data/useLastSessionStats';
 import { useBaselineTargetExercises } from '../../hooks/data/useBaselineTargetExercises';
 import { buildChartData } from '@dyel/core';
@@ -11,10 +14,14 @@ export function SigmaTab({
   sigmaPairs,
   effectiveBaselineNames,
   effectiveTargetNames,
+  dateRange,
+  onDateRangeChange,
 }: {
   sigmaPairs: ConjugateDataPair[];
   effectiveBaselineNames: Partial<Record<LiftType, string>>;
   effectiveTargetNames: Partial<Record<LiftType, string>>;
+  dateRange: DateRange;
+  onDateRangeChange: (range: DateRange) => void;
 }) {
   const sigmaStats = useLastSessionStats(sigmaPairs, effectiveBaselineNames);
 
@@ -32,9 +39,12 @@ export function SigmaTab({
   const unit = sigmaPairs[0]?.[1].unit ?? 'lbs';
 
   return (
-    <>
+    <CollapsibleSection
+      label="Overview"
+      trailing={<EditableDateChip dateRange={dateRange} onDateRangeChange={onDateRangeChange} />}
+    >
       <TotalChart chartData={chartData} unit={unit} />
       <SigmaRadarChart chartData={chartData} unit={unit} />
-    </>
+    </CollapsibleSection>
   );
 }
