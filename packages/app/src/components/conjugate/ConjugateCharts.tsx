@@ -126,6 +126,7 @@ export function ConjugateCharts({
             dot={{ r: 3 }}
             activeDot={{ r: 5 }}
             connectNulls
+            isAnimationActive={false}
           />
         )}
         {variations.map((label, i) => {
@@ -148,6 +149,7 @@ export function ConjugateCharts({
               onClick={handleClick}
               style={{ cursor: onVariationClick ? 'pointer' : undefined }}
               connectNulls
+              isAnimationActive={false}
             />
           );
         })}
