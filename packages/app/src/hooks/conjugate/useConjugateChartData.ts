@@ -13,10 +13,8 @@ export function useConjugateChartData(
   stats: RepCalcStats,
   targetName: string | null
 ) {
-  const { addlWtOffset, variantFactor } = stats;
   return useMemo(
     () => buildVariationChartData(rows, baselineNames, stats, targetName),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [rows, baselineNames, addlWtOffset, variantFactor, targetName]
+    [rows, baselineNames, stats, targetName]
   );
 }
