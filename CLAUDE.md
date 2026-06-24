@@ -10,7 +10,7 @@ This is an npm workspaces monorepo with two packages:
 ## Commands (run from repo root)
 
 ```bash
-npm run dev       # start the app dev server at http://localhost:5173
+npx kill-port 5173 && npm run dev # start the app dev server at http://localhost:5173
 npm run build     # build @dyel/core (tsc), then vite build the app
 npm test          # run tests in all packages
 npm run lint      # eslint (covers all packages)

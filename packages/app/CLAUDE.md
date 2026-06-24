@@ -28,7 +28,7 @@ Single-page React app with no backend. All data comes from a user-supplied Googl
 4. `useLastSessionStats` computes per-exercise stats from the pair list — e1RM, last session, predicted e1RM, variant factors, resistance offsets
 5. `ErrorBoundary` wraps the root in `main.tsx`
 
-**Tab state:** `App.tsx` owns `tabState: Record<LiftType, TabState>` (initialized via `initialTabState()`) plus a separate `excludeVolumeWork: boolean` state. `excludeVolumeWork` is passed directly to `applyFilters` as a parameter — it is NOT part of `FilterState` or `TabState`. Active non-lift tabs: `"sigma"` and `"calculator"`.
+**Tab state:** `App.tsx` owns `tabState: Record<LiftType, TabState>` (initialized via `initialTabState()`). Active non-lift tabs: `"sigma"` and `"calculator"`.
 
 **Component subdirectories** (`src/components/`):
 
