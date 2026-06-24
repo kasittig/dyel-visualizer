@@ -131,7 +131,9 @@ export function findBestE1RM(
 
     if (!sourceHasAddl && targetHasAddl) {
       // Source is straight; estimate what the target's bar weight would be.
-      // Try target's own offset, then a proxy with matching addlWts in the same family.
+      // Tier 1: target's own offset
+      // Tier 2: proxy with matching addlWts in the same family
+      // Tier 3: cross-family donor — same lift type, same addlWts
       const proxyOffset =
         addlWtOffset.get(target.displayName) ??
         [...addlWtOffset.entries()].find(([name]) => {
@@ -141,6 +143,12 @@ export function findBestE1RM(
             familyKey(ex) === targetFamily &&
             ex.addlWts.join(',') === target.addlWts.join(',')
           );
+        })?.[1] ??
+        // Tier 3: cross-family donor — same lift type, same addlWts.
+        // Physical assumption: chains add the same absolute weight regardless of bar setup.
+        [...addlWtOffset.entries()].find(([name]) => {
+          const ex = exerciseByName.get(name);
+          return ex && ex.type === target.type && ex.addlWts.join(',') === target.addlWts.join(',');
         })?.[1];
       if (proxyOffset && proxyOffset.sampleCount > 0) {
         const adjustedWeight = Math.max(0, sourceBestSet.weight - proxyOffset.offset);

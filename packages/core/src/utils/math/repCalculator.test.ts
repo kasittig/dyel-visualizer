@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { normalizeToBaseE1RM } from './repCalculator';
+import { normalizeToBaseE1RM, findBestE1RM } from './repCalculator';
 import { calcE1RM } from './e1rm';
-import type { ConjugateExercise, TrainingSession } from '../../types/conjugate';
+import type { ConjugateExercise, TrainingSession, ConjugateDataPair } from '../../types/conjugate';
 import type { RepCalcStats } from './repCalculator';
 
 function sess(weight: number, reps: number, rpe?: number | null): TrainingSession {
@@ -305,5 +305,154 @@ describe('normalizeToBaseE1RM', () => {
       const result = normalizeToBaseE1RM(sess(315, 3), ssbSquat, wideSquat, statsWithFactor);
       expect(result).toBeCloseTo((rawE1RM / 0.9) * 1.05);
     });
+  });
+});
+
+describe('findBestE1RM', () => {
+  const bench: ConjugateExercise = {
+    type: 'bench',
+    bar: 'standard',
+    stance: null,
+    addlWts: [],
+    equipment: null,
+    displayName: 'Bench',
+  };
+
+  const benchChains: ConjugateExercise = {
+    type: 'bench',
+    bar: 'standard',
+    stance: null,
+    addlWts: ['chains'],
+    equipment: null,
+    displayName: 'Bench + Chains',
+  };
+
+  const slingshotBench: ConjugateExercise = {
+    type: 'bench',
+    bar: 'standard',
+    stance: null,
+    addlWts: [],
+    equipment: 'slingshot',
+    displayName: 'Slingshot Bench',
+  };
+
+  const slingshotBenchChains: ConjugateExercise = {
+    type: 'bench',
+    bar: 'standard',
+    stance: null,
+    addlWts: ['chains'],
+    equipment: 'slingshot',
+    displayName: 'Slingshot Bench + Chains',
+  };
+
+  it('uses cross-family donor when tier 2 (same-family) proxy does not exist', () => {
+    // Setup: have sessions for bench, slingshot bench, slingshot bench w/chains
+    // but NOT bench w/chains. When asked to estimate bench w/chains, should use
+    // slingshot bench w/chains as a proxy for the chain offset.
+    const benchDate = new Date('2024-01-15');
+    const benchWeight = 225;
+    const benchReps = 3;
+    const chainOffset = 15;
+
+    const stats: RepCalcStats = {
+      addlWtOffset: new Map([
+        ['Slingshot Bench + Chains', { offset: chainOffset, sampleCount: 3 }],
+      ]),
+      variantFactor: new Map([
+        [
+          'Slingshot Bench',
+          { factor: 1.0, sampleCount: 2, label: 'Slingshot', baselineName: 'Bench' },
+        ],
+      ]),
+    };
+
+    const pairs: ConjugateDataPair[] = [
+      [
+        bench,
+        {
+          ...sess(benchWeight, benchReps),
+          date: benchDate,
+          e1rm: calcE1RM(benchWeight, benchReps),
+        },
+      ],
+      [slingshotBench, { ...sess(225, 3), date: new Date('2024-01-14'), e1rm: calcE1RM(225, 3) }],
+      [
+        slingshotBenchChains,
+        { ...sess(245, 2), date: new Date('2024-01-13'), e1rm: calcE1RM(245, 2) },
+      ],
+    ];
+
+    const windowStart = new Date('2024-01-01');
+    const windowEnd = new Date('2024-02-01');
+
+    const result = findBestE1RM(pairs, benchChains, stats, 'Bench', windowStart, windowEnd);
+
+    expect(result).not.toBeNull();
+    expect(result!.method).toBe('addlWtOffset');
+    // sourceName should be bench (the most recent same-family session)
+    expect(result!.sourceName).toBe('Bench');
+    // e1RM should account for chain offset: calcE1RM(225 - 15, 3)
+    expect(result!.e1rm).toBeCloseTo(calcE1RM(benchWeight - chainOffset, benchReps));
+  });
+
+  it('prefers same-family proxy over cross-family when both exist', () => {
+    // Setup: have sessions for bench, bench w/chains, slingshot bench, slingshot bench w/chains
+    // When asked to estimate bench w/chains starting from bench, should use
+    // bench w/chains offset (same family) not slingshot bench w/chains (cross-family)
+    const benchDate = new Date('2024-01-15');
+    const benchChainOffset = 20;
+    const slingshotChainOffset = 18;
+
+    const stats: RepCalcStats = {
+      addlWtOffset: new Map([
+        ['Bench + Chains', { offset: benchChainOffset, sampleCount: 5 }],
+        ['Slingshot Bench + Chains', { offset: slingshotChainOffset, sampleCount: 3 }],
+      ]),
+      variantFactor: new Map([
+        [
+          'Slingshot Bench',
+          { factor: 1.0, sampleCount: 2, label: 'Slingshot', baselineName: 'Bench' },
+        ],
+      ]),
+    };
+
+    const pairs: ConjugateDataPair[] = [
+      [bench, { ...sess(225, 3), date: benchDate, e1rm: calcE1RM(225, 3) }],
+      [benchChains, { ...sess(240, 2), date: new Date('2024-01-10'), e1rm: calcE1RM(240, 2) }],
+      [slingshotBench, { ...sess(225, 3), date: new Date('2024-01-14'), e1rm: calcE1RM(225, 3) }],
+      [
+        slingshotBenchChains,
+        { ...sess(245, 2), date: new Date('2024-01-13'), e1rm: calcE1RM(245, 2) },
+      ],
+    ];
+
+    const windowStart = new Date('2024-01-01');
+    const windowEnd = new Date('2024-02-01');
+
+    const result = findBestE1RM(pairs, benchChains, stats, 'Bench', windowStart, windowEnd);
+
+    expect(result).not.toBeNull();
+    expect(result!.method).toBe('addlWtOffset');
+    // Should use bench w/chains offset (20) not slingshot bench w/chains offset (18)
+    expect(result!.e1rm).toBeCloseTo(calcE1RM(225 - benchChainOffset, 3));
+  });
+
+  it('returns null when no proxy of any tier exists', () => {
+    const benchDate = new Date('2024-01-15');
+    const stats: RepCalcStats = {
+      addlWtOffset: new Map(),
+      variantFactor: new Map(),
+    };
+
+    const pairs: ConjugateDataPair[] = [
+      [bench, { ...sess(225, 3), date: benchDate, e1rm: calcE1RM(225, 3) }],
+    ];
+
+    const windowStart = new Date('2024-01-01');
+    const windowEnd = new Date('2024-02-01');
+
+    const result = findBestE1RM(pairs, benchChains, stats, 'Bench', windowStart, windowEnd);
+
+    expect(result).toBeNull();
   });
 });
