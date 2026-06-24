@@ -32,12 +32,15 @@ export function DiagnosticsPanel({
   targetName,
   deadliftStance,
   onDeadliftStanceChange,
+  onVariationClick,
+  highlightedVariation,
 }: {
   rows: ConjugateDataPair[];
   targetName: string;
-  onTargetChange: (name: string | null) => void;
   deadliftStance: DeadliftStancePreference;
   onDeadliftStanceChange: (s: DeadliftStancePreference) => void;
+  onVariationClick?: (name: string) => void;
+  highlightedVariation?: string | null;
 }) {
   const [isExpanded, setIsExpanded] = useState(true);
   const hasDeadlift = useMemo(() => rows.some(([ex]) => ex.type === 'deadlift'), [rows]);
@@ -50,7 +53,9 @@ export function DiagnosticsPanel({
   const { weakEffects, overtrainedEffects } = useMemo(() => {
     const counter = new Map<string, number>();
     for (const r of results) {
-      if (r.status !== 'overtrained' && r.status !== 'weakness') { continue; }
+      if (r.status !== 'overtrained' && r.status !== 'weakness') {
+        continue;
+      }
       const delta = r.status === 'overtrained' ? 1 : -1;
       for (const e of r.effects) {
         counter.set(e, (counter.get(e) ?? 0) + delta);
@@ -59,8 +64,11 @@ export function DiagnosticsPanel({
     const weakEffects: string[] = [];
     const overtrainedEffects: string[] = [];
     for (const [e, count] of counter) {
-      if (count < 0) { weakEffects.push(e); }
-      else if (count > 0) { overtrainedEffects.push(e); }
+      if (count < 0) {
+        weakEffects.push(e);
+      } else if (count > 0) {
+        overtrainedEffects.push(e);
+      }
     }
     return { weakEffects, overtrainedEffects };
   }, [results]);
@@ -145,7 +153,16 @@ export function DiagnosticsPanel({
                         ? 'Overtrained'
                         : 'Weakness';
                   return (
-                    <tr key={r.displayName} className={styles.bodyRow}>
+                    <tr
+                      key={r.displayName}
+                      className={
+                        r.displayName === highlightedVariation
+                          ? `${styles.bodyRow} ${styles.bodyRowSelected}`
+                          : styles.bodyRow
+                      }
+                      onClick={() => onVariationClick?.(r.displayName)}
+                      style={{ cursor: onVariationClick ? 'pointer' : undefined }}
+                    >
                       <td className={styles.cell}>{r.displayName}</td>
                       <td className={styles.cellText}>
                         {[
