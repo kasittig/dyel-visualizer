@@ -1,0 +1,7 @@
+If we have enough training sessions for:
+
+Bench
+Slingshot bench
+Slingshot bench w/chains
+
+Can we use the functions currently in repCalculator.ts to predict a 1RM for bench w/chains?
