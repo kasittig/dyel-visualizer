@@ -47,14 +47,23 @@ export function DiagnosticsPanel({
     [rows, targetName, deadliftStance]
   );
 
-  const weakEffects = useMemo(
-    () => [...new Set(results.filter((r) => r.status === 'weakness').flatMap((r) => r.effects))],
-    [results]
-  );
-  const overtrainedEffects = useMemo(
-    () => [...new Set(results.filter((r) => r.status === 'overtrained').flatMap((r) => r.effects))],
-    [results]
-  );
+  const { weakEffects, overtrainedEffects } = useMemo(() => {
+    const counter = new Map<string, number>();
+    for (const r of results) {
+      if (r.status !== 'overtrained' && r.status !== 'weakness') { continue; }
+      const delta = r.status === 'overtrained' ? 1 : -1;
+      for (const e of r.effects) {
+        counter.set(e, (counter.get(e) ?? 0) + delta);
+      }
+    }
+    const weakEffects: string[] = [];
+    const overtrainedEffects: string[] = [];
+    for (const [e, count] of counter) {
+      if (count < 0) { weakEffects.push(e); }
+      else if (count > 0) { overtrainedEffects.push(e); }
+    }
+    return { weakEffects, overtrainedEffects };
+  }, [results]);
 
   if (results.length === 0) {
     return null;
