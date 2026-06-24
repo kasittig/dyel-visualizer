@@ -1,15 +1,30 @@
-.wrapper { margin-top: 1.5rem; }
+.wrapper {
+  margin-top: 1.5rem;
+}
 
 .stanceRow {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
   margin-bottom: 0.75rem;
   font-size: 0.8rem;
   color: var(--text);
+  border: none;
+  margin-top: 0;
+  padding: 0;
+}
+.stanceLegend {
+  font-weight: 600;
+  padding: 0;
+  margin: 0;
 }
 .stanceLabel {
   margin-right: 1rem;
   cursor: pointer;
 }
-.stanceRadio { margin-right: 0.3rem; }
+.stanceRadio {
+  margin-right: 0.3rem;
+}
 
 .table {
   width: 100%;
@@ -21,9 +36,13 @@
   color: var(--text);
   font-weight: 600;
 }
-.bodyRow { border-bottom: 1px solid var(--border); }
+.bodyRow {
+  border-bottom: 1px solid var(--border);
+}
 
-.cell { padding: 0.5rem 0.75rem; }
+.cell {
+  padding: 0.5rem 0.75rem;
+}
 .cellLeft {
   padding: 0.5rem 0.75rem;
   text-align: left;
