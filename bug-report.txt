@@ -1,0 +1,22 @@
+Significant findings
+A — App tsconfig missing strict: true — strictNullChecks off for the entire React layer
+packages/app/tsconfig.app.json sets individual flags (noUnusedLocals, etc.) but not strict: true. This leaves strictNullChecks, strictFunctionTypes, noImplicitAny, and others disabled for all of packages/app/src/. Core uses strict: true. Fix: add "strict": true to tsconfig.app.json and resolve the resulting type errors.
+
+B — DiagnosticsPanel accepts onTargetChange but never calls it
+App.tsx:182 → LiftTabPanel:45,59 → DiagnosticsPanel:22 — the callback is wired all the way through but the component body never invokes it. Whatever feature was intended (changing the target exercise from the diagnostics table) silently does nothing. Fix: either implement the call or remove the dead prop.
+
+C — CLAUDE.md and ONBOARDING.md describe removed excludeVolumeWork feature
+packages/app/CLAUDE.md says App.tsx owns excludeVolumeWork: boolean state. ONBOARDING.md describes a corresponding checkbox. Neither exists — App.tsx uses .maxEffort rows unconditionally. excludeVolumeWork has zero matches in packages/app/src/. Fix: update both docs to reflect the permanent volume split.
+
+D — @dyel/core vitest config reads ../app/modifierEffects.json
+Core's tests depend on the app package's data file. Running npm test -w packages/core in isolation fails if the app directory isn't present. This violates the stated "standalone publishable" goal. Fix: copy the fixture into packages/core/ or restructure so core owns the data.
+
+Minor findings
+E — @tanstack/react-virtual in packages/app/package.json but zero imports in source
+Confirmed unused (0 matches in packages/app/src/). Remove the dependency.
+
+F — useConjugateChartData brittle exhaustive-deps suppression
+packages/app/src/hooks/conjugate/useConjugateChartData.ts — the hook intentionally omits stats.projectedE1RM and stats.lastSession from its deps array with an eslint-disable comment. Valid now, but if buildVariationChartData ever starts using those fields, the stale-closure bug will be silent. Document the invariant more explicitly or add a note in the function contract.
+
+G — Deadlift stance radio buttons missing <fieldset>/<legend>
+packages/app/src/components/shared/DiagnosticsPanel.tsx — the primary pull radio group uses name="deadlift-stance" for functional grouping but has no <fieldset>/<legend> wrapper. Screen readers won't announce the group label on focus.

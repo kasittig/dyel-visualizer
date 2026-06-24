@@ -425,7 +425,6 @@ describe('generateDiagnostics', () => {
     expect(r.expectedBaseline).toBe('100–100%');
     expect(r.averageIndex).toBeCloseTo(100, 0);
     expect(r.status).toBe('optimal');
-    expect(r.effects).toContain('ACCOMMODATING_RESISTANCE');
     expect(r.effects).toContain('BAR_SPEED');
   });
 
@@ -493,6 +492,5 @@ describe('generateDiagnostics', () => {
     expect(r).toBeDefined();
     expect(r!.expectedBaseline).toBe('90–95%');
     expect(r!.effects).toContain('UPPER_BACK_DEMAND'); // from SSB
-    expect(r!.effects).toContain('ACCOMMODATING_RESISTANCE'); // from chains
   });
 });

@@ -15,8 +15,16 @@ function formatAddlWts(ex: ConjugateExercise): string | undefined {
   if (ex.addlWtOffset === undefined) {
     return undefined;
   }
-  const wtsLabel = ex.addlWts.join(' + ');
-  return `Accommodating Resistance +${ex.addlWtOffset.toFixed(1)}lbs (${wtsLabel})`;
+  const label = ex.addlWts
+    .map((w) =>
+      w
+        .split(' ')
+        .map((p) => p[0].toUpperCase() + p.slice(1))
+        .join(' ')
+    )
+    .join(' + ');
+  const sign = ex.addlWtOffset >= 0 ? '+' : '-';
+  return `${label}: ${sign}${Math.abs(ex.addlWtOffset).toFixed(1)}lbs`;
 }
 
 export function DiagnosticsPanel({
@@ -131,13 +139,10 @@ export function DiagnosticsPanel({
                     <tr key={r.displayName} className={styles.bodyRow}>
                       <td className={styles.cell}>{r.displayName}</td>
                       <td className={styles.cellText}>
-                        {r.effects
-                          .map(
-                            (e) =>
-                              (e === 'ACCOMMODATING_RESISTANCE' ? formatAddlWts(r) : null) ??
-                              formatEffect(e)
-                          )
-                          .join(', ')}
+                        {[
+                          ...r.effects.map(formatEffect),
+                          ...(r.addlWtOffset !== undefined ? [formatAddlWts(r)!] : []),
+                        ].join(', ')}
                       </td>
                       <td className={styles.cellMono}>{r.averageIndex?.toFixed(1) ?? '-'}%</td>
                       <td className={styles.cellMono}>{r.expectedBaseline}</td>

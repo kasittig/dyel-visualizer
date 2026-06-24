@@ -1,0 +1,54 @@
+dimension,value,base_exercise,description,effects,pct-low,pct-high
+bar,standard,squat,baseline; no modification to movement pattern,,1.0,1.0
+bar,standard,bench,baseline; no modification to movement pattern,,1.0,1.0
+bar,standard,deadlift,baseline; no modification to movement pattern,,1.0,1.0
+bar,ssb,squat,shifts load forward; increases quad and upper back demand; easier on shoulders than standard bar,"QUAD_DOMINANT,UPPER_BACK_DEMAND,SHOULDER_FRIENDLY,UPRIGHT_TORSO",0.90,0.95
+bar,trap,deadlift,more upright torso; reduces lower back stress; blends squat and hinge patterns; typically allows heavier loads than straight bar,"QUAD_DOMINANT,UPRIGHT_TORSO,SPINE_DELOAD",1.05,1.15
+bar,american,bench,slight variation in grip/weight distribution relative to standard; broadly similar movement pattern,SHOULDER_FRIENDLY,0.95,1.00
+bar,swiss,bench,neutral or angled grip options reduce shoulder stress; more elbow-friendly,SHOULDER_FRIENDLY,0.90,1.00
+bar,cambered,squat,weight suspended below hands creates oscillation; demands greater lat and stabilizer engagement; deeper stretch at bottom,"STABILIZER_DEMAND,UPPER_BACK_DEMAND,BOTTOM_RANGE",0.85,0.95
+bar,zercher,squat,bar held in elbow crooks forces upright torso; very high core and upper back demand,"CORE_DEMAND,UPPER_BACK_DEMAND,UPRIGHT_TORSO",0.70,0.85
+bar,duffalo,bench,slight camber allows more natural elbow path on bench; shoulder-friendly alternative to straight bar,SHOULDER_FRIENDLY,0.95,1.00
+bar,dumbbell,bench,unilateral load; greater ROM; increased stabilizer demand; trains each side independently,"UNILATERAL,STABILIZER_DEMAND",0.75,0.90
+bar,bamboo,bench,oscillating/flexible bar demands continuous stabilization; trains lat tension and midline stability,"STABILIZER_DEMAND,BAR_SPEED",0.80,0.90
+bar,belt,squat,load applied through hips/handles rather than spine; spares axial compression; isolates lower body,"SPINE_DELOAD,QUAD_DOMINANT",0.85,0.95
+bar,goblet,squat,front-loaded with single weight; promotes upright torso; quad-dominant; good for mobility work,"QUAD_DOMINANT,UPRIGHT_TORSO,CORE_DEMAND",0.50,0.65
+stance,competition,squat,lifter's preferred default stance; baseline for that individual,,1.0,1.0
+stance,competition,bench,lifter's preferred default stance; baseline for that individual,,1.0,1.0
+stance,competition,deadlift,lifter's preferred default stance; baseline for that individual,,1.0,1.0
+stance,sumo,deadlift,wide stance reduces torso lean and pull distance; shifts work to hips/glutes/adductors,"HIP_DOMINANT,POSTERIOR_CHAIN,REDUCED_ROM",0.90,1.00
+stance,sumo,squat,wide stance promotes more hip and posterior chain involvement,"HIP_DOMINANT,POSTERIOR_CHAIN",0.90,1.00
+stance,conventional,deadlift,hip-width stance with longer pull; more hamstring and lower back dominant,"HAMSTRING_DOMINANT,POSTERIOR_CHAIN",0.90,1.00
+stance,close,bench,narrow grip increases tricep involvement and lengthens ROM slightly,TRICEP_DOMINANT,0.80,0.90
+stance,close,squat,narrow stance increases quad dominance relative to competition width,QUAD_DOMINANT,0.85,0.95
+stance,wide,bench,wider grip shifts emphasis to pecs and shortens ROM,"UPPER_PECS,REDUCED_ROM",0.90,1.00
+stance,wide,squat,wider stance increases hip and posterior chain involvement,POSTERIOR_CHAIN,0.90,1.00
+stance,medium,bench,balanced grip between close and competition; moderate ROM and muscle distribution,,1.0,1.0
+stance,medium,squat,balanced stance between narrow and wide; moderate ROM and muscle distribution,,1.0,1.0
+stance,narrow,bench,slightly narrower than competition grip; increases tricep involvement,TRICEP_DOMINANT,0.85,0.95
+stance,narrow,squat,slightly narrower than competition stance; more quad dominant,QUAD_DOMINANT,0.85,0.95
+stance,romanian,deadlift,hip hinge with soft knee bend; hamstring-dominant stretch-under-load; targets bottom range of pull,"HAMSTRING_DOMINANT,BOTTOM_RANGE",0.60,0.75
+stance,front,squat,bar across front deltoids forces upright torso; highly quad-dominant; significant core demand,"QUAD_DOMINANT,UPRIGHT_TORSO,CORE_DEMAND",0.75,0.85
+stance,slingshot,bench,elastic device assists off the chest; enables supramaximal loading through mid-range and lockout,"SUPRAMAXIMAL,LOCKOUT",1.10,1.20
+stance,builder,bench,device assists initial press off chest; overloads the bottom range,"BOTTOM_RANGE,SUPRAMAXIMAL",1.05,1.15
+stance,opposite,deadlift,opposite of the lifter's competition stance (e.g. sumo lifter pulls conventional); addresses weak points,,1.0,1.0
+equipment,incline,bench,raises press angle; shifts emphasis to upper pecs and anterior deltoids; harder off the chest,UPPER_PECS,0.85,0.95
+equipment,decline,bench,lowers press angle; shifts emphasis to lower pecs; typically a stronger pressing position,LOWER_PECS,1.00,1.10
+equipment,blocks,deadlift,elevates bar start position; reduces ROM; overloads the lift above the sticking point,"REDUCED_ROM,LOCKOUT",1.05,1.15
+equipment,deficit,deadlift,lowers start position below floor level; increases ROM; develops strength at the bottom of the pull,"EXTENDED_ROM,BOTTOM_RANGE",0.85,0.95
+equipment,board,bench,reduces bench ROM; allows supramaximal loading; targets mid-range and lockout,"REDUCED_ROM,LOCKOUT,SUPRAMAXIMAL",1.05,1.15
+equipment,pause,squat,removes stretch-shortening reflex; develops starting strength from a dead stop,DEAD_STOP,0.85,0.95
+equipment,pause,bench,removes stretch-shortening reflex; develops starting strength from a dead stop,DEAD_STOP,0.85,0.95
+equipment,pause,deadlift,removes stretch-shortening reflex; requires generating force from a static start,DEAD_STOP,0.90,0.95
+equipment,floor,bench,eliminates leg drive; limits ROM at bottom; trains lockout and tricep strength,"REDUCED_ROM,LOCKOUT,NO_LEG_DRIVE,TRICEP_DOMINANT",0.85,0.95
+equipment,box,squat,sets squat depth; promotes posterior weight shift; trains from a dead stop at the bottom,"DEAD_STOP,POSTERIOR_SHIFT",0.90,1.00
+equipment,rack,deadlift,elevates bar above floor; reduces ROM; overloads the lockout portion of the pull,"REDUCED_ROM,LOCKOUT",1.10,1.30
+addl_wt,chains,squat,accommodating resistance that deloads as bar descends; rewards bar speed; more bar oscillation than bands,"ACCOMMODATING_RESISTANCE,BAR_SPEED,STABILIZER_DEMAND",,
+addl_wt,chains,bench,accommodating resistance that deloads as bar descends; rewards bar speed; more bar oscillation than bands,"ACCOMMODATING_RESISTANCE,BAR_SPEED,STABILIZER_DEMAND",,
+addl_wt,chains,deadlift,accommodating resistance that deloads as bar descends; rewards bar speed; more bar oscillation than bands,"ACCOMMODATING_RESISTANCE,BAR_SPEED,STABILIZER_DEMAND",,
+addl_wt,bands,squat,accommodating resistance; lighter at bottom/heavier at top; trains through full ROM; rewards speed,"BAR_SPEED",,
+addl_wt,bands,bench,accommodating resistance; lighter at bottom/heavier at top; trains through full ROM; rewards speed,"BAR_SPEED",,
+addl_wt,bands,deadlift,accommodating resistance; lighter at bottom/heavier at top; trains through full ROM; rewards speed,"BAR_SPEED",,
+addl_wt,rev. bands,squat,deloads the bottom of the lift; allows supramaximal top-end loading; builds confidence and overload at lockout,"SUPRAMAXIMAL,LOCKOUT",,
+addl_wt,rev. bands,bench,deloads the bottom of the lift; allows supramaximal top-end loading; builds confidence and overload at lockout,"SUPRAMAXIMAL,LOCKOUT",,
+addl_wt,rev. bands,deadlift,deloads the bottom of the lift; allows supramaximal top-end loading; builds confidence and overload at lockout,"SUPRAMAXIMAL,LOCKOUT",,
