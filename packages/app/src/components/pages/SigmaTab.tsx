@@ -7,7 +7,7 @@ import { useBaselineTargetExercises } from '../../hooks/data/useBaselineTargetEx
 import { buildChartData } from '@dyel/core';
 import type { LiftType } from '@dyel/core';
 import { TotalChart } from '../charts/TotalChart';
-import { SigmaRadarChart } from '../charts/SigmaRadarChart';
+import { SigmaChart } from '../charts/SigmaChart';
 import type { ConjugateDataPair } from '../../hooks/conjugate/useConjugateData';
 
 export function SigmaTab({
@@ -44,7 +44,7 @@ export function SigmaTab({
       trailing={<EditableDateChip dateRange={dateRange} onDateRangeChange={onDateRangeChange} />}
     >
       <TotalChart chartData={chartData} unit={unit} />
-      <SigmaRadarChart chartData={chartData} unit={unit} />
+      <SigmaChart chartData={chartData} unit={unit} />
     </CollapsibleSection>
   );
 }
