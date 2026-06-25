@@ -211,7 +211,6 @@ export function App() {
                   tabRows={tabRows}
                   baselineNames={effectiveBaselineNames}
                   tabFilters={tabFilters}
-                  dateRange={dateRange}
                 />
               </>
             ) : activeTab === 'sigma' ? (
