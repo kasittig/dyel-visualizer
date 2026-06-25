@@ -122,6 +122,23 @@ export function applyAddlWtOffset(
   };
 }
 
+export function fitVariantVelocity(sessions: TrainingSession[]): {
+  velocityPerMs: number;
+  sampleCount: number;
+} {
+  const grid = buildSessionGrid(sessions);
+  if (grid.length < 2) {
+    return { velocityPerMs: 0, sampleCount: 0 };
+  }
+  const first = grid[0];
+  const last = grid[grid.length - 1];
+  const dt = last.t - first.t;
+  if (dt === 0) {
+    return { velocityPerMs: 0, sampleCount: 0 };
+  }
+  return { velocityPerMs: (last.e1rm - first.e1rm) / dt, sampleCount: grid.length };
+}
+
 export function fitAddlWtOffset(
   straightSessions: TrainingSession[],
   variantSessions: TrainingSession[]

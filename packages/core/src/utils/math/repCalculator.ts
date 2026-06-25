@@ -1,13 +1,13 @@
 import { calcE1RM, invertE1RM } from './e1rm';
 import { familyKey } from '../../types/conjugate';
-import type { ConjugateExercise, ConjugateDataPair, TrainingSession } from '../../types/conjugate';
-import { filterByDateRange } from '../stats/exerciseFilters';
+import type { ConjugateExercise, TrainingSession } from '../../types/conjugate';
+import type { SessionStats } from '../stats/sessionIndex';
 
 export interface E1RMEstimate {
   e1rm: number;
   date: Date;
   sourceName: string;
-  method: 'exact' | 'addlWtOffset' | 'variantFactor';
+  method: 'exact' | 'variantFactor';
 }
 
 export interface RepCalcStats {
@@ -32,200 +32,45 @@ export function predictRepsForWeight(e1rm: number, weight: number): number {
   return Math.max(1, 30 * (e1rm / weight - 1));
 }
 
+// Predicts the current e1RM for `target` by anchoring to the comp baseline's projected
+// e1RM and applying the empirically-fitted variant factor. For chain/band exercises the
+// chain-stripped factor is used, and the addlWt offset (effective chain weight) is then
+// subtracted — approximation valid because offset and e1RM share the same weight unit.
 export function findBestE1RM(
-  pairs: ConjugateDataPair[],
   target: ConjugateExercise,
-  stats: RepCalcStats,
+  stats: SessionStats,
   baselineNameForType: string | undefined,
-  windowStart: Date,
-  windowEnd: Date
+  today: Date
 ): E1RMEstimate | null {
-  const { addlWtOffset, variantFactor } = stats;
-
-  const filteredPairs = filterByDateRange(pairs, windowStart, windowEnd);
-
-  const exerciseByName = new Map<string, ConjugateExercise>();
-  for (const [ex] of pairs) {
-    if (!exerciseByName.has(ex.displayName)) {
-      exerciseByName.set(ex.displayName, ex);
-    }
-  }
-
-  const targetFamily = familyKey(target);
-
-  // Pre-scan: for each exercise name find the most recent session within the window,
-  // and within that date the best (highest e1rm) set.
-  interface WindowBest {
-    date: Date;
-    e1rm: number;
-    set: { weight: number; reps: number };
-  }
-  const windowBestByName = new Map<string, WindowBest>();
-  for (const [ex, session] of filteredPairs) {
-    const prev = windowBestByName.get(ex.displayName);
-    const t = session.date.getTime();
-    const prevT = prev?.date.getTime() ?? -Infinity;
-    if (t > prevT || (t === prevT && session.e1rm > (prev?.e1rm ?? 0))) {
-      windowBestByName.set(ex.displayName, {
-        date: session.date,
-        e1rm: session.e1rm,
-        set: { weight: session.weight, reps: Math.round(session.reps) },
-      });
-    }
-  }
-
-  // Phase 1: most recently performed exercise in the same family (same bar/stance/equipment).
-  // Covers exact matches and addlWt variants (chains/bands on the same setup).
-  let bestDate: Date | null = null;
-  let bestName: string | null = null;
-
-  for (const [name, ex] of exerciseByName) {
-    if (ex.type !== target.type) {
-      continue;
-    }
-    if (
-      target.type === 'accessory' ? name !== target.displayName : familyKey(ex) !== targetFamily
-    ) {
-      continue;
-    }
-    const data = windowBestByName.get(name);
-    if (!data) {
-      continue;
-    }
-    if (!bestDate || data.date > bestDate) {
-      bestDate = data.date;
-      bestName = name;
-    }
-  }
-
-  if (bestName && bestDate) {
-    const sourceEx = exerciseByName.get(bestName)!;
-    const sourceData = windowBestByName.get(bestName)!;
-    const sourceE1RM = sourceData.e1rm;
-    const sourceBestSet = sourceData.set;
-    const sourceHasAddl = sourceEx.addlWts.length > 0;
-    const targetHasAddl = target.addlWts.length > 0;
-
-    // Accessories: exact match only, no variant adjustments.
-    if (target.type === 'accessory') {
-      return { e1rm: sourceE1RM, date: bestDate, sourceName: bestName, method: 'exact' };
-    }
-
-    if (sourceEx.displayName === target.displayName || (!sourceHasAddl && !targetHasAddl)) {
-      return { e1rm: sourceE1RM, date: bestDate, sourceName: bestName, method: 'exact' };
-    }
-
-    if (sourceHasAddl && !targetHasAddl) {
-      // Source has chains/bands; strip them out via offset.
-      // offset = straight_bar_weight - variant_bar_weight at the same rep count
-      const off = addlWtOffset.get(bestName);
-      if (off && off.sampleCount > 0) {
-        return {
-          e1rm: calcE1RM(sourceBestSet.weight + off.offset, sourceBestSet.reps),
-          date: bestDate,
-          sourceName: bestName,
-          method: 'addlWtOffset',
-        };
-      }
-    }
-
-    if (!sourceHasAddl && targetHasAddl) {
-      // Source is straight; estimate what the target's bar weight would be.
-      // Tier 1: target's own offset
-      // Tier 2: proxy with matching addlWts in the same family
-      // Tier 3: cross-family donor — same lift type, same addlWts
-      const proxyOffset =
-        addlWtOffset.get(target.displayName) ??
-        [...addlWtOffset.entries()].find(([name]) => {
-          const ex = exerciseByName.get(name);
-          return (
-            ex &&
-            familyKey(ex) === targetFamily &&
-            ex.addlWts.join(',') === target.addlWts.join(',')
-          );
-        })?.[1] ??
-        // Tier 3: cross-family donor — same lift type, same addlWts.
-        // Physical assumption: chains add the same absolute weight regardless of bar setup.
-        [...addlWtOffset.entries()].find(([name]) => {
-          const ex = exerciseByName.get(name);
-          return ex && ex.type === target.type && ex.addlWts.join(',') === target.addlWts.join(',');
-        })?.[1];
-      if (proxyOffset && proxyOffset.sampleCount > 0) {
-        const adjustedWeight = Math.max(0, sourceBestSet.weight - proxyOffset.offset);
-        return {
-          e1rm: calcE1RM(adjustedWeight, sourceBestSet.reps),
-          date: bestDate,
-          sourceName: bestName,
-          method: 'addlWtOffset',
-        };
-      }
-    }
-  }
-
-  if (target.type === 'accessory') {
+  const { projectedE1RM, variantFactor, addlWtOffset } = stats;
+  if (!baselineNameForType) {
     return null;
   }
 
-  // Phase 2: no same-family history. Cross-estimate through baseline via variantFactor.
-  // variantFactor[name].factor = e1rm_variant / e1rm_baseline
-  // so: e1rm_target = (e1rm_source / sourceFactor) * targetFactor
-  let targetFactor: number | null = null;
+  const compE1RM = projectedE1RM.get(baselineNameForType);
+  if (compE1RM == null) {
+    return null;
+  }
+
   if (target.displayName === baselineNameForType) {
-    targetFactor = 1.0;
-  } else {
-    const tvf = variantFactor.get(target.displayName);
-    if (tvf && tvf.sampleCount > 0 && tvf.factor > 0) {
-      targetFactor = tvf.factor;
-    }
+    return { e1rm: compE1RM, date: today, sourceName: baselineNameForType, method: 'exact' };
   }
-  if (targetFactor === null) {
+
+  const vf = variantFactor.get(target.displayName);
+  if (!vf || vf.sampleCount === 0 || vf.factor <= 0) {
     return null;
   }
 
-  let bestVFDate: Date | null = null;
-  let bestVFName: string | null = null;
-  let bestVFE1RM: number | null = null;
+  let e1rm = compE1RM * vf.factor;
 
-  function tryVFSource(name: string, sourceFactor: number) {
-    const data = windowBestByName.get(name);
-    if (!data) {
-      return;
-    }
-    if (!bestVFDate || data.date > bestVFDate) {
-      bestVFDate = data.date;
-      bestVFName = name;
-      bestVFE1RM = (data.e1rm / sourceFactor) * targetFactor!;
+  if (target.addlWts.length > 0) {
+    const off = addlWtOffset.get(target.displayName);
+    if (off && off.sampleCount > 0) {
+      e1rm = Math.max(0, e1rm - off.offset);
     }
   }
 
-  if (baselineNameForType) {
-    tryVFSource(baselineNameForType, 1.0);
-  }
-
-  for (const [name, vf] of variantFactor) {
-    const ex = exerciseByName.get(name);
-    if (!ex || ex.type !== target.type) {
-      continue;
-    }
-    if (name === target.displayName) {
-      continue;
-    }
-    if (vf.sampleCount === 0 || vf.factor <= 0) {
-      continue;
-    }
-    tryVFSource(name, vf.factor);
-  }
-
-  if (bestVFName && bestVFDate && bestVFE1RM !== null) {
-    return {
-      e1rm: bestVFE1RM,
-      date: bestVFDate,
-      sourceName: bestVFName,
-      method: 'variantFactor',
-    };
-  }
-
-  return null;
+  return { e1rm, date: today, sourceName: baselineNameForType, method: 'variantFactor' };
 }
 
 export function normalizeToBaseE1RM(

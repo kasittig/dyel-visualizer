@@ -1,5 +1,4 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
-import type { DateRange } from 'react-day-picker';
 import {
   findBestE1RM,
   predictWeightForReps,
@@ -30,14 +29,11 @@ function roundTo5(n: number): number {
 }
 
 function sourceNote(estimate: E1RMEstimate): string {
-  const date = estimate.date.toLocaleDateString();
   switch (estimate.method) {
     case 'exact':
-      return `Based on ${estimate.sourceName} · ${date}`;
-    case 'addlWtOffset':
-      return `Based on ${estimate.sourceName} · ${date} · adjusted for added resistance (chains/bands)`;
+      return `Based on ${estimate.sourceName} · ${estimate.date.toLocaleDateString()}`;
     case 'variantFactor':
-      return `Based on ${estimate.sourceName} · ${date} · estimated from a related exercise`;
+      return `Projected from ${estimate.sourceName}`;
   }
 }
 
@@ -45,12 +41,10 @@ export function RepCalculator({
   tabRows,
   baselineNames,
   tabFilters,
-  dateRange,
 }: {
   tabRows: Record<LiftType, SplitRows>;
   baselineNames: Partial<Record<string, string>>;
   tabFilters: Record<LiftType, FilterState>;
-  dateRange: DateRange;
 }) {
   const [liftType, setLiftType] = useState<LiftType>('squat');
   const [selectedName, setSelectedName] = useState('');
@@ -93,18 +87,11 @@ export function RepCalculator({
   );
 
   const estimate = useMemo(() => {
-    if (!selectedExercise || !dateRange.from || !dateRange.to) {
+    if (!selectedExercise) {
       return null;
     }
-    return findBestE1RM(
-      pairs,
-      selectedExercise,
-      stats,
-      baselineNames[liftType],
-      dateRange.from,
-      dateRange.to
-    );
-  }, [pairs, selectedExercise, stats, baselineNames, liftType, dateRange]);
+    return findBestE1RM(selectedExercise, stats, baselineNames[liftType], new Date());
+  }, [selectedExercise, stats, baselineNames, liftType]);
 
   // Keep a ref so the exercise-change effect always reads the current reps value
   // without reps being a dependency (which would cause circular updates when typing weight).
