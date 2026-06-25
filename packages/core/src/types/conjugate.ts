@@ -84,6 +84,7 @@ export type EffectEnum =
   | 'HAMSTRING_DOMINANT'
   | 'HIP_DOMINANT'
   | 'TRICEP_DOMINANT'
+  | 'PEC_DOMINANT'
   | 'UPPER_PECS'
   | 'LOWER_PECS'
   | 'LOCKOUT'
@@ -94,14 +95,13 @@ export type EffectEnum =
   | 'SUPRAMAXIMAL'
   | 'STABILIZER_DEMAND'
   | 'UPPER_BACK_DEMAND'
+  | 'LOWER_BACK_DEMAND'
   | 'CORE_DEMAND'
-  | 'SHOULDER_FRIENDLY'
-  | 'SPINE_DELOAD'
   | 'UNILATERAL'
   | 'BAR_SPEED'
   | 'POSTERIOR_SHIFT'
-  | 'NO_LEG_DRIVE'
-  | 'UPRIGHT_TORSO';
+  | 'UPRIGHT_TORSO'
+  | 'CONDITIONING';
 
 export type DeadliftStancePreference = 'sumo' | 'conventional';
 

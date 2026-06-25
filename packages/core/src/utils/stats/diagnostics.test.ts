@@ -67,10 +67,10 @@ describe('__MODIFIER__EFFECTS__', () => {
     expect('min' in e).toBe(false);
   });
 
-  it('equipment:board:bench effects contain LOCKOUT and REDUCED_ROM', () => {
+  it('equipment:board:bench effects contain TRICEP_DOMINANT and SUPRAMAXIMAL', () => {
     const e = __MODIFIER__EFFECTS__['equipment:board:bench'];
-    expect(e.effects).toContain('LOCKOUT');
-    expect(e.effects).toContain('REDUCED_ROM');
+    expect(e.effects).toContain('TRICEP_DOMINANT');
+    expect(e.effects).toContain('SUPRAMAXIMAL');
   });
 
   it('stance:ssb:squat does not exist (key is bar:ssb:squat)', () => {
@@ -87,6 +87,7 @@ function session(date: string, weight: number, reps = 1): TrainingSession {
     weight,
     e1rm: calcE1RM(weight, reps),
     unit: 'lbs',
+    rpe: null,
   };
 }
 
@@ -125,14 +126,14 @@ describe('generateDiagnostics', () => {
     expect(r.diagnostic).toMatch(/^board press at \d+%$/);
   });
 
-  it('board press result includes LOCKOUT and REDUCED_ROM effects', () => {
+  it('board press result includes TRICEP_DOMINANT and SUPRAMAXIMAL effects', () => {
     const pairs: ConjugateDataPair[] = [
       pair({ displayName: 'bench press' }, session('2024-01-01', 300)),
       pair({ displayName: 'board press', equipment: 'board' }, session('2024-01-01', 280)),
     ];
     const results = generateDiagnostics(pairs, 'bench press');
-    expect(results[0].effects).toContain('LOCKOUT');
-    expect(results[0].effects).toContain('REDUCED_ROM');
+    expect(results[0].effects).toContain('TRICEP_DOMINANT');
+    expect(results[0].effects).toContain('SUPRAMAXIMAL');
   });
 
   it('emits a Weakness result when factor falls below the baseline floor', () => {
