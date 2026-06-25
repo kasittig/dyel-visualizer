@@ -105,10 +105,10 @@ describe('buildSessionStats', () => {
     expect(stats.projectedE1RM.size).toBe(0);
   });
 
-  it('enriches comp projection from back-projected variant sessions when sampleCount >= 2', () => {
+  it('enriches comp projection via velocity aggregation from variant sessions when sampleCount >= 2', () => {
     // Comp: one old session at 300. Variant (SSB): two sessions trending up.
-    // The variant factor is ~0.9 (270/300). Back-projecting the later SSB session
-    // (310/0.9 ≈ 344) should push the comp projection above 300 at a future date.
+    // The upward SSB velocity / SSB factor gives a positive comp-equivalent velocity,
+    // which extrapolates the comp anchor (310) upward to a future date.
     const future = new Date('2024-09-01T00:00:00');
     const pairs: ConjugateDataPair[] = [
       pair('Squat', session('2024-01-01', 300, 1)),

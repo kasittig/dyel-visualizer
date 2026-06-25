@@ -1,6 +1,12 @@
 import { familyKey, variantLabel } from '../../types/conjugate';
 import type { ConjugateDataPair, TrainingSession } from '../../types/conjugate';
-import { applyAddlWtOffset, calcE1RM, fitVariantFactor, predictE1RM } from '../math/e1rm';
+import {
+  applyAddlWtOffset,
+  calcE1RM,
+  fitVariantFactor,
+  fitVariantVelocity,
+  predictE1RM,
+} from '../math/e1rm';
 import type { RepCalcStats } from '../math/repCalculator';
 
 export interface LastSession {
@@ -113,12 +119,13 @@ export function buildSessionStats(
     });
   }
 
-  // Pass 4: Enrich each baseline's projectedE1RM with back-projected variant sessions.
-  // For each well-calibrated variant (sampleCount >= 2), divide each chain-stripped
-  // session e1rm by the variantFactor to infer an implied comp e1rm at that date.
-  // This lets Slingshot/SSB progression flow into the comp baseline projection even
-  // when direct comp sessions are sparse.
-  const impliedByBaseline = new Map<string, TrainingSession[]>();
+  // Pass 4: Enrich each baseline's projectedE1RM via velocity aggregation from variants.
+  // For each qualifying variant, compute its trend (e1rm/ms) on chain-stripped data,
+  // divide by its factor to get the comp-equivalent velocity, average across variants,
+  // then extrapolate linearly from the most recent actual comp session.
+  // This avoids cross-variant noise from mixing absolute implied comp values.
+  const velocitiesByBaseline = new Map<string, number[]>();
+
   for (const [name, vf] of variantFactor) {
     if (vf.sampleCount < 2 || vf.factor <= 0) {
       continue;
@@ -128,21 +135,33 @@ export function buildSessionStats(
       continue;
     }
     const off = data.isAddlWt ? addlWtOffset.get(name) : undefined;
-    const sessions = data.sessions.map((s) => {
+    const strippedSessions = data.sessions.map((s) => {
       const weight = off && off.sampleCount > 0 ? s.weight + off.offset : s.weight;
-      return { ...s, e1rm: calcE1RM(weight, s.reps, s.rpe) / vf.factor };
+      return { ...s, e1rm: calcE1RM(weight, s.reps, s.rpe) };
     });
-    if (!impliedByBaseline.has(vf.baselineName)) {
-      impliedByBaseline.set(vf.baselineName, []);
+    const { velocityPerMs, sampleCount } = fitVariantVelocity(strippedSessions);
+    if (sampleCount < 2) {
+      continue;
     }
-    impliedByBaseline.get(vf.baselineName)!.push(...sessions);
+    if (!velocitiesByBaseline.has(vf.baselineName)) {
+      velocitiesByBaseline.set(vf.baselineName, []);
+    }
+    velocitiesByBaseline.get(vf.baselineName)!.push(velocityPerMs / vf.factor);
   }
 
-  for (const [baselineName, impliedSessions] of impliedByBaseline) {
-    const compSessions = dataByName.get(baselineName)?.sessions ?? [];
-    const enriched = predictE1RM([...compSessions, ...impliedSessions], today);
-    if (enriched !== null) {
-      projectedE1RM.set(baselineName, enriched);
+  for (const [baselineName, velocities] of velocitiesByBaseline) {
+    const compData = dataByName.get(baselineName);
+    if (!compData || compData.sessions.length === 0) {
+      continue;
+    }
+    const lastComp = compData.sessions.reduce(
+      (best, s) => (s.date > best.date ? s : best),
+      compData.sessions[0]
+    );
+    const avgVelocity = velocities.reduce((a, b) => a + b, 0) / velocities.length;
+    const projected = lastComp.e1rm + avgVelocity * (today.getTime() - lastComp.date.getTime());
+    if (projected > 0) {
+      projectedE1RM.set(baselineName, projected);
     }
   }
 
