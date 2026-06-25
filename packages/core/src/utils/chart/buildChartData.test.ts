@@ -96,11 +96,13 @@ describe('buildChartData', () => {
     const [d1, d2, d3] = result;
     expect(d1).toEqual({ date: '2024-01-01', squat: 100 });
     expect('total' in d1).toBe(false);
+    expect('pushPull' in d1).toBe(false);
     expect(d2).toEqual({ date: '2024-01-02', bench: 50 });
     expect('total' in d2).toBe(false);
+    expect('pushPull' in d2).toBe(false);
     // On d3 only deadlift has a fresh value; squat/bench are absent from the point
-    // but their last-known values still feed the forward-filled total.
-    expect(d3).toEqual({ date: '2024-01-03', deadlift: 25, total: 175 });
+    // but their last-known values still feed the forward-filled total and pushPull.
+    expect(d3).toEqual({ date: '2024-01-03', deadlift: 25, total: 175, pushPull: 75 });
   });
 
   it('normalizes through a variant factor when a target exercise is supplied', () => {

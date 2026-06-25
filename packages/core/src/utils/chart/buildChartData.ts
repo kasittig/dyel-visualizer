@@ -57,6 +57,10 @@ export function buildChartData(
       point.total = Math.round(LIFT_TYPES.reduce((sum, lift) => sum + last[lift]!, 0));
     }
 
+    if (last.bench !== undefined && last.deadlift !== undefined) {
+      point.pushPull = Math.round(last.bench + last.deadlift);
+    }
+
     rows.push(point);
   }
 
