@@ -2,10 +2,10 @@ import { Line, Tooltip } from 'recharts';
 import type { ChartPoint } from '@dyel/core';
 import { DateLineChart, ChartEmpty } from './DateLineChart';
 
-const SQUAT_COLOR = '#e67e22';
+const SQUAT_COLOR = '#e74c3c';
 const BENCH_COLOR = '#3498db';
-const DEADLIFT_COLOR = '#2ecc71';
-const PUSH_PULL_COLOR = '#e74c3c';
+const DEADLIFT_COLOR = '#f1c40f';
+const PUSH_PULL_COLOR = '#2ecc71';
 const TOTAL_COLOR = '#9b59b6';
 
 export function TotalChart({ chartData, unit }: { chartData: ChartPoint[]; unit: string }) {

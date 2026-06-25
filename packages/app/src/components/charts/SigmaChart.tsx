@@ -4,9 +4,9 @@ import type { ChartPoint } from '@dyel/core';
 import { BaseRadarChart } from './BaseRadarChart';
 
 const LIFT_COLORS: Record<string, string> = {
-  Squat: '#e67e22',
+  Squat: '#e74c3c',
   Bench: '#3498db',
-  Deadlift: '#2ecc71',
+  Deadlift: '#f1c40f',
 };
 
 export function SigmaChart({ chartData, unit }: { chartData: ChartPoint[]; unit: string }) {
