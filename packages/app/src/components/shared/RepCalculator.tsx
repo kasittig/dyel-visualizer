@@ -33,7 +33,7 @@ function sourceNote(estimate: E1RMEstimate): string {
     case 'exact':
       return `Based on ${estimate.sourceName} · ${estimate.date.toLocaleDateString()}`;
     case 'variantFactor':
-      return `Projected from ${estimate.sourceName}`;
+      return `Projected from ${estimate.sourceName} (${estimate.date.toLocaleDateString()})`;
   }
 }
 
