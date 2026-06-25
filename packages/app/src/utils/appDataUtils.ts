@@ -1,4 +1,4 @@
-import { defaultBaselineName, defaultCompExerciseName } from '@dyel/core';
+import { defaultCompExerciseName } from '@dyel/core';
 import type {
   ConjugateDataPair,
   DeadliftStancePreference,
@@ -57,7 +57,7 @@ export function computeEffectiveNames(
   const baseline: Partial<Record<LiftType, string>> = {};
   const target: Partial<Record<LiftType, string>> = {};
   for (const tab of LIFT_TABS) {
-    const baselineName = defaultBaselineName(tabRows[tab].all);
+    const baselineName = defaultCompExerciseName(tabRows[tab].all, deadliftStance);
     if (baselineName) {
       baseline[tab] = baselineName;
     }
