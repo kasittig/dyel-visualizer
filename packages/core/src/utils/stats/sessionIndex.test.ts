@@ -104,4 +104,34 @@ describe('buildSessionStats', () => {
     expect(stats.variantFactor.size).toBe(0);
     expect(stats.projectedE1RM.size).toBe(0);
   });
+
+  it('enriches comp projection from back-projected variant sessions when sampleCount >= 2', () => {
+    // Comp: one old session at 300. Variant (SSB): two sessions trending up.
+    // The variant factor is ~0.9 (270/300). Back-projecting the later SSB session
+    // (310/0.9 ≈ 344) should push the comp projection above 300 at a future date.
+    const future = new Date('2024-09-01T00:00:00');
+    const pairs: ConjugateDataPair[] = [
+      pair('Squat', session('2024-01-01', 300, 1)),
+      pair('SSB Squat', session('2024-02-01', 270, 1)),
+      pair('SSB Squat', session('2024-05-01', 310, 1)),
+    ];
+    const stats = buildSessionStats(pairs, { squat: 'Squat' }, future);
+    const proj = stats.projectedE1RM.get('Squat');
+    expect(proj).toBeDefined();
+    expect(proj!).toBeGreaterThan(300);
+  });
+
+  it('does not back-project from variants with sampleCount < 2', () => {
+    // Only one SSB session — factor has sampleCount=1, should not enrich comp.
+    const future = new Date('2024-09-01T00:00:00');
+    const pairs: ConjugateDataPair[] = [
+      pair('Squat', session('2024-01-01', 300, 1)),
+      pair('SSB Squat', session('2024-05-01', 350, 1)),
+    ];
+    const stats = buildSessionStats(pairs, { squat: 'Squat' }, future);
+    const proj = stats.projectedE1RM.get('Squat');
+    // With only one comp session and no back-projection, projectedE1RM is that session's stored
+    // e1rm (300 * (1 + 1/30) ≈ 310), regardless of how far into the future we project.
+    expect(proj).toBeCloseTo(300 * (1 + 1 / 30), 0);
+  });
 });

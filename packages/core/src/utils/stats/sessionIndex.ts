@@ -1,6 +1,6 @@
 import { familyKey, variantLabel } from '../../types/conjugate';
 import type { ConjugateDataPair, TrainingSession } from '../../types/conjugate';
-import { applyAddlWtOffset, fitVariantFactor, predictE1RM } from '../math/e1rm';
+import { applyAddlWtOffset, calcE1RM, fitVariantFactor, predictE1RM } from '../math/e1rm';
 import type { RepCalcStats } from '../math/repCalculator';
 
 export interface LastSession {
@@ -111,6 +111,39 @@ export function buildSessionStats(
       label: data.label,
       baselineName: baselineName ?? 'baseline',
     });
+  }
+
+  // Pass 4: Enrich each baseline's projectedE1RM with back-projected variant sessions.
+  // For each well-calibrated variant (sampleCount >= 2), divide each chain-stripped
+  // session e1rm by the variantFactor to infer an implied comp e1rm at that date.
+  // This lets Slingshot/SSB progression flow into the comp baseline projection even
+  // when direct comp sessions are sparse.
+  const impliedByBaseline = new Map<string, TrainingSession[]>();
+  for (const [name, vf] of variantFactor) {
+    if (vf.sampleCount < 2 || vf.factor <= 0) {
+      continue;
+    }
+    const data = dataByName.get(name);
+    if (!data) {
+      continue;
+    }
+    const off = data.isAddlWt ? addlWtOffset.get(name) : undefined;
+    const sessions = data.sessions.map((s) => {
+      const weight = off && off.sampleCount > 0 ? s.weight + off.offset : s.weight;
+      return { ...s, e1rm: calcE1RM(weight, s.reps, s.rpe) / vf.factor };
+    });
+    if (!impliedByBaseline.has(vf.baselineName)) {
+      impliedByBaseline.set(vf.baselineName, []);
+    }
+    impliedByBaseline.get(vf.baselineName)!.push(...sessions);
+  }
+
+  for (const [baselineName, impliedSessions] of impliedByBaseline) {
+    const compSessions = dataByName.get(baselineName)?.sessions ?? [];
+    const enriched = predictE1RM([...compSessions, ...impliedSessions], today);
+    if (enriched !== null) {
+      projectedE1RM.set(baselineName, enriched);
+    }
   }
 
   return {
