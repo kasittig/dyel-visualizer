@@ -121,6 +121,24 @@ describe('buildSessionStats', () => {
     expect(proj!).toBeGreaterThan(300);
   });
 
+  it('does not enrich comp projection when comp already has 2+ sessions', () => {
+    // Comp: two sessions (trend: flat at 300). Variant (SSB): two sessions trending strongly up.
+    // Because comp has 2 sessions, Pass 4 skips enrichment entirely.
+    // projectedE1RM["Squat"] should come from comp's own trend, not variant velocity.
+    const future = new Date('2024-09-01T00:00:00');
+    const pairs: ConjugateDataPair[] = [
+      pair('Squat', session('2024-01-01', 300, 1)),
+      pair('Squat', session('2024-03-01', 300, 1)),
+      pair('SSB Squat', session('2024-02-01', 270, 1)),
+      pair('SSB Squat', session('2024-05-01', 370, 1)), // big upward trend
+    ];
+    const stats = buildSessionStats(pairs, { squat: 'Squat' }, future);
+    // Comp's own two sessions are flat → projection stays flat (~310), not inflated by SSB trend
+    const compProjection = stats.projectedE1RM.get('Squat');
+    expect(compProjection).toBeDefined();
+    expect(compProjection!).toBeCloseTo(300 * (1 + 1 / 30), 0);
+  });
+
   it('does not back-project from variants with sampleCount < 2', () => {
     // Only one SSB session — factor has sampleCount=1, should not enrich comp.
     const future = new Date('2024-09-01T00:00:00');

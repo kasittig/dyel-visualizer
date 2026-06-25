@@ -154,6 +154,9 @@ export function buildSessionStats(
     if (!compData || compData.sessions.length === 0) {
       continue;
     }
+    if (compData.sessions.length >= 2) {
+      continue;
+    }
     const lastComp = compData.sessions.reduce(
       (best, s) => (s.date > best.date ? s : best),
       compData.sessions[0]
