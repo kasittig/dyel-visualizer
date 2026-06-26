@@ -39,12 +39,14 @@ export function SigmaTab({
   const unit = sigmaPairs[0]?.[1].unit ?? 'lbs';
 
   return (
-    <CollapsibleSection
-      label="Overview"
-      trailing={<EditableDateChip dateRange={dateRange} onDateRangeChange={onDateRangeChange} />}
-    >
-      <TotalChart chartData={chartData} unit={unit} />
+    <>
+      <CollapsibleSection
+        label="Overview"
+        trailing={<EditableDateChip dateRange={dateRange} onDateRangeChange={onDateRangeChange} />}
+      >
+        <TotalChart chartData={chartData} unit={unit} />
+      </CollapsibleSection>
       <SigmaChart chartData={chartData} unit={unit} />
-    </CollapsibleSection>
+    </>
   );
 }
