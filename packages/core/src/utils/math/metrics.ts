@@ -11,16 +11,17 @@ function convertUnits(value: number, inputUnit: LiftUnits, outputUnit: LiftUnits
 }
 
 export function calculateDots(
-  bodyweight: number,
+  bw: number,
   total: number,
   gender: boolean,
   unit: LiftUnits = 'lbs'
 ): number {
   // formula is in kg
-  bodyweight = convertUnits(bodyweight, unit, 'lbs');
+  bw = convertUnits(bw, unit, 'kg');
+  total = convertUnits(total, unit, 'kg');
 
   // Polynomial bounds to ensure a positive return value
-  if (bodyweight < 40 || bodyweight > 150 + (gender ? 0 : 60)) {
+  if (bw < 40 || bw > 150 + (gender ? 0 : 60)) {
     return 0;
   }
 
@@ -30,10 +31,10 @@ export function calculateDots(
 
   // 4. Calculate the polynomial denominator
   const denominator =
-    coefficients.a * Math.pow(bodyweight, 4) +
-    coefficients.b * Math.pow(bodyweight, 3) +
-    coefficients.c * Math.pow(bodyweight, 2) +
-    coefficients.d * bodyweight +
+    coefficients.a * Math.pow(bw, 4) +
+    coefficients.b * Math.pow(bw, 3) +
+    coefficients.c * Math.pow(bw, 2) +
+    coefficients.d * bw +
     coefficients.e;
 
   // 5. Compute and return final DOTS score
@@ -54,7 +55,7 @@ export function calculateSchwartzMalone(
   total: number,
   gender: boolean,
   unit: LiftUnits = 'lbs'
-) {
+): number {
   // 1. Standardize everything to pounds (lbs) since the core tables were built using lbs.
   bw = convertUnits(bw, unit, 'lbs');
   total = convertUnits(total, unit, 'lbs');
@@ -63,18 +64,18 @@ export function calculateSchwartzMalone(
   const selectedTable = __COEFFICIENTS__.schwartzmalone[genderStr];
 
   // 3. Bound checking (Handle extreme edge cases outside table thresholds)
-  if (bw <= selectedTable.anchors[0].w) {
-    return Number((total * selectedTable.anchors[0].c).toFixed(4));
+  if (bw <= selectedTable[0].w) {
+    return Number((total * selectedTable[0].c).toFixed(4));
   }
-  if (bw >= selectedTable.anchors[selectedTable.anchors.length - 1].w) {
-    return Number((total * selectedTable.anchors[selectedTable.anchors.length - 1].c).toFixed(4));
+  if (bw >= selectedTable[selectedTable.length - 1].w) {
+    return Number((total * selectedTable[selectedTable.length - 1].c).toFixed(4));
   }
 
   // 4. Linear Interpolation to find the precise floating coefficient
   let coefficient = 0;
-  for (let i = 0; i < selectedTable.anchors.length - 1; i++) {
-    const current = selectedTable.anchors[i];
-    const next = selectedTable.anchors[i + 1];
+  for (let i = 0; i < selectedTable.length - 1; i++) {
+    const current = selectedTable[i];
+    const next = selectedTable[i + 1];
 
     if (bw >= current.w && bw <= next.w) {
       // Linear interpolation formula: y = y0 + ((x - x0) * (y1 - y0)) / (x1 - x0)
@@ -86,4 +87,47 @@ export function calculateSchwartzMalone(
   // 5. Calculate and return Formula Total (FT)
   const formulaTotal = total * coefficient;
   return Number(formulaTotal.toFixed(4));
+}
+
+/**
+ * Calculates the Wilks Score for a powerlifter.
+ *
+ * @param {number} bw - The lifter's body weight.
+ * @param {number} total - Total weight of Squat + Bench + Deadlift.
+ * @param {boolean} gender - false for 'male' + true for 'female'.
+ * @param {LiftType} unit - 'kg' or 'lb' (defaults to 'kg').
+ * @returns {number} The calculated Wilks score rounded to two decimal places.
+ */
+export function calculateWilksScore(
+  bw: number,
+  total: number,
+  gender: boolean,
+  unit: LiftUnits = 'lbs'
+): number {
+  bw = convertUnits(bw, unit, 'kg');
+  total = convertUnits(total, unit, 'kg');
+
+  const genderStr = gender ? 'female' : 'male';
+  const coefficients = __COEFFICIENTS__.wilks[genderStr];
+
+  if (!coefficients.f) {
+    return 0;
+  }
+
+  // 3. Compute the polynomial denominator using the lifter's weight (w)
+  // Formula: a + bw + cw² + dw³ + ew⁴ + fw⁵
+  const denominator =
+    coefficients.a +
+    coefficients.b * bw +
+    coefficients.c * Math.pow(bw, 2) +
+    coefficients.d * Math.pow(bw, 3) +
+    coefficients.e * Math.pow(bw, 4) +
+    coefficients.f * Math.pow(bw, 5);
+
+  // 4. Calculate final Wilks Coefficient and multiply by total lifted
+  const wilksCoefficient = 500 / denominator;
+  const wilksScore = total * wilksCoefficient;
+
+  // Return the final score rounded to two decimal places
+  return parseFloat(wilksScore.toFixed(2));
 }
