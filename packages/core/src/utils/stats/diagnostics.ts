@@ -22,11 +22,8 @@ function resolveDeadliftStance(
   ex: ConjugateExercise,
   deadliftStance: DeadliftStancePreference
 ): 'sumo' | 'conventional' {
-  if (ex.stance === 'sumo') {
-    return 'sumo';
-  }
-  if (ex.stance === 'conventional') {
-    return 'conventional';
+  if (ex.stance === 'sumo' || ex.stance === 'conventional') {
+    return ex.stance;
   }
   if (ex.stance === 'opposite') {
     return deadliftStance === 'sumo' ? 'conventional' : 'sumo';
