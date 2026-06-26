@@ -10,20 +10,20 @@ describe('calculateDots', () => {
     expect(calculateDots(39.9, 300, false)).toBe(0);
   });
 
-  it('returns 0 for female when bodyweight exceeds 210 kg', () => {
+  it('returns 0 for male when bodyweight exceeds 210 kg', () => {
     expect(calculateDots(211, 300, false)).toBe(0);
   });
 
-  it('returns 0 for male when bodyweight exceeds 150 kg', () => {
+  it('returns 0 for female when bodyweight exceeds 150 kg', () => {
     expect(calculateDots(151, 500, true)).toBe(0);
   });
 
-  it('returns a positive score for male at exactly 150 kg', () => {
+  it('returns a positive score for female at exactly 150 kg', () => {
     const score = calculateDots(150, 500, true);
     expect(score).toBeGreaterThan(0);
   });
 
-  it('returns a positive score for female at exactly 210 kg', () => {
+  it('returns a positive score for male at exactly 210 kg', () => {
     const score = calculateDots(210, 300, false);
     expect(score).toBeGreaterThan(0);
   });
@@ -34,7 +34,7 @@ describe('calculateDots', () => {
   });
 
   it('returns a positive score for a typical male lifter', () => {
-    const score = calculateDots(90, 500, true);
+    const score = calculateDots(90, 500, false);
     expect(score).toBeGreaterThan(0);
   });
 
@@ -56,21 +56,9 @@ describe('calculateDots', () => {
     expect(score).toBe(rounded);
   });
 
-  it('converts pounds to kg when unit is "lb"', () => {
-    const scoreFromPounds = calculateDots(220, 660, false, 'lb');
-    const scoreFromKg = calculateDots(220 * 0.45359237, 660 * 0.45359237, false, 'lbs');
-    expect(scoreFromPounds).toBeCloseTo(scoreFromKg, 2);
-  });
-
   it('does not convert when unit is "lbs" (default)', () => {
     const score1 = calculateDots(100, 300, false);
     const score2 = calculateDots(100, 300, false, 'lbs');
     expect(score1).toBe(score2);
-  });
-
-  it('treats inputs as kg when unit is "lbs"', () => {
-    const scoreAsKg = calculateDots(100, 300, false, 'lbs');
-    const scoreAsLbs = calculateDots(100, 300, false, 'lb');
-    expect(scoreAsKg).not.toBe(scoreAsLbs);
   });
 });

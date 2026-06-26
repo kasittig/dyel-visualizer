@@ -4,6 +4,8 @@ import path from 'path';
 
 const modifierEffectsPath = path.resolve(__dirname, './modifierEffects.json');
 const modifierEffectsData = JSON.parse(fs.readFileSync(modifierEffectsPath, 'utf-8'));
+const coefficientsPath = path.resolve(__dirname, './coefficients.json');
+const coefficients = JSON.parse(fs.readFileSync(coefficientsPath, 'utf-8'));
 
 export default defineConfig({
   test: {
@@ -11,5 +13,6 @@ export default defineConfig({
   },
   define: {
     __MODIFIER__EFFECTS__: JSON.stringify(modifierEffectsData),
+    __COEFFICIENTS__: JSON.stringify(coefficients),
   },
 });

@@ -46,6 +46,7 @@ export type ConjugateEquipment =
 // This is where ways of adding additional weight to the bar go.
 // Additional weights can impact the stability of the bar and the effective amount of weight lifted.
 export type ConjugateAddlWt = 'bands' | 'rev. bands' | 'chains';
+export type LiftUnits = 'lbs' | 'kg';
 
 export interface TrainingSession {
   date: Date;
@@ -53,7 +54,7 @@ export interface TrainingSession {
   reps: number;
   weight: number;
   e1rm: number;
-  unit: 'lbs' | 'kg';
+  unit: LiftUnits;
   rpe: number | null;
 }
 
