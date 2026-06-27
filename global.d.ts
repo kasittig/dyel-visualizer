@@ -6,18 +6,9 @@ interface ExerciseModifierDetail {
 }
 
 interface MetricCoefficients {
-  dots: Record<string, MetricCoefficients>;
-  wilks: Record<string, MetricCoefficients>;
+  dots: Record<string, number[]>;
+  wilks: Record<string, number[]>;
   schwartzmalone: Record<string, SMAnchorValue[]>;
-}
-
-interface MetricCoefficients {
-  a: number;
-  b: number;
-  c: number;
-  d: number;
-  e: number;
-  f: number | undefined;
 }
 
 interface SMAnchorValue {

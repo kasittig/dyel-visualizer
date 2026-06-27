@@ -30,12 +30,7 @@ export function calculateDots(
   const coefficients = __COEFFICIENTS__.dots[genderStr];
 
   // 4. Calculate the polynomial denominator
-  const denominator =
-    coefficients.a * Math.pow(bw, 4) +
-    coefficients.b * Math.pow(bw, 3) +
-    coefficients.c * Math.pow(bw, 2) +
-    coefficients.d * bw +
-    coefficients.e;
+  const denominator = calcDenominator(bw, coefficients);
 
   // 5. Compute and return final DOTS score
   const dotsScore = total * (500 / denominator);
@@ -110,19 +105,7 @@ export function calculateWilksScore(
   const genderStr = gender ? 'female' : 'male';
   const coefficients = __COEFFICIENTS__.wilks[genderStr];
 
-  if (!coefficients.f) {
-    return 0;
-  }
-
-  // 3. Compute the polynomial denominator using the lifter's weight (w)
-  // Formula: a + bw + cw² + dw³ + ew⁴ + fw⁵
-  const denominator =
-    coefficients.a +
-    coefficients.b * bw +
-    coefficients.c * Math.pow(bw, 2) +
-    coefficients.d * Math.pow(bw, 3) +
-    coefficients.e * Math.pow(bw, 4) +
-    coefficients.f * Math.pow(bw, 5);
+  const denominator = calcDenominator(bw, coefficients);
 
   // 4. Calculate final Wilks Coefficient and multiply by total lifted
   const wilksCoefficient = 500 / denominator;
@@ -130,4 +113,10 @@ export function calculateWilksScore(
 
   // Return the final score rounded to two decimal places
   return parseFloat(wilksScore.toFixed(2));
+}
+
+function calcDenominator(bw: number, coefficients: number[]): number {
+  return coefficients.reduce((sum, coeff, index) => {
+    return sum + coeff * Math.pow(bw, index);
+  }, 0);
 }
