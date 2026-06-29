@@ -28,9 +28,9 @@ export function calculateMetrics(
     : __COEFFICIENTS__.male;
 
   return {
-    wilks: calculateMetric<number>(bw, total, units, coefficients.wilks, calculateWilks),
-    dots: calculateMetric<number>(bw, total, units, coefficients.dots, calculateDots),
-    schwartzmalone: calculateMetric<SMAnchorValue>(
+    wilks: calculateMetric<number[]>(bw, total, units, coefficients.wilks, calculateWilks),
+    dots: calculateMetric<number[]>(bw, total, units, coefficients.dots, calculateDots),
+    schwartzmalone: calculateMetric<SMAnchorValue[]>(
       bw,
       total,
       units,
@@ -45,7 +45,7 @@ function calculateMetric<T>(
   total: number,
   unit: LiftUnits,
   coefficientConfig: MetricCoefficient<T>,
-  metric: (bw: number, total: number, coefficients: T[]) => number
+  metric: (bw: number, total: number, coefficients: T) => number
 ): number {
   bw = convertUnits(bw, unit, coefficientConfig.units);
   total = convertUnits(total, unit, coefficientConfig.units);

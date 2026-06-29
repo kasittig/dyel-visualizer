@@ -1,5 +1,5 @@
 interface ExerciseModifierDetail {
-  effects: import('./packages/core/src/types/conjugate').EffectEnum[];
+  effects: import('@dyel/core/src/types/conjugate').EffectEnum[];
   min?: number; // Optional because "addl_wt" keys do not have min/max
   max?: number; // Optional because "addl_wt" keys do not have min/max
 }
@@ -16,8 +16,8 @@ interface MetricCoefficientGroup {
 }
 
 interface MetricCoefficient<T> {
-  units: import('./packages/core/src/types/conjugate').LiftUnits;
-  coefficients: t;
+  units: import('@dyel/core/src/types/conjugate').LiftUnits;
+  coefficients: T;
   min_bw: number | undefined;
   max_bw: number | undefined;
 }
