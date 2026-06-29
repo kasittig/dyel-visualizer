@@ -1,4 +1,3 @@
-// Define the shape of each exercise entry value
 interface ExerciseModifierDetail {
   effects: import('./packages/core/src/types/conjugate').EffectEnum[];
   min?: number; // Optional because "addl_wt" keys do not have min/max
@@ -6,9 +5,21 @@ interface ExerciseModifierDetail {
 }
 
 interface MetricCoefficients {
-  dots: Record<string, number[]>;
-  wilks: Record<string, number[]>;
-  schwartzmalone: Record<string, SMAnchorValue[]>;
+  male: MetricCoefficientGroup;
+  female: MetricCoefficientGroup;
+}
+
+interface MetricCoefficientGroup {
+  dots: MetricCoefficient<number[]>;
+  schwartzmalone: MetricCoefficient<SMAnchorValue[]>;
+  wilks: MetricCoefficient<number[]>;
+}
+
+interface MetricCoefficient<T> {
+  units: import('./packages/core/src/types/conjugate').LiftUnits;
+  coefficients: t;
+  min_bw: number | undefined;
+  max_bw: number | undefined;
 }
 
 interface SMAnchorValue {
