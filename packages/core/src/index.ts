@@ -13,7 +13,9 @@ export type {
   GroupedConjugatePairs,
 } from './types/conjugate';
 export { variantLabel, familyKey } from './types/conjugate';
+export type { LiftMetrics } from './types/metrics';
 
+export { calculateMetrics } from './utils/math/metrics';
 export {
   calcE1RM,
   invertE1RM,
