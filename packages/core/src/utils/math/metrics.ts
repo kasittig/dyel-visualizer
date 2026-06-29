@@ -67,14 +67,6 @@ function calculateDots(bw: number, total: number, coefficients: number[]): numbe
   return Math.round(dotsScore * 100) / 100;
 }
 
-/**
- * Calculates the Schwartz / Malone Formula Score (Formula Total).
- * @param {number} bw - The bodyweight of the lifter.
- * @param {number} total - The sum of squat + bench + deadlift.
- * @param {SMAnchorValue[]} coefficients - Schwartz / Malone formula coefficients.
- * @param {string} unit - 'lbs' or 'kg' (Default is 'lbs' as the formula historically used lbs).
- * @returns {number} The relative strength score (Formula Total), rounded to 4 decimals.
- */
 function calculateSchwartzMalone(bw: number, total: number, coefficients: SMAnchorValue[]): number {
   // Bound checking (Handle extreme edge cases outside table thresholds)
   const min_val = coefficients[0];
@@ -104,14 +96,6 @@ function calculateSchwartzMalone(bw: number, total: number, coefficients: SMAnch
   return Number(formulaTotal.toFixed(4));
 }
 
-/**
- * Calculates the Wilks Score for a powerlifter.
- *
- * @param {number} bw - The lifter's body weight.
- * @param {number} total - Total weight of Squat + Bench + Deadlift.
- * @param {number[]} coefficients - Wilks formula coefficients
- * @returns {number} The calculated Wilks score rounded to two decimal places.
- */
 function calculateWilks(bw: number, total: number, coefficients: number[]): number {
   const denominator = calcDenominator(bw, coefficients);
 
