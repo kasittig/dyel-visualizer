@@ -9,50 +9,66 @@ function sess(weight: number, reps: number, rpe?: number | null): TrainingSessio
   return { weight, reps, rpe: rpe ?? null, sets: 1, e1rm: 0, unit: 'lbs', date: new Date() };
 }
 
-const competitionSquat: ConjugateExercise = {
+function mkEx(
+  overrides: Pick<
+    ConjugateExercise,
+    'type' | 'bar' | 'stance' | 'addlWts' | 'equipment' | 'displayName'
+  >
+): ConjugateExercise {
+  return {
+    ...overrides,
+    averageIndex: null,
+    expectedBaseline: null,
+    status: null,
+    diagnostic: null,
+    effects: [],
+  };
+}
+
+const competitionSquat = mkEx({
   type: 'squat',
   bar: 'standard',
   stance: 'competition',
   addlWts: [],
   equipment: null,
   displayName: 'Competition Squat',
-};
+});
 
-const chainSquat: ConjugateExercise = {
+const chainSquat = mkEx({
   type: 'squat',
   bar: 'standard',
   stance: 'competition',
   addlWts: ['chains'],
   equipment: null,
   displayName: 'Competition Squat + Chains',
-};
+});
 
-const ssbSquat: ConjugateExercise = {
+const ssbSquat = mkEx({
   type: 'squat',
   bar: 'ssb',
   stance: 'competition',
   addlWts: [],
   equipment: null,
   displayName: 'SSB Squat',
-};
+});
 
-const ssbChainSquat: ConjugateExercise = {
+const ssbChainSquat = mkEx({
   type: 'squat',
   bar: 'ssb',
   stance: 'competition',
   addlWts: ['chains'],
   equipment: null,
   displayName: 'SSB Squat + Chains',
-};
+});
 
-const wideSquat: ConjugateExercise = {
+const wideSquat = mkEx({
   type: 'squat',
   bar: 'standard',
   stance: 'wide',
   addlWts: [],
   equipment: null,
   displayName: 'Wide Squat',
-};
+});
 
 const emptyStats: RepCalcStats = {
   addlWtOffset: new Map(),
@@ -312,50 +328,50 @@ describe('normalizeToBaseE1RM', () => {
 describe('findBestE1RM', () => {
   const today = new Date('2024-02-01');
 
-  const bench: ConjugateExercise = {
+  const bench = mkEx({
     type: 'bench',
     bar: 'standard',
     stance: null,
     addlWts: [],
     equipment: null,
     displayName: 'Bench',
-  };
+  });
 
-  const benchChains: ConjugateExercise = {
+  const benchChains = mkEx({
     type: 'bench',
     bar: 'standard',
     stance: null,
     addlWts: ['chains'],
     equipment: null,
     displayName: 'Bench + Chains',
-  };
+  });
 
-  const slingshotBench: ConjugateExercise = {
+  const slingshotBench = mkEx({
     type: 'bench',
     bar: 'standard',
-    stance: null,
+    stance: 'slingshot',
     addlWts: [],
-    equipment: 'slingshot',
+    equipment: null,
     displayName: 'Slingshot Bench',
-  };
+  });
 
-  const slingshotBenchChains: ConjugateExercise = {
+  const slingshotBenchChains = mkEx({
     type: 'bench',
     bar: 'standard',
-    stance: null,
+    stance: 'slingshot',
     addlWts: ['chains'],
-    equipment: 'slingshot',
+    equipment: null,
     displayName: 'Slingshot Bench + Chains',
-  };
+  });
 
-  const accessoryEx: ConjugateExercise = {
+  const accessoryEx = mkEx({
     type: 'accessory',
     bar: null,
     stance: null,
     addlWts: [],
     equipment: null,
     displayName: 'Tricep Pushdown',
-  };
+  });
 
   function makeStats(overrides: Partial<SessionStats> = {}): SessionStats {
     return {
