@@ -1,0 +1,6 @@
+.chartCard {
+  composes: chartCard from '../charts/charts.module.css';
+}
+.sectionLabel {
+  composes: sectionLabel from '../charts/charts.module.css';
+}

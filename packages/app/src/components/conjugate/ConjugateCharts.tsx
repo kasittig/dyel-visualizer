@@ -94,6 +94,7 @@ export function ConjugateCharts({
 
   return (
     <div className={styles.card}>
+      <span className={styles.sectionLabel}>e1RM History</span>
       {baselineExercise && (
         <div className={styles.targetRow}>
           <label>

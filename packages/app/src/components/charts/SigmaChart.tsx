@@ -50,6 +50,7 @@ export function SigmaChart({ chartData, unit }: { chartData: ChartPoint[]; unit:
   return (
     <CollapsibleSection label={label}>
       <div className={styles.card}>
+        <span className={styles.sectionLabel}>Lift Balance</span>
         {data.length < 3 && (
           <div style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
             <PieChart width={300} height={300}>
