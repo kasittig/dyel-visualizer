@@ -2,7 +2,6 @@ import { useState, useMemo, useEffect } from 'react';
 import type { DateRange } from 'react-day-picker';
 import clsx from 'clsx';
 import { useConjugateData } from './hooks/conjugate/useConjugateData';
-import { ExerciseFilters } from './components/shared/ExerciseFilters';
 import { RepCalculator } from './components/shared/RepCalculator';
 import { StrengthScoreCalculator } from './components/shared/StrengthScoreCalculator';
 import { SigmaTab } from './components/pages/SigmaTab';
@@ -10,18 +9,11 @@ import { LiftTabPanel } from './components/pages/LiftTabPanel';
 import { SheetUrlPanel } from './components/shared/SheetUrlPanel';
 import { GettingStarted } from './components/pages/GettingStarted';
 import { DateRangePicker } from './components/shared/DateRangePicker';
-import { emptyFilters, filterByDateRange, buildChartData } from '@dyel/core';
-import type { DeadliftStancePreference, FilterState, LiftType } from '@dyel/core';
+import { filterByDateRange, buildChartData } from '@dyel/core';
+import type { DeadliftStancePreference, LiftType } from '@dyel/core';
 import { useLastSessionStats } from './hooks/data/useLastSessionStats';
 import { useBaselineTargetExercises } from './hooks/data/useBaselineTargetExercises';
-import {
-  extractSheetRef,
-  initialTabState,
-  toggleInSet,
-  LIFT_TABS,
-  MAIN_TABS,
-  ACCESSORY_TAB,
-} from './utils/appUtils';
+import { extractSheetRef, initialTabState, MAIN_TABS, ACCESSORY_TAB } from './utils/appUtils';
 import type { PageTab, TabState } from './utils/appUtils';
 import { buildTabRows, computeEffectiveNames, extractPairs } from './utils/appDataUtils';
 import styles from './App.module.css';
@@ -138,46 +130,11 @@ export function App() {
 
   const dataUnit = filteredSigmaPairs[0]?.[1].unit ?? 'lbs';
 
-  const tabFilters = useMemo(
-    () =>
-      Object.fromEntries(LIFT_TABS.map((t) => [t, tabState[t].filters])) as Record<
-        LiftType,
-        FilterState
-      >,
-    [tabState]
-  );
-
   function handleUrlChange(newUrl: string) {
     setUrl(newUrl);
     setPanelForcedOpen(false);
     setShownResetToken((t) => t + 1);
     setTabState(initialTabState());
-  }
-
-  function toggleFilter(facet: keyof FilterState, value: string) {
-    if (!liftTab) {
-      return;
-    }
-    setTabState((prev) => ({
-      ...prev,
-      [liftTab]: {
-        ...prev[liftTab],
-        filters: {
-          ...prev[liftTab].filters,
-          [facet]: toggleInSet(prev[liftTab].filters[facet], value),
-        },
-      },
-    }));
-  }
-
-  function clearFilters() {
-    if (!liftTab) {
-      return;
-    }
-    setTabState((prev) => ({
-      ...prev,
-      [liftTab]: { ...prev[liftTab], filters: emptyFilters() },
-    }));
   }
 
   return (
@@ -231,11 +188,7 @@ export function App() {
             {activeTab === 'calculator' ? (
               <div className={styles.calculatorRow}>
                 <div>
-                  <RepCalculator
-                    tabRows={tabRows}
-                    baselineNames={effectiveBaselineNames}
-                    tabFilters={tabFilters}
-                  />
+                  <RepCalculator tabRows={tabRows} baselineNames={effectiveBaselineNames} />
                 </div>
                 <div>
                   <StrengthScoreCalculator competitionTotal={competitionTotal} unit={dataUnit} />
@@ -251,33 +204,24 @@ export function App() {
                 onDateRangeChange={setDateRange}
               />
             ) : liftTab !== null ? (
-              <>
-                <ExerciseFilters
-                  rows={tabRows[liftTab].maxEffort}
-                  filters={tabState[liftTab].filters}
-                  onToggle={toggleFilter}
-                  onClearAll={clearFilters}
-                />
-                <LiftTabPanel
-                  key={shownResetToken}
-                  rows={tabRows[liftTab].maxEffort}
-                  filters={tabState[liftTab].filters}
-                  effectiveBaselineNames={effectiveBaselineNames}
-                  liftType={liftTab}
-                  targetName={effectiveTargetNames[liftTab]!}
-                  baselineName={effectiveBaselineNames[liftTab]}
-                  onTargetChange={(name) =>
-                    setTabState((prev) => ({
-                      ...prev,
-                      [liftTab]: { ...prev[liftTab], targetName: name ?? undefined },
-                    }))
-                  }
-                  deadliftStance={deadliftStance}
-                  onDeadliftStanceChange={setDeadliftStance}
-                  dateRange={dateRange}
-                  onDateRangeChange={setDateRange}
-                />
-              </>
+              <LiftTabPanel
+                key={shownResetToken}
+                rows={tabRows[liftTab].maxEffort}
+                effectiveBaselineNames={effectiveBaselineNames}
+                liftType={liftTab}
+                targetName={effectiveTargetNames[liftTab]!}
+                baselineName={effectiveBaselineNames[liftTab]}
+                onTargetChange={(name) =>
+                  setTabState((prev) => ({
+                    ...prev,
+                    [liftTab]: { ...prev[liftTab], targetName: name ?? undefined },
+                  }))
+                }
+                deadliftStance={deadliftStance}
+                onDeadliftStanceChange={setDeadliftStance}
+                dateRange={dateRange}
+                onDateRangeChange={setDateRange}
+              />
             ) : null}
           </>
         )}

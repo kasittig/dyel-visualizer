@@ -1,5 +1,4 @@
-import type { ConjugateDataPair, FilterState, LiftType } from '@dyel/core';
-import { emptyFilters } from '@dyel/core';
+import type { ConjugateDataPair, LiftType } from '@dyel/core';
 
 export interface SheetRef {
   id: string;
@@ -24,7 +23,6 @@ export const EXAMPLE_SHEET_URL =
 export const EXAMPLE_VISUALIZER_URL = `?sheet=${encodeURIComponent(EXAMPLE_CSV_URL)}`;
 
 export interface TabState {
-  filters: FilterState;
   baselineName?: string;
   targetName?: string;
 }
@@ -40,16 +38,6 @@ export function distinctDisplayNames(rows: ConjugateDataPair[]): string[] {
     }
   }
   return result;
-}
-
-export function toggleInSet<T>(set: Set<T>, item: T): Set<T> {
-  const next = new Set(set);
-  if (next.has(item)) {
-    next.delete(item);
-  } else {
-    next.add(item);
-  }
-  return next;
 }
 
 export function extractSheetRef(input: string): SheetRef | null {
@@ -71,8 +59,5 @@ export function extractSheetRef(input: string): SheetRef | null {
 }
 
 export function initialTabState(): Record<LiftType, TabState> {
-  return Object.fromEntries(LIFT_TABS.map((t) => [t, { filters: emptyFilters() }])) as Record<
-    LiftType,
-    TabState
-  >;
+  return Object.fromEntries(LIFT_TABS.map((t) => [t, {}])) as Record<LiftType, TabState>;
 }

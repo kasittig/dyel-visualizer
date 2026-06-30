@@ -4,16 +4,9 @@ import {
   findBestE1RM,
   predictWeightForReps,
   predictRepsForWeight,
-  applyFilters,
   buildSessionStats,
 } from '@dyel/core';
-import type {
-  ConjugateDataPair,
-  E1RMEstimate,
-  FilterState,
-  LiftType,
-  SessionStats,
-} from '@dyel/core';
+import type { ConjugateDataPair, E1RMEstimate, LiftType, SessionStats } from '@dyel/core';
 import type { SplitRows } from '../../utils/appDataUtils';
 import { distinctDisplayNames, LIFT_TABS } from '../../utils/appUtils';
 import styles from './RepCalculator.module.css';
@@ -42,11 +35,9 @@ function sourceNote(estimate: E1RMEstimate): string {
 export function RepCalculator({
   tabRows,
   baselineNames,
-  tabFilters,
 }: {
   tabRows: Record<LiftType, SplitRows>;
   baselineNames: Partial<Record<string, string>>;
-  tabFilters: Record<LiftType, FilterState>;
 }) {
   const [liftType, setLiftType] = useState<LiftType>('squat');
   const [selectedName, setSelectedName] = useState('');
@@ -56,13 +47,13 @@ export function RepCalculator({
   const { pairsByTab, statsByTab } = useMemo(() => {
     const today = new Date();
     const pairs = Object.fromEntries(
-      LIFT_TABS.map((tab) => [tab, applyFilters(tabRows[tab].maxEffort, tabFilters[tab])])
+      LIFT_TABS.map((tab) => [tab, tabRows[tab].maxEffort])
     ) as Record<LiftType, ConjugateDataPair[]>;
     const stats = Object.fromEntries(
       LIFT_TABS.map((tab) => [tab, buildSessionStats(pairs[tab], baselineNames, today)])
     ) as Record<LiftType, SessionStats>;
     return { pairsByTab: pairs, statsByTab: stats };
-  }, [tabRows, tabFilters, baselineNames]);
+  }, [tabRows, baselineNames]);
 
   const pairs = pairsByTab[liftType];
   const stats = statsByTab[liftType];
