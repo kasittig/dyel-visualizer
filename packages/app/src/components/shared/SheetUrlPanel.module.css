@@ -23,6 +23,19 @@
   text-decoration: underline;
 }
 
+.refreshButton {
+  background: none;
+  border: none;
+  padding: 0 2px;
+  cursor: pointer;
+  color: var(--accent);
+  font-size: 1.35rem;
+  line-height: 1;
+  vertical-align: -0.2em;
+  text-decoration: none;
+  display: inline-block;
+}
+
 .urlRow {
   display: flex;
   align-items: center;

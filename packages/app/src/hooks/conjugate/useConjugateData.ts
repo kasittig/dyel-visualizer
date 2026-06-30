@@ -12,8 +12,12 @@ export type ConjugateDataState =
   | { status: 'error'; message: string }
   | { status: 'success'; pairs: ConjugateDataPair[] };
 
-export function useConjugateData(sheetRef: SheetRef | null, gid = '0'): ConjugateDataState {
+export function useConjugateData(
+  sheetRef: SheetRef | null,
+  gid = '0',
+  refreshToken = 0
+): ConjugateDataState {
   const url = sheetRef ? sheetCsvUrl(sheetRef, gid) : null;
-  const resource = useCsvResource(url, parseConjugateData);
+  const resource = useCsvResource(url, parseConjugateData, refreshToken);
   return resource.status === 'success' ? { status: 'success', pairs: resource.data } : resource;
 }

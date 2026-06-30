@@ -10,6 +10,7 @@ export function SheetUrlPanel({
   onUrlChange,
   onForceOpen,
   onCancel,
+  onRefresh,
 }: {
   showUrlPanel: boolean;
   url: string;
@@ -18,6 +19,7 @@ export function SheetUrlPanel({
   onUrlChange: (value: string) => void;
   onForceOpen: () => void;
   onCancel: () => void;
+  onRefresh: () => void;
 }) {
   return (
     <div className={styles.wrapper}>
@@ -26,6 +28,14 @@ export function SheetUrlPanel({
         <p className={styles.subtitle}>
           <button onClick={onForceOpen} className={styles.linkButton}>
             Change sheet URL
+          </button>
+          {' · '}
+          <button
+            onClick={onRefresh}
+            className={styles.refreshButton}
+            title="Reload data from sheet"
+          >
+            ↻
           </button>
           {' · '}
           <a href="?page=conjugate" className={styles.accentLink}>

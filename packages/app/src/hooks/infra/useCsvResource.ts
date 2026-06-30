@@ -12,7 +12,11 @@ export type CsvResource<T> =
  * response through `fetchSheetCsv`, and feeds the body to `parse`. Aborts in-flight requests
  * when the url changes or the component unmounts.
  */
-export function useCsvResource<T>(url: string | null, parse: (csv: string) => T): CsvResource<T> {
+export function useCsvResource<T>(
+  url: string | null,
+  parse: (csv: string) => T,
+  refreshToken = 0
+): CsvResource<T> {
   const [state, setState] = useState<CsvResource<T>>({ status: 'idle' });
 
   useEffect(() => {
@@ -35,9 +39,9 @@ export function useCsvResource<T>(url: string | null, parse: (csv: string) => T)
 
     return () => controller.abort();
     // `parse` is intentionally omitted: callers pass a stable module-level parser, and the
-    // fetch is keyed entirely by `url`.
+    // fetch is keyed by `url` and `refreshToken`.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [url]);
+  }, [url, refreshToken]);
 
   return url ? state : { status: 'idle' };
 }
