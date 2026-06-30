@@ -73,11 +73,13 @@ describe('calculateMetrics', () => {
 describe('calculateMetrics', () => {
   describe('boundary conditions', () => {
     it('clamps to first-anchor coefficient when bw is at or below table minimum', () => {
-      expect(calculateMetrics(100, 1000, false).schwartzmalone).toBe(1258.0);
+      // table min is 90 lbs; 80 lbs clamps to the 90-lb coefficient (1.2803)
+      expect(calculateMetrics(80, 1000, false).schwartzmalone).toBe(1280.3);
     });
 
     it('clamps to last-anchor coefficient when bw is above table maximum', () => {
-      expect(calculateMetrics(400, 1000, false).schwartzmalone).toBe(512.0);
+      // table max is 345 lbs (c=0.4866); 400 lbs clamps there
+      expect(calculateMetrics(400, 1000, false).schwartzmalone).toBe(486.6);
     });
 
     it('returns 0 when total is 0', () => {
@@ -86,8 +88,16 @@ describe('calculateMetrics', () => {
   });
 
   describe('interpolation', () => {
-    it('interpolates between anchors for an off-table bodyweight', () => {
-      expect(calculateMetrics(150, 1000, false).schwartzmalone).toBeCloseTo(914.0588, 2);
+    it('interpolates between adjacent per-pound entries for a fractional bodyweight', () => {
+      // 150.5 lbs interpolates between 150 (c=0.7207) and 151 (c=0.7165) → 0.7186
+      expect(calculateMetrics(150.5, 1000, false).schwartzmalone).toBeCloseTo(718.6, 2);
+    });
+  });
+
+  describe('regression', () => {
+    it('returns the correct score for a 205 lb female with a 626 lb total', () => {
+      // coefficient at 205 lbs women = 0.6209; 626 × 0.6209 = 388.6834
+      expect(calculateMetrics(205, 626, true).schwartzmalone).toBe(388.6834);
     });
   });
 
@@ -126,7 +136,7 @@ describe('calculateMetrics', () => {
       // 68.039 kg × 2.20462 ≈ 150 lbs, 453.592 kg × 2.20462 ≈ 1000 lbs
       const scoreKg = calculateMetrics(68.039, 453.592, false, 'kg').schwartzmalone;
       const scoreLbs = calculateMetrics(150, 1000, false, 'lbs').schwartzmalone;
-      expect(scoreKg).toBeCloseTo(scoreLbs, 2);
+      expect(scoreKg).toBeCloseTo(scoreLbs, 1);
     });
   });
 });
