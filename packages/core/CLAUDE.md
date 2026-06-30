@@ -12,6 +12,7 @@ Everything re-exported from `src/index.ts` is public. Key exports:
 | Type helpers   | `variantLabel`, `familyKey`                                                                                                                                                                      |
 | Parsing        | `parseConjugateData(csv): ConjugateDataPair[]`, `parseIndexCsv(csv): IndexEntry[]`                                                                                                               |
 | e1RM math      | `calcE1RM`, `invertE1RM`, `predictE1RM`, `fitVariantFactor`, `fitAddlWtOffset`, `normalizeToBaseE1RM`                                                                                            |
+| Volume math    | `calculateVolumeCorrelation`                                                                                                                                                                     |
 | Filters        | `applyFilters`, `emptyFilters`, `FilterState`                                                                                                                                                    |
 | Rep calculator | `findBestE1RM`, `predictWeightForReps`, `predictRepsForWeight`, `E1RMEstimate`, `RepCalcStats`                                                                                                   |
 | Session stats  | `buildSessionStats`, `SessionStats`, `LastSession`                                                                                                                                               |

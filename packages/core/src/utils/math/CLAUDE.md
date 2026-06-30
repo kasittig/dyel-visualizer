@@ -6,6 +6,7 @@ Core numerical computations for e1RM estimation and cross-exercise normalization
 
 - **`e1rm.ts`** — Epley formula and session-grid interpolation. `calcE1RM` / `invertE1RM` are the single source of truth for the formula — never inline it elsewhere.
 - **`repCalculator.ts`** — Cross-exercise e1RM estimation (`findBestE1RM`) and per-set normalization (`normalizeToBaseE1RM`). `findBestE1RM` takes `SessionStats`; `normalizeToBaseE1RM` takes `RepCalcStats`.
+- **`volume.ts`** — per-day tonnage totals from pre-filtered session pairs (`calculateVolumeCorrelation`). Takes `ConjugateDataPair[]` and sums every pair with no type filtering — callers pre-filter before calling.
 
 ## Key invariants
 
