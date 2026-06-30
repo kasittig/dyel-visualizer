@@ -9,6 +9,7 @@ import { EditableDateChip } from '../shared/EditableDateChip';
 import { applyFilters, filterByDateRange } from '@dyel/core';
 import type { DateRange } from 'react-day-picker';
 import type { DeadliftStancePreference, FilterState, LiftType } from '@dyel/core';
+import styles from './LiftTabPanel.module.css';
 
 export function LiftTabPanel({
   rows,
@@ -65,13 +66,16 @@ export function LiftTabPanel({
           onVariationClick={handleVariationClick}
         />
       </CollapsibleSection>
-      <VariationRadarChart
-        rows={filteredRows}
-        stats={stats}
-        targetName={targetName}
-        baselineName={baselineName}
-        onVariationClick={handleVariationClick}
-      />
+      <div className={styles.chartCard}>
+        <span className={styles.sectionLabel}>Variation Breakdown</span>
+        <VariationRadarChart
+          rows={filteredRows}
+          stats={stats}
+          targetName={targetName}
+          baselineName={baselineName}
+          onVariationClick={handleVariationClick}
+        />
+      </div>
       <DiagnosticsPanel
         rows={filteredRows}
         targetName={targetName}

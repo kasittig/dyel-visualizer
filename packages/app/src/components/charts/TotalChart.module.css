@@ -4,3 +4,6 @@
   border-radius: 6px;
   overflow: hidden;
 }
+.sectionLabel {
+  composes: sectionLabel from './charts.module.css';
+}

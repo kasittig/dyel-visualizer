@@ -16,6 +16,7 @@ export function TotalChart({ chartData, unit }: { chartData: ChartPoint[]; unit:
 
   return (
     <div className={styles.card}>
+      <span className={styles.sectionLabel}>e1RM Over Time</span>
       <DateLineChart data={chartData} unit={unit} yAxisWidth={55}>
         <Tooltip formatter={(v, name) => [`${v} ${unit}`, String(name)]} />
         <Line

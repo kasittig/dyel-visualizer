@@ -16,3 +16,20 @@
   margin-bottom: 0.25rem;
   text-align: center;
 }
+
+.chartCard {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.sectionLabel {
+  font-family: var(--heading);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text);
+  padding: 8px 12px 0;
+  display: block;
+}

@@ -4,6 +4,9 @@
   border-radius: 6px;
   overflow: hidden;
 }
+.sectionLabel {
+  composes: sectionLabel from '../charts/charts.module.css';
+}
 
 .tooltipDate {
   font-weight: 600;
