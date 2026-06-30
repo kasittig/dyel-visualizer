@@ -93,7 +93,7 @@ export function ConjugateCharts({
   }
 
   return (
-    <section>
+    <div className={styles.card}>
       {baselineExercise && (
         <div className={styles.targetRow}>
           <label>
@@ -154,6 +154,6 @@ export function ConjugateCharts({
           );
         })}
       </DateLineChart>
-    </section>
+    </div>
   );
 }

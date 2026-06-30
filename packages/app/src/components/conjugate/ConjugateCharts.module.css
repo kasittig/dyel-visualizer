@@ -1,9 +1,20 @@
+.card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
 .tooltipDate {
   font-weight: 600;
   margin-bottom: 0.2rem;
 }
-.tooltipItem { margin-top: 0.2rem; }
-.tooltipMuted { opacity: 0.7; }
+.tooltipItem {
+  margin-top: 0.2rem;
+}
+.tooltipMuted {
+  opacity: 0.7;
+}
 
 .targetRow {
   font-size: 0.8rem;
@@ -11,4 +22,6 @@
   margin-bottom: 0.5rem;
   text-align: center;
 }
-.targetSelect { font-size: 0.8rem; }
+.targetSelect {
+  font-size: 0.8rem;
+}
