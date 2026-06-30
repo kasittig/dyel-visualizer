@@ -148,6 +148,7 @@ function parseSession(row: RawRow): RawSession | null {
     if (isNaN(date.getTime())) {
       return null;
     }
+    date = new Date(date.getFullYear(), date.getMonth(), date.getDate());
   }
 
   const weight = parseFloat(findCol(row, 'weight') ?? '');
