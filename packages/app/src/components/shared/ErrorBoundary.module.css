@@ -1,6 +1,6 @@
 .main {
   padding: 2rem;
-  font-family: sans-serif;
+  font-family: var(--sans);
 }
 .errorPre {
   color: red;
