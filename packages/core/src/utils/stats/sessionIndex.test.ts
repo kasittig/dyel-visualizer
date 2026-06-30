@@ -139,6 +139,25 @@ describe('buildSessionStats', () => {
     expect(compProjection!).toBeCloseTo(300 * (1 + 1 / 30), 0);
   });
 
+  it('uses all sessions for velocity, not just endpoints', () => {
+    // 5 SSB sessions: outlier low at start (250) and end (240), clear uptrend in the middle.
+    // A 2-point slope from 250→240 would be negative, suppressing the comp projection.
+    // OLS detects the dominant uptrend and produces a positive comp-equivalent velocity.
+    const future = new Date('2024-09-01T00:00:00');
+    const pairs: ConjugateDataPair[] = [
+      pair('Squat', session('2024-01-01', 300, 1)),
+      pair('SSB Squat', session('2024-01-01', 250, 1)), // outlier low start
+      pair('SSB Squat', session('2024-03-01', 270, 1)),
+      pair('SSB Squat', session('2024-05-01', 280, 1)),
+      pair('SSB Squat', session('2024-06-01', 285, 1)),
+      pair('SSB Squat', session('2024-07-01', 240, 1)), // outlier low end
+    ];
+    const stats = buildSessionStats(pairs, { squat: 'Squat' }, future);
+    const proj = stats.projectedE1RM.get('Squat');
+    expect(proj).toBeDefined();
+    expect(proj!).toBeGreaterThan(300);
+  });
+
   it('does not back-project from variants with sampleCount < 2', () => {
     // Only one SSB session — factor has sampleCount=1, should not enrich comp.
     const future = new Date('2024-09-01T00:00:00');
