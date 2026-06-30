@@ -6,6 +6,7 @@ Reusable Recharts-based visualization components. Nothing here has page-level lo
 | ------------------------- | ----------------------------------------------------------------------------------------- |
 | `BaseRadarChart.tsx`      | Generic Recharts radar wrapper; accepts `angleKey`, `unit`, `tooltip`, optional `onClick` |
 | `DateLineChart.tsx`       | Line chart over time; also exports `ChartEmpty` for the no-data placeholder               |
+| `SessionBarChart.tsx`     | Dark-card bar chart of main lifts vs. accessory volume per session                        |
 | `SigmaChart.tsx`          | Σ overview — radar for 3+ lifts, pie chart for <3 lifts; wraps `BaseRadarChart`           |
 | `TooltipCard.tsx`         | Shared tooltip card rendered inside Recharts `<Tooltip>`                                  |
 | `TotalChart.tsx`          | Total-volume line chart; wraps `DateLineChart`                                            |

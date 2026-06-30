@@ -2,12 +2,13 @@ import { Line, Tooltip } from 'recharts';
 import type { ChartPoint } from '@dyel/core';
 import { DateLineChart, ChartEmpty } from './DateLineChart';
 import styles from './TotalChart.module.css';
-
-const SQUAT_COLOR = '#e74c3c';
-const BENCH_COLOR = '#3498db';
-const DEADLIFT_COLOR = '#f1c40f';
-const PUSH_PULL_COLOR = '#2ecc71';
-const TOTAL_COLOR = '#9b59b6';
+import {
+  SQUAT_COLOR,
+  BENCH_COLOR,
+  DEADLIFT_COLOR,
+  TOTAL_COLOR,
+  PUSH_PULL_COLOR,
+} from './colors.ts';
 
 export function TotalChart({ chartData, unit }: { chartData: ChartPoint[]; unit: string }) {
   if (chartData.length === 0) {

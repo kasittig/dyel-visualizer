@@ -9,7 +9,7 @@ import { LiftTabPanel } from './components/pages/LiftTabPanel';
 import { SheetUrlPanel } from './components/shared/SheetUrlPanel';
 import { GettingStarted } from './components/pages/GettingStarted';
 import { DateRangePicker } from './components/shared/DateRangePicker';
-import { filterByDateRange, buildChartData } from '@dyel/core';
+import { filterByDateRange, buildChartData, calculateVolumeCorrelation } from '@dyel/core';
 import type { DeadliftStancePreference, LiftType } from '@dyel/core';
 import { useLastSessionStats } from './hooks/data/useLastSessionStats';
 import { useBaselineTargetExercises } from './hooks/data/useBaselineTargetExercises';
@@ -74,6 +74,18 @@ export function App() {
       ? effectiveActiveTab
       : null;
 
+  const volumePairs = useMemo(() => {
+    return [
+      ...tabRows.squat.volume,
+      ...tabRows.bench.volume,
+      ...tabRows.deadlift.volume,
+      ...tabRows.accessory.volume,
+    ];
+  }, [tabRows]);
+  const volumeByDate = useMemo(() => {
+    return calculateVolumeCorrelation(volumePairs);
+  }, [volumePairs]);
+
   const { sigmaPairs, allSessionDates, lastSessionDate } = useMemo(() => {
     const allPairs = [
       ...tabRows.squat.maxEffort,
@@ -135,11 +147,12 @@ export function App() {
       filteredSigmaPairs,
       baselineExByType,
       targetExByType,
-      sigmaStats
+      sigmaStats,
+      volumeByDate
     );
     const last = [...chartData].reverse().find((p) => p.total !== undefined);
     return last !== undefined ? (last.total as number) : null;
-  }, [filteredSigmaPairs, baselineExByType, targetExByType, sigmaStats]);
+  }, [filteredSigmaPairs, baselineExByType, targetExByType, sigmaStats, volumeByDate]);
 
   const dataUnit = filteredSigmaPairs[0]?.[1].unit ?? 'lbs';
 
@@ -212,6 +225,7 @@ export function App() {
               <SigmaTab
                 sigmaPairs={filteredSigmaPairs}
                 sigmaStats={sigmaStats}
+                volumeByDate={volumeByDate}
                 effectiveBaselineNames={effectiveBaselineNames}
                 effectiveTargetNames={effectiveTargetNames}
                 dateRange={dateRange}
