@@ -1,7 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import { generateDiagnostics } from './diagnostics';
+import { buildSessionStats } from './sessionIndex';
 import { calcE1RM } from '../math/e1rm';
-import type { ConjugateDataPair, ConjugateExercise, TrainingSession } from '../../types/conjugate';
+import type {
+  ConjugateDataPair,
+  ConjugateExercise,
+  LiftType,
+  TrainingSession,
+} from '../../types/conjugate';
 
 function ex(overrides: Partial<ConjugateExercise> = {}): ConjugateExercise {
   return {
@@ -109,6 +115,12 @@ function pair(overrides: Partial<ConjugateExercise>, s: TrainingSession): Conjug
   return [base, s];
 }
 
+function makePrecomputed(pairs: ConjugateDataPair[], anchorName: string) {
+  const anchorType: LiftType =
+    pairs.find(([e]) => e.displayName === anchorName)?.[0]?.type ?? 'bench';
+  return buildSessionStats(pairs, { [anchorType]: anchorName }, new Date('2024-12-31'));
+}
+
 describe('generateDiagnostics', () => {
   it('emits a result when factor meets the baseline floor', () => {
     const pairs: ConjugateDataPair[] = [
@@ -116,7 +128,11 @@ describe('generateDiagnostics', () => {
       pair({ displayName: 'bench press' }, session('2024-01-08', 305)),
       pair({ displayName: 'board press', equipment: 'board' }, session('2024-01-04', 280)),
     ];
-    const results = generateDiagnostics(pairs, 'bench press');
+    const results = generateDiagnostics(
+      pairs,
+      'bench press',
+      makePrecomputed(pairs, 'bench press')
+    );
     expect(results).toHaveLength(1);
     const r = results[0];
     expect(r.type).toBe('bench');
@@ -131,7 +147,11 @@ describe('generateDiagnostics', () => {
       pair({ displayName: 'bench press' }, session('2024-01-01', 300)),
       pair({ displayName: 'board press', equipment: 'board' }, session('2024-01-01', 280)),
     ];
-    const results = generateDiagnostics(pairs, 'bench press');
+    const results = generateDiagnostics(
+      pairs,
+      'bench press',
+      makePrecomputed(pairs, 'bench press')
+    );
     expect(results[0].effects).toContain('TRICEP_DOMINANT');
     expect(results[0].effects).toContain('SUPRAMAXIMAL');
   });
@@ -142,7 +162,11 @@ describe('generateDiagnostics', () => {
       // board press at only 80% of anchor → below 105% floor
       pair({ displayName: 'board press', equipment: 'board' }, session('2024-01-01', 240)),
     ];
-    const results = generateDiagnostics(pairs, 'bench press');
+    const results = generateDiagnostics(
+      pairs,
+      'bench press',
+      makePrecomputed(pairs, 'bench press')
+    );
     expect(results).toHaveLength(1);
     expect(results[0].status).toBe('weakness');
   });
@@ -153,7 +177,11 @@ describe('generateDiagnostics', () => {
       // floor press at exactly 85% of anchor → meets 85% floor (equipment:floor:bench = 85-95%)
       pair({ displayName: 'floor press', equipment: 'floor' }, session('2024-01-01', 85)),
     ];
-    const results = generateDiagnostics(pairs, 'bench press');
+    const results = generateDiagnostics(
+      pairs,
+      'bench press',
+      makePrecomputed(pairs, 'bench press')
+    );
     expect(results[0].status).toBe('optimal');
   });
 
@@ -162,7 +190,11 @@ describe('generateDiagnostics', () => {
       pair({ displayName: 'bench press' }, session('2024-01-01', 300)),
       pair({ displayName: 'floor press', equipment: 'floor' }, session('2024-01-01', 260)),
     ];
-    const results = generateDiagnostics(pairs, 'bench press');
+    const results = generateDiagnostics(
+      pairs,
+      'bench press',
+      makePrecomputed(pairs, 'bench press')
+    );
     expect(results).toHaveLength(1);
     expect(results[0].expectedBaseline).toBe('85–95%');
   });
@@ -176,7 +208,11 @@ describe('generateDiagnostics', () => {
         { ...session('2024-06-01', 280), reps: 0 }
       ),
     ];
-    const results = generateDiagnostics(pairs, 'bench press');
+    const results = generateDiagnostics(
+      pairs,
+      'bench press',
+      makePrecomputed(pairs, 'bench press')
+    );
     expect(results).toHaveLength(0);
   });
 
@@ -184,7 +220,9 @@ describe('generateDiagnostics', () => {
     const pairs: ConjugateDataPair[] = [
       pair({ type: 'accessory', displayName: 'tricep pushdown' }, session('2024-01-01', 100)),
     ];
-    expect(generateDiagnostics(pairs, 'bench press')).toHaveLength(0);
+    expect(
+      generateDiagnostics(pairs, 'bench press', makePrecomputed(pairs, 'bench press'))
+    ).toHaveLength(0);
   });
 
   it('skips variations with no non-standard modifier to look up', () => {
@@ -193,7 +231,9 @@ describe('generateDiagnostics', () => {
       // standard bar, null stance, no equipment → no modifier key → skipped
       pair({ displayName: 'wide grip bench', stance: null }, session('2024-01-01', 260)),
     ];
-    expect(generateDiagnostics(pairs, 'bench press')).toHaveLength(0);
+    expect(
+      generateDiagnostics(pairs, 'bench press', makePrecomputed(pairs, 'bench press'))
+    ).toHaveLength(0);
   });
 
   it('opposite-stance DL with conventional primary produces sumo result (opposite = sumo)', () => {
@@ -204,7 +244,12 @@ describe('generateDiagnostics', () => {
         session('2024-01-01', 460)
       ),
     ];
-    const results = generateDiagnostics(pairs, 'deadlift', 'conventional');
+    const results = generateDiagnostics(
+      pairs,
+      'deadlift',
+      makePrecomputed(pairs, 'deadlift'),
+      'conventional'
+    );
     expect(results).toHaveLength(1);
     expect(results[0].displayName).toBe('deadlift (opposite)');
   });
@@ -222,7 +267,12 @@ describe('generateDiagnostics', () => {
       ),
     ];
     // stance:sumo:deadlift has a baseline (90–100%)
-    const results = generateDiagnostics(pairs, 'deadlift', 'conventional');
+    const results = generateDiagnostics(
+      pairs,
+      'deadlift',
+      makePrecomputed(pairs, 'deadlift'),
+      'conventional'
+    );
     expect(results).toHaveLength(1);
     expect(results[0].displayName).toBe('deadlift (sumo)');
     expect(results[0].effects).toContain('POSTERIOR_CHAIN');
@@ -234,7 +284,11 @@ describe('generateDiagnostics', () => {
       // floor press at 100% of anchor → above 95% ceiling (equipment:floor:bench = 85-95%)
       pair({ displayName: 'floor press', equipment: 'floor' }, session('2024-01-01', 100)),
     ];
-    const results = generateDiagnostics(pairs, 'bench press');
+    const results = generateDiagnostics(
+      pairs,
+      'bench press',
+      makePrecomputed(pairs, 'bench press')
+    );
     expect(results[0].status).toBe('overtrained');
   });
 
@@ -258,7 +312,11 @@ describe('generateDiagnostics', () => {
       }),
       session('2024-01-01', 77),
     ];
-    const results = generateDiagnostics([anchor, variation], 'squat');
+    const results = generateDiagnostics(
+      [anchor, variation],
+      'squat',
+      makePrecomputed([anchor, variation], 'squat')
+    );
     expect(results).toHaveLength(1);
     // bar:ssb:squat (90–95%) × equipment:pause:squat (85–95%) = 77–90%
     expect(results[0].expectedBaseline).toBe('77–90%');
@@ -286,7 +344,11 @@ describe('generateDiagnostics', () => {
       }),
       session('2024-01-01', 81),
     ];
-    const results = generateDiagnostics([anchor, variation], 'squat');
+    const results = generateDiagnostics(
+      [anchor, variation],
+      'squat',
+      makePrecomputed([anchor, variation], 'squat')
+    );
     expect(results).toHaveLength(1);
     // equipment:box:squat (90–100%) × bar:ssb:squat (90–95%) = 81–95%
     expect(results[0].expectedBaseline).toBe('81–95%');
@@ -297,7 +359,11 @@ describe('generateDiagnostics', () => {
       pair({ displayName: 'bench press' }, session('2024-01-01', 300)),
       pair({ displayName: 'board press', equipment: 'board' }, session('2024-01-01', 315)),
     ];
-    const results = generateDiagnostics(pairs, 'bench press');
+    const results = generateDiagnostics(
+      pairs,
+      'bench press',
+      makePrecomputed(pairs, 'bench press')
+    );
     expect(results).toHaveLength(1);
     expect(results[0].expectedBaseline).toBe('105–115%');
   });
@@ -314,7 +380,11 @@ describe('generateDiagnostics', () => {
       ),
       pair({ displayName: 'board press', equipment: 'board' }, session('2024-01-01', 270)),
     ];
-    const results = generateDiagnostics(pairs, 'bench w/commands');
+    const results = generateDiagnostics(
+      pairs,
+      'bench w/commands',
+      makePrecomputed(pairs, 'bench w/commands')
+    );
     expect(results).toHaveLength(1);
     expect(results[0].displayName).toBe('board press');
     expect(results[0].type).toBe('bench');
@@ -326,7 +396,11 @@ describe('generateDiagnostics', () => {
       pair({ stance: 'competition', displayName: 'bench press' }, session('2024-01-01', 300)),
       pair({ displayName: 'board press', equipment: 'board' }, session('2024-01-01', 270)),
     ];
-    const results = generateDiagnostics(pairs, 'bench press');
+    const results = generateDiagnostics(
+      pairs,
+      'bench press',
+      makePrecomputed(pairs, 'bench press')
+    );
     expect(results).toHaveLength(1);
     expect(results[0].displayName).toBe('board press');
   });
@@ -361,7 +435,7 @@ describe('generateDiagnostics', () => {
         session('2024-02-01', 220)
       ),
     ];
-    const results = generateDiagnostics(pairs, 'deadlift');
+    const results = generateDiagnostics(pairs, 'deadlift', makePrecomputed(pairs, 'deadlift'));
     const deficit = results.find((r) => r.displayName === 'deficit deadlift');
     expect(deficit).toBeDefined();
     // Anchor grid should only contain the straight-bar session (250).
@@ -391,7 +465,11 @@ describe('generateDiagnostics', () => {
         session('2024-01-01', 255)
       ),
     ];
-    const results = generateDiagnostics(pairs, 'bench press');
+    const results = generateDiagnostics(
+      pairs,
+      'bench press',
+      makePrecomputed(pairs, 'bench press')
+    );
     // No straight swiss-bar bench or straight floor press sessions exist,
     // so both chain variants cannot get an offset estimate and are skipped.
     expect(results).toHaveLength(0);
@@ -419,7 +497,7 @@ describe('generateDiagnostics', () => {
         session('2024-01-01', STRAIGHT_WEIGHT - CHAIN_WEIGHT)
       ),
     ];
-    const results = generateDiagnostics(pairs, 'squat');
+    const results = generateDiagnostics(pairs, 'squat', makePrecomputed(pairs, 'squat'));
     expect(results).toHaveLength(1);
     const r = results[0];
     expect(r.displayName).toBe('squat w/chains');
@@ -460,7 +538,7 @@ describe('generateDiagnostics', () => {
         session('2024-01-01', 420)
       ),
     ];
-    const results = generateDiagnostics(pairs, 'squat');
+    const results = generateDiagnostics(pairs, 'squat', makePrecomputed(pairs, 'squat'));
     expect(results).toHaveLength(1);
     expect(results[0].status).toBe('weakness');
   });
@@ -488,7 +566,11 @@ describe('generateDiagnostics', () => {
       }),
       session('2024-01-01', STRAIGHT_SSB_WEIGHT - CHAIN_WEIGHT),
     ];
-    const results = generateDiagnostics([anchor, straightSsb, ssbChains], 'squat');
+    const results = generateDiagnostics(
+      [anchor, straightSsb, ssbChains],
+      'squat',
+      makePrecomputed([anchor, straightSsb, ssbChains], 'squat')
+    );
     const r = results.find((x) => x.displayName === 'ssb squat w/chains');
     expect(r).toBeDefined();
     expect(r!.expectedBaseline).toBe('90–95%');

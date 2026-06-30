@@ -1,6 +1,6 @@
 import { useMemo, useState, type CSSProperties } from 'react';
 import { generateDiagnostics } from '@dyel/core';
-import type { ConjugateExercise, DeadliftStancePreference } from '@dyel/core';
+import type { ConjugateExercise, DeadliftStancePreference, RepCalcStats } from '@dyel/core';
 import type { ConjugateDataPair } from '../../hooks/conjugate/useConjugateData';
 import styles from './DiagnosticsPanel.module.css';
 
@@ -34,6 +34,8 @@ export function DiagnosticsPanel({
   onDeadliftStanceChange,
   onVariationClick,
   highlightedVariation,
+  variantFactor,
+  addlWtOffset,
 }: {
   rows: ConjugateDataPair[];
   targetName: string;
@@ -41,13 +43,15 @@ export function DiagnosticsPanel({
   onDeadliftStanceChange: (s: DeadliftStancePreference) => void;
   onVariationClick?: (name: string) => void;
   highlightedVariation?: string | null;
+  variantFactor: RepCalcStats['variantFactor'];
+  addlWtOffset: RepCalcStats['addlWtOffset'];
 }) {
   const [isExpanded, setIsExpanded] = useState(true);
   const hasDeadlift = useMemo(() => rows.some(([ex]) => ex.type === 'deadlift'), [rows]);
 
   const results = useMemo(
-    () => generateDiagnostics(rows, targetName, deadliftStance),
-    [rows, targetName, deadliftStance]
+    () => generateDiagnostics(rows, targetName, { variantFactor, addlWtOffset }, deadliftStance),
+    [rows, targetName, deadliftStance, variantFactor, addlWtOffset]
   );
 
   const { weakEffects, overtrainedEffects } = useMemo(() => {

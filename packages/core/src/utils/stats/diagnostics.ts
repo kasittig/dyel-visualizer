@@ -1,16 +1,13 @@
 // eslint-disable-next-line @typescript-eslint/triple-slash-reference
 /// <reference path="../../../../../global.d.ts" />
 
-import { familyKey } from '../../types/conjugate';
 import type {
   ConjugateDataPair,
   ConjugateExercise,
   DeadliftStancePreference,
   EffectEnum,
-  TrainingSession,
 } from '../../types/conjugate';
-import { applyAddlWtOffset, fitVariantFactor } from '../math/e1rm';
-import { buildStraightByFamily } from './sessionIndex';
+import type { RepCalcStats } from '../math/repCalculator';
 
 type ModifierEffectEntry =
   | { effects: EffectEnum[]; min: number; max: number }
@@ -34,48 +31,37 @@ function resolveDeadliftStance(
 export function generateDiagnostics(
   pairs: ConjugateDataPair[],
   anchorName: string,
+  precomputed: RepCalcStats,
   deadliftStance: DeadliftStancePreference = 'sumo'
 ): ConjugateExercise[] {
   const results: ConjugateExercise[] = [];
-  const anchorSessions: TrainingSession[] = [];
-  const variationGroups = new Map<string, { ex: ConjugateExercise; sessions: TrainingSession[] }>();
-  const straightByFamily = buildStraightByFamily(pairs);
+  const variationExercises = new Map<string, ConjugateExercise>();
 
-  for (const [ex, session] of pairs) {
-    if (ex.displayName === anchorName) {
-      anchorSessions.push(session);
-    } else if (ex.type !== 'accessory') {
-      const key = ex.displayName;
-      if (!variationGroups.has(key)) {
-        variationGroups.set(key, { ex, sessions: [] });
-      }
-      variationGroups.get(key)!.sessions.push(session);
+  for (const [ex] of pairs) {
+    if (
+      ex.displayName !== anchorName &&
+      ex.type !== 'accessory' &&
+      !variationExercises.has(ex.displayName)
+    ) {
+      variationExercises.set(ex.displayName, ex);
     }
   }
 
-  for (const [name, { ex, sessions }] of variationGroups) {
-    // For exercises with accommodating resistance (chains/bands), adjust recorded
-    // weights by the estimated addlWt contribution before comparing to the anchor.
-    let effectiveSessions = sessions;
+  for (const [name, ex] of variationExercises) {
     let addlWtOffset: number | undefined;
     if (ex.addlWts.length > 0) {
-      const familyStraight = straightByFamily.get(familyKey(ex)) ?? [];
-      const {
-        sessions: adj,
-        sampleCount: offsetSamples,
-        offset,
-      } = applyAddlWtOffset(familyStraight, sessions);
-      if (offsetSamples === 0) {
+      const offsetEntry = precomputed.addlWtOffset.get(name);
+      if (!offsetEntry || offsetEntry.sampleCount === 0) {
         continue;
       }
-      effectiveSessions = adj;
-      addlWtOffset = offset;
+      addlWtOffset = offsetEntry.offset;
     }
 
-    const { factor, sampleCount } = fitVariantFactor(anchorSessions, effectiveSessions);
-    if (sampleCount === 0) {
+    const factorEntry = precomputed.variantFactor.get(name);
+    if (!factorEntry || factorEntry.sampleCount === 0) {
       continue;
     }
+    const { factor } = factorEntry;
 
     // Collect pct-bearing keys for all active modifiers. Multiple simultaneous
     // pct modifiers (e.g. SSB + pause squat) combine multiplicatively because
