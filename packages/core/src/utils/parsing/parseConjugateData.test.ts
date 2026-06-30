@@ -57,6 +57,20 @@ describe('parseConjugateData', () => {
     expect(d.getDate()).toBe(today.getDate());
   });
 
+  it('normalizes a non-YYYY-MM-DD date string to local midnight', () => {
+    const dateStr = '2024-01-15T23:30:00-08:00';
+    const result = parseConjugateData(csv(`${dateStr},Squat,3,5,315`));
+    expect(result).toHaveLength(1);
+    const d = result[0][1].date;
+    const expected = new Date(dateStr);
+    expect(d.getFullYear()).toBe(expected.getFullYear());
+    expect(d.getMonth()).toBe(expected.getMonth());
+    expect(d.getDate()).toBe(expected.getDate());
+    expect(d.getHours()).toBe(0);
+    expect(d.getMinutes()).toBe(0);
+    expect(d.getSeconds()).toBe(0);
+  });
+
   it('skips rows with an invalid (non-empty) date', () => {
     const result = parseConjugateData(csv('bad-date,Squat,3,5,315'));
     expect(result).toHaveLength(0);
