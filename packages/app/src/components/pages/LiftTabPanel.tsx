@@ -79,6 +79,8 @@ export function LiftTabPanel({
         onDeadliftStanceChange={onDeadliftStanceChange}
         onVariationClick={handleVariationClick}
         highlightedVariation={selectedVariation}
+        variantFactor={stats.variantFactor}
+        addlWtOffset={stats.addlWtOffset}
       />
     </>
   );
