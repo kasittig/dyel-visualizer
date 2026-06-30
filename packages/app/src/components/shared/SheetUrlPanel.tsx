@@ -30,7 +30,11 @@ export function SheetUrlPanel({
             Change sheet URL
           </button>
           {' · '}
-          <button onClick={onRefresh} className={styles.linkButton} title="Reload data from sheet">
+          <button
+            onClick={onRefresh}
+            className={styles.refreshButton}
+            title="Reload data from sheet"
+          >
             ↻
           </button>
           {' · '}
