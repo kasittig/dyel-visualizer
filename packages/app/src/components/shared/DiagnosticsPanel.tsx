@@ -1,6 +1,11 @@
 import { useMemo, useState, type CSSProperties } from 'react';
 import { generateDiagnostics } from '@dyel/core';
-import type { ConjugateExercise, DeadliftStancePreference, RepCalcStats } from '@dyel/core';
+import type {
+  ConjugateExercise,
+  DeadliftStancePreference,
+  EffectEnum,
+  RepCalcStats,
+} from '@dyel/core';
 import type { ConjugateDataPair } from '../../hooks/conjugate/useConjugateData';
 import styles from './DiagnosticsPanel.module.css';
 
@@ -41,13 +46,18 @@ export function DiagnosticsPanel({
   targetName: string;
   deadliftStance: DeadliftStancePreference;
   onDeadliftStanceChange: (s: DeadliftStancePreference) => void;
-  onVariationClick?: (name: string) => void;
+  onVariationClick?: (name: string | null) => void;
   highlightedVariation?: string | null;
   variantFactor: RepCalcStats['variantFactor'];
   addlWtOffset: RepCalcStats['addlWtOffset'];
 }) {
   const [isExpanded, setIsExpanded] = useState(true);
-  const [activeEffect, setActiveEffect] = useState<string | null>(null);
+  const [activeEffect, setActiveEffect] = useState<EffectEnum | null>(null);
+
+  const handleEffectClick = (e: EffectEnum) => {
+    setActiveEffect((prev) => (prev === e ? null : e));
+    onVariationClick?.(null);
+  };
   const hasDeadlift = useMemo(() => rows.some(([ex]) => ex.type === 'deadlift'), [rows]);
 
   const results = useMemo(
@@ -56,7 +66,7 @@ export function DiagnosticsPanel({
   );
 
   const { weakEffects, overtrainedEffects } = useMemo(() => {
-    const counter = new Map<string, number>();
+    const counter = new Map<EffectEnum, number>();
     for (const r of results) {
       if (r.status !== 'overtrained' && r.status !== 'weakness') {
         continue;
@@ -66,8 +76,8 @@ export function DiagnosticsPanel({
         counter.set(e, (counter.get(e) ?? 0) + delta);
       }
     }
-    const weakEffects: string[] = [];
-    const overtrainedEffects: string[] = [];
+    const weakEffects: EffectEnum[] = [];
+    const overtrainedEffects: EffectEnum[] = [];
     for (const [e, count] of counter) {
       if (count < 0) {
         weakEffects.push(e);
@@ -100,7 +110,7 @@ export function DiagnosticsPanel({
                       <span
                         key={e}
                         className={`${styles.chip} ${activeEffect === e ? styles.chipActive : styles.chipDanger}`}
-                        onClick={() => setActiveEffect(activeEffect === e ? null : e)}
+                        onClick={() => handleEffectClick(e)}
                         style={{ cursor: 'pointer' }}
                       >
                         {formatEffect(e)}
@@ -115,7 +125,7 @@ export function DiagnosticsPanel({
                       <span
                         key={e}
                         className={`${styles.chip} ${activeEffect === e ? styles.chipActive : styles.chipWarning}`}
-                        onClick={() => setActiveEffect(activeEffect === e ? null : e)}
+                        onClick={() => handleEffectClick(e)}
                         style={{ cursor: 'pointer' }}
                       >
                         {formatEffect(e)}
@@ -169,15 +179,21 @@ export function DiagnosticsPanel({
                       : status === 'overtrained'
                         ? 'Overtrained'
                         : 'Weakness';
+                  const isHighlighted =
+                    r.displayName === highlightedVariation ||
+                    (activeEffect !== null && r.effects.includes(activeEffect));
                   return (
                     <tr
                       key={r.displayName}
                       className={
-                        r.displayName === highlightedVariation
+                        isHighlighted
                           ? `${styles.bodyRow} ${styles.bodyRowSelected}`
                           : styles.bodyRow
                       }
-                      onClick={() => onVariationClick?.(r.displayName)}
+                      onClick={() => {
+                        setActiveEffect(null);
+                        onVariationClick?.(r.displayName);
+                      }}
                       style={{ cursor: onVariationClick ? 'pointer' : undefined }}
                     >
                       <td className={styles.cell}>{r.displayName}</td>

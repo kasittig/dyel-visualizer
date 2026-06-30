@@ -42,8 +42,8 @@ export function LiftTabPanel({
   );
   const stats = useLastSessionStats(filteredRows, effectiveBaselineNames);
 
-  function handleVariationClick(variation: string) {
-    setSelectedVariation((v) => (v === variation ? null : variation));
+  function handleVariationClick(variation: string | null) {
+    setSelectedVariation((v) => (variation === null || v === variation ? null : variation));
   }
 
   const label = liftType.charAt(0).toUpperCase() + liftType.slice(1);
