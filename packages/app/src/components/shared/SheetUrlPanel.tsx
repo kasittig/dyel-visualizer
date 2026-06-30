@@ -50,7 +50,7 @@ export function SheetUrlPanel({
             </a>
           </p>
           <div className={styles.urlRow}>
-            <label htmlFor="sheet-url" style={{ whiteSpace: 'nowrap' }}>
+            <label htmlFor="sheet-url" className={styles.urlLabel}>
               Your Google Sheet
             </label>
             <input
