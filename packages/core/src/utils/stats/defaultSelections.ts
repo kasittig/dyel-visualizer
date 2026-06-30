@@ -32,32 +32,32 @@ export function defaultCompExerciseName(
   }
   const first = rows[0][0].displayName;
 
-  const all_competition = rows.filter(
+  const allCompetition = rows.filter(
     (row) =>
       row[0].bar === 'standard' && row[0].stance === 'competition' && row[0].addlWts.length === 0
   );
-  if (all_competition.length === 0) {
+  if (allCompetition.length === 0) {
     return first;
   }
 
-  const commandsBench = all_competition.filter(
+  const commandsBench = allCompetition.filter(
     (row) => row[0].equipment === 'pause' && row[0].type === 'bench'
   );
   if (commandsBench.length > 0) {
     return commandsBench[0][0].displayName;
   }
 
-  const competition = all_competition.filter((row) => row[0].equipment === null);
+  const competition = allCompetition.filter((row) => row[0].equipment === null);
   if (competition.length > 0) {
     return competition[0][0].displayName;
   }
   if (rows.some((row) => row[0].type === 'deadlift')) {
-    const all_competition_dl = rows.filter(
+    const allCompetitionDl = rows.filter(
       (row) =>
         row[0].bar === 'standard' && row[0].stance === deadliftStance && row[0].addlWts.length === 0
     );
-    if (all_competition_dl.length > 0) {
-      return all_competition_dl[0][0].displayName;
+    if (allCompetitionDl.length > 0) {
+      return allCompetitionDl[0][0].displayName;
     }
   }
 
