@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
+import clsx from 'clsx';
 import {
   findBestE1RM,
   predictWeightForReps,
@@ -128,101 +129,93 @@ export function RepCalculator({
   }
 
   return (
-    <CollapsibleSection label={'Rep Calculator'}>
-      <div className={styles.controlsRow}>
-        <div className={styles.controlGroup}>
-          <label htmlFor="calc-lift" className={styles.muted}>
-            Lift
-          </label>
-          <select
-            id="calc-lift"
-            value={liftType}
-            onChange={(e) => setLiftType(e.target.value as LiftType)}
-            className={styles.select}
-          >
-            {(Object.keys(LIFT_LABELS) as LiftType[])
-              .filter((t) => t !== 'accessory' || hasAccessories)
-              .map((t) => (
-                <option key={t} value={t}>
-                  {LIFT_LABELS[t]}
-                </option>
-              ))}
-          </select>
-        </div>
+    <CollapsibleSection label="Rep Calculator">
+      <div className={styles.card}>
+        <div className={styles.leftCol}>
+          <span className={styles.sectionLabel}>Rep Calculator</span>
 
-        <div className={styles.controlGroup}>
-          <label htmlFor="calc-exercise" className={styles.muted}>
-            Exercise
-          </label>
-          <select
-            id="calc-exercise"
-            value={selectedName}
-            onChange={(e) => {
-              setSelectedName(e.target.value);
-            }}
-            className={styles.select}
-          >
-            {exercisesForType.map((name) => (
-              <option key={name} value={name}>
-                {name}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      {exercisesForType.length === 0 ? (
-        <p className={styles.muted}>
-          No {LIFT_LABELS[liftType].toLowerCase()} exercises found in your data.
-        </p>
-      ) : estimate === null ? (
-        <p className={styles.muted}>
-          No session data found in the selected window — try widening the date range.
-        </p>
-      ) : (
-        <>
-          <div className={styles.calcRow}>
-            <div className={styles.calcField}>
-              <label htmlFor="calc-reps" className={styles.muted}>
-                Reps
-              </label>
-              <input
-                id="calc-reps"
-                type="number"
-                min="1"
-                max="20"
-                value={reps}
-                onChange={(e) => handleRepsChange(e.target.value)}
-                placeholder="—"
-                className={styles.input}
-              />
-            </div>
-
-            <span className={styles.swapIcon}>↔</span>
-
-            <div className={styles.calcField}>
-              <label htmlFor="calc-weight" className={styles.muted}>
-                Weight ({unit})
-              </label>
-              <input
-                id="calc-weight"
-                type="number"
-                min="0"
-                value={weight}
-                onChange={(e) => handleWeightChange(e.target.value)}
-                placeholder="—"
-                className={styles.input}
-              />
-            </div>
-
-            <div className={styles.e1rmDisplay}>
-              e1RM: {Math.round(estimate.e1rm)} {unit}
+          <div className={styles.field}>
+            <div className={styles.fieldLabel}>Lift Type</div>
+            <div className={styles.chipGroup}>
+              {(Object.keys(LIFT_LABELS) as LiftType[])
+                .filter((t) => t !== 'accessory' || hasAccessories)
+                .map((t) => (
+                  <button
+                    key={t}
+                    onClick={() => setLiftType(t)}
+                    className={clsx(styles.chip, liftType === t && styles.chipActive)}
+                  >
+                    {LIFT_LABELS[t]}
+                  </button>
+                ))}
             </div>
           </div>
 
-          <p className={styles.sourceNote}>{sourceNote(estimate)}</p>
-        </>
-      )}
+          <div className={styles.field}>
+            <div className={styles.fieldLabel}>Exercise</div>
+            <select
+              value={selectedName}
+              onChange={(e) => setSelectedName(e.target.value)}
+              className={styles.input}
+            >
+              {exercisesForType.map((name) => (
+                <option key={name} value={name}>
+                  {name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div className={styles.rightCol}>
+          {exercisesForType.length === 0 ? (
+            <p className={styles.emptyNote}>
+              No {LIFT_LABELS[liftType].toLowerCase()} exercises found in your data.
+            </p>
+          ) : estimate === null ? (
+            <p className={styles.emptyNote}>
+              No session data found in the selected window — try widening the date range.
+            </p>
+          ) : (
+            <>
+              <div className={styles.field}>
+                <div className={styles.fieldLabel}>Reps</div>
+                <input
+                  id="calc-reps"
+                  type="number"
+                  min="1"
+                  max="20"
+                  value={reps}
+                  onChange={(e) => handleRepsChange(e.target.value)}
+                  placeholder="—"
+                  className={styles.input}
+                />
+              </div>
+
+              <div className={styles.swapIcon}>↕</div>
+
+              <div className={styles.field}>
+                <div className={styles.fieldLabel}>Weight ({unit})</div>
+                <input
+                  id="calc-weight"
+                  type="number"
+                  min="0"
+                  value={weight}
+                  onChange={(e) => handleWeightChange(e.target.value)}
+                  placeholder="—"
+                  className={styles.input}
+                />
+              </div>
+
+              <div className={styles.e1rmDisplay}>
+                e1RM: {Math.round(estimate.e1rm)} {unit}
+              </div>
+
+              <p className={styles.sourceNote}>{sourceNote(estimate)}</p>
+            </>
+          )}
+        </div>
+      </div>
     </CollapsibleSection>
   );
 }
