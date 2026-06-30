@@ -16,6 +16,7 @@ import type {
 import type { SplitRows } from '../../utils/appDataUtils';
 import { distinctDisplayNames, LIFT_TABS } from '../../utils/appUtils';
 import styles from './RepCalculator.module.css';
+import { CollapsibleSection } from '../shared/CollapsibleSection';
 
 const LIFT_LABELS: Record<LiftType, string> = {
   squat: 'Squat',
@@ -127,9 +128,7 @@ export function RepCalculator({
   }
 
   return (
-    <section>
-      <h2 className={styles.heading}>Rep Calculator</h2>
-
+    <CollapsibleSection label={'Rep Calculator'}>
       <div className={styles.controlsRow}>
         <div className={styles.controlGroup}>
           <label htmlFor="calc-lift" className={styles.muted}>
@@ -224,6 +223,6 @@ export function RepCalculator({
           <p className={styles.sourceNote}>{sourceNote(estimate)}</p>
         </>
       )}
-    </section>
+    </CollapsibleSection>
   );
 }
