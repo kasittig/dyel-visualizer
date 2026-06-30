@@ -31,8 +31,25 @@
 }
 .urlInput {
   flex: 1;
-  padding: 0.5rem;
+  font-size: 0.9rem;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
   box-sizing: border-box;
+  background: var(--bg);
+  color: var(--text-h);
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+.urlInput:focus {
+  outline: none;
+  border-color: rgba(170, 59, 255, 0.5);
+  box-shadow: 0 0 0 3px rgba(170, 59, 255, 0.1);
+}
+.urlLabel {
+  font-family: var(--heading);
+  white-space: nowrap;
 }
 .invalidUrl {
   color: red;
