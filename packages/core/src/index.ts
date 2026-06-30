@@ -25,6 +25,8 @@ export {
   fitVariantFactor,
 } from './utils/math/e1rm';
 
+export { calculateVolumeCorrelation } from './utils/math/volume';
+
 export { parseConjugateData } from './utils/parsing/parseConjugateData';
 
 export type {
