@@ -1,6 +1,7 @@
 import { Line, Tooltip } from 'recharts';
 import type { ChartPoint } from '@dyel/core';
 import { DateLineChart, ChartEmpty } from './DateLineChart';
+import styles from './TotalChart.module.css';
 
 const SQUAT_COLOR = '#e74c3c';
 const BENCH_COLOR = '#3498db';
@@ -14,7 +15,7 @@ export function TotalChart({ chartData, unit }: { chartData: ChartPoint[]; unit:
   }
 
   return (
-    <section>
+    <div className={styles.card}>
       <DateLineChart data={chartData} unit={unit} yAxisWidth={55}>
         <Tooltip formatter={(v, name) => [`${v} ${unit}`, String(name)]} />
         <Line
@@ -72,6 +73,6 @@ export function TotalChart({ chartData, unit }: { chartData: ChartPoint[]; unit:
           isAnimationActive={false}
         />
       </DateLineChart>
-    </section>
+    </div>
   );
 }
