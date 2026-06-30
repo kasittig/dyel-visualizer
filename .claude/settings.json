@@ -2,10 +2,6 @@
   "enabledPlugins": {
     "typescript-lsp@claude-plugins-official": true
   },
-  "worktree": {
-    "sparsePaths": [".claude", "packages"],
-    "symlinkDirectories": ["node_modules"]
-  },
   "hooks": {
     "PreToolUse": [
       {

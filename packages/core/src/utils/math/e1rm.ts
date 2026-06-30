@@ -130,13 +130,20 @@ export function fitVariantVelocity(sessions: TrainingSession[]): {
   if (grid.length < 2) {
     return { velocityPerMs: 0, sampleCount: 0 };
   }
-  const first = grid[0];
-  const last = grid[grid.length - 1];
-  const dt = last.t - first.t;
-  if (dt === 0) {
-    return { velocityPerMs: 0, sampleCount: 0 };
+  const n = grid.length;
+  const tMean = grid.reduce((s, p) => s + p.t, 0) / n;
+  const eMean = grid.reduce((s, p) => s + p.e1rm, 0) / n;
+  let num = 0;
+  let den = 0;
+  for (const p of grid) {
+    const dt = p.t - tMean;
+    num += dt * (p.e1rm - eMean);
+    den += dt * dt;
   }
-  return { velocityPerMs: (last.e1rm - first.e1rm) / dt, sampleCount: grid.length };
+  if (den === 0) {
+    return { velocityPerMs: 0, sampleCount: n };
+  }
+  return { velocityPerMs: num / den, sampleCount: n };
 }
 
 export function fitAddlWtOffset(
