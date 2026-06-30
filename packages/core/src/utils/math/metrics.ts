@@ -17,6 +17,21 @@ function calcDenominator(bw: number, coefficients: number[]): number {
   }, 0);
 }
 
+function calculatePercentileRank(
+  score: number,
+  { mean, std }: { mean: number; std: number }
+): number {
+  const z = (score - mean) / std;
+  const a = [0.31938153, -0.356563782, 1.781477937, -1.821255978, 1.330274429];
+  const p = 0.2316419;
+  const absZ = Math.abs(z);
+  const t = 1 / (1 + p * absZ);
+  const pdf = Math.exp(-0.5 * absZ * absZ) / Math.sqrt(2 * Math.PI);
+  const poly = t * (a[0] + t * (a[1] + t * (a[2] + t * (a[3] + t * a[4]))));
+  const q = pdf * poly;
+  return Math.min(99, Math.max(1, Math.round((z >= 0 ? 1 - q : q) * 100)));
+}
+
 export function calculateMetrics(
   bw: number,
   total: number,
@@ -27,15 +42,25 @@ export function calculateMetrics(
     ? __COEFFICIENTS__.female
     : __COEFFICIENTS__.male;
 
+  const wilks = calculateMetric<number[]>(bw, total, units, coefficients.wilks, calculateWilks);
+  const dots = calculateMetric<number[]>(bw, total, units, coefficients.dots, calculateDots);
+  const schwartzmalone = calculateMetric<SMAnchorValue[]>(
+    bw,
+    total,
+    units,
+    coefficients.schwartzmalone,
+    calculateSchwartzMalone
+  );
+
   return {
-    wilks: calculateMetric<number[]>(bw, total, units, coefficients.wilks, calculateWilks),
-    dots: calculateMetric<number[]>(bw, total, units, coefficients.dots, calculateDots),
-    schwartzmalone: calculateMetric<SMAnchorValue[]>(
-      bw,
-      total,
-      units,
-      coefficients.schwartzmalone,
-      calculateSchwartzMalone
+    wilks,
+    wilksPercentile: calculatePercentileRank(wilks, coefficients.wilks.percentile),
+    dots,
+    dotsPercentile: calculatePercentileRank(dots, coefficients.dots.percentile),
+    schwartzmalone,
+    schwartzmalonePercentile: calculatePercentileRank(
+      schwartzmalone,
+      coefficients.schwartzmalone.percentile
     ),
   };
 }

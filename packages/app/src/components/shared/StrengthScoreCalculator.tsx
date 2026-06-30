@@ -6,23 +6,6 @@ import styles from './StrengthScoreCalculator.module.css';
 
 type Gender = 'male' | 'female';
 
-function normalCDF(z: number): number {
-  const a = [0.31938153, -0.356563782, 1.781477937, -1.821255978, 1.330274429];
-  const p = 0.2316419;
-  const absZ = Math.abs(z);
-  const t = 1 / (1 + p * absZ);
-  const pdf = Math.exp(-0.5 * absZ * absZ) / Math.sqrt(2 * Math.PI);
-  const poly = t * (a[0] + t * (a[1] + t * (a[2] + t * (a[3] + t * a[4]))));
-  const q = pdf * poly;
-  return z >= 0 ? 1 - q : q;
-}
-
-function percentileRank(score: number, gender: Gender): number {
-  const mean = gender === 'male' ? 300 : 270;
-  const std = gender === 'male' ? 80 : 70;
-  return Math.min(99, Math.max(1, Math.round(normalCDF((score - mean) / std) * 100)));
-}
-
 function ordinal(n: number): string {
   const s = ['th', 'st', 'nd', 'rd'];
   const v = n % 100;
@@ -133,7 +116,10 @@ export function StrengthScoreCalculator({
             const score = scores?.[key] ?? null;
             const isLast = i === METRICS.length - 1;
             const tier = score !== null ? tierInfo(score) : null;
-            const pct = score !== null ? percentileRank(score, gender) : null;
+            const pct =
+              scores !== null
+                ? (scores[`${key}Percentile` as keyof typeof scores] as number)
+                : null;
             const barWidth = score !== null ? Math.min(100, (score / 600) * 100) : 0;
 
             return (
