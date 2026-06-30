@@ -37,6 +37,8 @@ function sheetsProxyPlugin(): Plugin {
 
 const modifierEffectsPath = path.resolve(__dirname, '../core/modifierEffects.json');
 const modifierEffects = JSON.parse(fs.readFileSync(modifierEffectsPath, 'utf-8'));
+const coefficientsPath = path.resolve(__dirname, '../core/coefficients.json');
+const coefficients = JSON.parse(fs.readFileSync(coefficientsPath, 'utf-8'));
 
 export default defineConfig({
   plugins: [react(), sheetsProxyPlugin()],
@@ -62,5 +64,6 @@ export default defineConfig({
   },
   define: {
     __MODIFIER__EFFECTS__: JSON.stringify(modifierEffects),
+    __COEFFICIENTS__: JSON.stringify(coefficients),
   },
 });

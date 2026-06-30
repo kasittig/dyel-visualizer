@@ -5,3 +5,4 @@ export { ErrorBoundary } from './ErrorBoundary';
 export { ExerciseFilters } from './ExerciseFilters';
 export { RepCalculator } from './RepCalculator';
 export { SheetUrlPanel } from './SheetUrlPanel';
+export { StrengthScoreCalculator } from './StrengthScoreCalculator';

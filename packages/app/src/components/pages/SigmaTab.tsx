@@ -2,29 +2,28 @@ import { useMemo } from 'react';
 import type { DateRange } from 'react-day-picker';
 import { CollapsibleSection } from '../shared/CollapsibleSection';
 import { EditableDateChip } from '../shared/EditableDateChip';
-import { useLastSessionStats } from '../../hooks/data/useLastSessionStats';
 import { useBaselineTargetExercises } from '../../hooks/data/useBaselineTargetExercises';
 import { buildChartData } from '@dyel/core';
-import type { LiftType } from '@dyel/core';
+import type { LiftType, SessionStats } from '@dyel/core';
 import { TotalChart } from '../charts/TotalChart';
 import { SigmaChart } from '../charts/SigmaChart';
 import type { ConjugateDataPair } from '../../hooks/conjugate/useConjugateData';
 
 export function SigmaTab({
   sigmaPairs,
+  sigmaStats,
   effectiveBaselineNames,
   effectiveTargetNames,
   dateRange,
   onDateRangeChange,
 }: {
   sigmaPairs: ConjugateDataPair[];
+  sigmaStats: SessionStats;
   effectiveBaselineNames: Partial<Record<LiftType, string>>;
   effectiveTargetNames: Partial<Record<LiftType, string>>;
   dateRange: DateRange;
   onDateRangeChange: (range: DateRange) => void;
 }) {
-  const sigmaStats = useLastSessionStats(sigmaPairs, effectiveBaselineNames);
-
   const { baselineExByType, targetExByType } = useBaselineTargetExercises(
     sigmaPairs,
     effectiveBaselineNames,
