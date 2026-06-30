@@ -1,7 +1,8 @@
 import type { ConjugateDataPair, ConjugateExercise, PrimaryLift } from '../../types/conjugate';
 import type { RepCalcStats } from '../math/repCalculator';
 import { normalizeToBaseE1RM } from '../math/repCalculator';
-import { isoDate, recordMax, sortedGridDates, type DateValueGrid } from './chartGrid';
+import { recordMax, sortedGridDates, type DateValueGrid } from './chartGrid';
+import { localDateKey } from '../math/volume';
 
 export type ChartPoint = Record<string, string | number>;
 
@@ -34,7 +35,7 @@ export function buildChartData(
       e1rm = session.e1rm;
     }
 
-    recordMax(byDate, exercise.type, isoDate(session.date), e1rm);
+    recordMax(byDate, exercise.type, localDateKey(session.date), e1rm);
   }
 
   const allDates = sortedGridDates(byDate);

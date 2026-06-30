@@ -1,11 +1,3 @@
-/** ISO calendar-day key (`YYYY-MM-DD`) used to bucket sessions by date. Uses local date components so the key matches the calendar day in any timezone. */
-export function isoDate(date: Date): string {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
-}
-
 /** A `key → (date → best value)` grid that keeps the maximum value seen per `(key, date)`. */
 export type DateValueGrid = Map<string, Map<string, number>>;
 

@@ -1,8 +1,9 @@
 import type { ConjugateDataPair, ConjugateExercise } from '../../types/conjugate';
 import type { RepCalcStats } from '../math/repCalculator';
 import { normalizeToBaseE1RM } from '../math/repCalculator';
+import { localDateKey } from '../math/volume';
 import type { ChartPoint } from './buildChartData';
-import { isoDate, recordMax, sortedGridDates, type DateValueGrid } from './chartGrid';
+import { recordMax, sortedGridDates, type DateValueGrid } from './chartGrid';
 
 export const NORMALIZED_KEY = '__normalized__';
 
@@ -34,7 +35,7 @@ export function buildVariationChartData(
 
   for (const [exercise, session] of rows) {
     const label = exercise.displayName;
-    const date = isoDate(session.date);
+    const date = localDateKey(session.date);
     if (!exerciseByName.has(label)) {
       bestSetByLabelAndDate.set(label, new Map());
       exerciseByName.set(label, exercise);
@@ -65,7 +66,7 @@ export function buildVariationChartData(
   const normalizedByDate = new Map<string, number>();
   if (targetExercise) {
     for (const [exercise, session] of rows) {
-      const date = isoDate(session.date);
+      const date = localDateKey(session.date);
       const normalized = normalizeToBaseE1RM(
         session,
         exercise,
