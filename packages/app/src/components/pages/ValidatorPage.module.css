@@ -25,6 +25,7 @@
   line-height: 1;
 }
 .verdictMessage {
+  font-family: var(--heading);
   color: var(--text-h);
   font-weight: 500;
 }
@@ -118,6 +119,7 @@
   text-align: left;
 }
 .rowIssueHeader {
+  font-family: var(--heading);
   font-weight: 600;
   color: var(--text-h);
   margin-bottom: 0.3rem;
