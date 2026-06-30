@@ -2,6 +2,17 @@
   margin-top: 1.5rem;
 }
 
+.card {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+.cardPadded {
+  padding: 12px 16px;
+}
+
 .stanceRow {
   display: flex;
   align-items: center;
@@ -33,8 +44,11 @@
 }
 .thead {
   border-bottom: 1px solid var(--border);
+  font-family: var(--heading);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
   color: var(--text);
-  font-weight: 600;
 }
 .bodyRow {
   border-bottom: 1px solid var(--border);
@@ -99,4 +113,8 @@
 .chipWarning {
   --chip-bg: color-mix(in srgb, var(--warning) 15%, transparent);
   --chip-color: var(--warning);
+}
+.chipActive {
+  --chip-bg: color-mix(in srgb, var(--accent) 15%, transparent);
+  --chip-color: var(--accent);
 }

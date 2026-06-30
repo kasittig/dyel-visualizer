@@ -47,6 +47,7 @@ export function DiagnosticsPanel({
   addlWtOffset: RepCalcStats['addlWtOffset'];
 }) {
   const [isExpanded, setIsExpanded] = useState(true);
+  const [activeEffect, setActiveEffect] = useState<string | null>(null);
   const hasDeadlift = useMemo(() => rows.some(([ex]) => ex.type === 'deadlift'), [rows]);
 
   const results = useMemo(
@@ -88,48 +89,60 @@ export function DiagnosticsPanel({
         <span className="tab-title-label">Diagnostics</span>
       </button>
       {isExpanded && (
-        <>
-          {(weakEffects.length > 0 || overtrainedEffects.length > 0) && (
-            <div className={styles.summary}>
-              {weakEffects.length > 0 && (
-                <div className={styles.summaryRow}>
-                  <span className={styles.summaryLabel}>Weak spots:</span>
-                  {weakEffects.map((e) => (
-                    <span key={e} className={`${styles.chip} ${styles.chipDanger}`}>
-                      {formatEffect(e)}
-                    </span>
-                  ))}
-                </div>
-              )}
-              {overtrainedEffects.length > 0 && (
-                <div className={styles.summaryRow}>
-                  <span className={styles.summaryLabel}>Overworked:</span>
-                  {overtrainedEffects.map((e) => (
-                    <span key={e} className={`${styles.chip} ${styles.chipWarning}`}>
-                      {formatEffect(e)}
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-          {hasDeadlift && (
-            <fieldset className={styles.stanceRow}>
-              <legend className={styles.stanceLegend}>Primary pull</legend>
-              {(['conventional', 'sumo'] as const).map((s) => (
-                <label key={s} className={styles.stanceLabel}>
-                  <input
-                    type="radio"
-                    name="deadlift-stance"
-                    checked={deadliftStance === s}
-                    onChange={() => onDeadliftStanceChange(s)}
-                    className={styles.stanceRadio}
-                  />
-                  {s[0].toUpperCase() + s.slice(1)}
-                </label>
-              ))}
-            </fieldset>
-          )}
+        <div className={styles.card}>
+          <div className={styles.cardPadded}>
+            {(weakEffects.length > 0 || overtrainedEffects.length > 0) && (
+              <div className={styles.summary}>
+                {weakEffects.length > 0 && (
+                  <div className={styles.summaryRow}>
+                    <span className={styles.summaryLabel}>Weak spots:</span>
+                    {weakEffects.map((e) => (
+                      <span
+                        key={e}
+                        className={`${styles.chip} ${activeEffect === e ? styles.chipActive : styles.chipDanger}`}
+                        onClick={() => setActiveEffect(activeEffect === e ? null : e)}
+                        style={{ cursor: 'pointer' }}
+                      >
+                        {formatEffect(e)}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                {overtrainedEffects.length > 0 && (
+                  <div className={styles.summaryRow}>
+                    <span className={styles.summaryLabel}>Overworked:</span>
+                    {overtrainedEffects.map((e) => (
+                      <span
+                        key={e}
+                        className={`${styles.chip} ${activeEffect === e ? styles.chipActive : styles.chipWarning}`}
+                        onClick={() => setActiveEffect(activeEffect === e ? null : e)}
+                        style={{ cursor: 'pointer' }}
+                      >
+                        {formatEffect(e)}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+            {hasDeadlift && (
+              <fieldset className={styles.stanceRow}>
+                <legend className={styles.stanceLegend}>Primary pull</legend>
+                {(['conventional', 'sumo'] as const).map((s) => (
+                  <label key={s} className={styles.stanceLabel}>
+                    <input
+                      type="radio"
+                      name="deadlift-stance"
+                      checked={deadliftStance === s}
+                      onChange={() => onDeadliftStanceChange(s)}
+                      className={styles.stanceRadio}
+                    />
+                    {s[0].toUpperCase() + s.slice(1)}
+                  </label>
+                ))}
+              </fieldset>
+            )}
+          </div>
           {results.length > 0 && (
             <table className={styles.table}>
               <thead>
@@ -188,7 +201,7 @@ export function DiagnosticsPanel({
               </tbody>
             </table>
           )}
-        </>
+        </div>
       )}
     </div>
   );
