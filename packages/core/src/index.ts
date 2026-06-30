@@ -39,8 +39,7 @@ export { parseIndexCsv } from './utils/parsing/parseIndexCsv';
 
 export { extractCsvHeaders, parseCsvRows } from './utils/parsing/csvUtils';
 
-export type { FilterState } from './utils/stats/exerciseFilters';
-export { emptyFilters, applyFilters, filterByDateRange } from './utils/stats/exerciseFilters';
+export { filterByDateRange } from './utils/stats/exerciseFilters';
 
 export type { E1RMEstimate, RepCalcStats } from './utils/math/repCalculator';
 export {

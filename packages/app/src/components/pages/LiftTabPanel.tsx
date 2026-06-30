@@ -6,14 +6,13 @@ import { DiagnosticsPanel } from '../shared/DiagnosticsPanel';
 import { VariationRadarChart } from '../charts/VariationRadarChart';
 import { CollapsibleSection } from '../shared/CollapsibleSection';
 import { EditableDateChip } from '../shared/EditableDateChip';
-import { applyFilters, filterByDateRange } from '@dyel/core';
+import { filterByDateRange } from '@dyel/core';
 import type { DateRange } from 'react-day-picker';
-import type { DeadliftStancePreference, FilterState, LiftType } from '@dyel/core';
+import type { DeadliftStancePreference, LiftType } from '@dyel/core';
 import styles from './LiftTabPanel.module.css';
 
 export function LiftTabPanel({
   rows,
-  filters,
   effectiveBaselineNames,
   liftType,
   targetName,
@@ -25,7 +24,6 @@ export function LiftTabPanel({
   onDateRangeChange,
 }: {
   rows: ConjugateDataPair[];
-  filters: FilterState;
   effectiveBaselineNames: Partial<Record<LiftType, string>>;
   liftType: LiftType;
   targetName: string;
@@ -39,8 +37,8 @@ export function LiftTabPanel({
   const [selectedVariation, setSelectedVariation] = useState<string | null>(null);
 
   const filteredRows = useMemo(
-    () => filterByDateRange(applyFilters(rows, filters), dateRange.from, dateRange.to),
-    [rows, filters, dateRange]
+    () => filterByDateRange(rows, dateRange.from, dateRange.to),
+    [rows, dateRange]
   );
   const stats = useLastSessionStats(filteredRows, effectiveBaselineNames);
 
