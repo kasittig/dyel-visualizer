@@ -13,7 +13,8 @@ export function buildChartData(
   pairs: ConjugateDataPair[],
   baselineExByType: Map<string, ConjugateExercise>,
   targetExByType: Map<string, ConjugateExercise>,
-  stats: RepCalcStats
+  stats: RepCalcStats,
+  volume: Map<string, number>
 ): ChartPoint[] {
   const byDate: DateValueGrid = new Map();
 
@@ -60,6 +61,11 @@ export function buildChartData(
 
     if (last.bench !== undefined && last.deadlift !== undefined) {
       point.pushPull = Math.round(last.bench + last.deadlift);
+    }
+
+    const dateVolume = volume?.get(date);
+    if (dateVolume !== undefined) {
+      point.volume = dateVolume;
     }
 
     rows.push(point);

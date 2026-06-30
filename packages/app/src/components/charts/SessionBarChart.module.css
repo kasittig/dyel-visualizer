@@ -1,0 +1,9 @@
+.card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.sectionLabel {
+  composes: sectionLabel from './charts.module.css';
+}

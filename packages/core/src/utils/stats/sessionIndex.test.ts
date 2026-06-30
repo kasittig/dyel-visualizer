@@ -11,6 +11,7 @@ function session(dateStr: string, weight: number, reps: number, sets = 1): Train
     sets,
     e1rm: weight * (1 + reps / 30),
     unit: 'lbs',
+    rpe: null,
   };
 }
 
