@@ -13,7 +13,7 @@ import { filterByDateRange, buildChartData } from '@dyel/core';
 import type { DeadliftStancePreference, LiftType } from '@dyel/core';
 import { useLastSessionStats } from './hooks/data/useLastSessionStats';
 import { useBaselineTargetExercises } from './hooks/data/useBaselineTargetExercises';
-import { extractSheetRef, initialTabState, MAIN_TABS, ACCESSORY_TAB } from './utils/appUtils';
+import { extractSheetRef, initialTabState, MAIN_TABS } from './utils/appUtils';
 import type { PageTab, TabState } from './utils/appUtils';
 import { buildTabRows, computeEffectiveNames, extractPairs } from './utils/appDataUtils';
 import styles from './App.module.css';
@@ -56,10 +56,22 @@ export function App() {
     [tabRows, tabState, deadliftStance]
   );
 
-  const tabs = [...MAIN_TABS, ...(tabRows.accessory.all.length > 0 ? [ACCESSORY_TAB] : [])];
+  const tabs = MAIN_TABS.filter(
+    ({ id }) => filterByDateRange(tabRows[id].all, dateRange.from, dateRange.to).length > 0
+  );
+
+  const visibleLiftIds = new Set(tabs.map(({ id }) => id));
+  const effectiveActiveTab: PageTab =
+    activeTab !== 'sigma' &&
+    activeTab !== 'calculator' &&
+    !visibleLiftIds.has(activeTab as LiftType)
+      ? 'sigma'
+      : activeTab;
 
   const liftTab: LiftType | null =
-    activeTab !== 'calculator' && activeTab !== 'sigma' ? activeTab : null;
+    effectiveActiveTab !== 'calculator' && effectiveActiveTab !== 'sigma'
+      ? effectiveActiveTab
+      : null;
 
   const { sigmaPairs, allSessionDates, lastSessionDate } = useMemo(() => {
     const allPairs = [
@@ -171,7 +183,7 @@ export function App() {
                 <button
                   key={id}
                   onClick={() => setActiveTab(id)}
-                  className={clsx(styles.tab, activeTab === id && styles.tabActive)}
+                  className={clsx(styles.tab, effectiveActiveTab === id && styles.tabActive)}
                 >
                   {label}
                 </button>
@@ -185,7 +197,7 @@ export function App() {
                 />
               </div>
             </div>
-            {activeTab === 'calculator' ? (
+            {effectiveActiveTab === 'calculator' ? (
               <div className={styles.calculatorRow}>
                 <div>
                   <RepCalculator tabRows={tabRows} baselineNames={effectiveBaselineNames} />
@@ -194,7 +206,7 @@ export function App() {
                   <StrengthScoreCalculator competitionTotal={competitionTotal} unit={dataUnit} />
                 </div>
               </div>
-            ) : activeTab === 'sigma' ? (
+            ) : effectiveActiveTab === 'sigma' ? (
               <SigmaTab
                 sigmaPairs={filteredSigmaPairs}
                 sigmaStats={sigmaStats}
