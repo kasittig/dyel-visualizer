@@ -26,6 +26,7 @@ export function App() {
       ''
   );
   const [panelForcedOpen, setPanelForcedOpen] = useState(false);
+  const [refreshToken, setRefreshToken] = useState(0);
   const [activeTab, setActiveTab] = useState<PageTab>('sigma');
   const [shownResetToken, setShownResetToken] = useState(0);
   const [tabState, setTabState] = useState<Record<LiftType, TabState>>(initialTabState);
@@ -45,7 +46,7 @@ export function App() {
   const sheetRef = extractSheetRef(url);
   const invalidUrl = url.length > 0 && !sheetRef;
 
-  const state = useConjugateData(sheetRef);
+  const state = useConjugateData(sheetRef, '0', refreshToken);
 
   const showUrlPanel = panelForcedOpen || state.status !== 'success';
 
@@ -159,6 +160,7 @@ export function App() {
         onUrlChange={handleUrlChange}
         onForceOpen={() => setPanelForcedOpen(true)}
         onCancel={() => setPanelForcedOpen(false)}
+        onRefresh={() => setRefreshToken((t) => t + 1)}
       />
 
       <div className={styles.content}>
