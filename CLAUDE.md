@@ -1,56 +1,19 @@
-# CLAUDE.md
+# CLAUDE.md - npm Workspace Monorepo
 
-This is an npm workspaces monorepo with two packages:
+## Workspace Architecture
 
-| Package           | Path             | Purpose                                                                |
-| ----------------- | ---------------- | ---------------------------------------------------------------------- |
-| `@dyel/core`      | `packages/core/` | Pure TypeScript domain logic — no React dependency; publishable to npm |
-| `dyel-visualizer` | `packages/app/`  | React application that consumes `@dyel/core`                           |
+- Package Manager: npm Workspaces
+- Shared Core Package Name: `@dyel/core` maps directly to `packages/core/`
+- Application Package Name: `@dyel/app` maps directly to `packages/app/`
 
-## Commands (run from repo root)
+## Core Commands (Run from Root)
 
-```bash
-npx kill-port 5173 && npm run dev # start the app dev server at http://localhost:5173
-npm run build     # build @dyel/core (tsc), then vite build the app
-npm test          # run tests in all packages
-npm run lint      # eslint (covers all packages)
-npm run format    # prettier --write (covers all packages)
-```
+- Build Shared Core: `npm run build --workspace=@dyel/core`
+- Build Vite App: `npm run build --workspace=@dyel/app`
+- Start App Dev: `npm run dev --workspace=@dyel/app`
 
-The pre-commit hook runs `lint-staged` (eslint + prettier on staged files) then `npm test`.
+## Strict Importing Rules
 
-## Package resolution
-
-During development `packages/app/vite.config.ts` uses `resolve.alias` to point `@dyel/core` at `packages/core/src/index.ts` directly — no build step is needed for the core package during dev. `packages/app/tsconfig.app.json` has a matching `paths` entry so TypeScript also resolves from source.
-
-To build `@dyel/core` for npm publishing (emits `dist/` with `.d.ts` declarations):
-
-```bash
-npm run build -w packages/core
-```
-
-## Working Preferences
-
-**Git workflow**
-
-- Never commit directly to `main`. Always create a feature branch first (`feat/short-description` or `issue-NNN-short-description`). If new work depends on unmerged changes, branch off the relevant feature branch, not `main`.
-- Before deleting any local branch that has a remote, run `gh pr list --state open --json headRefName` first and confirm no open PR points to it. A `git branch -d` "merged to refs/remotes/origin/..." warning does NOT mean the PR was merged — three branches in this repo were lost this way (fix/merge-exercise-lists, feat/conjugate-weight-calculator, feature/issue-62-chain-coefficient).
-- Never use `--admin` or any flag to bypass branch protection rules on `gh pr merge`. If a merge is blocked, surface the specific blocker to the user.
-- Never cherry pick changes. If work depends on changes on a different feature branch, rebase your branch on top of that feature branch.
-- Never close a GitHub issue until its PR has merged. Use `Closes #NNN` in the PR description — GitHub closes the issue automatically on merge.
-
-**Pull requests**
-
-- Always include a **"What the user will see"** section in PR descriptions for observable, user-facing changes. If no user-visible changes, note that explicitly ("No user-visible changes."). Update the description whenever new commits are pushed.
-- Several `gh` CLI commands are broken on this repo due to GitHub's Projects (classic) GraphQL deprecation. Use `gh api` (REST) instead:
-  - `gh pr edit --body` silently fails — use `gh api repos/kasittig/dyel-visualizer/pulls/<number> --method PATCH --field body="<body>" --jq .number`
-  - `gh issue view <number>` exits with a GraphQL error — use `gh api repos/kasittig/dyel-visualizer/issues/<number>`
-  - `gh issue create` does not support `--jq` (only `gh api` does); omit it — the URL is printed to stdout on success
-
-**Documentation**
-
-- `ONBOARDING.md` (repo root) is the user-facing guide covering spreadsheet formatting, exercise naming rules, and how to use each chart. Update it whenever the CSV parsing logic, exercise name detection, or UI features change.
-
-**Code style**
-
-- Extract generic factories/helpers proactively whenever two or more implementations share the same shape. Don't wait to be asked.
+- Inside `packages/app`, always import shared modules from `@dyel/core`.
+- **CRITICAL:** Do NOT use relative path traversals (like `../../core`) to share code.
+- If changes are made to `@dyel/core`, you must explicitly prompt Claude to run `npm run build --workspace=@dyel/core` before testing `@dyel/app`.

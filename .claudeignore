@@ -1,0 +1,7 @@
+node_modules/
+packages/app/dist/
+packages/core/dist/
+.vite/
+*.log
+.turbo/
+.nx/
