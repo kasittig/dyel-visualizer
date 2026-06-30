@@ -12,17 +12,17 @@ function ordinal(n: number): string {
   return n + (s[(v - 20) % 10] ?? s[v] ?? s[0]);
 }
 
-function tierInfo(score: number): { label: string; color: string } {
-  if (score >= 500) {
+function tierInfo(percentile: number): { label: string; color: string } {
+  if (percentile >= 99) {
     return { label: 'World class', color: 'var(--text-h)' };
   }
-  if (score >= 400) {
+  if (percentile >= 90) {
     return { label: 'Elite', color: 'var(--accent)' };
   }
-  if (score >= 300) {
+  if (percentile >= 60) {
     return { label: 'Advanced', color: 'var(--success)' };
   }
-  if (score >= 200) {
+  if (percentile >= 30) {
     return { label: 'Intermediate', color: 'var(--warning)' };
   }
   return { label: 'Novice', color: 'var(--text)' };
@@ -115,12 +115,12 @@ export function StrengthScoreCalculator({
           {METRICS.map(({ key, label, barColor }, i) => {
             const score = scores?.[key] ?? null;
             const isLast = i === METRICS.length - 1;
-            const tier = score !== null ? tierInfo(score) : null;
             const pct =
               scores !== null
                 ? (scores[`${key}Percentile` as keyof typeof scores] as number)
                 : null;
-            const barWidth = score !== null ? Math.min(100, (score / 600) * 100) : 0;
+            const tier = pct !== null ? tierInfo(pct) : null;
+            const barWidth = pct ?? 0;
 
             return (
               <div key={key} className={clsx(styles.scoreRow, isLast && styles.scoreRowLast)}>

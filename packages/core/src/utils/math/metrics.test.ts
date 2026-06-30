@@ -193,3 +193,17 @@ describe('calculateMetrics', () => {
     });
   });
 });
+
+describe('calculateMetrics — percentile calibration', () => {
+  // Regression: SM percentile params were set too low, inflating SM percentile
+  // relative to Wilks/DOTS for the same lifter.
+  it('female 205 lbs / 626 lbs: SM percentile is within 15 points of Wilks percentile', () => {
+    const m = calculateMetrics(205, 626, true);
+    expect(Math.abs(m.schwartzmalonePercentile - m.wilksPercentile)).toBeLessThanOrEqual(15);
+  });
+
+  it('female 205 lbs / 626 lbs: SM percentile is within 15 points of DOTS percentile', () => {
+    const m = calculateMetrics(205, 626, true);
+    expect(Math.abs(m.schwartzmalonePercentile - m.dotsPercentile)).toBeLessThanOrEqual(15);
+  });
+});
