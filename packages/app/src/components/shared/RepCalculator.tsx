@@ -129,7 +129,7 @@ export function RepCalculator({
   }
 
   return (
-    <CollapsibleSection label={'Rep Calculator'}>
+    <CollapsibleSection label="Rep Calculator">
       <div className={styles.card}>
         <div className={styles.leftCol}>
           <span className={styles.sectionLabel}>Rep Calculator</span>

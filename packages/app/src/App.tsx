@@ -229,14 +229,18 @@ export function App() {
               </div>
             </div>
             {activeTab === 'calculator' ? (
-              <>
-                <RepCalculator
-                  tabRows={tabRows}
-                  baselineNames={effectiveBaselineNames}
-                  tabFilters={tabFilters}
-                />
-                <StrengthScoreCalculator competitionTotal={competitionTotal} unit={dataUnit} />
-              </>
+              <div className={styles.calculatorRow}>
+                <div>
+                  <RepCalculator
+                    tabRows={tabRows}
+                    baselineNames={effectiveBaselineNames}
+                    tabFilters={tabFilters}
+                  />
+                </div>
+                <div>
+                  <StrengthScoreCalculator competitionTotal={competitionTotal} unit={dataUnit} />
+                </div>
+              </div>
             ) : activeTab === 'sigma' ? (
               <SigmaTab
                 sigmaPairs={filteredSigmaPairs}

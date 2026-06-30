@@ -51,3 +51,12 @@
 .datePickerWrap {
   align-self: center;
 }
+
+.calculatorRow {
+  margin-top: 2.5rem;
+  display: flex;
+  gap: 0 3rem;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  justify-content: center;
+}
