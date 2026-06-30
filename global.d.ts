@@ -20,6 +20,7 @@ interface MetricCoefficient<T> {
   coefficients: T;
   min_bw: number | undefined;
   max_bw: number | undefined;
+  percentile: { mean: number; std: number };
 }
 
 interface SMAnchorValue {

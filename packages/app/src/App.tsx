@@ -4,13 +4,16 @@ import clsx from 'clsx';
 import { useConjugateData } from './hooks/conjugate/useConjugateData';
 import { ExerciseFilters } from './components/shared/ExerciseFilters';
 import { RepCalculator } from './components/shared/RepCalculator';
+import { StrengthScoreCalculator } from './components/shared/StrengthScoreCalculator';
 import { SigmaTab } from './components/pages/SigmaTab';
 import { LiftTabPanel } from './components/pages/LiftTabPanel';
 import { SheetUrlPanel } from './components/shared/SheetUrlPanel';
 import { GettingStarted } from './components/pages/GettingStarted';
 import { DateRangePicker } from './components/shared/DateRangePicker';
-import { emptyFilters, filterByDateRange } from '@dyel/core';
+import { emptyFilters, filterByDateRange, buildChartData } from '@dyel/core';
 import type { DeadliftStancePreference, FilterState, LiftType } from '@dyel/core';
+import { useLastSessionStats } from './hooks/data/useLastSessionStats';
+import { useBaselineTargetExercises } from './hooks/data/useBaselineTargetExercises';
 import {
   extractSheetRef,
   initialTabState,
@@ -115,6 +118,26 @@ export function App() {
     [sigmaPairs, dateRange]
   );
 
+  const sigmaStats = useLastSessionStats(filteredSigmaPairs, effectiveBaselineNames);
+  const { baselineExByType, targetExByType } = useBaselineTargetExercises(
+    filteredSigmaPairs,
+    effectiveBaselineNames,
+    effectiveTargetNames
+  );
+
+  const competitionTotal = useMemo(() => {
+    const chartData = buildChartData(
+      filteredSigmaPairs,
+      baselineExByType,
+      targetExByType,
+      sigmaStats
+    );
+    const last = [...chartData].reverse().find((p) => p.total !== undefined);
+    return last !== undefined ? (last.total as number) : null;
+  }, [filteredSigmaPairs, baselineExByType, targetExByType, sigmaStats]);
+
+  const dataUnit = filteredSigmaPairs[0]?.[1].unit ?? 'lbs';
+
   const tabFilters = useMemo(
     () =>
       Object.fromEntries(LIFT_TABS.map((t) => [t, tabState[t].filters])) as Record<
@@ -212,10 +235,12 @@ export function App() {
                   baselineNames={effectiveBaselineNames}
                   tabFilters={tabFilters}
                 />
+                <StrengthScoreCalculator competitionTotal={competitionTotal} unit={dataUnit} />
               </>
             ) : activeTab === 'sigma' ? (
               <SigmaTab
                 sigmaPairs={filteredSigmaPairs}
+                sigmaStats={sigmaStats}
                 effectiveBaselineNames={effectiveBaselineNames}
                 effectiveTargetNames={effectiveTargetNames}
                 dateRange={dateRange}
