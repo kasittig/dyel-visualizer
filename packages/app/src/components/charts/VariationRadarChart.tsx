@@ -1,53 +1,14 @@
 import { useMemo, useState } from 'react';
-import type React from 'react';
-import type { ComponentProps } from 'react';
-import {
-  PolarAngleAxis,
-  PolarGrid,
-  PolarRadiusAxis,
-  Radar,
-  RadarChart,
-  ResponsiveContainer,
-  Text,
-  Tooltip,
-} from 'recharts';
 import type { ConjugateExercise } from '@dyel/core';
 import { normalizeToBaseE1RM } from '@dyel/core';
 import type { ConjugateDataPair } from '../../hooks/conjugate/useConjugateData';
 import type { SessionStats } from '../../hooks/data/useLastSessionStats';
+import { BaseRadarChart } from './BaseRadarChart';
 import { TooltipCard } from './TooltipCard';
 import { distinctDisplayNames } from '../../utils/appUtils';
 import styles from './VariationRadarChart.module.css';
 
 const MIN_VARIATIONS = 3;
-
-interface CustomAxisTickProps {
-  x: number;
-  y: number;
-  cx: number;
-  cy: number;
-  textAnchor: 'start' | 'middle' | 'end' | 'inherit';
-  payload: { value: string; coordinate: number; index: number };
-}
-
-type RechartsTickParam = NonNullable<ComponentProps<typeof PolarAngleAxis>['tick']>;
-
-const renderCustomAxis = (props: CustomAxisTickProps): React.JSX.Element => {
-  const { payload, x, y, cx, cy, textAnchor } = props;
-  const offsetX = x + (x - cx) / 10;
-  const offsetY = y + (y - cy) / 10;
-  return (
-    <Text
-      x={offsetX}
-      y={offsetY}
-      textAnchor={textAnchor}
-      className="recharts-polar-angle-axis-tick-value"
-      fontSize={11}
-    >
-      {payload.value}
-    </Text>
-  );
-};
 
 export function VariationRadarChart({
   rows,
@@ -105,79 +66,50 @@ export function VariationRadarChart({
         <span className="tab-title-label">Normalized e1RM by variation</span>
       </button>
       {isExpanded && (
-        <div className={styles.chartWrapper}>
-          <ResponsiveContainer width="100%" height={340}>
-            <RadarChart
-              key={targetName}
-              data={data}
-              onClick={
-                onVariationClick
-                  ? (chartData) => {
-                      const name = chartData?.activeLabel;
-                      if (typeof name === 'string' && name) {
-                        onVariationClick(name);
-                      }
-                    }
-                  : undefined
+        <BaseRadarChart
+          data={data}
+          angleKey="variation"
+          unit={unit}
+          chartKey={targetName}
+          overlayDataKey={showTargetRing ? 'targetE1rm' : undefined}
+          onClick={onVariationClick}
+          tooltip={{
+            content: ({ payload }) => {
+              const item = payload?.find((p) => p.dataKey === 'e1rm');
+              if (!item) {
+                return null;
               }
-              style={{ cursor: onVariationClick ? 'pointer' : undefined }}
-            >
-              <PolarGrid />
-              <PolarAngleAxis
-                dataKey="variation"
-                tick={(props: RechartsTickParam) => renderCustomAxis(props as CustomAxisTickProps)}
-              />
-              <PolarRadiusAxis tick={{ fontSize: 10 }} unit={` ${unit}`} angle={90} />
-              <Radar dataKey="e1rm" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.25} />
-              {showTargetRing && (
-                <Radar
-                  dataKey="targetE1rm"
-                  stroke="#f97316"
-                  fill="none"
-                  strokeWidth={2}
-                  strokeDasharray="5 3"
-                  dot={false}
-                />
-              )}
-              <Tooltip
-                content={({ payload }) => {
-                  const item = payload?.find((p) => p.dataKey === 'e1rm');
-                  if (!item) {
-                    return null;
-                  }
-                  const name = (item.payload as { variation: string }).variation;
-                  const last = stats.lastSession.get(name);
-                  const lastDate = last?.date;
-                  const lastE1RM = last?.e1rm;
-                  const bestSet = last;
-                  const dateStr = lastDate
-                    ? lastDate.toLocaleDateString(undefined, {
-                        month: 'short',
-                        day: 'numeric',
-                        year: 'numeric',
-                      })
-                    : 'Never';
-                  return (
-                    <TooltipCard>
-                      <div className={styles.tooltipName}>{name}</div>
-                      <div>
-                        Normalized e1RM: {Number(item.value).toFixed(2)} {unit}
-                      </div>
-                      <div className={styles.tooltipMuted}>
-                        Last session:{' '}
-                        {lastE1RM !== undefined ? `${lastE1RM.toFixed(2)} ${unit} · ` : ''}
-                        {dateStr}
-                        {bestSet
-                          ? ` · ${bestSet.sets}×${bestSet.reps} @ ${bestSet.weight} ${unit}${bestSet.rpe != null ? ` · RPE ${bestSet.rpe}` : ''}`
-                          : ''}
-                      </div>
-                    </TooltipCard>
-                  );
-                }}
-              />
-            </RadarChart>
-          </ResponsiveContainer>
-        </div>
+              const name = (item.payload as { variation: string }).variation;
+              const last = stats.lastSession.get(name);
+              const lastDate = last?.date;
+              const lastE1RM = last?.e1rm;
+              const bestSet = last;
+              const dateStr = lastDate
+                ? lastDate.toLocaleDateString(undefined, {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric',
+                  })
+                : 'Never';
+              return (
+                <TooltipCard>
+                  <div className={styles.tooltipName}>{name}</div>
+                  <div>
+                    Normalized e1RM: {Number(item.value).toFixed(2)} {unit}
+                  </div>
+                  <div className={styles.tooltipMuted}>
+                    Last session:{' '}
+                    {lastE1RM !== undefined ? `${lastE1RM.toFixed(2)} ${unit} · ` : ''}
+                    {dateStr}
+                    {bestSet
+                      ? ` · ${bestSet.sets}×${bestSet.reps} @ ${bestSet.weight} ${unit}${bestSet.rpe != null ? ` · RPE ${bestSet.rpe}` : ''}`
+                      : ''}
+                  </div>
+                </TooltipCard>
+              );
+            },
+          }}
+        />
       )}
     </section>
   );

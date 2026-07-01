@@ -8,9 +8,9 @@
 
 ## Core Commands (Run from Root)
 
-- Build Shared Core: `npm run build --workspace=@dyel/core`
-- Build Vite App: `npm run build --workspace=@dyel/app`
-- Start App Dev: `npm run dev --workspace=@dyel/app`
+- Build Shared Core: `npm run build -w packages/core`
+- Build Vite App: `npm run build -w packages/app`
+- Start App Dev: `npm run dev -w packages/app`
 
 ## Strict Importing Rules
 
