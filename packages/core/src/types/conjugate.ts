@@ -14,6 +14,21 @@ export type ConjugateBar =
   | 'belt'
   | 'goblet';
 
+export const CONJUGATE_BARS = [
+  'ssb',
+  'american',
+  'swiss',
+  'cambered',
+  'standard',
+  'trap',
+  'zercher',
+  'duffalo',
+  'dumbbell',
+  'bamboo',
+  'belt',
+  'goblet',
+] as const satisfies readonly ConjugateBar[];
+
 // Different stances go here.
 // We expect the stance type to impact the lifter's leverages which impacts the amount of force that they can transfer to the weight lifted
 export type ConjugateStance =
@@ -30,6 +45,21 @@ export type ConjugateStance =
   | 'slingshot'
   | 'builder';
 
+export const CONJUGATE_STANCES = [
+  'close',
+  'narrow',
+  'sumo',
+  'conventional',
+  'competition',
+  'front',
+  'opposite',
+  'medium',
+  'wide',
+  'romanian',
+  'slingshot',
+  'builder',
+] as const satisfies readonly ConjugateStance[];
+
 // Different equipment types go here.
 // Changing the equipment changes where the lifter's body is positioned relative to the weight and the ground
 export type ConjugateEquipment =
@@ -43,9 +73,26 @@ export type ConjugateEquipment =
   | 'box'
   | 'rack';
 
+export const CONJUGATE_EQUIPMENT = [
+  'incline',
+  'decline',
+  'blocks',
+  'deficit',
+  'board',
+  'pause',
+  'floor',
+  'box',
+  'rack',
+] as const satisfies readonly ConjugateEquipment[];
+
 // This is where ways of adding additional weight to the bar go.
 // Additional weights can impact the stability of the bar and the effective amount of weight lifted.
 export type ConjugateAddlWt = 'bands' | 'rev. bands' | 'chains';
+export const CONJUGATE_ADDL_WTS = [
+  'bands',
+  'rev. bands',
+  'chains',
+] as const satisfies readonly ConjugateAddlWt[];
 export type LiftUnits = 'lbs' | 'kg';
 
 export interface TrainingSession {

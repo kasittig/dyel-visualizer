@@ -1,7 +1,7 @@
 .card {
   display: grid;
-  grid-template-columns: 190px 1fr;
-  max-width: 560px;
+  grid-template-columns: 260px 1fr;
+  max-width: 680px;
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: 6px;
@@ -48,10 +48,16 @@
   flex-direction: column;
 }
 
+.facetGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px 12px;
+}
+
 .chipGroup {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
 }
 
 .chip {
@@ -63,9 +69,10 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  padding: 3px 11px;
+  padding: 5px 11px;
   border-radius: 999px;
   cursor: pointer;
+  text-align: center;
   transition:
     background 0.15s,
     border-color 0.15s,

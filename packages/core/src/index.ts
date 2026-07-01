@@ -13,6 +13,12 @@ export type {
   GroupedConjugatePairs,
 } from './types/conjugate';
 export { variantLabel, familyKey } from './types/conjugate';
+export {
+  CONJUGATE_BARS,
+  CONJUGATE_STANCES,
+  CONJUGATE_EQUIPMENT,
+  CONJUGATE_ADDL_WTS,
+} from './types/conjugate';
 export type { LiftMetrics } from './types/metrics';
 
 export { calculateMetrics } from './utils/math/metrics';

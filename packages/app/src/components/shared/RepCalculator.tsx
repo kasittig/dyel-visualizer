@@ -5,8 +5,23 @@ import {
   predictWeightForReps,
   predictRepsForWeight,
   buildSessionStats,
+  familyKey,
+  CONJUGATE_BARS,
+  CONJUGATE_STANCES,
+  CONJUGATE_EQUIPMENT,
+  CONJUGATE_ADDL_WTS,
 } from '@dyel/core';
-import type { ConjugateDataPair, E1RMEstimate, LiftType, SessionStats } from '@dyel/core';
+import type {
+  ConjugateAddlWt,
+  ConjugateBar,
+  ConjugateDataPair,
+  ConjugateEquipment,
+  ConjugateExercise,
+  ConjugateStance,
+  E1RMEstimate,
+  LiftType,
+  SessionStats,
+} from '@dyel/core';
 import type { SplitRows } from '../../utils/appDataUtils';
 import { distinctDisplayNames, LIFT_TABS } from '../../utils/appUtils';
 import styles from './RepCalculator.module.css';
@@ -43,6 +58,10 @@ export function RepCalculator({
   const [selectedName, setSelectedName] = useState('');
   const [reps, setReps] = useState('');
   const [weight, setWeight] = useState('');
+  const [selectedBar, setSelectedBar] = useState<ConjugateBar | null>(null);
+  const [selectedStance, setSelectedStance] = useState<ConjugateStance | null>(null);
+  const [selectedEquipment, setSelectedEquipment] = useState<ConjugateEquipment | null>(null);
+  const [selectedAddlWt, setSelectedAddlWt] = useState<ConjugateAddlWt | null>(null);
 
   const { pairsByTab, statsByTab } = useMemo(() => {
     const today = new Date();
@@ -68,10 +87,17 @@ export function RepCalculator({
   );
 
   useEffect(() => {
+    const name = exercisesForType[0] ?? '';
+    const ex = pairs.find(([e]) => e.displayName === name)?.[0] ?? null;
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setSelectedName(exercisesForType[0] ?? '');
+    setSelectedName(name);
     setReps('');
     setWeight('');
+    setSelectedBar(ex?.bar ?? null);
+    setSelectedStance(ex?.stance ?? null);
+    setSelectedEquipment(ex?.equipment ?? null);
+    setSelectedAddlWt(ex?.addlWts[0] ?? null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [liftType, exercisesForType]);
 
   const selectedExercise = useMemo(
@@ -79,12 +105,67 @@ export function RepCalculator({
     [pairs, selectedName]
   );
 
-  const estimate = useMemo(() => {
+  function handleSelectedNameChange(name: string) {
+    setSelectedName(name);
+    const ex = pairs.find(([e]) => e.displayName === name)?.[0] ?? null;
+    setSelectedBar(ex?.bar ?? null);
+    setSelectedStance(ex?.stance ?? null);
+    setSelectedEquipment(ex?.equipment ?? null);
+    setSelectedAddlWt(ex?.addlWts[0] ?? null);
+  }
+
+  const facetExercise = useMemo(() => {
     if (!selectedExercise) {
       return null;
     }
-    return findBestE1RM(selectedExercise, stats, baselineNames[liftType], new Date());
-  }, [selectedExercise, stats, baselineNames, liftType]);
+    if (liftType === 'accessory') {
+      return selectedExercise;
+    }
+    const candidate = {
+      type: liftType,
+      bar: selectedBar,
+      stance: selectedStance,
+      equipment: selectedEquipment,
+    } as ConjugateExercise;
+    const addlWts = selectedAddlWt ? [selectedAddlWt] : [];
+    const match = pairs.find(
+      ([ex]) =>
+        familyKey(ex) === familyKey(candidate) &&
+        ex.addlWts.length === addlWts.length &&
+        (addlWts.length === 0 || ex.addlWts[0] === addlWts[0])
+    )?.[0];
+    if (match) {
+      return match;
+    }
+    return {
+      type: liftType,
+      bar: selectedBar,
+      stance: selectedStance,
+      equipment: selectedEquipment,
+      addlWts,
+      displayName: 'placeholder',
+      averageIndex: null,
+      expectedBaseline: null,
+      status: null,
+      diagnostic: null,
+      effects: [],
+    } satisfies ConjugateExercise;
+  }, [
+    selectedExercise,
+    liftType,
+    pairs,
+    selectedBar,
+    selectedStance,
+    selectedEquipment,
+    selectedAddlWt,
+  ]);
+
+  const estimate = useMemo(() => {
+    if (!facetExercise) {
+      return null;
+    }
+    return findBestE1RM(facetExercise, stats, baselineNames[liftType], new Date());
+  }, [facetExercise, stats, baselineNames, liftType]);
 
   // Keep a ref so the exercise-change effect always reads the current reps value
   // without reps being a dependency (which would cause circular updates when typing weight).
@@ -146,7 +227,7 @@ export function RepCalculator({
             <div className={styles.fieldLabel}>Exercise</div>
             <select
               value={selectedName}
-              onChange={(e) => setSelectedName(e.target.value)}
+              onChange={(e) => handleSelectedNameChange(e.target.value)}
               className={styles.input}
             >
               {exercisesForType.map((name) => (
@@ -156,6 +237,80 @@ export function RepCalculator({
               ))}
             </select>
           </div>
+
+          {liftType !== 'accessory' && (
+            <div className={styles.facetGrid}>
+              <div className={styles.field}>
+                <div className={styles.fieldLabel}>Bar</div>
+                <select
+                  value={selectedBar ?? ''}
+                  onChange={(e) => setSelectedBar((e.target.value || null) as ConjugateBar | null)}
+                  className={styles.input}
+                >
+                  <option value="">—</option>
+                  {CONJUGATE_BARS.map((b) => (
+                    <option key={b} value={b}>
+                      {b}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className={styles.field}>
+                <div className={styles.fieldLabel}>Stance</div>
+                <select
+                  value={selectedStance ?? ''}
+                  onChange={(e) =>
+                    setSelectedStance((e.target.value || null) as ConjugateStance | null)
+                  }
+                  className={styles.input}
+                >
+                  <option value="">—</option>
+                  {CONJUGATE_STANCES.map((s) => (
+                    <option key={s} value={s}>
+                      {s}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className={styles.field}>
+                <div className={styles.fieldLabel}>Equipment</div>
+                <select
+                  value={selectedEquipment ?? ''}
+                  onChange={(e) =>
+                    setSelectedEquipment((e.target.value || null) as ConjugateEquipment | null)
+                  }
+                  className={styles.input}
+                >
+                  <option value="">—</option>
+                  {CONJUGATE_EQUIPMENT.map((eq) => (
+                    <option key={eq} value={eq}>
+                      {eq}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className={styles.field}>
+                <div className={styles.fieldLabel}>Additional Weight</div>
+                <select
+                  value={selectedAddlWt ?? ''}
+                  onChange={(e) =>
+                    setSelectedAddlWt((e.target.value || null) as ConjugateAddlWt | null)
+                  }
+                  className={styles.input}
+                >
+                  <option value="">—</option>
+                  {CONJUGATE_ADDL_WTS.map((w) => (
+                    <option key={w} value={w}>
+                      {w}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className={styles.rightCol}>
