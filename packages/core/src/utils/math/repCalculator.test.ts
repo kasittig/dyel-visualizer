@@ -393,20 +393,45 @@ describe('findBestE1RM', () => {
     expect(result!.sourceName).toBe('Bench');
   });
 
+  it('returns the baseline last-performed date, not today', () => {
+    const compE1RM = 300;
+    const lastBenchDate = new Date('2024-01-15');
+    const stats = makeStats({
+      projectedE1RM: new Map([['Bench', compE1RM]]),
+      lastSession: new Map([['Bench', { ...sess(300, 1), date: lastBenchDate }]]),
+    });
+    const result = findBestE1RM(bench, stats, 'Bench', today);
+    expect(result).not.toBeNull();
+    expect(result!.date).toEqual(lastBenchDate);
+    expect(result!.date).not.toEqual(today);
+  });
+
+  it('falls back to today when the baseline has no lastSession entry', () => {
+    const compE1RM = 300;
+    const stats = makeStats({ projectedE1RM: new Map([['Bench', compE1RM]]) });
+    const result = findBestE1RM(bench, stats, 'Bench', today);
+    expect(result).not.toBeNull();
+    expect(result!.date).toEqual(today);
+  });
+
   it('returns comp * variantFactor for a non-chain variant', () => {
     const compE1RM = 300;
     const factor = 1.1;
+    const lastBenchDate = new Date('2024-01-15');
     const stats = makeStats({
       projectedE1RM: new Map([['Bench', compE1RM]]),
       variantFactor: new Map([
         ['Slingshot Bench', { factor, sampleCount: 3, label: 'Slingshot', baselineName: 'Bench' }],
       ]),
+      lastSession: new Map([['Bench', { ...sess(300, 1), date: lastBenchDate }]]),
     });
     const result = findBestE1RM(slingshotBench, stats, 'Bench', today);
     expect(result).not.toBeNull();
     expect(result!.e1rm).toBeCloseTo(compE1RM * factor);
     expect(result!.method).toBe('variantFactor');
     expect(result!.sourceName).toBe('Bench');
+    expect(result!.date).toEqual(lastBenchDate);
+    expect(result!.date).not.toEqual(today);
   });
 
   it('returns comp * factor - chainOffset for a chain variant', () => {

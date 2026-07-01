@@ -36,13 +36,15 @@ export function predictRepsForWeight(e1rm: number, weight: number): number {
 // e1RM and applying the empirically-fitted variant factor. For chain/band exercises the
 // chain-stripped factor is used, and the addlWt offset (effective chain weight) is then
 // subtracted — approximation valid because offset and e1RM share the same weight unit.
+// The returned `date` is the baseline's last-performed session date (falling back to
+// `today` if none is on record), not "today" — it tells the user how stale the anchor is.
 export function findBestE1RM(
   target: ConjugateExercise,
   stats: SessionStats,
   baselineNameForType: string | undefined,
   today: Date
 ): E1RMEstimate | null {
-  const { projectedE1RM, variantFactor, addlWtOffset } = stats;
+  const { projectedE1RM, variantFactor, addlWtOffset, lastSession } = stats;
   if (!baselineNameForType) {
     return null;
   }
@@ -52,8 +54,10 @@ export function findBestE1RM(
     return null;
   }
 
+  const sourceDate = lastSession.get(baselineNameForType)?.date ?? today;
+
   if (target.displayName === baselineNameForType) {
-    return { e1rm: compE1RM, date: today, sourceName: baselineNameForType, method: 'exact' };
+    return { e1rm: compE1RM, date: sourceDate, sourceName: baselineNameForType, method: 'exact' };
   }
 
   const vf = variantFactor.get(target.displayName);
@@ -70,7 +74,7 @@ export function findBestE1RM(
     }
   }
 
-  return { e1rm, date: today, sourceName: baselineNameForType, method: 'variantFactor' };
+  return { e1rm, date: sourceDate, sourceName: baselineNameForType, method: 'variantFactor' };
 }
 
 export function normalizeToBaseE1RM(
