@@ -9,9 +9,6 @@ Functions here should only return raw data without modifying it.
 ## Files
 
 - **`csvUtils.ts`** — Generic PapaParse wrappers with no domain knowledge: `extractCsvHeaders` finds a header line (optionally by keyword), `parseCsvRows` parses+maps rows with lowercased/trimmed headers and trimmed values.
-- **`types.ts`** — `RawRow` (`Record<string, string>`), the shape every row-level parser operates on.
-- **`csvExtract.ts`** — `extractCsvRows` finds the header row (first line containing "exercise") and parses everything below it via `csvUtils`. Shared entry point for both `parseConjugateData.ts` and `validateSheetCsv.ts` — they must never disagree on what counts as parseable.
+- **`csvExtract.ts`** — `extractCsvRows` finds the header row (first line containing "exercise") and parses everything below it via `csvUtils`, returning rows typed as `../types/RawRow.ts`'s `RawRow`. Shared entry point for both `parseConjugateData.ts` and `validateSheetCsv.ts` — they must never disagree on what counts as parseable.
 
-## Key invariants
-
-`detectWeightUnit` (in `parsers/detectWeightUnit.ts`) reads the unit from the column header suffix (`"weight (lbs)"` / `"weight (kg)"`), not from the values. If no unit annotation exists anywhere in the sheet, `parseConjugateData.ts` falls back every row to `'lbs'`.
+Note: the `RawRow` type itself lives in `../types/RawRow.ts`, not here — it's shared by `transform/parsers/` as well. Unit-detection and fallback behavior (`detectWeightUnit`) is documented in `transform/CLAUDE.md`, since that logic lives under `transform/`, not `extract/`.

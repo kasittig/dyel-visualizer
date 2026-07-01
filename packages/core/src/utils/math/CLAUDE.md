@@ -5,13 +5,13 @@ Core numerical computations for e1RM estimation and cross-exercise normalization
 ## Files
 
 - **`e1rm.ts`** — Epley formula and session-grid interpolation. `calcE1RM` / `invertE1RM` are the single source of truth for the formula — never inline it elsewhere.
-- **`repCalculator.ts`** — Cross-exercise e1RM estimation (`findBestE1RM`) and per-set normalization (`normalizeToBaseE1RM`). `findBestE1RM` takes `SessionStats`; `normalizeToBaseE1RM` takes `RepCalcStats`.
 - **`volume.ts`** — per-day tonnage totals from pre-filtered session pairs (`calculateVolumeCorrelation`). Takes `ConjugateDataPair[]` and sums every pair with no type filtering — callers pre-filter before calling.
+- **`metrics.ts`** — `calculateMetrics(bodyweight, total, gender, units)` computes dots/wilks/schwartzmalone scores and their percentiles (`LiftMetrics`). Uses the ambient global `__COEFFICIENTS__`, injected by the Vite build (same mechanism as `__MODIFIER__EFFECTS__` — see `utils/lifts/CLAUDE.md`).
+
+Cross-exercise e1RM estimation (`findBestE1RM`, `normalizeToBaseE1RM`) lives in `utils/stats/repCalculator.ts`, not here — it depends on `SessionStats` from `utils/stats/sessionIndex.ts`, so it belongs on the `stats/` side of the dependency line described in the parent `CLAUDE.md`.
 
 ## Key invariants
 
 `fitVariantFactor` stores a **ratio** (variant e1RM ÷ baseline e1RM); `fitAddlWtOffset` stores an **additive weight delta** (straight weight − variant bar weight). These are not interchangeable: variant factors are used for cross-family normalization, offsets for same-family addlWt adjustment.
 
-`findBestE1RM` always anchors to the comp baseline's `projectedE1RM` and applies the target's `variantFactor`. For chain/band exercises, the variant factor is chain-stripped (fitted on `adjustedSessions`) and the `addlWtOffset` is subtracted afterward as an approximation of the effective chain weight.
-
-`normalizeToBaseE1RM` must strip addlWt offsets from the source before dividing by the variant factor when doing cross-family normalization, because variant factors are fitted against chain-stripped weights in `buildSessionStats`.
+See `utils/stats/CLAUDE.md` for how `findBestE1RM` and `normalizeToBaseE1RM` (in `utils/stats/repCalculator.ts`) consume these values.

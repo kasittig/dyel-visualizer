@@ -1,6 +1,11 @@
 import { type ConjugateAddlWt, type ConjugateExercise } from '../../types/conjugate';
-import { BAR_DETECTORS, EQUIPMENT_DETECTORS, STANCE_DETECTORS, TYPE_DETECTORS } from './detectors';
-import type { Detector } from './detectors';
+import {
+  BAR_DETECTORS,
+  EQUIPMENT_DETECTORS,
+  STANCE_DETECTORS,
+  TYPE_DETECTORS,
+} from '../../types/detectors';
+import type { Detector } from '../../types/detectors';
 
 function makeParser<T>(detectors: Detector<T>): (lower: string, tokens: Set<string>) => T | null {
   return (lower, tokens) => detectors.find(([, detect]) => detect(lower, tokens))?.[0] ?? null;

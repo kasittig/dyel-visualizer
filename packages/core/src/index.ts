@@ -45,13 +45,13 @@ export { parseIndexCsv } from './transform/parseIndexCsv';
 
 export { filterByDateRange } from './utils/stats/exerciseFilters';
 
-export type { E1RMEstimate, RepCalcStats } from './utils/math/repCalculator';
+export type { E1RMEstimate, RepCalcStats } from './utils/stats/repCalculator';
 export {
   predictWeightForReps,
   predictRepsForWeight,
   findBestE1RM,
   normalizeToBaseE1RM,
-} from './utils/math/repCalculator';
+} from './utils/stats/repCalculator';
 
 export type { SessionStats, LastSession } from './utils/stats/sessionIndex';
 export { buildSessionStats, buildStraightByFamily } from './utils/stats/sessionIndex';
@@ -60,13 +60,12 @@ export { setsRepsLabel } from './utils/chart/setsRepsLabel';
 
 export { LINE_COLORS, formatDate } from './utils/chart/chartUtils';
 
-export type { ChartPoint } from './utils/chart/buildChartData';
-export { buildChartData } from './utils/chart/buildChartData';
+export type { ChartPoint } from './load/buildChartData';
+export { buildChartData } from './load/buildChartData';
 
-export type { VariationChartResult } from './utils/chart/buildVariationChartData';
-export { NORMALIZED_KEY, buildVariationChartData } from './utils/chart/buildVariationChartData';
+export type { VariationChartResult } from './load/buildVariationChartData';
+export { NORMALIZED_KEY, buildVariationChartData } from './load/buildVariationChartData';
 
-export { generateDiagnostics } from './utils/stats/diagnostics';
-
-export { defaultBaselineName, defaultCompExerciseName } from './utils/stats/defaultSelections';
+export { defaultBaselineName, defaultCompExerciseName } from './utils/lifts/defaultSelections';
 export { parseConjugateData } from './transform/parseConjugateData';
+export { generateDiagnostics } from './load/generateDiagnostics';

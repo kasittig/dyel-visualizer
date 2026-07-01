@@ -1,4 +1,4 @@
-import type { RawRow } from '../../extract/types';
+import type { RawRow } from '../../types/RawRow';
 
 export function findCol(row: RawRow, keyword: string): string | undefined {
   const re = new RegExp(`^${keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(\\W|$)`);

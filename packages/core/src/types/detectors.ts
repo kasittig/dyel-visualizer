@@ -3,7 +3,7 @@ import type {
   ConjugateEquipment,
   ConjugateExercise,
   ConjugateStance,
-} from '../../types/conjugate';
+} from './conjugate';
 
 export type Detector<T> = Array<[T, (lower: string, tokens: Set<string>) => boolean]>;
 

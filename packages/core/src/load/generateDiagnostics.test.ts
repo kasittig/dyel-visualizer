@@ -1,13 +1,13 @@
 import { describe, it, expect } from 'vitest';
-import { generateDiagnostics } from './diagnostics';
-import { buildSessionStats } from './sessionIndex';
-import { calcE1RM } from '../math/e1rm';
+import { buildSessionStats } from '../utils/stats/sessionIndex';
+import { calcE1RM } from '../utils/math/e1rm';
 import type {
   ConjugateDataPair,
   ConjugateExercise,
   LiftType,
   TrainingSession,
-} from '../../types/conjugate';
+} from '../types/conjugate';
+import { generateDiagnostics } from './generateDiagnostics';
 
 function ex(overrides: Partial<ConjugateExercise> = {}): ConjugateExercise {
   return {

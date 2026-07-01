@@ -3,7 +3,7 @@ import { detectWeightUnit } from './detectWeightUnit';
 import { calcE1RM } from '../../utils/math/e1rm';
 
 import { findCol } from './findCol';
-import type { RawRow } from '../../extract/types';
+import type { RawRow } from '../../types/RawRow';
 
 export type RawSession = Omit<TrainingSession, 'unit'> & { unit: 'lbs' | 'kg' | null };
 

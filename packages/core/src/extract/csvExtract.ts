@@ -1,5 +1,5 @@
 import { extractCsvHeaders, parseCsvRows } from './csvUtils';
-import type { RawRow } from './types';
+import type { RawRow } from '../types/RawRow';
 
 /**
  * Finds the header row (first line containing "exercise") and parses everything below it as

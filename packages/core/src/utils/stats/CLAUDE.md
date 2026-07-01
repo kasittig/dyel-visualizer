@@ -1,18 +1,17 @@
 # stats/
 
-Session-level aggregation, diagnostics, filtering, and default selection logic.
+Session-level aggregation, cross-exercise e1RM estimation, and filtering.
 
 ## Files
 
-- **`sessionIndex.ts`** — Builds `SessionStats`: last session per exercise, addlWt offsets, variant factors relative to each lift's baseline, and projected e1RM (today's interpolated value). This is the primary input to `math/repCalculator` and the chart builders.
-- **`diagnostics.ts`** — Compares each variation's measured variant factor against expected performance ranges from `__MODIFIER__EFFECTS__` (a build-time-injected global declared in `global.d.ts` at the repo root). Tags exercises as `'weakness'` / `'optimal'` / `'overtrained'`. Exercises with `addlWts` are excluded — accommodating resistance makes e1RM comparisons unreliable.
+- **`sessionIndex.ts`** — Builds `SessionStats`: last session per exercise, addlWt offsets, variant factors relative to each lift's baseline, and projected e1RM (today's interpolated value). This is the primary input to `repCalculator.ts` and the chart builders.
+- **`repCalculator.ts`** — Cross-exercise e1RM estimation (`findBestE1RM`) and per-set normalization (`normalizeToBaseE1RM`). `findBestE1RM` takes `SessionStats`; `normalizeToBaseE1RM` takes `RepCalcStats`. Imports `utils/math/e1rm` — this is the allowed direction (`stats/` depends on `math/`, never the reverse).
 - **`exerciseFilters.ts`** — Filters `ConjugateDataPair[]` by bar/stance/addlWts/equipment. The `excludeVolumeWork` flag (default `true`) drops multi-set primary lift sessions.
-- **`defaultSelections.ts`** — Picks the initial baseline (most recent by date, then e1RM) and target (prefers paused bench, then any clean competition-stance exercise, then the first row).
 
-## Key invariant — `__MODIFIER__EFFECTS__`
+Default selection logic (`defaultSelections.ts`) and deadlift-stance resolution (`resolveDeadliftStance.ts`) live in `utils/lifts/` — see its own `CLAUDE.md`.
 
-`diagnostics.ts` references `__MODIFIER__EFFECTS__` as a global. It is **not** a runtime import — it is injected by the Vite build via `vite.config.ts` `define`. The type declaration lives in `global.d.ts` at the repo root. The triple-slash reference at the top of `diagnostics.ts` pulls in that declaration for `tsc`.
+## Key invariants
 
-## Anchor detection
+`findBestE1RM` always anchors to the comp baseline's `projectedE1RM` and applies the target's `variantFactor`. For chain/band exercises, the variant factor is chain-stripped (fitted on `adjustedSessions`) and the `addlWtOffset` is subtracted afterward as an approximation of the effective chain weight.
 
-`generateDiagnostics` uses the private `isCompVariation` helper to decide whether an exercise seeds the anchor grid. An exercise is a competition variation (anchor) when: its `displayName` matches `anchorName`, OR it has standard bar + no addlWts + (no equipment OR pause bench) + (competition/null stance OR deadlift matching the user's primary stance). `isAnchor` is the exported wrapper around this logic.
+`normalizeToBaseE1RM` must strip addlWt offsets from the source before dividing by the variant factor when doing cross-family normalization, because variant factors are fitted against chain-stripped weights in `buildSessionStats`.

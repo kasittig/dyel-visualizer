@@ -13,35 +13,39 @@ Everything re-exported from `src/index.ts` is public. Key exports:
 | Parsing        | `parseConjugateData(csv): ConjugateDataPair[]`, `parseIndexCsv(csv): IndexEntry[]`                                                                                                               |
 | e1RM math      | `calcE1RM`, `invertE1RM`, `predictE1RM`, `fitVariantFactor`, `fitAddlWtOffset`, `normalizeToBaseE1RM`                                                                                            |
 | Volume math    | `calculateVolumeCorrelation`                                                                                                                                                                     |
-| Filters        | `applyFilters`, `emptyFilters`, `FilterState`                                                                                                                                                    |
+| Filters        | `filterByDateRange`                                                                                                                                                                              |
 | Rep calculator | `findBestE1RM`, `predictWeightForReps`, `predictRepsForWeight`, `E1RMEstimate`, `RepCalcStats`                                                                                                   |
 | Session stats  | `buildSessionStats`, `SessionStats`, `LastSession`                                                                                                                                               |
 | Chart data     | `buildChartData`, `ChartPoint`, `buildVariationChartData`, `VariationChartResult`, `NORMALIZED_KEY`                                                                                              |
 | Diagnostics    | `generateDiagnostics`                                                                                                                                                                            |
-| Selections     | `defaultBaselineName`, `defaultTargetName`                                                                                                                                                       |
+| Selections     | `defaultBaselineName`, `defaultCompExerciseName`                                                                                                                                                 |
 | Utilities      | `setsRepsLabel`, `formatDate`, `LINE_COLORS`                                                                                                                                                     |
 
 ## src/ top-level layout
 
-`src/` is organized ETL-style: `extract/`, `transform/`, and `load/` sit alongside `utils/`. Each has its own `CLAUDE.md`.
+`src/` is organized ETL-style: `extract/`, `transform/`, and `load/` sit alongside `utils/` and `types/`. Each has its own `CLAUDE.md`.
 
 | Directory    | Responsibility                                                                                                                                                       |
 | ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `extract/`   | Raw CSV ingestion — finding header rows, parsing rows, no domain knowledge                                                                                           |
 | `transform/` | Pure functions turning raw rows into structured data (exercise detection, session parsing, sheet validation); `transform/parsers/` holds its row/field-level helpers |
-| `load/`      | Serving transformed data to `@dyel/app` components (placeholder — no files yet)                                                                                      |
+| `load/`      | Serving transformed data to `@dyel/app` components (chart data builders, diagnostics)                                                                                |
+| `types/`     | Shared domain types (`ConjugateExercise`, `TrainingSession`, etc.), the `RawRow` shape, and exercise-name detector tables                                            |
+
+Data flows in order: `extract` -> `transform` -> `load`. Dependencies are only within a layer - any shared dependencies should be extracted into `utils/`.
 
 ## utils/ subdirectory layout
 
-`src/utils/` is organized into three subdirectories by data-flow layer. Each has its own `CLAUDE.md`.
+`src/utils/` is organized into subdirectories by data-flow layer. Each has its own `CLAUDE.md`.
 
 | Directory | Responsibility                                                        |
 | --------- | --------------------------------------------------------------------- |
 | `math/`   | Epley formula, session-grid interpolation, variant factor/offset math |
-| `stats/`  | Session aggregation, diagnostics, filtering, default selections       |
-| `chart/`  | Chart data builders, grid helpers, display utilities                  |
+| `stats/`  | Session aggregation, cross-exercise e1RM estimation, filtering        |
+| `lifts/`  | Default baseline/target selection, deadlift stance resolution         |
+| `chart/`  | Chart grid helpers and display utilities                              |
 
-Data flows in order: `extract/` → `transform/` (which also calls into `utils/math/` for `calcE1RM`) → `utils/stats/` → `utils/chart/`. Dependencies only go forward (or sideways within a layer) — `math/` does not import from `stats/` or `chart/`.
+Dependencies are only within a layer - `math/` does not import from `stats/`, `lifts/`, or `chart/`.
 
 ## Commands
 
