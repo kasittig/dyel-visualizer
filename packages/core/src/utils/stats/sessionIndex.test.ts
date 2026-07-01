@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { buildSessionStats } from './sessionIndex';
-import { nameToExercise } from '../parsing/parseConjugateData';
+import { nameToExercise } from '../../transform/parsers/nameToExercise';
 import type { ConjugateDataPair, TrainingSession } from '../../types/conjugate';
 
 function session(dateStr: string, weight: number, reps: number, sets = 1): TrainingSession {

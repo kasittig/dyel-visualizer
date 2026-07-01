@@ -21,18 +21,27 @@ Everything re-exported from `src/index.ts` is public. Key exports:
 | Selections     | `defaultBaselineName`, `defaultTargetName`                                                                                                                                                       |
 | Utilities      | `setsRepsLabel`, `formatDate`, `LINE_COLORS`                                                                                                                                                     |
 
+## src/ top-level layout
+
+`src/` is organized ETL-style: `extract/`, `transform/`, and `load/` sit alongside `utils/`. Each has its own `CLAUDE.md`.
+
+| Directory    | Responsibility                                                                                                                                                       |
+| ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `extract/`   | Raw CSV ingestion — finding header rows, parsing rows, no domain knowledge                                                                                           |
+| `transform/` | Pure functions turning raw rows into structured data (exercise detection, session parsing, sheet validation); `transform/parsers/` holds its row/field-level helpers |
+| `load/`      | Serving transformed data to `@dyel/app` components (placeholder — no files yet)                                                                                      |
+
 ## utils/ subdirectory layout
 
-`src/utils/` is organized into four subdirectories by data-flow layer. Each has its own `CLAUDE.md`.
+`src/utils/` is organized into three subdirectories by data-flow layer. Each has its own `CLAUDE.md`.
 
-| Directory  | Responsibility                                                        |
-| ---------- | --------------------------------------------------------------------- |
-| `math/`    | Epley formula, session-grid interpolation, variant factor/offset math |
-| `parsing/` | CSV ingestion, exercise name detection, sheet validation              |
-| `stats/`   | Session aggregation, diagnostics, filtering, default selections       |
-| `chart/`   | Chart data builders, grid helpers, display utilities                  |
+| Directory | Responsibility                                                        |
+| --------- | --------------------------------------------------------------------- |
+| `math/`   | Epley formula, session-grid interpolation, variant factor/offset math |
+| `stats/`  | Session aggregation, diagnostics, filtering, default selections       |
+| `chart/`  | Chart data builders, grid helpers, display utilities                  |
 
-Data flows in order: `parsing/` → `math/` → `stats/` → `chart/`. Dependencies only go forward (or sideways within a layer) — `math/` does not import from `stats/` or `chart/`.
+Data flows in order: `extract/` → `transform/` (which also calls into `utils/math/` for `calcE1RM`) → `utils/stats/` → `utils/chart/`. Dependencies only go forward (or sideways within a layer) — `math/` does not import from `stats/` or `chart/`.
 
 ## Commands
 

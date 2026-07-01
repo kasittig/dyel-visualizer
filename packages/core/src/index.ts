@@ -33,19 +33,15 @@ export {
 
 export { calculateVolumeCorrelation } from './utils/math/volume';
 
-export { parseConjugateData } from './utils/parsing/parseConjugateData';
-
 export type {
   SheetValidationResult,
   SheetValidationIssue,
   ColumnInfo,
-} from './utils/parsing/validateSheetCsv';
-export { validateSheetCsv } from './utils/parsing/validateSheetCsv';
+} from './transform/validateSheetCsv';
+export { validateSheetCsv } from './transform/validateSheetCsv';
 
-export type { IndexEntry } from './utils/parsing/parseIndexCsv';
-export { parseIndexCsv } from './utils/parsing/parseIndexCsv';
-
-export { extractCsvHeaders, parseCsvRows } from './utils/parsing/csvUtils';
+export type { IndexEntry } from './transform/parseIndexCsv';
+export { parseIndexCsv } from './transform/parseIndexCsv';
 
 export { filterByDateRange } from './utils/stats/exerciseFilters';
 
@@ -73,3 +69,4 @@ export { NORMALIZED_KEY, buildVariationChartData } from './utils/chart/buildVari
 export { generateDiagnostics } from './utils/stats/diagnostics';
 
 export { defaultBaselineName, defaultCompExerciseName } from './utils/stats/defaultSelections';
+export { parseConjugateData } from './transform/parseConjugateData';
