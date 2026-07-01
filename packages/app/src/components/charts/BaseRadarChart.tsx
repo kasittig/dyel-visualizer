@@ -56,6 +56,8 @@ export function BaseRadarChart({
   unit,
   tooltip = {},
   onClick,
+  chartKey,
+  overlayDataKey,
 }: {
   label?: string;
   data: object[];
@@ -63,6 +65,8 @@ export function BaseRadarChart({
   unit: string;
   tooltip?: React.ComponentProps<typeof Tooltip>;
   onClick?: (label: string) => void;
+  chartKey?: string | number;
+  overlayDataKey?: string;
 }) {
   return (
     <section className={styles.section}>
@@ -70,6 +74,7 @@ export function BaseRadarChart({
       <div className={styles.chartWrapper}>
         <ResponsiveContainer width="100%" height={340}>
           <RadarChart
+            key={chartKey}
             data={data}
             onClick={
               onClick
@@ -90,6 +95,16 @@ export function BaseRadarChart({
             />
             <PolarRadiusAxis tick={{ fontSize: 10 }} unit={` ${unit}`} angle={90} />
             <Radar dataKey="e1rm" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.25} />
+            {overlayDataKey && (
+              <Radar
+                dataKey={overlayDataKey}
+                stroke="#f97316"
+                fill="none"
+                strokeWidth={2}
+                strokeDasharray="5 3"
+                dot={false}
+              />
+            )}
             <Tooltip {...tooltip} />
           </RadarChart>
         </ResponsiveContainer>

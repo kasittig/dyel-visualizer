@@ -11,3 +11,5 @@ Reusable Recharts-based visualization components. Nothing here has page-level lo
 | `TooltipCard.tsx`         | Shared tooltip card rendered inside Recharts `<Tooltip>`                                  |
 | `TotalChart.tsx`          | Total-volume line chart; wraps `DateLineChart`                                            |
 | `VariationRadarChart.tsx` | Per-lift variation radar; wraps `BaseRadarChart` + `TooltipCard`; clickable wedges        |
+
+For design conventions, see CONVENTIONS.md.
