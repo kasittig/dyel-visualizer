@@ -2,6 +2,7 @@ import { nameToExercise } from './parsers/nameToExercise';
 import { extractCsvRows } from '../extract/csvExtract';
 import { detectWeightUnit } from './parsers/detectWeightUnit';
 import { findCol } from './parsers/findCol';
+import { findRepMaxCols } from './parsers/findRepMaxCols';
 
 export interface SheetValidationIssue {
   row: number;
@@ -15,6 +16,7 @@ export interface ColumnInfo {
   hasWeight: boolean;
   hasReps: boolean;
   hasSets: boolean;
+  hasRepMaxCols: boolean;
   weightUnit: 'lbs' | 'kg' | null;
 }
 
@@ -40,6 +42,7 @@ const emptyColumns: ColumnInfo = {
   hasWeight: false,
   hasReps: false,
   hasSets: false,
+  hasRepMaxCols: false,
   weightUnit: null,
 };
 
@@ -72,9 +75,18 @@ export function validateSheetCsv(csv: string): SheetValidationResult {
   const hasWeight = keys.some((k) => /^weight(\W|$)/.test(k));
   const hasReps = keys.includes('reps');
   const hasSets = keys.some((k) => /^sets(\W|$)/.test(k));
+  const hasRepMaxCols = keys.some((k) => /^\d+rm(\W|$)/.test(k));
   const weightUnit = detectWeightUnit(keys);
 
-  const columns: ColumnInfo = { hasExercise, hasDate, hasWeight, hasReps, hasSets, weightUnit };
+  const columns: ColumnInfo = {
+    hasExercise,
+    hasDate,
+    hasWeight,
+    hasReps,
+    hasSets,
+    hasRepMaxCols,
+    weightUnit,
+  };
 
   const issues: string[] = [];
   const warnings: string[] = [];
@@ -85,10 +97,12 @@ export function validateSheetCsv(csv: string): SheetValidationResult {
   if (!hasDate) {
     warnings.push("Missing column: 'date'. All sessions will be assigned today's date.");
   }
-  if (!hasWeight) {
-    issues.push("Missing required column: 'weight' — add a 'weight (lbs)' or 'weight (kg)' column");
+  if (!hasWeight && !hasRepMaxCols) {
+    issues.push(
+      "Missing required column: 'weight' — add a 'weight (lbs)'/'weight (kg)' column, or rep-max columns like '1RM', '3RM'"
+    );
   }
-  if (!hasReps) {
+  if (!hasReps && !hasRepMaxCols) {
     warnings.push("Missing column: 'reps'. Assuming one rep performed for all exercises.");
   }
 
@@ -106,12 +120,13 @@ export function validateSheetCsv(csv: string): SheetValidationResult {
 
   if (weightUnit === null) {
     warnings.push(
-      "Weight column has no unit — rename it to 'weight (lbs)' or 'weight (kg)' to be explicit. The app currently assumes lbs."
+      "Weight column has no unit — rename it to 'weight (lbs)' or 'weight (kg)' (or annotate rep-max columns, e.g. '1rm (kg)') to be explicit. The app currently assumes lbs."
     );
   }
 
   const liftTypes = emptyLiftTypes();
   let numParsed = 0;
+  let rowsFullyFailed = 0;
   const rowIssues: SheetValidationIssue[] = [];
 
   for (let i = 0; i < data.length; i++) {
@@ -132,20 +147,47 @@ export function validateSheetCsv(csv: string): SheetValidationResult {
       rowProblems.push(`Invalid date: "${dateStr}"`);
     }
 
-    const weightStr = findCol(row, 'weight') ?? '';
-    const weight = parseFloat(weightStr);
-    if (!weightStr) {
-      rowProblems.push('Weight is missing');
-    } else if (isNaN(weight)) {
-      rowProblems.push(`Invalid weight: "${weightStr}" (must be a number)`);
-    }
+    const repMaxCols = findRepMaxCols(row);
+    let sessionsInRow = 0;
 
-    const repsStr = row['reps']?.trim() ?? '';
-    const reps = parseInt(repsStr);
-    if (!repsStr) {
-      rowWarnings.push('Reps is missing. Will assume 1 rep was performed');
-    } else if (isNaN(reps) || reps <= 0) {
-      rowProblems.push(`Invalid reps: "${repsStr}" (must be a positive whole number)`);
+    if (repMaxCols.length > 0) {
+      for (const { reps, value } of repMaxCols) {
+        const trimmed = value.trim();
+        if (trimmed === '') {
+          continue;
+        }
+        const weight = parseFloat(trimmed);
+        if (isNaN(weight)) {
+          rowWarnings.push(
+            `Invalid ${reps}RM value: "${trimmed}" (must be a number) — this value will be skipped`
+          );
+        } else {
+          sessionsInRow++;
+        }
+      }
+      if (sessionsInRow === 0) {
+        rowProblems.push('No valid rep-max values provided');
+      }
+    } else {
+      const weightStr = findCol(row, 'weight') ?? '';
+      const weight = parseFloat(weightStr);
+      if (!weightStr) {
+        rowProblems.push('Weight is missing');
+      } else if (isNaN(weight)) {
+        rowProblems.push(`Invalid weight: "${weightStr}" (must be a number)`);
+      }
+
+      const repsStr = row['reps']?.trim() ?? '';
+      const reps = parseInt(repsStr);
+      if (!repsStr) {
+        rowWarnings.push('Reps is missing. Will assume 1 rep was performed');
+      } else if (isNaN(reps) || reps <= 0) {
+        rowProblems.push(`Invalid reps: "${repsStr}" (must be a positive whole number)`);
+      }
+
+      if (rowProblems.length === 0) {
+        sessionsInRow = 1;
+      }
     }
 
     const rpeStr = row['rpe']?.trim() ?? '';
@@ -157,6 +199,7 @@ export function validateSheetCsv(csv: string): SheetValidationResult {
     }
 
     if (rowProblems.length > 0) {
+      rowsFullyFailed++;
       if (rowIssues.length < MAX_ROW_ISSUES) {
         rowIssues.push({ row: rowNum, exercise: exerciseName || '(empty)', issues: rowProblems });
       }
@@ -164,10 +207,10 @@ export function validateSheetCsv(csv: string): SheetValidationResult {
       if (rowWarnings.length > 0) {
         rowIssues.push({ row: rowNum, exercise: exerciseName, issues: rowWarnings });
       }
-      numParsed++;
+      numParsed += sessionsInRow;
       const ex = nameToExercise(exerciseName);
       if (ex) {
-        liftTypes[ex.type]++;
+        liftTypes[ex.type] += sessionsInRow;
       }
     }
   }
@@ -180,12 +223,11 @@ export function validateSheetCsv(csv: string): SheetValidationResult {
     issues.push(
       `None of the ${total} data row${total === 1 ? '' : 's'} could be parsed. See row issues below.`
     );
-  } else if (numParsed < total) {
-    const skipped = total - numParsed;
+  } else if (rowsFullyFailed > 0) {
     warnings.push(
-      `${skipped} of ${total} row${skipped === 1 ? '' : 's'} couldn't be parsed and will be skipped.`
+      `${rowsFullyFailed} of ${total} row${rowsFullyFailed === 1 ? '' : 's'} couldn't be parsed and will be skipped.`
     );
-    if (total - numParsed > MAX_ROW_ISSUES) {
+    if (rowsFullyFailed > MAX_ROW_ISSUES) {
       warnings.push(`Showing the first ${MAX_ROW_ISSUES} row errors — fix these and re-validate.`);
     }
   }
