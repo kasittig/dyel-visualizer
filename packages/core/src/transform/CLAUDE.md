@@ -6,11 +6,13 @@ This handles data cleaning, validation, type casting, and mapping.
 
 ## Files
 
-- **`parseConjugateData.ts`** — `parseConjugateData(csv)`: the main entry point. Orchestrates `extractCsvRows` → `parsers/nameToExercise` → `parsers/parseSession` into `Array<[ConjugateExercise, TrainingSession]>`.
-- **`validateSheetCsv.ts`** — Full structural validation on top of `extractCsvRows`. Returns a verdict (`'ok'` / `'warning'` / `'error'`) plus per-column presence flags, row counts by lift type, and per-row issues (capped at 10).
+- **`parseConjugateData.ts`** — `parseConjugateData(csv)`: the main entry point. Orchestrates `extractCsvRows` → `parsers/nameToExercise` → `parsers/parseSessions` into `Array<[ConjugateExercise, TrainingSession]>`. A single row can expand into multiple pairs (see rep-max invariant below).
+- **`validateSheetCsv.ts`** — Full structural validation on top of `extractCsvRows`. Returns a verdict (`'ok'` / `'warning'` / `'error'`) plus per-column presence flags, row counts by lift type, and per-row issues (capped at 10). `rows.parsed`/`liftTypes` count sessions (post rep-max expansion), not raw rows, to stay in sync with `parseConjugateData`.
 - **`parseIndexCsv.ts`** — Parses the two-column (`name`, `url`) index CSV into `IndexEntry[]`.
 - **`parsers/`** — row/field-level parsing logic used by `parseConjugateData.ts` and `validateSheetCsv.ts`. See its own `CLAUDE.md`.
 
-## Key invariant
+## Key invariants
 
-`detectWeightUnit` (in `parsers/detectWeightUnit.ts`) reads the unit from the column header suffix (`"weight (lbs)"` / `"weight (kg)"`), not from the values. If no unit annotation exists anywhere in the sheet, `parseConjugateData.ts` falls back every row to `'lbs'`.
+`detectWeightUnit` (in `parsers/detectWeightUnit.ts`) reads the unit from the column header suffix (`"weight (lbs)"` / `"weight (kg)"`, or a rep-max column like `"1rm (kg)"`), not from the values. If no unit annotation exists anywhere in the sheet, `parseConjugateData.ts` falls back every row to `'lbs'`.
+
+Sheets may use rep-max columns (`1RM`, `3RM`, `5RM`, ...) instead of literal `weight`/`reps` columns — each populated `NRM` cell on a row is its own weight-at-N-reps data point. `parsers/parseSessions.ts` dispatches per row: if any rep-max columns are populated, it expands the row into one `TrainingSession` per populated cell (via `parsers/parseRepMaxSessions.ts`) instead of the single-session `parsers/parseSession.ts` path. This is why `parseConjugateData.ts` and `validateSheetCsv.ts` must treat "row" and "session" as different counts.
