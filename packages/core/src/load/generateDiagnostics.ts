@@ -1,32 +1,15 @@
-// eslint-disable-next-line @typescript-eslint/triple-slash-reference
-/// <reference path="../../../../../global.d.ts" />
-
 import type {
   ConjugateDataPair,
   ConjugateExercise,
   DeadliftStancePreference,
   EffectEnum,
-} from '../../types/conjugate';
-import type { RepCalcStats } from '../math/repCalculator';
+} from '../types/conjugate';
+import type { RepCalcStats } from '../utils/stats/repCalculator';
+import { resolveDeadliftStance } from '../utils/lifts/resolveDeadliftStance';
 
 type ModifierEffectEntry =
   | { effects: EffectEnum[]; min: number; max: number }
   | { effects: EffectEnum[] };
-
-// Resolves a deadlift's actual stance (sumo or conventional) accounting for
-// 'opposite' and null stances relative to the user's primary preference.
-function resolveDeadliftStance(
-  ex: ConjugateExercise,
-  deadliftStance: DeadliftStancePreference
-): 'sumo' | 'conventional' {
-  if (ex.stance === 'sumo' || ex.stance === 'conventional') {
-    return ex.stance;
-  }
-  if (ex.stance === 'opposite') {
-    return deadliftStance === 'sumo' ? 'conventional' : 'sumo';
-  }
-  return deadliftStance;
-}
 
 export function generateDiagnostics(
   pairs: ConjugateDataPair[],

@@ -1,5 +1,5 @@
-import type { LiftUnits } from '../../types/conjugate.ts';
-import type { LiftMetrics } from '../../types/metrics.ts';
+import type { LiftUnits } from '../../types/conjugate';
+import type { LiftMetrics } from '../../types/metrics';
 
 function convertUnits(value: number, inputUnit: LiftUnits, outputUnit: LiftUnits): number {
   if (inputUnit === outputUnit) {

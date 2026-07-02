@@ -1,9 +1,9 @@
-import type { ConjugateDataPair, ConjugateExercise } from '../../types/conjugate';
-import type { RepCalcStats } from '../math/repCalculator';
-import { normalizeToBaseE1RM } from '../math/repCalculator';
-import { localDateKey } from '../math/volume';
+import type { ConjugateDataPair, ConjugateExercise } from '../types/conjugate';
+import type { RepCalcStats } from '../utils/stats/repCalculator';
+import { normalizeToBaseE1RM } from '../utils/stats/repCalculator';
+import { localDateKey } from '../utils/math/volume';
 import type { ChartPoint } from './buildChartData';
-import { recordMax, sortedGridDates, type DateValueGrid } from './chartGrid';
+import { recordMax, sortedGridDates, type DateValueGrid } from '../utils/chart/chartGrid';
 
 export const NORMALIZED_KEY = '__normalized__';
 

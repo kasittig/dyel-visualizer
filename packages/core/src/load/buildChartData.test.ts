@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { buildChartData } from './buildChartData';
-import type { ConjugateDataPair, ConjugateExercise } from '../../types/conjugate';
-import type { RepCalcStats } from './repCalculator';
+import type { ConjugateDataPair, ConjugateExercise } from '../types/conjugate';
+import type { RepCalcStats } from '../utils/stats/repCalculator';
 
 const emptyStats: RepCalcStats = {
   addlWtOffset: new Map(),

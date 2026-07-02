@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { buildVariationChartData, NORMALIZED_KEY } from './buildVariationChartData';
-import type { ConjugateDataPair } from '../../types/conjugate';
-import type { RepCalcStats } from './repCalculator';
+import type { ConjugateDataPair } from '../types/conjugate';
+import type { RepCalcStats } from '../utils/stats/repCalculator';
 
 const emptyStats: RepCalcStats = {
   addlWtOffset: new Map(),

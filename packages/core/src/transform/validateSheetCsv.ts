@@ -1,5 +1,7 @@
-import { findCol, nameToExercise } from './parseConjugateData';
-import { parseSheetRows, detectWeightUnit } from './sheetRows';
+import { nameToExercise } from './parsers/nameToExercise';
+import { extractCsvRows } from '../extract/csvExtract';
+import { detectWeightUnit } from './parsers/detectWeightUnit';
+import { findCol } from './parsers/findCol';
 
 export interface SheetValidationIssue {
   row: number;
@@ -46,7 +48,7 @@ function emptyLiftTypes() {
 }
 
 export function validateSheetCsv(csv: string): SheetValidationResult {
-  const sheet = parseSheetRows(csv);
+  const sheet = extractCsvRows(csv);
 
   if (!sheet) {
     return {

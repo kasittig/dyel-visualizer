@@ -7,7 +7,7 @@ import {
   fitVariantVelocity,
   predictE1RM,
 } from '../math/e1rm';
-import type { RepCalcStats } from '../math/repCalculator';
+import type { RepCalcStats } from './repCalculator';
 
 export interface LastSession {
   date: Date;

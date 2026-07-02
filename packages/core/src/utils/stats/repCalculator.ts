@@ -1,7 +1,7 @@
-import { calcE1RM, invertE1RM } from './e1rm';
+import { calcE1RM, invertE1RM } from '../math/e1rm';
 import { familyKey } from '../../types/conjugate';
 import type { ConjugateExercise, TrainingSession } from '../../types/conjugate';
-import type { SessionStats } from '../stats/sessionIndex';
+import type { SessionStats } from './sessionIndex';
 
 export interface E1RMEstimate {
   e1rm: number;

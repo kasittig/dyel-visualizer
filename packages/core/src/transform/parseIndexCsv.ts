@@ -1,4 +1,4 @@
-import { parseCsvRows } from './csvUtils';
+import { parseCsvRows } from '../extract/csvUtils';
 
 export interface IndexEntry {
   name: string;

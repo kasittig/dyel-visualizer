@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { normalizeToBaseE1RM, findBestE1RM } from './repCalculator';
-import { calcE1RM } from './e1rm';
+import { calcE1RM } from '../math/e1rm';
 import type { ConjugateExercise, TrainingSession } from '../../types/conjugate';
 import type { RepCalcStats } from './repCalculator';
-import type { SessionStats } from '../stats/sessionIndex';
+import type { SessionStats } from './sessionIndex';
 
 function sess(weight: number, reps: number, rpe?: number | null): TrainingSession {
   return { weight, reps, rpe: rpe ?? null, sets: 1, e1rm: 0, unit: 'lbs', date: new Date() };
