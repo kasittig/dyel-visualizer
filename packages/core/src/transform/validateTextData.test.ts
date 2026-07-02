@@ -32,6 +32,13 @@ describe('validateTextData', () => {
     expect(r.rows.parsed).toBe(0);
   });
 
+  it('handles rep-max lines', () => {
+    const r = validateTextData('comp squat 1rm 405lbs');
+    expect(r.verdict).toBe('ok');
+    expect(r.rows.parsed).toBe(1);
+    expect(r.rows.liftTypes.squat).toBe(1);
+  });
+
   it('handles a line with an explicit date', () => {
     const r = validateTextData('comp squat 405lbs x2 2024-11-04');
     expect(r.verdict).toBe('ok');

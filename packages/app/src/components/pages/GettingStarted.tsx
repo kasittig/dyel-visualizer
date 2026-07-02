@@ -36,6 +36,10 @@ export function GettingStarted({ mode }: { mode: InputMode }) {
               <code>exercise weight[unit] [xreps]</code>, e.g. <code>comp squat 405lbs x2</code>{' '}
               (reps optional, unit defaults to lbs).
             </li>
+            <li className={styles.step}>
+              <strong>Or log a rep max</strong> — <code>exercise Nrm weight[unit]</code>, e.g.{' '}
+              <code>comp squat 1rm 405lbs</code>.
+            </li>
             <li>
               <strong>Add a date if you want one</strong> — drop a date anywhere in the line, e.g.{' '}
               <code>comp squat 405lbs x2 2024-11-04</code>. If omitted, it defaults to today.

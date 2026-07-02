@@ -2,6 +2,39 @@ import { describe, expect, it } from 'vitest';
 import { textLineToRow } from './textLineToRow';
 
 describe('textLineToRow', () => {
+  describe('rep-max grammar', () => {
+    it('parses an exercise name with a unit-annotated rep-max as weight/reps', () => {
+      expect(textLineToRow('comp squat 1rm 300lbs')).toEqual({
+        exercise: 'comp squat',
+        'weight (lbs)': '300',
+        reps: '1',
+      });
+    });
+
+    it('parses kg', () => {
+      expect(textLineToRow('comp bench 3rm 140kg')).toEqual({
+        exercise: 'comp bench',
+        'weight (kg)': '140',
+        reps: '3',
+      });
+    });
+
+    it('parses without a unit', () => {
+      expect(textLineToRow('comp deadlift 5rm 405')).toEqual({
+        exercise: 'comp deadlift',
+        weight: '405',
+        reps: '5',
+      });
+    });
+
+    it('does not treat a token that only looks like a rep-max token as one', () => {
+      expect(textLineToRow('comp squat 1rmx 300')).toEqual({
+        exercise: 'comp squat 1rmx',
+        weight: '300',
+      });
+    });
+  });
+
   describe('plain weight/reps grammar', () => {
     it('parses weight, unit, and reps', () => {
       expect(textLineToRow('bench 225lbs x5')).toEqual({
@@ -100,6 +133,15 @@ describe('textLineToRow', () => {
         'weight (lbs)': '225',
         reps: '5',
         date: `${expectedYear}-02-05`,
+      });
+    });
+
+    it('parses a rep-max line with a date', () => {
+      expect(textLineToRow('2026-02-05 comp squat 1rm 300lbs')).toEqual({
+        exercise: 'comp squat',
+        'weight (lbs)': '300',
+        reps: '1',
+        date: '2026-02-05',
       });
     });
 

@@ -292,7 +292,7 @@ export function ValidatorPage() {
           <textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
-            placeholder={'comp squat 300lbs x1\ncomp bench 200lbs x1'}
+            placeholder={'comp squat 1rm 300lbs\ncomp bench 1rm 200lbs'}
             className={styles.textArea}
             rows={6}
           />

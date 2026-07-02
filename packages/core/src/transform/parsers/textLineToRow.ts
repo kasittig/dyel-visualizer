@@ -4,13 +4,15 @@ import { extractDateToken } from './dateToken';
 const WEIGHT_TOKEN_RE = /^(\d+(?:\.\d+)?)(lbs|kg)?$/i;
 const REPS_TOKEN_RE = /^x(\d+)$/i;
 const SETS_REPS_TOKEN_RE = /^(\d+)x(\d+)$/i;
+const REP_MAX_TOKEN_RE = /^(\d+)rm$/i;
 
 /**
  * Adapts a single pasted text line into a `RawRow` using the same column-key convention as
  * the CSV pipeline (unit lives in the key, e.g. `"weight (lbs)"`), so `detectWeightUnit`,
  * `nameToExercise`, and `parseSession` can be reused unchanged. First extracts an optional
  * date token (anywhere in the line, via `extractDateToken`) into the `date` key
- * `parseSessionDate` already reads, then tries the sets-by-reps grammar
+ * `parseSessionDate` already reads, then tries the rep-max grammar
+ * (`"<exercise> <N>rm <weight><unit>"`), then the sets-by-reps grammar
  * (`"<exercise> [-] <sets>x<reps> @ <weight><unit>"`), falling back to the plain weight/reps
  * grammar (`"<exercise> <weight><unit> x<reps>"`, reps optional).
  *
@@ -23,6 +25,18 @@ export function textLineToRow(line: string): RawRow | null {
   const tokens = remainder.trim().split(/\s+/);
   if (tokens.length < 2) {
     return null;
+  }
+
+  if (tokens.length >= 3) {
+    const repMaxMatch = REP_MAX_TOKEN_RE.exec(tokens[tokens.length - 2]);
+    const weightMatch = WEIGHT_TOKEN_RE.exec(tokens[tokens.length - 1]);
+    if (repMaxMatch && weightMatch) {
+      const exercise = tokens.slice(0, -2).join(' ');
+      const [, reps] = repMaxMatch;
+      const [, weight, unit] = weightMatch;
+      const key = unit ? `weight (${unit.toLowerCase()})` : 'weight';
+      return { exercise, [key]: weight, reps, ...dateField };
+    }
   }
 
   if (tokens.length >= 4) {
