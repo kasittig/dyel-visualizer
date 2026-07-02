@@ -58,9 +58,9 @@ describe('parseConjugateData', () => {
     expect(result).toHaveLength(0);
   });
 
-  it('skips rows with missing or zero reps', () => {
+  it('skips rows with zero reps, assumes 1 for rows with no reps given', () => {
     const result = parseConjugateData(csv('2024-01-01,Squat,3,,315', '2024-01-01,Squat,3,0,315'));
-    expect(result).toHaveLength(0);
+    expect(result).toHaveLength(1);
   });
 
   it('parses a plain squat row', () => {

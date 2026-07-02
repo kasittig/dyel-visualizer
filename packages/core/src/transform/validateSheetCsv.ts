@@ -89,7 +89,7 @@ export function validateSheetCsv(csv: string): SheetValidationResult {
     issues.push("Missing required column: 'weight' — add a 'weight (lbs)' or 'weight (kg)' column");
   }
   if (!hasReps) {
-    issues.push("Missing required column: 'reps'");
+    warnings.push("Missing column: 'reps'. Assuming one rep performed for all exercises.");
   }
 
   if (issues.length > 0) {
@@ -143,7 +143,7 @@ export function validateSheetCsv(csv: string): SheetValidationResult {
     const repsStr = row['reps']?.trim() ?? '';
     const reps = parseInt(repsStr);
     if (!repsStr) {
-      rowProblems.push('Reps is missing');
+      rowWarnings.push('Reps is missing. Will assume 1 rep was performed');
     } else if (isNaN(reps) || reps <= 0) {
       rowProblems.push(`Invalid reps: "${repsStr}" (must be a positive whole number)`);
     }
