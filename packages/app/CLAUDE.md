@@ -18,6 +18,7 @@ Single-page React app with no backend. All data comes from a user-supplied Googl
 
 - `?page=conjugate` (or `/conjugate`) → `ConjugateInfoPage` (renders `CONJUGATE.md` as markdown)
 - `?page=index` (or `/index`) → `IndexPage` (list of linked sheets fetched from a hardcoded published index sheet)
+- `?page=text` (or `/text`) → `TextInputPage` (paste-text input; extracts raw lines via `extractTextLines` from `@dyel/core`)
 - no `?page=` → `App` (main visualizer)
 
 **Data flow (`App.tsx`):**

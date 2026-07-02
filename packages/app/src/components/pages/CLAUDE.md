@@ -8,6 +8,7 @@ Top-level page and tab-panel components. These are the entry points rendered by 
 | `IndexPage.tsx`      | Landing page listing linked sheets; fetches from the hardcoded published index sheet via `useIndexData`                     |
 | `LiftTabPanel.tsx`   | Per-lift tab: composes `ConjugateCharts` + `VariationRadarChart` + `DiagnosticsPanel` with shared variation-highlight state |
 | `SigmaTab.tsx`       | "Σ" overview tab: `TotalChart` + `SessionBarChart` + `SigmaRadarChart` across all lift types                                |
+| `TextInputPage.tsx`  | Paste-text input page; calls `extractTextLines` from `@dyel/core` directly and renders the resulting lines                  |
 | `ValidatorPage.tsx`  | Sheet validator page; uses `useSheetValidation`                                                                             |
 
-`main.tsx` lazy-imports `ConjugateInfoPage`, `IndexPage`, and `ValidatorPage` by page query param.
+`main.tsx` lazy-imports `ConjugateInfoPage`, `IndexPage`, `TextInputPage`, and `ValidatorPage` by page query param.

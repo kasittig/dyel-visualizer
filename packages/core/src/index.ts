@@ -69,3 +69,6 @@ export { NORMALIZED_KEY, buildVariationChartData } from './load/buildVariationCh
 export { defaultBaselineName, defaultCompExerciseName } from './utils/lifts/defaultSelections';
 export { parseConjugateData } from './transform/parseConjugateData';
 export { generateDiagnostics } from './load/generateDiagnostics';
+
+export type { TextFieldInput } from './types/TextFieldInput';
+export { extractTextLines } from './extract/textExtract';
