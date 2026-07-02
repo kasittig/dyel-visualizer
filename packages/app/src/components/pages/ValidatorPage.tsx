@@ -2,12 +2,7 @@ import { useState, useEffect, useRef, type CSSProperties } from 'react';
 import clsx from 'clsx';
 import { useSheetValidation } from '../../hooks/infra/useSheetValidation';
 import { useTextValidation } from '../../hooks/infra/useTextValidation';
-import type {
-  SheetValidationResult,
-  ColumnInfo,
-  TextValidationResult,
-  TextValidationIssue,
-} from '@dyel/core';
+import type { SheetValidationResult, ColumnInfo } from '@dyel/core';
 import { EXAMPLE_SHEET_URL } from '../../utils/appUtils';
 import type { InputMode } from '../../utils/appUtils';
 import styles from './ValidatorPage.module.css';
@@ -20,25 +15,7 @@ function Check({ ok }: { ok: boolean }) {
   );
 }
 
-const SHEET_VERDICT_MESSAGES = {
-  ok: 'Your sheet is compatible with DYEL Visualizer.',
-  warning: 'Your sheet will mostly work, but there are some issues to review.',
-  error: "Your sheet won't work with DYEL Visualizer. See the issues below.",
-};
-
-const TEXT_VERDICT_MESSAGES = {
-  ok: 'Your pasted text is compatible with DYEL Visualizer.',
-  warning: 'Your pasted text will mostly work, but there are some issues to review.',
-  error: "Your pasted text won't work with DYEL Visualizer. See the issues below.",
-};
-
-function VerdictBanner({
-  verdict,
-  messages,
-}: {
-  verdict: 'ok' | 'warning' | 'error';
-  messages: { ok: string; warning: string; error: string };
-}) {
+function VerdictBanner({ verdict }: { verdict: 'ok' | 'warning' | 'error' }) {
   const color =
     verdict === 'ok'
       ? 'var(--success)'
@@ -46,6 +23,12 @@ function VerdictBanner({
         ? 'var(--warning)'
         : 'var(--danger)';
   const icon = verdict === 'ok' ? '✓' : verdict === 'warning' ? '⚠' : '✗';
+
+  const messages = {
+    ok: 'Your data is compatible with DYEL Visualizer.',
+    warning: 'Your data will mostly work, but there are some issues to review.',
+    error: "Your data won't work with DYEL Visualizer. See the issues below.",
+  };
 
   return (
     <div className={styles.verdictBanner} style={{ '--verdict-color': color } as CSSProperties}>
@@ -88,13 +71,7 @@ function ColumnChecklist({ columns }: { columns: ColumnInfo }) {
   );
 }
 
-function RowSummary({
-  rows,
-  unit = 'row',
-}: {
-  rows: SheetValidationResult['rows'] | TextValidationResult['lines'];
-  unit?: 'row' | 'line';
-}) {
+function RowSummary({ rows }: { rows: SheetValidationResult['rows'] }) {
   if (rows.total === 0) {
     return null;
   }
@@ -103,13 +80,12 @@ function RowSummary({
 
   return (
     <section className={styles.section}>
-      <h2 className={styles.sectionHeading}>{unit === 'row' ? 'Rows' : 'Lines'}</h2>
+      <h2 className={styles.sectionHeading}>{'Entries'}</h2>
       <p className={styles.rowCountP}>
         <strong>
           {parsed} of {total}
         </strong>{' '}
-        {unit}
-        {total === 1 ? '' : 's'} parsed successfully
+        {total === 1 ? 'entry' : 'entries'} parsed successfully
         {skipped > 0 && <span className={styles.skipped}>({skipped} skipped)</span>}
       </p>
       {parsed > 0 && (
@@ -152,67 +128,12 @@ function RowIssueList({ rowIssues }: { rowIssues: SheetValidationResult['rowIssu
   }
   return (
     <section className={styles.section}>
-      <h2 className={styles.dangerHeading}>Row Issues</h2>
+      <h2 className={styles.dangerHeading}>Entry Issues</h2>
       <div className={styles.rowIssueStack}>
-        {rowIssues.map(
-          ({ row, exercise, issues }: { row: number; exercise: string; issues: string[] }) => (
-            <div key={row} className={styles.rowIssueCard}>
-              <div className={styles.rowIssueHeader}>
-                Data row {row} <span className={styles.rowIssueExercise}>— {exercise}</span>
-              </div>
-              <ul className={styles.rowIssueUl}>
-                {issues.map((issue: string, i: number) => (
-                  <li key={i} className={styles.rowIssueLi}>
-                    {issue}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )
-        )}
-      </div>
-    </section>
-  );
-}
-
-function ValidationResults({
-  result,
-  sheetUrl,
-}: {
-  result: SheetValidationResult;
-  sheetUrl: string;
-}) {
-  const visualizerUrl = `${window.location.pathname}?sheet=${encodeURIComponent(sheetUrl)}`;
-
-  return (
-    <div>
-      <VerdictBanner verdict={result.verdict} messages={SHEET_VERDICT_MESSAGES} />
-      <ColumnChecklist columns={result.columns} />
-      <RowSummary rows={result.rows} unit="row" />
-      <IssueList title="Issues to Fix" items={result.issues} color="var(--danger)" />
-      <RowIssueList rowIssues={result.rowIssues} />
-      <IssueList title="Warnings" items={result.warnings} color="var(--warning)" />
-      {result.rows.parsed > 0 && (
-        <a href={visualizerUrl} className={styles.visualizerLink}>
-          View in Visualizer →
-        </a>
-      )}
-    </div>
-  );
-}
-
-function LineIssueList({ lineIssues }: { lineIssues: TextValidationIssue[] }) {
-  if (lineIssues.length === 0) {
-    return null;
-  }
-  return (
-    <section className={styles.section}>
-      <h2 className={styles.dangerHeading}>Line Issues</h2>
-      <div className={styles.rowIssueStack}>
-        {lineIssues.map(({ line, exercise, issues }) => (
-          <div key={line} className={styles.rowIssueCard}>
+        {rowIssues.map(({ row, exercise, issues }) => (
+          <div key={row} className={styles.rowIssueCard}>
             <div className={styles.rowIssueHeader}>
-              Line {line} <span className={styles.rowIssueExercise}>— {exercise}</span>
+              Entry {row} <span className={styles.rowIssueExercise}>— {exercise}</span>
             </div>
             <ul className={styles.rowIssueUl}>
               {issues.map((issue, i) => (
@@ -228,17 +149,32 @@ function LineIssueList({ lineIssues }: { lineIssues: TextValidationIssue[] }) {
   );
 }
 
-function TextValidationResults({ result, text }: { result: TextValidationResult; text: string }) {
-  const visualizerUrl = `${window.location.pathname}?mode=text&text=${encodeURIComponent(text)}`;
-
+function ResultsPanel({
+  verdict,
+  columns,
+  rows,
+  issues,
+  warnings,
+  rowIssues,
+  visualizerUrl,
+}: {
+  verdict: 'ok' | 'warning' | 'error';
+  columns?: ColumnInfo;
+  rows: SheetValidationResult['rows'];
+  issues: string[];
+  warnings: string[];
+  rowIssues: SheetValidationResult['rowIssues'];
+  visualizerUrl: string;
+}) {
   return (
     <div>
-      <VerdictBanner verdict={result.verdict} messages={TEXT_VERDICT_MESSAGES} />
-      <RowSummary rows={result.lines} unit="line" />
-      <IssueList title="Issues to Fix" items={result.issues} color="var(--danger)" />
-      <LineIssueList lineIssues={result.lineIssues} />
-      <IssueList title="Warnings" items={result.warnings} color="var(--warning)" />
-      {result.lines.parsed > 0 && (
+      <VerdictBanner verdict={verdict} />
+      {columns && <ColumnChecklist columns={columns} />}
+      <RowSummary rows={rows} />
+      <IssueList title="Issues to Fix" items={issues} color="var(--danger)" />
+      <RowIssueList rowIssues={rowIssues} />
+      <IssueList title="Warnings" items={warnings} color="var(--warning)" />
+      {rows.parsed > 0 && (
         <a href={visualizerUrl} className={styles.visualizerLink}>
           View in Visualizer →
         </a>
@@ -275,6 +211,19 @@ export function ValidatorPage() {
 
   const isDisabled =
     mode === 'url' ? !url.trim() || validationState.status === 'loading' : !text.trim();
+
+  const activeResult =
+    mode === 'url' && validationState.status === 'success'
+      ? {
+          ...validationState.result,
+          visualizerUrl: `${window.location.pathname}?sheet=${encodeURIComponent(validationState.sheetUrl)}`,
+        }
+      : mode === 'text' && textValidationState.status === 'success'
+        ? {
+            ...textValidationState.result,
+            visualizerUrl: `${window.location.pathname}?mode=text&text=${encodeURIComponent(text)}`,
+          }
+        : null;
 
   return (
     <main className={styles.main}>
@@ -368,13 +317,7 @@ export function ValidatorPage() {
         <p className={styles.errorP}>{validationState.message}</p>
       )}
 
-      {mode === 'url' && validationState.status === 'success' && (
-        <ValidationResults result={validationState.result} sheetUrl={validationState.sheetUrl} />
-      )}
-
-      {mode === 'text' && textValidationState.status === 'success' && (
-        <TextValidationResults result={textValidationState.result} text={text} />
-      )}
+      {activeResult && <ResultsPanel {...activeResult} />}
     </main>
   );
 }

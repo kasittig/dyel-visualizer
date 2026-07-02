@@ -5,21 +5,21 @@ import { nameToExercise } from './parsers/nameToExercise';
 import { validateRow } from './parsers/validateRow';
 
 export interface TextValidationIssue {
-  line: number;
+  row: number;
   exercise: string;
   issues: string[];
 }
 
 export interface TextValidationResult {
   verdict: 'ok' | 'warning' | 'error';
-  lines: {
+  rows: {
     total: number;
     parsed: number;
     liftTypes: { squat: number; bench: number; deadlift: number; accessory: number };
   };
   issues: string[];
   warnings: string[];
-  lineIssues: TextValidationIssue[];
+  rowIssues: TextValidationIssue[];
 }
 
 const MAX_LINE_ISSUES = 10;
@@ -34,10 +34,10 @@ export function validateTextData(text: TextFieldInput): TextValidationResult {
   if (!textLines) {
     return {
       verdict: 'error',
-      lines: { total: 0, parsed: 0, liftTypes: emptyLiftTypes() },
+      rows: { total: 0, parsed: 0, liftTypes: emptyLiftTypes() },
       issues: ['No text provided. Paste one exercise per line, e.g. "comp squat 1rm 300lbs".'],
       warnings: [],
-      lineIssues: [],
+      rowIssues: [],
     };
   }
 
@@ -46,7 +46,7 @@ export function validateTextData(text: TextFieldInput): TextValidationResult {
   const liftTypes = emptyLiftTypes();
   let numParsed = 0;
   let linesFullyFailed = 0;
-  const lineIssues: TextValidationIssue[] = [];
+  const rowIssues: TextValidationIssue[] = [];
 
   for (let i = 0; i < textLines.length; i++) {
     const line = textLines[i];
@@ -55,9 +55,9 @@ export function validateTextData(text: TextFieldInput): TextValidationResult {
     const row = textLineToRow(line);
     if (!row) {
       linesFullyFailed++;
-      if (lineIssues.length < MAX_LINE_ISSUES) {
-        lineIssues.push({
-          line: lineNum,
+      if (rowIssues.length < MAX_LINE_ISSUES) {
+        rowIssues.push({
+          row: lineNum,
           exercise: '(unparsed)',
           issues: [
             'Couldn\'t parse this line — expected something like "exercise weight[unit] [xreps]" or "exercise Nrm weight[unit]", with an optional date.',
@@ -81,16 +81,16 @@ export function validateTextData(text: TextFieldInput): TextValidationResult {
 
     if (lineProblems.length > 0) {
       linesFullyFailed++;
-      if (lineIssues.length < MAX_LINE_ISSUES) {
-        lineIssues.push({
-          line: lineNum,
+      if (rowIssues.length < MAX_LINE_ISSUES) {
+        rowIssues.push({
+          row: lineNum,
           exercise: exerciseName || '(empty)',
           issues: lineProblems,
         });
       }
     } else {
       if (lineWarnings.length > 0) {
-        lineIssues.push({ line: lineNum, exercise: exerciseName, issues: lineWarnings });
+        rowIssues.push({ row: lineNum, exercise: exerciseName, issues: lineWarnings });
       }
       numParsed += sessionsInRow;
       const ex = nameToExercise(exerciseName);
@@ -128,9 +128,9 @@ export function validateTextData(text: TextFieldInput): TextValidationResult {
 
   return {
     verdict,
-    lines: { total, parsed: numParsed, liftTypes },
+    rows: { total, parsed: numParsed, liftTypes },
     issues,
     warnings,
-    lineIssues,
+    rowIssues,
   };
 }
