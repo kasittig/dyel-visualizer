@@ -1,11 +1,10 @@
 import type { RawRow } from '../../types/RawRow';
+import { REP_MAX_RE } from './repMaxToken';
 
 export interface RepMaxCol {
   reps: number;
   value: string;
 }
-
-const REP_MAX_RE = /^(\d+)rm(\W|$)/;
 
 export function findRepMaxCols(row: RawRow): RepMaxCol[] {
   const cols: RepMaxCol[] = [];

@@ -1,8 +1,8 @@
 import type { TrainingSession, LiftUnits } from '../../types/conjugate';
-import { calcE1RM } from '../../utils/math/e1rm';
 
 import { findCol } from './findCol';
 import { parseSessionDate, parseSessionRpe } from './parseSessionFields';
+import { buildTrainingSession } from './buildTrainingSession';
 import type { RawRow } from '../../types/RawRow';
 
 export function parseSession(row: RawRow, units: LiftUnits): TrainingSession | null {
@@ -14,19 +14,8 @@ export function parseSession(row: RawRow, units: LiftUnits): TrainingSession | n
   const weight = parseFloat(findCol(row, 'weight') ?? '');
   const repsRaw = row['reps']?.trim() ?? '';
   const reps = repsRaw === '' ? 1 : parseInt(repsRaw);
-  if (isNaN(weight) || isNaN(reps) || reps <= 0) {
-    return null;
-  }
 
   const sets = parseInt(findCol(row, 'sets') ?? '') || 1;
   const rpe = parseSessionRpe(row);
-  return {
-    date,
-    sets,
-    reps,
-    weight,
-    e1rm: calcE1RM(weight, reps, rpe),
-    unit: units,
-    rpe,
-  };
+  return buildTrainingSession({ date, sets, rpe, unit: units }, weight, reps);
 }
