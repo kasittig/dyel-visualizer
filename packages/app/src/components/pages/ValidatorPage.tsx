@@ -1,4 +1,4 @@
-import { useState, type CSSProperties } from 'react';
+import { useState, useEffect, useRef, type CSSProperties } from 'react';
 import clsx from 'clsx';
 import { useSheetValidation } from '../../hooks/infra/useSheetValidation';
 import type { SheetValidationResult, ColumnInfo } from '@dyel/core';
@@ -29,10 +29,7 @@ function VerdictBanner({ result }: { result: SheetValidationResult }) {
         : "Your sheet won't work with DYEL Visualizer. See the issues below.";
 
   return (
-    <div
-      className={styles.verdictBanner}
-      style={{ '--verdict-color': color } as CSSProperties}
-    >
+    <div className={styles.verdictBanner} style={{ '--verdict-color': color } as CSSProperties}>
       <span className={styles.verdictIcon}>{icon}</span>
       <span className={styles.verdictMessage}>{message}</span>
     </div>
@@ -135,8 +132,7 @@ function RowIssueList({ rowIssues }: { rowIssues: SheetValidationResult['rowIssu
           ({ row, exercise, issues }: { row: number; exercise: string; issues: string[] }) => (
             <div key={row} className={styles.rowIssueCard}>
               <div className={styles.rowIssueHeader}>
-                Data row {row}{' '}
-                <span className={styles.rowIssueExercise}>— {exercise}</span>
+                Data row {row} <span className={styles.rowIssueExercise}>— {exercise}</span>
               </div>
               <ul className={styles.rowIssueUl}>
                 {issues.map((issue: string, i: number) => (
@@ -180,8 +176,18 @@ function ValidationResults({
 }
 
 export function ValidatorPage() {
-  const [url, setUrl] = useState('');
+  const [url, setUrl] = useState(
+    () => new URLSearchParams(window.location.search).get('url') ?? ''
+  );
   const [validationState, validate] = useSheetValidation();
+  const autoValidated = useRef(false);
+
+  useEffect(() => {
+    if (!autoValidated.current && url.trim()) {
+      autoValidated.current = true;
+      validate(url);
+    }
+  }, [url, validate]);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
