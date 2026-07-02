@@ -19,10 +19,6 @@ const ValidatorPage = lazy(() =>
   import('./components/pages/ValidatorPage.tsx').then((m) => ({ default: m.ValidatorPage }))
 );
 
-const TextInputPage = lazy(() =>
-  import('./components/pages/TextInputPage.tsx').then((m) => ({ default: m.TextInputPage }))
-);
-
 function resolvePageComponent(page: string | null) {
   if (page === 'conjugate') {
     return (
@@ -45,20 +41,13 @@ function resolvePageComponent(page: string | null) {
       </Suspense>
     );
   }
-  if (page === 'text') {
-    return (
-      <Suspense>
-        <TextInputPage />
-      </Suspense>
-    );
-  }
   if (page === null) {
     return <App />;
   }
   return <p>Page not found.</p>;
 }
 
-const KNOWN_PAGES = new Set(['conjugate', 'index', 'validator', 'text']);
+const KNOWN_PAGES = new Set(['conjugate', 'index', 'validator']);
 
 function resolvePage(): string | null {
   const queryPage = new URLSearchParams(window.location.search).get('page');

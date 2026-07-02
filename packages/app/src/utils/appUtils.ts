@@ -5,6 +5,7 @@ export interface SheetRef {
   published: boolean;
 }
 export type PageTab = LiftType | 'calculator' | 'sigma';
+export type InputMode = 'url' | 'text';
 
 export const MAIN_TABS = [
   { id: 'squat' as LiftType, label: 'Squat' },

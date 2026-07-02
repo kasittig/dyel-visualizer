@@ -11,4 +11,4 @@ Reusable UI components used across multiple features or pages.
 | `ErrorBoundary.tsx`      | React error boundary wrapping the root in `main.tsx`                            |
 | `ExerciseFilters.tsx`    | Multi-facet filter controls (bar, stance, addl. weights, etc.)                  |
 | `RepCalculator.tsx`      | Calculator tab: predicts weight-for-reps and reps-for-weight via `findBestE1RM` |
-| `SheetUrlPanel.tsx`      | Sheet URL input and submit panel                                                |
+| `SheetUrlPanel.tsx`      | Data source panel; toggles between a Sheet URL input and a paste-text input     |

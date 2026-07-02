@@ -58,6 +58,48 @@ describe('textLineToRow', () => {
     });
   });
 
+  describe('date token', () => {
+    it('parses a leading ISO date', () => {
+      expect(textLineToRow('2026-02-05 bench 225lbs x5')).toEqual({
+        exercise: 'bench',
+        'weight (lbs)': '225',
+        reps: '5',
+        date: '2026-02-05',
+      });
+    });
+
+    it('parses a trailing slash date', () => {
+      expect(textLineToRow('bench 225lbs x5 2/5/2026')).toEqual({
+        exercise: 'bench',
+        'weight (lbs)': '225',
+        reps: '5',
+        date: '2026-02-05',
+      });
+    });
+
+    it('parses a month-name date with no year, defaulting to the current year', () => {
+      const expectedYear = new Date().getFullYear();
+      expect(textLineToRow('bench 225lbs x5 feb 5')).toEqual({
+        exercise: 'bench',
+        'weight (lbs)': '225',
+        reps: '5',
+        date: `${expectedYear}-02-05`,
+      });
+    });
+
+    it('parses a rep-max line with a date', () => {
+      expect(textLineToRow('2026-02-05 comp squat 1rm 300lbs')).toEqual({
+        exercise: 'comp squat',
+        '1rm (lbs)': '300',
+        date: '2026-02-05',
+      });
+    });
+
+    it('omits the date key when no date is present', () => {
+      expect(textLineToRow('bench 225lbs x5')).not.toHaveProperty('date');
+    });
+  });
+
   it('returns null for an unparseable line', () => {
     expect(textLineToRow('just some words')).toBeNull();
   });

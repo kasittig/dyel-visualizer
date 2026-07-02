@@ -12,22 +12,20 @@ Set `VITE_SHEET_URL` in `.env.local` to pre-fill the sheet URL input during deve
 
 ## Architecture
 
-Single-page React app with no backend. All data comes from a user-supplied Google Sheet URL. There is no router — page selection is done via `?page=` query params (or matching path segment) in `main.tsx`.
+Single-page React app with no backend. Data comes from either a user-supplied Google Sheet URL or pasted free-text (both are input modes on `SheetUrlPanel`). There is no router — page selection is done via `?page=` query params (or matching path segment) in `main.tsx`.
 
 **Page routing (`main.tsx`):**
 
 - `?page=conjugate` (or `/conjugate`) → `ConjugateInfoPage` (renders `CONJUGATE.md` as markdown)
 - `?page=index` (or `/index`) → `IndexPage` (list of linked sheets fetched from a hardcoded published index sheet)
-- `?page=text` (or `/text`) → `TextInputPage` (paste-text input; extracts raw lines via `extractTextLines` from `@dyel/core`)
 - no `?page=` → `App` (main visualizer)
 
 **Data flow (`App.tsx`):**
 
-1. Takes a URL, calls `extractSheetRef()` to parse it into `{ id, published }`, passes to `useConjugateData()`
-2. `useConjugateData` fetches the sheet as CSV and calls `parseConjugateData` from `@dyel/core`
-3. The resulting `ConjugateDataPair[]` flows through exercise-type tabs (squat / bench / deadlift / accessory), `ExerciseFilters`, and `LiftTabPanel` (which composes `ConjugateCharts` + `VariationRadarChart` + `DiagnosticsPanel`)
-4. `useLastSessionStats` computes per-exercise stats from the pair list — e1RM, last session, predicted e1RM, variant factors, resistance offsets
-5. `ErrorBoundary` wraps the root in `main.tsx`
+1. `SheetUrlPanel` offers two input modes: a Google Sheet URL (`extractSheetRef()` → `useConjugateData()`, which fetches the sheet as CSV and calls `parseConjugateData` from `@dyel/core`) or pasted free-text (parsed via `parseTextData` from `@dyel/core`). `App.tsx` picks whichever mode is active and normalizes both into the same `ConjugateDataState` shape.
+2. The resulting `ConjugateDataPair[]` flows through exercise-type tabs (squat / bench / deadlift / accessory), `ExerciseFilters`, and `LiftTabPanel` (which composes `ConjugateCharts` + `VariationRadarChart` + `DiagnosticsPanel`)
+3. `useLastSessionStats` computes per-exercise stats from the pair list — e1RM, last session, predicted e1RM, variant factors, resistance offsets
+4. `ErrorBoundary` wraps the root in `main.tsx`
 
 **Tab state:** `App.tsx` owns `tabState: Record<LiftType, TabState>` (initialized via `initialTabState()`). Active non-lift tabs: `"sigma"` and `"calculator"`.
 

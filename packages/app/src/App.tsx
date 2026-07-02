@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import type { DateRange } from 'react-day-picker';
 import clsx from 'clsx';
 import { useConjugateData } from './hooks/conjugate/useConjugateData';
+import type { ConjugateDataState } from './hooks/conjugate/useConjugateData';
 import { RepCalculator } from './components/shared/RepCalculator';
 import { StrengthScoreCalculator } from './components/shared/StrengthScoreCalculator';
 import { SigmaTab } from './components/pages/SigmaTab';
@@ -9,12 +10,17 @@ import { LiftTabPanel } from './components/pages/LiftTabPanel';
 import { SheetUrlPanel } from './components/shared/SheetUrlPanel';
 import { GettingStarted } from './components/pages/GettingStarted';
 import { DateRangePicker } from './components/shared/DateRangePicker';
-import { filterByDateRange, buildChartData, calculateVolumeCorrelation } from '@dyel/core';
+import {
+  filterByDateRange,
+  buildChartData,
+  calculateVolumeCorrelation,
+  parseTextData,
+} from '@dyel/core';
 import type { DeadliftStancePreference, LiftType } from '@dyel/core';
 import { useLastSessionStats } from './hooks/data/useLastSessionStats';
 import { useBaselineTargetExercises } from './hooks/data/useBaselineTargetExercises';
 import { extractSheetRef, initialTabState, MAIN_TABS } from './utils/appUtils';
-import type { PageTab, TabState } from './utils/appUtils';
+import type { InputMode, PageTab, TabState } from './utils/appUtils';
 import { buildTabRows, computeEffectiveNames, extractPairs } from './utils/appDataUtils';
 import styles from './App.module.css';
 
@@ -25,6 +31,8 @@ export function App() {
       import.meta.env.VITE_SHEET_URL ??
       ''
   );
+  const [inputMode, setInputMode] = useState<InputMode>('url');
+  const [pastedText, setPastedText] = useState('');
   const [panelForcedOpen, setPanelForcedOpen] = useState(false);
   const [refreshToken, setRefreshToken] = useState(0);
   const [activeTab, setActiveTab] = useState<PageTab>('sigma');
@@ -46,7 +54,22 @@ export function App() {
   const sheetRef = extractSheetRef(url);
   const invalidUrl = url.length > 0 && !sheetRef;
 
-  const state = useConjugateData(sheetRef, '0', refreshToken);
+  const sheetState = useConjugateData(sheetRef, '0', refreshToken);
+  const textPairs = useMemo(() => parseTextData(pastedText), [pastedText]);
+  const textState: ConjugateDataState = useMemo(() => {
+    if (pastedText.trim().length === 0) {
+      return { status: 'idle' };
+    }
+    if (textPairs.length > 0) {
+      return { status: 'success', pairs: textPairs };
+    }
+    return {
+      status: 'error',
+      message:
+        'No usable exercise lines found. Try one exercise per line, e.g. "comp squat 1rm 300lbs".',
+    };
+  }, [pastedText, textPairs]);
+  const state = inputMode === 'text' ? textState : sheetState;
 
   const showUrlPanel = panelForcedOpen || state.status !== 'success';
 
@@ -163,6 +186,19 @@ export function App() {
     setTabState(initialTabState());
   }
 
+  function handleTextChange(newText: string) {
+    setPastedText(newText);
+    setPanelForcedOpen(false);
+    setShownResetToken((t) => t + 1);
+    setTabState(initialTabState());
+  }
+
+  function handleModeChange(newMode: InputMode) {
+    setInputMode(newMode);
+    setShownResetToken((t) => t + 1);
+    setTabState(initialTabState());
+  }
+
   return (
     <main className={styles.main}>
       <SheetUrlPanel
@@ -174,17 +210,27 @@ export function App() {
         onForceOpen={() => setPanelForcedOpen(true)}
         onCancel={() => setPanelForcedOpen(false)}
         onRefresh={() => setRefreshToken((t) => t + 1)}
+        mode={inputMode}
+        onModeChange={handleModeChange}
+        text={pastedText}
+        onTextChange={handleTextChange}
       />
 
       <div className={styles.content}>
-        {url.length === 0 && <GettingStarted />}
+        {inputMode === 'url' && url.length === 0 && <GettingStarted />}
+        {inputMode === 'text' && pastedText.length === 0 && <GettingStarted />}
         {state.status === 'loading' && <p>Loading…</p>}
         {state.status === 'error' && (
           <p className={styles.errorMsg}>
-            {state.message}{' '}
-            <a href="?page=validator" className={styles.accentLink}>
-              Check your spreadsheet format
-            </a>
+            {state.message}
+            {inputMode === 'url' && (
+              <>
+                {' '}
+                <a href="?page=validator" className={styles.accentLink}>
+                  Check your spreadsheet format
+                </a>
+              </>
+            )}
           </p>
         )}
         {state.status === 'success' && (
