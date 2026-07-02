@@ -1,3 +1,4 @@
+import { useIndexData } from '../../hooks/data/useIndexData';
 import { EXAMPLE_SHEET_URL, EXAMPLE_VISUALIZER_URL } from '../../utils/appUtils';
 import styles from './SheetUrlPanel.module.css';
 
@@ -21,6 +22,12 @@ export function SheetUrlPanel({
   onCancel: () => void;
   onRefresh: () => void;
 }) {
+  const indexData = useIndexData();
+  const matchedEntry =
+    indexData.status === 'success'
+      ? indexData.entries.find((entry) => entry.url === url)
+      : undefined;
+
   return (
     <div className={styles.wrapper}>
       <h1>DYEL Visualizer</h1>
@@ -59,9 +66,33 @@ export function SheetUrlPanel({
               Check if my spreadsheet will work
             </a>
           </p>
+          {indexData.status === 'success' && (
+            <div className={styles.urlRow}>
+              <label htmlFor="sheet-index" className={styles.urlLabel}>
+                Lifter:
+              </label>
+              <select
+                id="sheet-index"
+                className={styles.input}
+                value={matchedEntry?.url ?? ''}
+                onChange={(e) => {
+                  if (e.target.value) {
+                    onUrlChange(e.target.value);
+                  }
+                }}
+              >
+                <option value="">-- Select from index --</option>
+                {indexData.entries.map(({ name, url: entryUrl }) => (
+                  <option key={entryUrl} value={entryUrl}>
+                    {name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
           <div className={styles.urlRow}>
             <label htmlFor="sheet-url" className={styles.urlLabel}>
-              Your Google Sheet
+              Sheet URL:
             </label>
             <input
               id="sheet-url"

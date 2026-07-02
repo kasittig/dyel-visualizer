@@ -73,3 +73,17 @@
   color: var(--text);
   margin-top: 0.5rem;
 }
+
+.input {
+  font-size: 0.9rem;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--bg);
+  color: var(--text-h);
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
