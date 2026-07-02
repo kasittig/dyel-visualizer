@@ -58,6 +58,45 @@ describe('textLineToRow', () => {
     });
   });
 
+  describe('sets x reps @ weight grammar', () => {
+    it('strips the dash, sets x reps token, and @ separator out of the exercise name', () => {
+      expect(textLineToRow('2/2/2026 Box Squat - 1x1 @ 205')).toEqual({
+        exercise: 'Box Squat',
+        weight: '205',
+        reps: '1',
+        sets: '1',
+        date: '2026-02-02',
+      });
+    });
+
+    it('parses multiple sets and reps with a unit', () => {
+      expect(textLineToRow('Bench - 3x5 @ 225lbs')).toEqual({
+        exercise: 'Bench',
+        'weight (lbs)': '225',
+        reps: '5',
+        sets: '3',
+      });
+    });
+
+    it('parses kg', () => {
+      expect(textLineToRow('Bench - 3x5 @ 225kg')).toEqual({
+        exercise: 'Bench',
+        'weight (kg)': '225',
+        reps: '5',
+        sets: '3',
+      });
+    });
+
+    it('does not require a leading dash', () => {
+      expect(textLineToRow('Squat 1x1 @ 205')).toEqual({
+        exercise: 'Squat',
+        weight: '205',
+        reps: '1',
+        sets: '1',
+      });
+    });
+  });
+
   describe('date token', () => {
     it('parses a leading ISO date', () => {
       expect(textLineToRow('2026-02-05 bench 225lbs x5')).toEqual({
