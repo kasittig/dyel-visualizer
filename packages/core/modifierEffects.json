@@ -107,13 +107,13 @@
   "equipment:rack:deadlift": { "effects": ["LOCKOUT"], "min": 110, "max": 130 },
 
   "addl_wt:chains:squat": {
-    "effects": ["BAR_SPEED", "STABILIZER_DEMAND"]
+    "effects": ["BAR_SPEED"]
   },
   "addl_wt:chains:bench": {
-    "effects": ["BAR_SPEED", "STABILIZER_DEMAND"]
+    "effects": ["BAR_SPEED"]
   },
   "addl_wt:chains:deadlift": {
-    "effects": ["BAR_SPEED", "STABILIZER_DEMAND"]
+    "effects": ["BAR_SPEED"]
   },
   "addl_wt:bands:squat": { "effects": ["BAR_SPEED"] },
   "addl_wt:bands:bench": { "effects": ["BAR_SPEED"] },
