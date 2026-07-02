@@ -21,7 +21,8 @@ export function parseSession(row: RawRow, units: LiftUnits): TrainingSession | n
   }
 
   const weight = parseFloat(findCol(row, 'weight') ?? '');
-  const reps = parseInt(row['reps'] ?? '');
+  const repsRaw = row['reps']?.trim() ?? '';
+  const reps = repsRaw === '' ? 1 : parseInt(repsRaw);
   if (isNaN(weight) || isNaN(reps) || reps <= 0) {
     return null;
   }
