@@ -72,7 +72,14 @@ export function SheetUrlPanel({
               </a>
             )}
             {' · '}
-            <a href="?page=validator" className={styles.accentLink}>
+            <a
+              href={
+                url.trim()
+                  ? `?page=validator&url=${encodeURIComponent(url.trim())}`
+                  : '?page=validator'
+              }
+              className={styles.accentLink}
+            >
               Check if my spreadsheet will work
             </a>
           </p>
