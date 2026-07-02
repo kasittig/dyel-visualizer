@@ -1,17 +1,21 @@
-import type { ConjugateExercise, TrainingSession } from '../types/conjugate';
-import { parseSession, type RawSession } from './parsers/parseSession';
+import type { ConjugateExercise, TrainingSession, LiftUnits } from '../types/conjugate';
+import { parseSession } from './parsers/parseSession';
 import { nameToExercise } from './parsers/nameToExercise';
 import { extractCsvRows } from '../extract/csvExtract';
+import { detectWeightUnit } from './parsers/detectWeightUnit';
 
-export function parseConjugateData(csv: string): Array<[ConjugateExercise, TrainingSession]> {
+export function parseConjugateData(
+  csv: string,
+  default_unit: LiftUnits = 'lbs'
+): Array<[ConjugateExercise, TrainingSession]> {
   const parsed = extractCsvRows(csv);
   if (!parsed) {
     return [];
   }
   const rows = parsed.rows;
+  const unit = detectWeightUnit(Object.keys(rows[0])) ?? default_unit;
 
-  let hasAnyUnit = false;
-  const raw: Array<[ConjugateExercise, RawSession]> = [];
+  const raw: Array<[ConjugateExercise, TrainingSession]> = [];
   for (const row of rows) {
     const exerciseName = row['exercise'] ?? '';
     if (!exerciseName) {
@@ -21,16 +25,11 @@ export function parseConjugateData(csv: string): Array<[ConjugateExercise, Train
     if (!lift) {
       continue;
     }
-    const session = parseSession(row);
+    const session = parseSession(row, unit);
     if (!session) {
       continue;
     }
-    if (session.unit !== null) {
-      hasAnyUnit = true;
-    }
     raw.push([lift, session]);
   }
-
-  // Only fall back to "lbs" when no unit annotation exists anywhere in the data.
-  return raw.map(([ex, s]) => [ex, { ...s, unit: hasAnyUnit ? (s.unit ?? 'lbs') : 'lbs' }]);
+  return raw;
 }

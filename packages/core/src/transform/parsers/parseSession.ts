@@ -1,13 +1,10 @@
-import type { TrainingSession } from '../../types/conjugate';
-import { detectWeightUnit } from './detectWeightUnit';
+import type { TrainingSession, LiftUnits } from '../../types/conjugate';
 import { calcE1RM } from '../../utils/math/e1rm';
 
 import { findCol } from './findCol';
 import type { RawRow } from '../../types/RawRow';
 
-export type RawSession = Omit<TrainingSession, 'unit'> & { unit: 'lbs' | 'kg' | null };
-
-export function parseSession(row: RawRow): RawSession | null {
+export function parseSession(row: RawRow, units: LiftUnits): TrainingSession | null {
   const dateStr = row['date']?.trim() ?? '';
   let date: Date;
   if (!dateStr) {
@@ -38,7 +35,7 @@ export function parseSession(row: RawRow): RawSession | null {
     reps,
     weight,
     e1rm: calcE1RM(weight, reps, rpe),
-    unit: detectWeightUnit(Object.keys(row)),
+    unit: units,
     rpe,
   };
 }
