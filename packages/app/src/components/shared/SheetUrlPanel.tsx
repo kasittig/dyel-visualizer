@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import clsx from 'clsx';
 import { useIndexData } from '../../hooks/data/useIndexData';
 import { EXAMPLE_SHEET_URL, EXAMPLE_VISUALIZER_URL } from '../../utils/appUtils';
@@ -33,6 +34,13 @@ export function SheetUrlPanel({
   onTextChange: (value: string) => void;
 }) {
   const indexData = useIndexData();
+  const [draft, setDraft] = useState(text);
+  const [prevText, setPrevText] = useState(text);
+  if (text !== prevText) {
+    setPrevText(text);
+    setDraft(text);
+  }
+
   const matchedEntry =
     indexData.status === 'success'
       ? indexData.entries.find((entry) => entry.url === url)
@@ -162,8 +170,9 @@ export function SheetUrlPanel({
               </label>
               <textarea
                 id="paste-text"
-                value={text}
-                onChange={(e) => onTextChange(e.target.value)}
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                onBlur={() => onTextChange(draft)}
                 placeholder={'comp squat 1rm 300lbs\ncomp bench 1rm 200lbs'}
                 className={styles.textArea}
                 rows={6}
