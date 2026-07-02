@@ -1,6 +1,6 @@
 # transform/parsers/
 
-Row- and field-level parsing helpers, consumed by `../parseConjugateData.ts`, `../parseTextData.ts`, and `../validateSheetCsv.ts`.
+Row- and field-level parsing helpers, consumed by `../parseConjugateData.ts`, `../parseTextData.ts`, `../validateSheetCsv.ts`, and `../validateTextData.ts`.
 
 ## Files
 
@@ -16,6 +16,7 @@ Row- and field-level parsing helpers, consumed by `../parseConjugateData.ts`, `.
 - **`parseSessions.ts`** — `parseSessions(row, units)`: the dispatcher used by `parseConjugateData.ts` and `parseTextData.ts`. Prefers `parseRepMaxSessions` when the row has any populated rep-max columns, otherwise falls back to `parseSession`.
 - **`dateToken.ts`** — `extractDateToken(line)` scans a whole pasted line (not per-whitespace-token) for the first date-shaped substring — ISO (`YYYY-MM-DD`), slash (`M/D[/YYYY]`), or month-name (`Mon D[, YYYY]` / `D Mon[, YYYY]`), case-insensitive, abbreviated or full month names — and normalizes it to `YYYY-MM-DD`. A missing year defaults to the current calendar year. Returns `{ dateStr, remainder }`; `remainder` has the matched substring removed (or is the original line if nothing matched). Hand-rolled rather than pulling in a date-parsing library, since `@dyel/core` ships dependency-free.
 - **`textLineToRow.ts`** — `textLineToRow(line)` adapts a single pasted text line into a `RawRow`, using the same column-key convention as CSV headers (unit lives in the key, e.g. `"1rm (kg)"` / `"weight (lbs)"`) so the rest of this directory's row-level logic works unchanged. First extracts an optional date via `dateToken.ts` into the `date` key (read by `parseSessionFields.ts`'s `parseSessionDate`), then tries the rep-max grammar (`"<exercise> <N>rm <weight><unit>"`), then the sets-by-reps grammar (`"<exercise> [-] <sets>x<reps> @ <weight><unit>"`), falling back to the plain weight/reps grammar (`"<exercise> <weight><unit> x<reps>"`, reps optional, default 1). Returns `null` if none match.
+- **`validateRow.ts`** — `validateRow(row)` runs the weight/reps/rep-max/RPE checks shared by `../validateSheetCsv.ts` and `../validateTextData.ts` on a single `RawRow`, returning `{problems, warnings, sessionsInRow}`. Exercise-name-empty and date-string validity checks stay in each caller since CSV and text sources diverge there (CSV's raw `date` cell needs its own `isNaN(new Date(...))` check; text's `date` field, when present, was already validated/normalized by `textLineToRow`/`extractDateToken`).
 
 ## Key invariants
 

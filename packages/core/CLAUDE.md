@@ -11,6 +11,7 @@ Everything re-exported from `src/index.ts` is public. Key exports:
 | Types          | `ConjugateExercise`, `TrainingSession`, `ConjugateDataPair`, `ConjugateBar`, `ConjugateStance`, `ConjugateEquipment`, `ConjugateAddlWt`, `DeadliftStancePreference`, `PrimaryLift`, `EffectEnum` |
 | Type helpers   | `variantLabel`, `familyKey`                                                                                                                                                                      |
 | Parsing        | `parseConjugateData(csv): ConjugateDataPair[]`, `parseTextData(text): ConjugateDataPair[]`, `parseIndexCsv(csv): IndexEntry[]`                                                                   |
+| Validation     | `validateSheetCsv(csv): SheetValidationResult`, `validateTextData(text): TextValidationResult`                                                                                                   |
 | e1RM math      | `calcE1RM`, `invertE1RM`, `predictE1RM`, `fitVariantFactor`, `fitAddlWtOffset`, `normalizeToBaseE1RM`                                                                                            |
 | Volume math    | `calculateVolumeCorrelation`                                                                                                                                                                     |
 | Filters        | `filterByDateRange`                                                                                                                                                                              |

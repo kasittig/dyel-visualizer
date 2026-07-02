@@ -40,6 +40,9 @@ export type {
 } from './transform/validateSheetCsv';
 export { validateSheetCsv } from './transform/validateSheetCsv';
 
+export type { TextValidationResult, TextValidationIssue } from './transform/validateTextData';
+export { validateTextData } from './transform/validateTextData';
+
 export type { IndexEntry } from './transform/parseIndexCsv';
 export { parseIndexCsv } from './transform/parseIndexCsv';
 
