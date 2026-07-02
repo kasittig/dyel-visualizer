@@ -233,8 +233,8 @@ export function App() {
       />
 
       <div className={styles.content}>
-        {inputMode === 'url' && url.length === 0 && <GettingStarted />}
-        {inputMode === 'text' && pastedText.length === 0 && <GettingStarted />}
+        {inputMode === 'url' && url.length === 0 && <GettingStarted mode="url" />}
+        {inputMode === 'text' && pastedText.length === 0 && <GettingStarted mode="text" />}
         {state.status === 'loading' && <p>Loading…</p>}
         {state.status === 'error' && (
           <p className={styles.errorMsg}>
