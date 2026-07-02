@@ -20,6 +20,7 @@ Everything re-exported from `src/index.ts` is public. Key exports:
 | Diagnostics    | `generateDiagnostics`                                                                                                                                                                            |
 | Selections     | `defaultBaselineName`, `defaultCompExerciseName`                                                                                                                                                 |
 | Utilities      | `setsRepsLabel`, `formatDate`, `LINE_COLORS`                                                                                                                                                     |
+| Text input     | `extractTextLines(input: TextFieldInput): string[] \| null`, `TextFieldInput`                                                                                                                    |
 
 ## src/ top-level layout
 
