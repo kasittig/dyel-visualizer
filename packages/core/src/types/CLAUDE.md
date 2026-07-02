@@ -7,6 +7,7 @@ Shared domain types used across `extract/`, `transform/`, `load/`, and `utils/`.
 - **`conjugate.ts`** — The core domain model: `ConjugateExercise`, `TrainingSession`, `ConjugateDataPair`, the `ConjugateBar`/`ConjugateStance`/`ConjugateEquipment`/`ConjugateAddlWt` enums (plus their `CONJUGATE_*` const arrays), `LiftType`, `PrimaryLift`, `EffectEnum`, `DeadliftStancePreference`, and `GroupedConjugatePairs`. Also defines `variantLabel(ex)` (human-readable variation suffix) and `familyKey(ex)` (groups exercises sharing type/bar/stance/equipment).
 - **`detectors.ts`** — `BAR_DETECTORS`, `STANCE_DETECTORS`, `EQUIPMENT_DETECTORS`, `TYPE_DETECTORS`: ordered `[value, matcher]` arrays keyed off a lowercased name string + token set, plus the shared `Detector<T>` type. Consumed by `transform/parsers/nameToExercise.ts`.
 - **`RawRow.ts`** — `RawRow` (`Record<string, string>`), the shape every row-level parser in `extract/` and `transform/parsers/` operates on.
+- **`TextFieldInput.ts`** — `TextFieldInput` (`string`), the whole pasted-text-blob value consumed by `extract/textExtract.ts`.
 - **`metrics.ts`** — `LiftMetrics` interface (dots/wilks/schwartzmalone scores and their percentiles), produced by `utils/math/metrics.ts`.
 
 ## Key invariant
