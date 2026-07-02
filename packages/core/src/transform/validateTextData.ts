@@ -35,7 +35,7 @@ export function validateTextData(text: TextFieldInput): TextValidationResult {
     return {
       verdict: 'error',
       rows: { total: 0, parsed: 0, liftTypes: emptyLiftTypes() },
-      issues: ['No text provided. Paste one exercise per line, e.g. "comp squat 1rm 300lbs".'],
+      issues: ['No text provided. Paste one exercise per line, e.g. "comp squat 300lbs x1".'],
       warnings: [],
       rowIssues: [],
     };
@@ -60,7 +60,7 @@ export function validateTextData(text: TextFieldInput): TextValidationResult {
           row: lineNum,
           exercise: '(unparsed)',
           issues: [
-            'Couldn\'t parse this line — expected something like "exercise weight[unit] [xreps]" or "exercise Nrm weight[unit]", with an optional date.',
+            'Couldn\'t parse this line — expected something like "exercise weight[unit] [xreps]", with an optional date.',
           ],
         });
       }

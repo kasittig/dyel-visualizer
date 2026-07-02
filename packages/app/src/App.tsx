@@ -82,7 +82,7 @@ export function App() {
     return {
       status: 'error',
       message:
-        'No usable exercise lines found. Try one exercise per line, e.g. "comp squat 1rm 300lbs".',
+        'No usable exercise lines found. Try one exercise per line, e.g. "comp squat 300lbs x1".',
     };
   }, [pastedText, textPairs]);
   const state = inputMode === 'text' ? textState : sheetState;

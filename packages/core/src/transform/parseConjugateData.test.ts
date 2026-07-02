@@ -182,30 +182,4 @@ describe('parseConjugateData', () => {
     const result = parseConjugateData(csv('2024-01-15,Box SSB,3,5,275'));
     expect(result[0][0].displayName).toBe('Box SSB');
   });
-
-  it('expands a row with rep-max columns into one session per populated column', () => {
-    const input = ['Date,Exercise,1RM,3RM,5RM', '2024-01-15,Squat,315,285,265'].join('\n');
-    const result = parseConjugateData(input);
-    expect(result).toHaveLength(3);
-    expect(result.every(([exercise]) => exercise.type === 'squat')).toBe(true);
-    expect(result.map(([, s]) => [s.reps, s.weight])).toEqual([
-      [1, 315],
-      [3, 285],
-      [5, 265],
-    ]);
-    expect(result.every(([, s]) => s.date.getTime() === result[0][1].date.getTime())).toBe(true);
-  });
-
-  it('skips blank rep-max cells within a row', () => {
-    const input = ['Date,Exercise,1RM,3RM', '2024-01-15,Squat,315,'].join('\n');
-    const result = parseConjugateData(input);
-    expect(result).toHaveLength(1);
-    expect(result[0][1].reps).toBe(1);
-  });
-
-  it('reads unit from a rep-max column header like 1RM (kg)', () => {
-    const input = ['Date,Exercise,1RM (kg)', '2024-01-15,Squat,140'].join('\n');
-    const result = parseConjugateData(input);
-    expect(result[0][1].unit).toBe('kg');
-  });
 });

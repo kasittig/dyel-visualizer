@@ -15,7 +15,6 @@ export interface ColumnInfo {
   hasWeight: boolean;
   hasReps: boolean;
   hasSets: boolean;
-  hasRepMaxCols: boolean;
   weightUnit: 'lbs' | 'kg' | null;
 }
 
@@ -41,7 +40,6 @@ const emptyColumns: ColumnInfo = {
   hasWeight: false,
   hasReps: false,
   hasSets: false,
-  hasRepMaxCols: false,
   weightUnit: null,
 };
 
@@ -74,7 +72,6 @@ export function validateSheetCsv(csv: string): SheetValidationResult {
   const hasWeight = keys.some((k) => /^weight(\W|$)/.test(k));
   const hasReps = keys.includes('reps');
   const hasSets = keys.some((k) => /^sets(\W|$)/.test(k));
-  const hasRepMaxCols = keys.some((k) => /^\d+rm(\W|$)/.test(k));
   const weightUnit = detectWeightUnit(keys);
 
   const columns: ColumnInfo = {
@@ -83,7 +80,6 @@ export function validateSheetCsv(csv: string): SheetValidationResult {
     hasWeight,
     hasReps,
     hasSets,
-    hasRepMaxCols,
     weightUnit,
   };
 
@@ -96,12 +92,10 @@ export function validateSheetCsv(csv: string): SheetValidationResult {
   if (!hasDate) {
     warnings.push("Missing column: 'date'. All sessions will be assigned today's date.");
   }
-  if (!hasWeight && !hasRepMaxCols) {
-    issues.push(
-      "Missing required column: 'weight' — add a 'weight (lbs)'/'weight (kg)' column, or rep-max columns like '1RM', '3RM'"
-    );
+  if (!hasWeight) {
+    issues.push("Missing required column: 'weight' — add a 'weight (lbs)'/'weight (kg)' column");
   }
-  if (!hasReps && !hasRepMaxCols) {
+  if (!hasReps) {
     warnings.push("Missing column: 'reps'. Assuming one rep performed for all exercises.");
   }
 
@@ -119,7 +113,7 @@ export function validateSheetCsv(csv: string): SheetValidationResult {
 
   if (weightUnit === null) {
     warnings.push(
-      "Weight column has no unit — rename it to 'weight (lbs)' or 'weight (kg)' (or annotate rep-max columns, e.g. '1rm (kg)') to be explicit. The app currently assumes lbs."
+      "Weight column has no unit — rename it to 'weight (lbs)' or 'weight (kg)' to be explicit. The app currently assumes lbs."
     );
   }
 

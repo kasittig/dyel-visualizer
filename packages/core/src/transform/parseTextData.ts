@@ -3,7 +3,7 @@ import type { TextFieldInput } from '../types/TextFieldInput';
 import { extractTextLines } from '../extract/textExtract';
 import { textLineToRow } from './parsers/textLineToRow';
 import { nameToExercise } from './parsers/nameToExercise';
-import { parseSessions } from './parsers/parseSessions';
+import { parseSession } from './parsers/parseSession';
 import { detectWeightUnit } from './parsers/detectWeightUnit';
 
 export function parseTextData(
@@ -30,7 +30,8 @@ export function parseTextData(
       continue;
     }
     const unit = detectWeightUnit(Object.keys(row)) ?? default_unit;
-    for (const session of parseSessions(row, unit)) {
+    const session = parseSession(row, unit);
+    if (session) {
       raw.push([lift, session]);
     }
   }
