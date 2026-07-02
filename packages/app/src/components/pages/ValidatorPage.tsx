@@ -1,8 +1,15 @@
 import { useState, useEffect, useRef, type CSSProperties } from 'react';
 import clsx from 'clsx';
 import { useSheetValidation } from '../../hooks/infra/useSheetValidation';
-import type { SheetValidationResult, ColumnInfo } from '@dyel/core';
+import { useTextValidation } from '../../hooks/infra/useTextValidation';
+import type {
+  SheetValidationResult,
+  ColumnInfo,
+  TextValidationResult,
+  TextValidationIssue,
+} from '@dyel/core';
 import { EXAMPLE_SHEET_URL } from '../../utils/appUtils';
+import type { InputMode } from '../../utils/appUtils';
 import styles from './ValidatorPage.module.css';
 
 function Check({ ok }: { ok: boolean }) {
@@ -13,25 +20,37 @@ function Check({ ok }: { ok: boolean }) {
   );
 }
 
-function VerdictBanner({ result }: { result: SheetValidationResult }) {
+const SHEET_VERDICT_MESSAGES = {
+  ok: 'Your sheet is compatible with DYEL Visualizer.',
+  warning: 'Your sheet will mostly work, but there are some issues to review.',
+  error: "Your sheet won't work with DYEL Visualizer. See the issues below.",
+};
+
+const TEXT_VERDICT_MESSAGES = {
+  ok: 'Your pasted text is compatible with DYEL Visualizer.',
+  warning: 'Your pasted text will mostly work, but there are some issues to review.',
+  error: "Your pasted text won't work with DYEL Visualizer. See the issues below.",
+};
+
+function VerdictBanner({
+  verdict,
+  messages,
+}: {
+  verdict: 'ok' | 'warning' | 'error';
+  messages: { ok: string; warning: string; error: string };
+}) {
   const color =
-    result.verdict === 'ok'
+    verdict === 'ok'
       ? 'var(--success)'
-      : result.verdict === 'warning'
+      : verdict === 'warning'
         ? 'var(--warning)'
         : 'var(--danger)';
-  const icon = result.verdict === 'ok' ? '✓' : result.verdict === 'warning' ? '⚠' : '✗';
-  const message =
-    result.verdict === 'ok'
-      ? 'Your sheet is compatible with DYEL Visualizer.'
-      : result.verdict === 'warning'
-        ? 'Your sheet will mostly work, but there are some issues to review.'
-        : "Your sheet won't work with DYEL Visualizer. See the issues below.";
+  const icon = verdict === 'ok' ? '✓' : verdict === 'warning' ? '⚠' : '✗';
 
   return (
     <div className={styles.verdictBanner} style={{ '--verdict-color': color } as CSSProperties}>
       <span className={styles.verdictIcon}>{icon}</span>
-      <span className={styles.verdictMessage}>{message}</span>
+      <span className={styles.verdictMessage}>{messages[verdict]}</span>
     </div>
   );
 }
@@ -69,7 +88,13 @@ function ColumnChecklist({ columns }: { columns: ColumnInfo }) {
   );
 }
 
-function RowSummary({ rows }: { rows: SheetValidationResult['rows'] }) {
+function RowSummary({
+  rows,
+  unit = 'row',
+}: {
+  rows: SheetValidationResult['rows'] | TextValidationResult['lines'];
+  unit?: 'row' | 'line';
+}) {
   if (rows.total === 0) {
     return null;
   }
@@ -78,12 +103,13 @@ function RowSummary({ rows }: { rows: SheetValidationResult['rows'] }) {
 
   return (
     <section className={styles.section}>
-      <h2 className={styles.sectionHeading}>Rows</h2>
+      <h2 className={styles.sectionHeading}>{unit === 'row' ? 'Rows' : 'Lines'}</h2>
       <p className={styles.rowCountP}>
         <strong>
           {parsed} of {total}
         </strong>{' '}
-        row{total === 1 ? '' : 's'} parsed successfully
+        {unit}
+        {total === 1 ? '' : 's'} parsed successfully
         {skipped > 0 && <span className={styles.skipped}>({skipped} skipped)</span>}
       </p>
       {parsed > 0 && (
@@ -160,9 +186,9 @@ function ValidationResults({
 
   return (
     <div>
-      <VerdictBanner result={result} />
+      <VerdictBanner verdict={result.verdict} messages={SHEET_VERDICT_MESSAGES} />
       <ColumnChecklist columns={result.columns} />
-      <RowSummary rows={result.rows} />
+      <RowSummary rows={result.rows} unit="row" />
       <IssueList title="Issues to Fix" items={result.issues} color="var(--danger)" />
       <RowIssueList rowIssues={result.rowIssues} />
       <IssueList title="Warnings" items={result.warnings} color="var(--warning)" />
@@ -175,11 +201,60 @@ function ValidationResults({
   );
 }
 
+function LineIssueList({ lineIssues }: { lineIssues: TextValidationIssue[] }) {
+  if (lineIssues.length === 0) {
+    return null;
+  }
+  return (
+    <section className={styles.section}>
+      <h2 className={styles.dangerHeading}>Line Issues</h2>
+      <div className={styles.rowIssueStack}>
+        {lineIssues.map(({ line, exercise, issues }) => (
+          <div key={line} className={styles.rowIssueCard}>
+            <div className={styles.rowIssueHeader}>
+              Line {line} <span className={styles.rowIssueExercise}>— {exercise}</span>
+            </div>
+            <ul className={styles.rowIssueUl}>
+              {issues.map((issue, i) => (
+                <li key={i} className={styles.rowIssueLi}>
+                  {issue}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function TextValidationResults({ result, text }: { result: TextValidationResult; text: string }) {
+  const visualizerUrl = `${window.location.pathname}?mode=text&text=${encodeURIComponent(text)}`;
+
+  return (
+    <div>
+      <VerdictBanner verdict={result.verdict} messages={TEXT_VERDICT_MESSAGES} />
+      <RowSummary rows={result.lines} unit="line" />
+      <IssueList title="Issues to Fix" items={result.issues} color="var(--danger)" />
+      <LineIssueList lineIssues={result.lineIssues} />
+      <IssueList title="Warnings" items={result.warnings} color="var(--warning)" />
+      {result.lines.parsed > 0 && (
+        <a href={visualizerUrl} className={styles.visualizerLink}>
+          View in Visualizer →
+        </a>
+      )}
+    </div>
+  );
+}
+
 export function ValidatorPage() {
+  const [mode, setMode] = useState<InputMode>('url');
   const [url, setUrl] = useState(
     () => new URLSearchParams(window.location.search).get('url') ?? ''
   );
+  const [text, setText] = useState('');
   const [validationState, validate] = useSheetValidation();
+  const [textValidationState, validateText] = useTextValidation();
   const autoValidated = useRef(false);
 
   useEffect(() => {
@@ -191,10 +266,15 @@ export function ValidatorPage() {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    validate(url);
+    if (mode === 'url') {
+      validate(url);
+    } else {
+      validateText(text);
+    }
   }
 
-  const isDisabled = !url.trim() || validationState.status === 'loading';
+  const isDisabled =
+    mode === 'url' ? !url.trim() || validationState.status === 'loading' : !text.trim();
 
   return (
     <main className={styles.main}>
@@ -209,23 +289,65 @@ export function ValidatorPage() {
       <br />
 
       <p className={styles.introP}>
-        Paste your published Google Sheet URL below to check if it's compatible with DYEL
-        Visualizer.
-        <br /> <br />
-        Don't have a sheet yet?{' '}
-        <a href={EXAMPLE_SHEET_URL} target="_blank" rel="noreferrer" className={styles.accentLink}>
-          View the example spreadsheet.
-        </a>
+        {mode === 'url' ? (
+          <>
+            Paste your published Google Sheet URL below to check if it's compatible with DYEL
+            Visualizer.
+            <br /> <br />
+            Don't have a sheet yet?{' '}
+            <a
+              href={EXAMPLE_SHEET_URL}
+              target="_blank"
+              rel="noreferrer"
+              className={styles.accentLink}
+            >
+              View the example spreadsheet.
+            </a>
+          </>
+        ) : (
+          "Paste your exercises below (one per line) to check if they're compatible with DYEL Visualizer."
+        )}
       </p>
 
+      <div className={styles.modeToggle} role="tablist" aria-label="Data source">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={mode === 'url'}
+          className={clsx(styles.modeButton, mode === 'url' && styles.modeButtonActive)}
+          onClick={() => setMode('url')}
+        >
+          Sheet URL
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={mode === 'text'}
+          className={clsx(styles.modeButton, mode === 'text' && styles.modeButtonActive)}
+          onClick={() => setMode('text')}
+        >
+          Paste text
+        </button>
+      </div>
+
       <form onSubmit={handleSubmit} className={styles.form}>
-        <input
-          type="text"
-          value={url}
-          onChange={(e) => setUrl(e.target.value)}
-          placeholder="https://docs.google.com/spreadsheets/d/…"
-          className={styles.urlInput}
-        />
+        {mode === 'url' ? (
+          <input
+            type="text"
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            placeholder="https://docs.google.com/spreadsheets/d/…"
+            className={styles.urlInput}
+          />
+        ) : (
+          <textarea
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            placeholder={'comp squat 1rm 300lbs\ncomp bench 1rm 200lbs'}
+            className={styles.textArea}
+            rows={6}
+          />
+        )}
         <button
           type="submit"
           disabled={isDisabled}
@@ -234,16 +356,24 @@ export function ValidatorPage() {
             isDisabled ? styles.submitButtonDisabled : styles.submitButtonEnabled
           )}
         >
-          {validationState.status === 'loading' ? 'Checking…' : 'Check Sheet'}
+          {mode === 'url' && validationState.status === 'loading'
+            ? 'Checking…'
+            : mode === 'url'
+              ? 'Check Sheet'
+              : 'Check Text'}
         </button>
       </form>
 
-      {validationState.status === 'error' && (
+      {mode === 'url' && validationState.status === 'error' && (
         <p className={styles.errorP}>{validationState.message}</p>
       )}
 
-      {validationState.status === 'success' && (
+      {mode === 'url' && validationState.status === 'success' && (
         <ValidationResults result={validationState.result} sheetUrl={validationState.sheetUrl} />
+      )}
+
+      {mode === 'text' && textValidationState.status === 'success' && (
+        <TextValidationResults result={textValidationState.result} text={text} />
       )}
     </main>
   );

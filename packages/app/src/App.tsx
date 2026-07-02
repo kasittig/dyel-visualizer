@@ -31,8 +31,12 @@ export function App() {
       import.meta.env.VITE_SHEET_URL ??
       ''
   );
-  const [inputMode, setInputMode] = useState<InputMode>('url');
-  const [pastedText, setPastedText] = useState('');
+  const [inputMode, setInputMode] = useState<InputMode>(() =>
+    new URLSearchParams(window.location.search).get('mode') === 'text' ? 'text' : 'url'
+  );
+  const [pastedText, setPastedText] = useState(
+    () => new URLSearchParams(window.location.search).get('text') ?? ''
+  );
   const [panelForcedOpen, setPanelForcedOpen] = useState(false);
   const [refreshToken, setRefreshToken] = useState(0);
   const [activeTab, setActiveTab] = useState<PageTab>('sigma');
@@ -43,13 +47,25 @@ export function App() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    if (url) {
-      params.set('sheet', url);
-    } else {
+    if (inputMode === 'text') {
+      params.set('mode', 'text');
       params.delete('sheet');
+      if (pastedText) {
+        params.set('text', pastedText);
+      } else {
+        params.delete('text');
+      }
+    } else {
+      params.delete('mode');
+      params.delete('text');
+      if (url) {
+        params.set('sheet', url);
+      } else {
+        params.delete('sheet');
+      }
     }
     history.replaceState(null, '', '?' + params.toString());
-  }, [url]);
+  }, [inputMode, url, pastedText]);
 
   const sheetRef = extractSheetRef(url);
   const invalidUrl = url.length > 0 && !sheetRef;

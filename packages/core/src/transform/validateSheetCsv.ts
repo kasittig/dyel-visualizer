@@ -1,8 +1,7 @@
 import { nameToExercise } from './parsers/nameToExercise';
 import { extractCsvRows } from '../extract/csvExtract';
 import { detectWeightUnit } from './parsers/detectWeightUnit';
-import { findCol } from './parsers/findCol';
-import { findRepMaxCols } from './parsers/findRepMaxCols';
+import { validateRow } from './parsers/validateRow';
 
 export interface SheetValidationIssue {
   row: number;
@@ -147,56 +146,9 @@ export function validateSheetCsv(csv: string): SheetValidationResult {
       rowProblems.push(`Invalid date: "${dateStr}"`);
     }
 
-    const repMaxCols = findRepMaxCols(row);
-    let sessionsInRow = 0;
-
-    if (repMaxCols.length > 0) {
-      for (const { reps, value } of repMaxCols) {
-        const trimmed = value.trim();
-        if (trimmed === '') {
-          continue;
-        }
-        const weight = parseFloat(trimmed);
-        if (isNaN(weight)) {
-          rowWarnings.push(
-            `Invalid ${reps}RM value: "${trimmed}" (must be a number) — this value will be skipped`
-          );
-        } else {
-          sessionsInRow++;
-        }
-      }
-      if (sessionsInRow === 0) {
-        rowProblems.push('No valid rep-max values provided');
-      }
-    } else {
-      const weightStr = findCol(row, 'weight') ?? '';
-      const weight = parseFloat(weightStr);
-      if (!weightStr) {
-        rowProblems.push('Weight is missing');
-      } else if (isNaN(weight)) {
-        rowProblems.push(`Invalid weight: "${weightStr}" (must be a number)`);
-      }
-
-      const repsStr = row['reps']?.trim() ?? '';
-      const reps = parseInt(repsStr);
-      if (!repsStr) {
-        rowWarnings.push('Reps is missing. Will assume 1 rep was performed');
-      } else if (isNaN(reps) || reps <= 0) {
-        rowProblems.push(`Invalid reps: "${repsStr}" (must be a positive whole number)`);
-      }
-
-      if (rowProblems.length === 0) {
-        sessionsInRow = 1;
-      }
-    }
-
-    const rpeStr = row['rpe']?.trim() ?? '';
-    if (rpeStr) {
-      const rpeVal = parseFloat(rpeStr);
-      if (isNaN(rpeVal) || rpeVal < 1 || rpeVal > 10) {
-        rowWarnings.push(`Invalid RPE: "${rpeStr}" (must be a number between 1 and 10)`);
-      }
-    }
+    const { problems, warnings, sessionsInRow } = validateRow(row);
+    rowProblems.push(...problems);
+    rowWarnings.push(...warnings);
 
     if (rowProblems.length > 0) {
       rowsFullyFailed++;
