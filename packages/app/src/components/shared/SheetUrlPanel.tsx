@@ -80,7 +80,7 @@ export function SheetUrlPanel({
               }
               className={styles.accentLink}
             >
-              Check if my spreadsheet will work
+              See if your training log is compatible
             </a>
           </p>
           <div className={styles.modeToggle} role="tablist" aria-label="Data source">
