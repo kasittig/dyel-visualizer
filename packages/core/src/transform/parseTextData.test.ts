@@ -33,7 +33,15 @@ describe('parseTextData', () => {
     expect(result[0][1].reps).toBe(1);
   });
 
-  it('parses multiple lines mixing both grammars and units, independently', () => {
+  it('parses multiple lines with different units, independently', () => {
+    const result = parseTextData('comp squat 300lbs\ncomp bench 225lbs x5\ncomp deadlift 180kg');
+    expect(result).toHaveLength(3);
+    expect(result[0][1].unit).toBe('lbs');
+    expect(result[1][1].unit).toBe('lbs');
+    expect(result[2][1].unit).toBe('kg');
+  });
+
+  it('parses multiple lines mixing rep-max and plain grammars and units, independently', () => {
     const result = parseTextData(
       'comp squat 1rm 300lbs\ncomp bench 225lbs x5\ncomp deadlift 3rm 180kg'
     );
@@ -44,6 +52,11 @@ describe('parseTextData', () => {
   });
 
   it('falls back to the default unit when a line has no unit annotation', () => {
+    const result = parseTextData('comp squat 300', 'kg');
+    expect(result[0][1].unit).toBe('kg');
+  });
+
+  it('falls back to the default unit for a rep-max line with no unit annotation', () => {
     const result = parseTextData('comp squat 1rm 300', 'kg');
     expect(result[0][1].unit).toBe('kg');
   });

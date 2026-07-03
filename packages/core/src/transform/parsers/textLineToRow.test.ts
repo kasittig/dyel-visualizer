@@ -3,24 +3,34 @@ import { textLineToRow } from './textLineToRow';
 
 describe('textLineToRow', () => {
   describe('rep-max grammar', () => {
-    it('parses an exercise name with a unit-annotated rep-max', () => {
+    it('parses an exercise name with a unit-annotated rep-max as weight/reps', () => {
       expect(textLineToRow('comp squat 1rm 300lbs')).toEqual({
         exercise: 'comp squat',
-        '1rm (lbs)': '300',
+        'weight (lbs)': '300',
+        reps: '1',
       });
     });
 
     it('parses kg', () => {
       expect(textLineToRow('comp bench 3rm 140kg')).toEqual({
         exercise: 'comp bench',
-        '3rm (kg)': '140',
+        'weight (kg)': '140',
+        reps: '3',
       });
     });
 
     it('parses without a unit', () => {
       expect(textLineToRow('comp deadlift 5rm 405')).toEqual({
         exercise: 'comp deadlift',
-        '5rm': '405',
+        weight: '405',
+        reps: '5',
+      });
+    });
+
+    it('does not treat a token that only looks like a rep-max token as one', () => {
+      expect(textLineToRow('comp squat 1rmx 300')).toEqual({
+        exercise: 'comp squat 1rmx',
+        weight: '300',
       });
     });
   });
@@ -129,7 +139,8 @@ describe('textLineToRow', () => {
     it('parses a rep-max line with a date', () => {
       expect(textLineToRow('2026-02-05 comp squat 1rm 300lbs')).toEqual({
         exercise: 'comp squat',
-        '1rm (lbs)': '300',
+        'weight (lbs)': '300',
+        reps: '1',
         date: '2026-02-05',
       });
     });

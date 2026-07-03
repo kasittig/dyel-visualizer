@@ -60,40 +60,4 @@ describe('validateSheetCsv', () => {
     expect(r.columns.weightUnit).toBeNull();
     expect(r.warnings.some((w) => w.includes('unit'))).toBe(true);
   });
-
-  it('recognizes rep-max columns as satisfying weight/reps requirements', () => {
-    const repMax = `date,exercise,1rm (lbs),3rm,5rm\n2024-01-01,Squat,405,365,335`;
-    const r = validateSheetCsv(repMax);
-    expect(r.verdict).toBe('ok');
-    expect(r.columns.hasRepMaxCols).toBe(true);
-    expect(r.rows.parsed).toBe(3);
-    expect(r.rows.liftTypes.squat).toBe(3);
-  });
-
-  it('errors when neither weight/reps nor rep-max columns are present', () => {
-    const r = validateSheetCsv(MISSING_COLS);
-    expect(r.verdict).toBe('error');
-    expect(r.columns.hasRepMaxCols).toBe(false);
-  });
-
-  it('reports an invalid rep-max cell but keeps the other valid ones in the row', () => {
-    const badCell = `date,exercise,1rm,3rm\n2024-01-01,Squat,405,not-a-number`;
-    const r = validateSheetCsv(badCell);
-    expect(r.verdict).toBe('warning');
-    expect(r.rows.parsed).toBe(1);
-    expect(r.rowIssues.some((i) => i.issues.some((msg) => msg.includes('3RM')))).toBe(true);
-  });
-
-  it('errors a row with only blank/invalid rep-max cells', () => {
-    const allBlank = `date,exercise,1rm,3rm\n2024-01-01,Squat,,`;
-    const r = validateSheetCsv(allBlank);
-    expect(r.verdict).toBe('error');
-    expect(r.rows.parsed).toBe(0);
-  });
-
-  it('reads weight unit from a rep-max column header', () => {
-    const repMaxKg = `date,exercise,1rm (kg)\n2024-01-01,Squat,140`;
-    const r = validateSheetCsv(repMaxKg);
-    expect(r.columns.weightUnit).toBe('kg');
-  });
 });

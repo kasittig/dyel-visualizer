@@ -1,5 +1,5 @@
 import type { ConjugateExercise, TrainingSession, LiftUnits } from '../types/conjugate';
-import { parseSessions } from './parsers/parseSessions';
+import { parseSession } from './parsers/parseSession';
 import { nameToExercise } from './parsers/nameToExercise';
 import { extractCsvRows } from '../extract/csvExtract';
 import { detectWeightUnit } from './parsers/detectWeightUnit';
@@ -25,7 +25,8 @@ export function parseConjugateData(
     if (!lift) {
       continue;
     }
-    for (const session of parseSessions(row, unit)) {
+    const session = parseSession(row, unit);
+    if (session) {
       raw.push([lift, session]);
     }
   }

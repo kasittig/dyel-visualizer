@@ -9,9 +9,8 @@ export interface TrainingSessionBase {
 }
 
 /**
- * Validates a weight/reps pair and builds the resulting `TrainingSession`, shared by
- * `parseSession.ts` (single weight/reps row) and `parseRepMaxSessions.ts` (one call per
- * populated rep-max column).
+ * Validates a weight/reps pair and builds the resulting `TrainingSession`. Used by
+ * `parseSession.ts`.
  */
 export function buildTrainingSession(
   base: TrainingSessionBase,
