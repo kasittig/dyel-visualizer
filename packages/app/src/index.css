@@ -2,36 +2,48 @@
   /* Layout & Typography */
   --text: #3f3f46; /* Dark slate for high-readability body text */
   --text-h: #18181b; /* Crisp obsidian-black for headers */
-  --bg: #fafafa; /* Clean, laboratory light-gray background */
-  --border: #e4e4e7; /* Subtle light border */
-  --code-bg: #f4f4f5; /* Soft light-gray code blocks */
+  --bg: #f1f1f1; /* 🧪 THEME CHOICE: Soft, crisp light-gray canvas backdrop */
+  --code-bg: #ffffff; /* Pure white container cards for chart separation */
+  --border: #d4d4d8; /* Adjusted border to sit cleanly against #f1f1f1 */
+  --muted: #71717a; /* Solid slate gray for chart grid lines/ticks */
 
-  /* Primary Interactive Accents */
-  --accent: #db006c; /* Deep Vapor Pink (darkened slightly for light contrast) */
-  --accent-bg: rgba(219, 0, 108, 0.08);
-  --accent-border: rgba(219, 0, 108, 0.4);
+  /* 🟣 HIGH-VISIBILITY SYNTHWAVE PURPLE ACCENTS - LIGHT MODE */
+  --accent: #7a00cc; /* Vivid Synthwave Violet: Deep and crisp */
+  --accent-bg: rgba(122, 0, 204, 0.06);
+  --accent-border: rgba(122, 0, 204, 0.3);
   --social-bg: rgba(244, 244, 245, 0.6);
-  --shadow: rgba(0, 0, 0, 0.05) 0 10px 15px -3px, rgba(219, 0, 108, 0.05) 0 4px 6px -2px;
+  --shadow: rgba(0, 0, 0, 0.05) 0 10px 15px -3px, rgba(122, 0, 204, 0.03) 0 4px 6px -2px;
+  --on-accent: #ffffff; /* Pure white text remains perfectly legible over this purple */
 
-  /* System Status Colors */
+  /* System Status Colors - Light */
   --success: #008770; /* Darkened Digital Teal for readable green-checks */
   --danger: #d60042; /* Deep Hot Crimson for highly visible form errors */
-  --warning: #b86500; /* Deep Amber/Ochre to keep text alert labels accessible */
-  --on-accent: #ffffff; /* Pure white text on accents */
-  --muted: #a1a1aa; /* Muted gray for gridlines/ticks */
+  --warning: #b39200; /* Dark Industrial Yellow (Sweet Spot) */
 
   /* 10-Color Data Visualization Palette (Accessible Light Mode) */
-  --chart-1-cyan: #008fa3; /* Deep Cyber Teal */
-  --chart-2-pink: #db006c; /* Deep Vapor Pink */
-  --chart-3-lime: #249e00; /* Vivid Leaf Green */
-  --chart-4-purple: #7a00cc; /* Electric Violet */
-  --chart-5-yellow: #b58d00; /* Dark Laser Gold */
-  --chart-6-orange: #d94100; /* Sunset Orange */
-  --chart-7-magenta: #b800b8; /* Rich Fuchsia */
-  --chart-8-teal: #009675; /* Matrix Emerald Mint */
-  --chart-9-indigo: #2b2bff; /* Deep Glow Indigo */
-  --chart-10-coral: #d14343; /* Hot Coral */
+  --chart-1-cyan: #008fa3;
+  --chart-2-pink: #db006c;
+  --chart-3-lime: #008542;
+  --chart-4-purple: #7a00cc; /* Synchronized perfectly with your light accent color */
+  --chart-5-yellow: #ab9500;
+  --chart-6-orange: #d94100;
+  --chart-7-magenta: #b800b8;
+  --chart-8-teal: #009675;
+  --chart-9-indigo: #1a1aff; /* Deep Midnight Indigo */
+  --chart-10-coral: #d14343;
 
+  /* Backward Compatibility Mapping Shortcut Values */
+  --chart-sky: var(--chart-1-cyan);
+  --chart-pink: var(--chart-2-pink);
+  --chart-teal: var(--chart-8-teal);
+  --chart-blue: var(--chart-9-indigo);
+  --chart-lavender: var(--chart-4-purple);
+  --chart-peach: var(--chart-5-yellow);
+  --chart-maroon: var(--chart-6-orange);
+  --chart-sapphire: #007791;
+  --chart-flamingo: #cc5a71;
+
+  /* Global Fonts & Framework Overrides */
   --sans: 'Inter', system-ui, sans-serif;
   --heading: 'Chakra Petch', system-ui, sans-serif;
   --mono: 'JetBrains Mono', ui-monospace, Consolas, monospace;
@@ -51,6 +63,9 @@
   }
 }
 
+/* =============================================================
+   🌌 AUTOMATIC DARK MODE MEDIA TRIGGER (True Emerald Green)
+   ============================================================= */
 @media (prefers-color-scheme: dark) {
   :root {
     /* Layout & Typography */
@@ -59,33 +74,43 @@
     --bg: #09090b; /* Deep obsidian black background */
     --border: #27272a; /* Subtle dark border */
     --code-bg: #18181b; /* Sleek dark code blocks */
-
-    /* Primary Interactive Accents */
-    --accent: #39ff14; /* Radioactive Lime Green */
-    --accent-bg: rgba(57, 255, 20, 0.08);
-    --accent-border: rgba(57, 255, 20, 0.4);
-    --social-bg: rgba(24, 24, 27, 0.5);
-    --shadow:
-      rgba(0, 0, 0, 0.5) 0 10px 15px -3px, rgba(57, 255, 20, 0.15) 0 4px 6px -2px; /* Matrix green glow */
-
-    /* System Status Colors */
-    --success: #00ff66; /* Matrix Emerald: Striking, pure neon green */
-    --danger: #ff0055; /* Laser Crimson: A hot pink-tinted red that screams "error" in cyberpunk */
-    --warning: #ffd000; /* Industrial Yellow: Vivid warning tone with perfect warmth */
-    --on-accent: #000000; /* Pure black text on accents */
     --muted: #52525b; /* Dimmed gray for gridlines/ticks */
 
+    /* 🟢 HIGH-VIBRANCY TRUER GREEN ACCENTS */
+    --accent: #00ff66; /* Matrix Emerald: Striking, pure neon green */
+    --accent-bg: rgba(0, 255, 102, 0.08);
+    --accent-border: rgba(0, 255, 102, 0.4);
+    --social-bg: rgba(24, 24, 27, 0.5);
+    --shadow: rgba(0, 0, 0, 0.5) 0 10px 15px -3px, rgba(0, 255, 102, 0.15) 0 4px 6px -2px;
+    --on-accent: #000000; /* Pure black text for button legibility over neon */
+
+    /* System Status Colors - Dark */
+    --success: #00ffcc; /* Crisp Digital Neo-Teal */
+    --danger: #ff0055; /* Laser Crimson Red */
+    --warning: #ffd000; /* Warm Industrial Cyber Yellow (Sweet Spot) */
+
     /* 10-Color Data Visualization Palette */
-    --chart-1-cyan: #00f0ff; /* Neon Blue/Cyan */
-    --chart-2-pink: #ff007f; /* Synthwave Pink */
-    --chart-3-lime: #39ff14; /* Radioactive Lime */
-    --chart-4-purple: #9d00ff; /* Electric Violet */
-    --chart-5-yellow: #fffb00; /* Laser Yellow */
-    --chart-6-orange: #ff5500; /* Burning Sunset Orange */
-    --chart-7-magenta: #ff00ff; /* Pure Fuchsia */
-    --chart-8-teal: #00ffcc; /* Cyberpunk Matrix Teal */
-    --chart-9-indigo: #4d4dff; /* Deep Glow Indigo */
-    --chart-10-coral: #ff6b6b; /* Hot Coral */
+    --chart-1-cyan: #00f0ff;
+    --chart-2-pink: #ff007f;
+    --chart-3-lime: #00ff66; /* Synced to true green accent */
+    --chart-4-purple: #9d00ff;
+    --chart-5-yellow: #ffea00;
+    --chart-6-orange: #ff5500;
+    --chart-7-magenta: #ff00ff;
+    --chart-8-teal: #00ffcc;
+    --chart-9-indigo: #4d4dff;
+    --chart-10-coral: #ff6b6b;
+
+    /* Backward Compatibility Mapping */
+    --chart-sky: var(--chart-1-cyan);
+    --chart-pink: var(--chart-2-pink);
+    --chart-teal: var(--chart-8-teal);
+    --chart-blue: var(--chart-9-indigo);
+    --chart-lavender: var(--chart-4-purple);
+    --chart-peach: var(--chart-5-yellow);
+    --chart-maroon: var(--chart-6-orange);
+    --chart-sapphire: #00bfff;
+    --chart-flamingo: #ff8da1;
   }
 
   #social .button-icon {
@@ -93,6 +118,9 @@
   }
 }
 
+/* =============================================================
+   🧱 STRUCTURAL & ELEMENT COMPONENT STYLING
+   ============================================================= */
 #root {
   width: 1126px;
   max-width: 100%;
@@ -125,6 +153,7 @@ h1 {
     margin: 20px 0;
   }
 }
+
 h2 {
   font-size: 24px;
   line-height: 118%;
@@ -134,6 +163,7 @@ h2 {
     font-size: 20px;
   }
 }
+
 p {
   margin: 0;
 }
@@ -151,6 +181,7 @@ code {
   line-height: 135%;
   padding: 4px 8px;
   background: var(--code-bg);
+  border: 1px solid var(--border);
 }
 
 button.tab-title {
