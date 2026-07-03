@@ -11,12 +11,12 @@ describe('extractTextLines', () => {
   });
 
   it('splits multi-line input into trimmed lines, dropping blank lines in between', () => {
-    const input = 'comp squat 300lbs\n\ncomp bench 200lbs\n';
-    expect(extractTextLines(input)).toEqual(['comp squat 300lbs', 'comp bench 200lbs']);
+    const input = 'comp squat 1rm 300lbs\n\ncomp bench 1rm 200lbs\n';
+    expect(extractTextLines(input)).toEqual(['comp squat 1rm 300lbs', 'comp bench 1rm 200lbs']);
   });
 
   it('trims leading/trailing whitespace on each line', () => {
-    const input = '  comp squat 300lbs  \n  comp bench 200lbs  ';
-    expect(extractTextLines(input)).toEqual(['comp squat 300lbs', 'comp bench 200lbs']);
+    const input = '  comp squat 1rm 300lbs  \n  comp bench 1rm 200lbs  ';
+    expect(extractTextLines(input)).toEqual(['comp squat 1rm 300lbs', 'comp bench 1rm 200lbs']);
   });
 });
