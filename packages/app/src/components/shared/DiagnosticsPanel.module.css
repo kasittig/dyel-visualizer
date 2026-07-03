@@ -3,10 +3,7 @@
 }
 
 .card {
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  overflow: hidden;
-  background: var(--bg);
+  composes: chartCard from '../charts/charts.module.css';
 }
 
 .cardPadded {

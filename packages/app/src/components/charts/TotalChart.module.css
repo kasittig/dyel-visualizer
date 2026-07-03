@@ -1,8 +1,5 @@
 .card {
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  overflow: hidden;
+  composes: chartCard from './charts.module.css';
 }
 .sectionLabel {
   composes: sectionLabel from './charts.module.css';
