@@ -19,31 +19,63 @@ import {
 import type { DeadliftStancePreference, LiftType } from '@dyel/core';
 import { useLastSessionStats } from './hooks/data/useLastSessionStats';
 import { useBaselineTargetExercises } from './hooks/data/useBaselineTargetExercises';
+import { useLocalStorageState } from './hooks/infra/useLocalStorageState';
 import { extractSheetRef, initialTabState, MAIN_TABS } from './utils/appUtils';
 import type { InputMode, PageTab, TabState } from './utils/appUtils';
 import { buildTabRows, computeEffectiveNames, extractPairs } from './utils/appDataUtils';
+import { serializeSheetCache, deserializeSheetCache } from './utils/sheetCacheUtils';
+import type { CachedSheetData } from './utils/sheetCacheUtils';
 import styles from './App.module.css';
 
 export function App() {
-  const [url, setUrl] = useState(
-    () =>
-      new URLSearchParams(window.location.search).get('sheet') ??
-      import.meta.env.VITE_SHEET_URL ??
-      ''
+  // Runs once, before the useLocalStorageState hooks below read from localStorage: an
+  // explicit query param (e.g. a shared link) must override whatever was previously cached.
+  useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    const qUrl = params.get('sheet');
+    const qMode = params.get('mode');
+    const qText = params.get('text');
+    if (qMode === 'text') {
+      localStorage.setItem('dyel:inputMode', JSON.stringify('text'));
+    } else if (qUrl !== null) {
+      localStorage.setItem('dyel:inputMode', JSON.stringify('url'));
+    }
+    if (qUrl !== null) {
+      localStorage.setItem('dyel:url', JSON.stringify(qUrl));
+    }
+    if (qText !== null) {
+      localStorage.setItem('dyel:pastedText', JSON.stringify(qText));
+    }
+    return null;
+  });
+
+  const [url, setUrl] = useLocalStorageState<string>(
+    'dyel:url',
+    () => import.meta.env.VITE_SHEET_URL ?? ''
   );
-  const [inputMode, setInputMode] = useState<InputMode>(() =>
-    new URLSearchParams(window.location.search).get('mode') === 'text' ? 'text' : 'url'
-  );
-  const [pastedText, setPastedText] = useState(
-    () => new URLSearchParams(window.location.search).get('text') ?? ''
-  );
+  const [inputMode, setInputMode] = useLocalStorageState<InputMode>('dyel:inputMode', 'url');
+  const [pastedText, setPastedText] = useLocalStorageState<string>('dyel:pastedText', '');
   const [panelForcedOpen, setPanelForcedOpen] = useState(false);
   const [refreshToken, setRefreshToken] = useState(0);
-  const [activeTab, setActiveTab] = useState<PageTab>('sigma');
+  const [activeTab, setActiveTab] = useLocalStorageState<PageTab>('dyel:activeTab', 'sigma');
   const [shownResetToken, setShownResetToken] = useState(0);
-  const [tabState, setTabState] = useState<Record<LiftType, TabState>>(initialTabState);
-  const [deadliftStance, setDeadliftStance] = useState<DeadliftStancePreference>('sumo');
+  const [tabState, setTabState] = useLocalStorageState<Record<LiftType, TabState>>(
+    'dyel:tabState',
+    initialTabState
+  );
+  const [deadliftStance, setDeadliftStance] = useLocalStorageState<DeadliftStancePreference>(
+    'dyel:deadliftStance',
+    'sumo'
+  );
   const [dateRange, setDateRange] = useState<DateRange>({ from: undefined, to: undefined });
+  const [cachedSheetData, setCachedSheetData] = useLocalStorageState<CachedSheetData | null>(
+    'dyel:sheetDataCache',
+    null,
+    {
+      serialize: (v) => (v === null ? 'null' : serializeSheetCache(v)),
+      deserialize: (raw) => (raw === 'null' ? null : deserializeSheetCache(raw)),
+    }
+  );
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -67,10 +99,28 @@ export function App() {
     history.replaceState(null, '', '?' + params.toString());
   }, [inputMode, url, pastedText]);
 
-  const sheetRef = extractSheetRef(url);
+  const sheetRef = useMemo(() => extractSheetRef(url), [url]);
   const invalidUrl = url.length > 0 && !sheetRef;
 
   const sheetState = useConjugateData(sheetRef, '0', refreshToken);
+  const loadedSheetPairs = sheetState.status === 'success' ? sheetState.pairs : null;
+
+  useEffect(() => {
+    if (loadedSheetPairs && sheetRef) {
+      setCachedSheetData({ sheetKey: url, pairs: loadedSheetPairs });
+    }
+  }, [loadedSheetPairs, sheetRef, url, setCachedSheetData]);
+
+  const effectiveSheetState: ConjugateDataState = useMemo(() => {
+    if (sheetState.status === 'success' || sheetState.status === 'error') {
+      return sheetState;
+    }
+    if (cachedSheetData && cachedSheetData.sheetKey === url) {
+      return { status: 'success', pairs: cachedSheetData.pairs };
+    }
+    return sheetState;
+  }, [sheetState, cachedSheetData, url]);
+
   const textPairs = useMemo(() => parseTextData(pastedText), [pastedText]);
   const textState: ConjugateDataState = useMemo(() => {
     if (pastedText.trim().length === 0) {
@@ -85,7 +135,7 @@ export function App() {
         'No usable exercise lines found. Try one exercise per line, e.g. "comp squat 1rm 300lbs".',
     };
   }, [pastedText, textPairs]);
-  const state = inputMode === 'text' ? textState : sheetState;
+  const state = inputMode === 'text' ? textState : effectiveSheetState;
 
   const showUrlPanel = panelForcedOpen || state.status !== 'success';
 
