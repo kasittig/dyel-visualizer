@@ -2,7 +2,7 @@
   display: grid;
   grid-template-columns: 260px 1fr;
   max-width: 680px;
-  background: var(--bg);
+  background: var(--code-bg);
   border: 1px solid var(--border);
   border-radius: 6px;
   overflow: hidden;

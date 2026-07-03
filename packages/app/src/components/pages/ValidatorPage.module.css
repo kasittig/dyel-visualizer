@@ -188,7 +188,7 @@
   border: 1px solid var(--border);
   border-radius: 4px;
   box-sizing: border-box;
-  background: var(--bg);
+  background: var(--code-bg);
   color: var(--text-h);
   transition:
     border-color 0.15s,
@@ -262,7 +262,7 @@
   border: 1px solid var(--border);
   border-radius: 4px;
   box-sizing: border-box;
-  background: var(--bg);
+  background: var(--code-bg);
   color: var(--text-h);
   resize: vertical;
   margin-bottom: 1rem;
