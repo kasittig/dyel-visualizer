@@ -26,6 +26,7 @@ Single-page React app with no backend. Data comes from either a user-supplied Go
 2. The resulting `ConjugateDataPair[]` flows through exercise-type tabs (squat / bench / deadlift / accessory), `ExerciseFilters`, and `LiftTabPanel` (which composes `ConjugateCharts` + `VariationRadarChart` + `DiagnosticsPanel`)
 3. `useLastSessionStats` computes per-exercise stats from the pair list — e1RM, last session, predicted e1RM, variant factors, resistance offsets
 4. `ErrorBoundary` wraps the root in `main.tsx`
+5. Settings (`url`, `inputMode`, `pastedText`, `activeTab`, `tabState`, `deadliftStance`) and the last successfully fetched sheet's `ConjugateDataPair[]` are persisted to `localStorage` via `useLocalStorageState`, so a revisit restores the previous configuration and renders the last sheet's data instantly instead of a blank/loading state. Explicit `?sheet=`/`?mode=`/`?text=` query params always override cached settings (reconciled once on mount). The sheet-data cache is keyed by the sheet URL, so switching sheets never shows stale data from a different sheet; there is no staleness/invalidation logic — users refresh manually via the existing refresh button.
 
 **Tab state:** `App.tsx` owns `tabState: Record<LiftType, TabState>` (initialized via `initialTabState()`). Active non-lift tabs: `"sigma"` and `"calculator"`.
 
@@ -46,7 +47,7 @@ Each subdirectory has an `index.ts` barrel and a `CLAUDE.md` with per-file descr
 | ------------ | ------------------------------------------------------------------- |
 | `conjugate/` | `useConjugateData`, `useConjugateChartData`                         |
 | `data/`      | `useBaselineTargetExercises`, `useIndexData`, `useLastSessionStats` |
-| `infra/`     | `useCsvResource`, `useSheetValidation`                              |
+| `infra/`     | `useCsvResource`, `useSheetValidation`, `useLocalStorageState`      |
 
 Each subdirectory has an `index.ts` barrel and a `CLAUDE.md` with per-file descriptions.
 
@@ -65,6 +66,7 @@ Each subdirectory has an `index.ts` barrel and a `CLAUDE.md` with per-file descr
 | `src/hooks/data/useBaselineTargetExercises.ts` | Builds `baselineExByType` and `targetExByType` maps; shared by `TotalChart` and `SigmaRadarChart`                                                                 |
 | `src/hooks/conjugate/useConjugateChartData.ts` | All data aggregation for `ConjugateCharts` (grouping, normalization, forward-fill); the component itself is presentation-only                                     |
 | `src/hooks/data/useIndexData.ts`               | Fetches and parses the published index sheet CSV; returns `IndexEntry[]`                                                                                          |
+| `src/utils/sheetCacheUtils.ts`                 | Pure serialize/deserialize helpers for caching `ConjugateDataPair[]` to localStorage (handles `Date` round-tripping)                                              |
 
 **Dev proxy:** `vite.config.ts` defines a `sheetsProxyPlugin` that forwards `/sheets-proxy/*` to `https://docs.google.com/*` using Node's `fetch`, which follows redirects server-side and avoids CORS issues. In production `useConjugateData` hits Google directly — this only works with published sheets.
 
