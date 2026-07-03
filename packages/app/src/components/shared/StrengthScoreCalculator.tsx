@@ -29,9 +29,9 @@ function tierInfo(percentile: number): { label: string; color: string } {
 }
 
 const METRICS = [
-  { key: 'wilks' as const, label: 'Wilks', barColor: '#9b59b6' },
-  { key: 'dots' as const, label: 'DOTS', barColor: '#3498db' },
-  { key: 'schwartzmalone' as const, label: 'Schwartz-Malone', barColor: '#e74c3c' },
+  { key: 'wilks' as const, label: 'Wilks', barColor: 'var(--accent)' },
+  { key: 'dots' as const, label: 'DOTS', barColor: 'var(--chart-blue)' },
+  { key: 'schwartzmalone' as const, label: 'Schwartz-Malone', barColor: 'var(--chart-maroon)' },
 ];
 
 export function StrengthScoreCalculator({
@@ -135,7 +135,7 @@ export function StrengthScoreCalculator({
                 </div>
                 <div
                   className={styles.scoreNumber}
-                  style={{ color: score !== null ? 'var(--text-h)' : '#d0cfd3' }}
+                  style={{ color: score !== null ? 'var(--text-h)' : 'var(--muted)' }}
                 >
                   {score !== null ? score.toFixed(2) : '—'}
                 </div>

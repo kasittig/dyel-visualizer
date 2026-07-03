@@ -1,17 +1,36 @@
 :root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
-  --border: #e5e4e7;
-  --code-bg: #f4f3ec;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
-  --social-bg: rgba(244, 243, 236, 0.5);
-  --shadow: rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
-  --success: #16a34a;
-  --danger: #dc2626;
-  --warning: #d97706;
+  /* Layout & Typography */
+  --text: #3f3f46; /* Dark slate for high-readability body text */
+  --text-h: #18181b; /* Crisp obsidian-black for headers */
+  --bg: #fafafa; /* Clean, laboratory light-gray background */
+  --border: #e4e4e7; /* Subtle light border */
+  --code-bg: #f4f4f5; /* Soft light-gray code blocks */
+
+  /* Primary Interactive Accents */
+  --accent: #db006c; /* Deep Vapor Pink (darkened slightly for light contrast) */
+  --accent-bg: rgba(219, 0, 108, 0.08);
+  --accent-border: rgba(219, 0, 108, 0.4);
+  --social-bg: rgba(244, 244, 245, 0.6);
+  --shadow: rgba(0, 0, 0, 0.05) 0 10px 15px -3px, rgba(219, 0, 108, 0.05) 0 4px 6px -2px;
+
+  /* System Status Colors */
+  --success: #008770; /* Darkened Digital Teal for readable green-checks */
+  --danger: #d60042; /* Deep Hot Crimson for highly visible form errors */
+  --warning: #b86500; /* Deep Amber/Ochre to keep text alert labels accessible */
+  --on-accent: #ffffff; /* Pure white text on accents */
+  --muted: #a1a1aa; /* Muted gray for gridlines/ticks */
+
+  /* 10-Color Data Visualization Palette (Accessible Light Mode) */
+  --chart-1-cyan: #008fa3; /* Deep Cyber Teal */
+  --chart-2-pink: #db006c; /* Deep Vapor Pink */
+  --chart-3-lime: #249e00; /* Vivid Leaf Green */
+  --chart-4-purple: #7a00cc; /* Electric Violet */
+  --chart-5-yellow: #b58d00; /* Dark Laser Gold */
+  --chart-6-orange: #d94100; /* Sunset Orange */
+  --chart-7-magenta: #b800b8; /* Rich Fuchsia */
+  --chart-8-teal: #009675; /* Matrix Emerald Mint */
+  --chart-9-indigo: #2b2bff; /* Deep Glow Indigo */
+  --chart-10-coral: #d14343; /* Hot Coral */
 
   --sans: 'Inter', system-ui, sans-serif;
   --heading: 'Chakra Petch', system-ui, sans-serif;
@@ -34,19 +53,39 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --border: #2e303a;
-    --code-bg: #1f2028;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
-    --social-bg: rgba(47, 48, 58, 0.5);
-    --shadow: rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
-    --success: #4ade80;
-    --danger: #f87171;
-    --warning: #fbbf24;
+    /* Layout & Typography */
+    --text: #a1a1aa; /* Soft gray for readable body text */
+    --text-h: #f4f4f5; /* Crisp off-white for headers */
+    --bg: #09090b; /* Deep obsidian black background */
+    --border: #27272a; /* Subtle dark border */
+    --code-bg: #18181b; /* Sleek dark code blocks */
+
+    /* Primary Interactive Accents */
+    --accent: #39ff14; /* Radioactive Lime Green */
+    --accent-bg: rgba(57, 255, 20, 0.08);
+    --accent-border: rgba(57, 255, 20, 0.4);
+    --social-bg: rgba(24, 24, 27, 0.5);
+    --shadow:
+      rgba(0, 0, 0, 0.5) 0 10px 15px -3px, rgba(57, 255, 20, 0.15) 0 4px 6px -2px; /* Matrix green glow */
+
+    /* System Status Colors */
+    --success: #00ff66; /* Matrix Emerald: Striking, pure neon green */
+    --danger: #ff0055; /* Laser Crimson: A hot pink-tinted red that screams "error" in cyberpunk */
+    --warning: #ffd000; /* Industrial Yellow: Vivid warning tone with perfect warmth */
+    --on-accent: #000000; /* Pure black text on accents */
+    --muted: #52525b; /* Dimmed gray for gridlines/ticks */
+
+    /* 10-Color Data Visualization Palette */
+    --chart-1-cyan: #00f0ff; /* Neon Blue/Cyan */
+    --chart-2-pink: #ff007f; /* Synthwave Pink */
+    --chart-3-lime: #39ff14; /* Radioactive Lime */
+    --chart-4-purple: #9d00ff; /* Electric Violet */
+    --chart-5-yellow: #fffb00; /* Laser Yellow */
+    --chart-6-orange: #ff5500; /* Burning Sunset Orange */
+    --chart-7-magenta: #ff00ff; /* Pure Fuchsia */
+    --chart-8-teal: #00ffcc; /* Cyberpunk Matrix Teal */
+    --chart-9-indigo: #4d4dff; /* Deep Glow Indigo */
+    --chart-10-coral: #ff6b6b; /* Hot Coral */
   }
 
   #social .button-icon {
@@ -118,7 +157,7 @@ button.tab-title {
   background: none;
   border: none;
   padding: 0.2rem 0.35rem;
-  margin: -0.2rem -0.35rem;
+  margin: 0.5rem 0.5rem;
   cursor: pointer;
   width: calc(100% + 0.7rem);
   border-radius: 5px;

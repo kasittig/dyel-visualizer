@@ -1,14 +1,15 @@
 export const LINE_COLORS = [
   'var(--accent)',
-  '#10b981',
-  '#f59e0b',
-  '#ef4444',
-  '#8b5cf6',
-  '#06b6d4',
-  '#f97316',
-  '#ec4899',
-  '#84cc16',
-  '#14b8a6',
+  'var(--chart-1-cyan)',
+  'var(--chart-2-pink)',
+  'var(--chart-3-lime)',
+  'var(--chart-4-purple)',
+  'var(--chart-5-yellow)',
+  'var(--chart-6-orange)',
+  'var(--chart-7-magenta)',
+  'var(--chart-8-teal)',
+  'var(--chart-9-indigo)',
+  'var(--chart-10-coral)',
 ];
 
 export function formatDate(str: string): string {

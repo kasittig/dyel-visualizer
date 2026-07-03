@@ -27,6 +27,7 @@ export function TotalChart({ chartData, unit }: { chartData: ChartPoint[]; unit:
           stroke={SQUAT_COLOR}
           dot={{ r: 3 }}
           activeDot={{ r: 5 }}
+          strokeDasharray="3 4"
           connectNulls
           isAnimationActive={false}
         />
@@ -47,6 +48,7 @@ export function TotalChart({ chartData, unit }: { chartData: ChartPoint[]; unit:
           stroke={DEADLIFT_COLOR}
           dot={{ r: 3 }}
           activeDot={{ r: 5 }}
+          strokeDasharray="7 7"
           connectNulls
           isAnimationActive={false}
         />
@@ -67,7 +69,7 @@ export function TotalChart({ chartData, unit }: { chartData: ChartPoint[]; unit:
           dataKey="total"
           name="Est. Total"
           stroke={TOTAL_COLOR}
-          strokeDasharray="5 5"
+          strokeDasharray="3 3"
           strokeWidth={2}
           dot={{ r: 3 }}
           activeDot={{ r: 5 }}

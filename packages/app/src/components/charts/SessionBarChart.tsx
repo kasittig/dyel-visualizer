@@ -13,7 +13,7 @@ import type { ChartPoint } from '@dyel/core';
 import { ChartEmpty } from './DateLineChart';
 import styles from './SessionBarChart.module.css';
 
-import { SQUAT_COLOR, BENCH_COLOR, DEADLIFT_COLOR, TOTAL_COLOR } from './colors.ts';
+import { SQUAT_COLOR, BENCH_COLOR, DEADLIFT_COLOR, PUSH_PULL_COLOR } from './colors.ts';
 
 export function SessionBarChart({ chartData, unit }: { chartData: ChartPoint[]; unit: string }) {
   if (chartData.length === 0) {
@@ -40,7 +40,7 @@ export function SessionBarChart({ chartData, unit }: { chartData: ChartPoint[]; 
           <Bar dataKey="squat" name="Squat" fill={SQUAT_COLOR} />
           <Bar dataKey="bench" name="Bench" fill={BENCH_COLOR} />
           <Bar dataKey="deadlift" name="Deadlift" fill={DEADLIFT_COLOR} />
-          <Bar dataKey="volume" name="Accessory Volume" fill={TOTAL_COLOR} />
+          <Bar dataKey="volume" name="Accessory Volume" fill={PUSH_PULL_COLOR} />
         </BarChart>
       </ResponsiveContainer>
     </div>

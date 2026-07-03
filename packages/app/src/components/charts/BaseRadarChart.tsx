@@ -41,6 +41,7 @@ const renderCustomAxis = (props: CustomAxisTickProps): React.JSX.Element => {
       textAnchor={textAnchor}
       className="recharts-polar-angle-axis-tick-value" // Matches internal style sheets
       fontSize={11}
+      fill="var(--text)"
     >
       {payload.value}
     </Text>
@@ -88,17 +89,28 @@ export function BaseRadarChart({
             }
             style={{ cursor: onClick ? 'pointer' : undefined }}
           >
-            <PolarGrid />
+            <PolarGrid stroke="var(--border)" />
             <PolarAngleAxis
               dataKey={angleKey}
               tick={(props: RechartsTickParam) => renderCustomAxis(props as CustomAxisTickProps)}
             />
-            <PolarRadiusAxis tick={{ fontSize: 10 }} unit={` ${unit}`} angle={90} />
-            <Radar dataKey="e1rm" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.25} />
+            <PolarRadiusAxis
+              tick={{ fontSize: 10, fill: 'var(--text)' }}
+              unit={` ${unit}`}
+              angle={90}
+              stroke="none"
+            />
+            <Radar
+              dataKey="e1rm"
+              stroke="var(--chart-1-cyan)"
+              fill="var(--chart-1-cyan)"
+              fillOpacity={0.15}
+              strokeWidth={2}
+            />
             {overlayDataKey && (
               <Radar
                 dataKey={overlayDataKey}
-                stroke="#f97316"
+                stroke="var(--chart-2-pink)"
                 fill="none"
                 strokeWidth={2}
                 strokeDasharray="5 3"

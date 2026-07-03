@@ -3,12 +3,13 @@ import { PieChart, Pie, Cell, Tooltip, Legend } from 'recharts';
 import type { ChartPoint } from '@dyel/core';
 import { CollapsibleSection } from '../shared/CollapsibleSection';
 import { BaseRadarChart } from './BaseRadarChart';
+import { SQUAT_COLOR, BENCH_COLOR, DEADLIFT_COLOR } from './colors';
 import styles from './SigmaChart.module.css';
 
 const LIFT_COLORS: Record<string, string> = {
-  Squat: '#e74c3c',
-  Bench: '#3498db',
-  Deadlift: '#f1c40f',
+  Squat: SQUAT_COLOR,
+  Bench: BENCH_COLOR,
+  Deadlift: DEADLIFT_COLOR,
 };
 
 export function SigmaChart({ chartData, unit }: { chartData: ChartPoint[]; unit: string }) {

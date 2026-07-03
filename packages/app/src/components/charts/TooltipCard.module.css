@@ -1,6 +1,6 @@
 .card {
-  background: var(--bg, #fff);
-  border: 1px solid var(--border, #ccc);
+  background: var(--bg, #eff1f5);
+  border: 1px solid var(--border, #ccd0da);
   border-radius: 4px;
   padding: 6px 10px;
   font-size: 0.8rem;
