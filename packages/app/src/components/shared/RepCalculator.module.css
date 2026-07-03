@@ -2,7 +2,7 @@
   display: grid;
   grid-template-columns: 260px 1fr;
   max-width: 680px;
-  background: var(--bg);
+  background: var(--code-bg);
   border: 1px solid var(--border);
   border-radius: 6px;
   overflow: hidden;
@@ -82,7 +82,7 @@
 .chipActive {
   background: var(--accent);
   border-color: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
 }
 
 .input {
@@ -101,8 +101,8 @@
 
 .input:focus {
   outline: none;
-  border-color: rgba(170, 59, 255, 0.5);
-  box-shadow: 0 0 0 3px rgba(170, 59, 255, 0.1);
+  border-color: var(--accent-border);
+  box-shadow: 0 0 0 3px var(--accent-bg);
 }
 
 /* Hide spinner arrows on number inputs */

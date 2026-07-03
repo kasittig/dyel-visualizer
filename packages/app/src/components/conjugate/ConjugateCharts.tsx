@@ -10,7 +10,7 @@ import {
   NORMALIZED_LABEL,
 } from '../../hooks/conjugate/useConjugateChartData';
 import { DateLineChart, ChartEmpty } from '../charts/DateLineChart';
-import { TooltipCard } from '../charts/TooltipCard';
+import { ChartTooltip } from '../charts/TooltipCard';
 import styles from './ConjugateCharts.module.css';
 
 export function ConjugateCharts({
@@ -61,28 +61,23 @@ export function ConjugateCharts({
       }
       const isoDate = payload[0].payload!.date;
       return (
-        <TooltipCard>
-          <div className={styles.tooltipDate}>{label}</div>
-          {payload.map((item) => {
+        <ChartTooltip
+          label={label}
+          lines={payload.map((item) => {
             const name = String(item.name);
             const bestSet =
               name !== NORMALIZED_KEY ? bestSetByLabelAndDate.get(name)?.get(isoDate) : undefined;
-            return (
-              <div key={name} className={styles.tooltipItem}>
-                <div style={{ color: item.color }}>{name}</div>
-                <div>
-                  e1RM: {String(item.value)} {unit}
-                </div>
-                {bestSet && (
-                  <div className={styles.tooltipMuted}>
-                    {bestSet.sets}×{bestSet.reps} @ {bestSet.weight} {unit}
-                    {bestSet.rpe != null ? ` · RPE ${bestSet.rpe}` : ''}
-                  </div>
-                )}
-              </div>
-            );
+            return {
+              key: name,
+              name,
+              color: item.color,
+              detail: `e1RM: ${item.value} ${unit}`,
+              extra: bestSet
+                ? `${bestSet.sets}×${bestSet.reps} @ ${bestSet.weight} ${unit}${bestSet.rpe != null ? ` · RPE ${bestSet.rpe}` : ''}`
+                : undefined,
+            };
           })}
-        </TooltipCard>
+        />
       );
     },
     [bestSetByLabelAndDate, unit]

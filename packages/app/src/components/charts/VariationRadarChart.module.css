@@ -1,6 +1,15 @@
-.section { composes: section from './charts.module.css'; }
-.label { composes: label from './charts.module.css'; }
-.chartWrapper { composes: chartWrapper from './charts.module.css'; }
-
-.tooltipName { font-weight: 600; }
-.tooltipMuted { opacity: 0.7; }
+.card {
+  composes: chartCard from './charts.module.css';
+}
+.section {
+  composes: section from './charts.module.css';
+}
+.label {
+  composes: label from './charts.module.css';
+}
+.chartWrapper {
+  composes: chartWrapper from './charts.module.css';
+}
+.sectionLabel {
+  composes: sectionLabel from './charts.module.css';
+}

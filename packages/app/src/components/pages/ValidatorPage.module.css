@@ -142,7 +142,7 @@
   margin-top: 0.5rem;
   padding: 4px 14px;
   background: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
   border: 1px solid var(--accent);
   border-radius: 999px;
   text-decoration: none;
@@ -188,7 +188,7 @@
   border: 1px solid var(--border);
   border-radius: 4px;
   box-sizing: border-box;
-  background: var(--bg);
+  background: var(--code-bg);
   color: var(--text-h);
   transition:
     border-color 0.15s,
@@ -196,13 +196,13 @@
 }
 .urlInput:focus {
   outline: none;
-  border-color: rgba(170, 59, 255, 0.5);
-  box-shadow: 0 0 0 3px rgba(170, 59, 255, 0.1);
+  border-color: var(--accent-border);
+  box-shadow: 0 0 0 3px var(--accent-bg);
 }
 .submitButton {
   padding: 4px 14px;
   background: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
   border: 1px solid var(--accent);
   border-radius: 999px;
   font-family: var(--heading);
@@ -251,7 +251,7 @@
 .modeButtonActive {
   background: var(--accent);
   border-color: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
 }
 
 .textArea {
@@ -262,7 +262,7 @@
   border: 1px solid var(--border);
   border-radius: 4px;
   box-sizing: border-box;
-  background: var(--bg);
+  background: var(--code-bg);
   color: var(--text-h);
   resize: vertical;
   margin-bottom: 1rem;
@@ -272,6 +272,6 @@
 }
 .textArea:focus {
   outline: none;
-  border-color: rgba(170, 59, 255, 0.5);
-  box-shadow: 0 0 0 3px rgba(170, 59, 255, 0.1);
+  border-color: var(--accent-border);
+  box-shadow: 0 0 0 3px var(--accent-bg);
 }

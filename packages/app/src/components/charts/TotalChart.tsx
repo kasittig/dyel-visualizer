@@ -1,6 +1,7 @@
 import { Line, Tooltip } from 'recharts';
 import type { ChartPoint } from '@dyel/core';
 import { DateLineChart, ChartEmpty } from './DateLineChart';
+import { ChartTooltip } from './TooltipCard';
 import styles from './TotalChart.module.css';
 import {
   SQUAT_COLOR,
@@ -19,7 +20,26 @@ export function TotalChart({ chartData, unit }: { chartData: ChartPoint[]; unit:
     <div className={styles.card}>
       <span className={styles.sectionLabel}>e1RM Over Time</span>
       <DateLineChart data={chartData} unit={unit} yAxisWidth={55}>
-        <Tooltip formatter={(v, name) => [`${v} ${unit}`, String(name)]} />
+        <Tooltip
+          content={({ active, payload, label }) => {
+            if (!active || !payload?.length) {
+              return null;
+            }
+            return (
+              <ChartTooltip
+                label={label}
+                lines={payload.map((item) => ({
+                  key: String(item.dataKey),
+                  detail: (
+                    <span style={{ color: item.color }}>
+                      {item.name}: {item.value} {unit}
+                    </span>
+                  ),
+                }))}
+              />
+            );
+          }}
+        />
         <Line
           type="monotone"
           dataKey="squat"
@@ -27,6 +47,7 @@ export function TotalChart({ chartData, unit }: { chartData: ChartPoint[]; unit:
           stroke={SQUAT_COLOR}
           dot={{ r: 3 }}
           activeDot={{ r: 5 }}
+          strokeDasharray="3 4"
           connectNulls
           isAnimationActive={false}
         />
@@ -47,6 +68,7 @@ export function TotalChart({ chartData, unit }: { chartData: ChartPoint[]; unit:
           stroke={DEADLIFT_COLOR}
           dot={{ r: 3 }}
           activeDot={{ r: 5 }}
+          strokeDasharray="7 7"
           connectNulls
           isAnimationActive={false}
         />
@@ -67,7 +89,7 @@ export function TotalChart({ chartData, unit }: { chartData: ChartPoint[]; unit:
           dataKey="total"
           name="Est. Total"
           stroke={TOTAL_COLOR}
-          strokeDasharray="5 5"
+          strokeDasharray="3 3"
           strokeWidth={2}
           dot={{ r: 3 }}
           activeDot={{ r: 5 }}

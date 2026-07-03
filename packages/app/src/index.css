@@ -1,18 +1,49 @@
 :root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
-  --border: #e5e4e7;
-  --code-bg: #f4f3ec;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
-  --social-bg: rgba(244, 243, 236, 0.5);
-  --shadow: rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
-  --success: #16a34a;
-  --danger: #dc2626;
-  --warning: #d97706;
+  /* Layout & Typography */
+  --text: #3f3f46; /* Dark slate for high-readability body text */
+  --text-h: #18181b; /* Crisp obsidian-black for headers */
+  --bg: #f1f1f1; /* 🧪 THEME CHOICE: Soft, crisp light-gray canvas backdrop */
+  --code-bg: #ffffff; /* Pure white container cards for chart separation */
+  --border: #d4d4d8; /* Adjusted border to sit cleanly against #f1f1f1 */
+  --muted: #71717a; /* Solid slate gray for chart grid lines/ticks */
 
+  /* 🟣 HIGH-VISIBILITY SYNTHWAVE PURPLE ACCENTS - LIGHT MODE */
+  --accent: #7a00cc; /* Vivid Synthwave Violet: Deep and crisp */
+  --accent-bg: rgba(122, 0, 204, 0.06);
+  --accent-border: rgba(122, 0, 204, 0.3);
+  --social-bg: rgba(244, 244, 245, 0.6);
+  --shadow: rgba(0, 0, 0, 0.05) 0 10px 15px -3px, rgba(122, 0, 204, 0.03) 0 4px 6px -2px;
+  --on-accent: #ffffff; /* Pure white text remains perfectly legible over this purple */
+
+  /* System Status Colors - Light */
+  --success: #008770; /* Darkened Digital Teal for readable green-checks */
+  --danger: #d60042; /* Deep Hot Crimson for highly visible form errors */
+  --warning: #b39200; /* Dark Industrial Yellow (Sweet Spot) */
+
+  /* 10-Color Data Visualization Palette (Accessible Light Mode) */
+  --chart-1-cyan: #008fa3;
+  --chart-2-pink: #db006c;
+  --chart-3-lime: #008542;
+  --chart-4-purple: #7a00cc; /* Synchronized perfectly with your light accent color */
+  --chart-5-yellow: #ab9500;
+  --chart-6-orange: #d94100;
+  --chart-7-magenta: #b800b8;
+  --chart-8-teal: #009675;
+  --chart-9-indigo: #1a1aff; /* Deep Midnight Indigo */
+  --chart-10-coral: #d14343;
+
+  /* Backward Compatibility Mapping Shortcut Values */
+  --chart-sky: var(--chart-1-cyan);
+  --chart-pink: var(--chart-2-pink);
+  --chart-teal: var(--chart-8-teal);
+  --chart-blue: var(--chart-9-indigo);
+  --chart-lavender: var(--chart-4-purple);
+  --chart-peach: var(--chart-5-yellow);
+  --chart-maroon: var(--chart-6-orange);
+  --chart-sapphire: #007791;
+  --chart-flamingo: #cc5a71;
+
+  /* Global Fonts & Framework Overrides */
   --sans: 'Inter', system-ui, sans-serif;
   --heading: 'Chakra Petch', system-ui, sans-serif;
   --mono: 'JetBrains Mono', ui-monospace, Consolas, monospace;
@@ -32,21 +63,54 @@
   }
 }
 
+/* =============================================================
+   🌌 AUTOMATIC DARK MODE MEDIA TRIGGER (True Emerald Green)
+   ============================================================= */
 @media (prefers-color-scheme: dark) {
   :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --border: #2e303a;
-    --code-bg: #1f2028;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
-    --social-bg: rgba(47, 48, 58, 0.5);
-    --shadow: rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
-    --success: #4ade80;
-    --danger: #f87171;
-    --warning: #fbbf24;
+    /* Layout & Typography */
+    --text: #a1a1aa; /* Soft gray for readable body text */
+    --text-h: #f4f4f5; /* Crisp off-white for headers */
+    --bg: #09090b; /* Deep obsidian black background */
+    --border: #27272a; /* Subtle dark border */
+    --code-bg: #18181b; /* Sleek dark code blocks */
+    --muted: #52525b; /* Dimmed gray for gridlines/ticks */
+
+    /* 🟢 HIGH-VIBRANCY TRUER GREEN ACCENTS */
+    --accent: #00ff66; /* Matrix Emerald: Striking, pure neon green */
+    --accent-bg: rgba(0, 255, 102, 0.08);
+    --accent-border: rgba(0, 255, 102, 0.4);
+    --social-bg: rgba(24, 24, 27, 0.5);
+    --shadow: rgba(0, 0, 0, 0.5) 0 10px 15px -3px, rgba(0, 255, 102, 0.15) 0 4px 6px -2px;
+    --on-accent: #000000; /* Pure black text for button legibility over neon */
+
+    /* System Status Colors - Dark */
+    --success: #00ffcc; /* Crisp Digital Neo-Teal */
+    --danger: #ff0055; /* Laser Crimson Red */
+    --warning: #ffd000; /* Warm Industrial Cyber Yellow (Sweet Spot) */
+
+    /* 10-Color Data Visualization Palette */
+    --chart-1-cyan: #00f0ff;
+    --chart-2-pink: #ff007f;
+    --chart-3-lime: #00ff66; /* Synced to true green accent */
+    --chart-4-purple: #9d00ff;
+    --chart-5-yellow: #ffea00;
+    --chart-6-orange: #ff5500;
+    --chart-7-magenta: #ff00ff;
+    --chart-8-teal: #00ffcc;
+    --chart-9-indigo: #4d4dff;
+    --chart-10-coral: #ff6b6b;
+
+    /* Backward Compatibility Mapping */
+    --chart-sky: var(--chart-1-cyan);
+    --chart-pink: var(--chart-2-pink);
+    --chart-teal: var(--chart-8-teal);
+    --chart-blue: var(--chart-9-indigo);
+    --chart-lavender: var(--chart-4-purple);
+    --chart-peach: var(--chart-5-yellow);
+    --chart-maroon: var(--chart-6-orange);
+    --chart-sapphire: #00bfff;
+    --chart-flamingo: #ff8da1;
   }
 
   #social .button-icon {
@@ -54,6 +118,9 @@
   }
 }
 
+/* =============================================================
+   🧱 STRUCTURAL & ELEMENT COMPONENT STYLING
+   ============================================================= */
 #root {
   width: 1126px;
   max-width: 100%;
@@ -86,6 +153,7 @@ h1 {
     margin: 20px 0;
   }
 }
+
 h2 {
   font-size: 24px;
   line-height: 118%;
@@ -95,6 +163,7 @@ h2 {
     font-size: 20px;
   }
 }
+
 p {
   margin: 0;
 }
@@ -112,13 +181,14 @@ code {
   line-height: 135%;
   padding: 4px 8px;
   background: var(--code-bg);
+  border: 1px solid var(--border);
 }
 
 button.tab-title {
   background: none;
   border: none;
   padding: 0.2rem 0.35rem;
-  margin: -0.2rem -0.35rem;
+  margin: 0.5rem 0.5rem;
   cursor: pointer;
   width: calc(100% + 0.7rem);
   border-radius: 5px;

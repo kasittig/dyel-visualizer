@@ -4,7 +4,7 @@ export { NORMALIZED_KEY } from '@dyel/core';
 import type { RepCalcStats } from '@dyel/core';
 import type { ConjugateDataPair } from './useConjugateData';
 
-export const NORMALIZED_COLOR = '#3b82f6';
+export const NORMALIZED_COLOR = 'var(--chart-blue)';
 export const NORMALIZED_LABEL = 'Normalized e1RM';
 
 export function useConjugateChartData(

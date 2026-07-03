@@ -7,6 +7,7 @@ import type {
   RepCalcStats,
 } from '@dyel/core';
 import type { ConjugateDataPair } from '../../hooks/conjugate/useConjugateData';
+import { CollapsibleSection } from './CollapsibleSection';
 import styles from './DiagnosticsPanel.module.css';
 
 function formatEffect(effect: string): string {
@@ -51,7 +52,6 @@ export function DiagnosticsPanel({
   variantFactor: RepCalcStats['variantFactor'];
   addlWtOffset: RepCalcStats['addlWtOffset'];
 }) {
-  const [isExpanded, setIsExpanded] = useState(true);
   const [activeEffect, setActiveEffect] = useState<EffectEnum | null>(null);
 
   const handleEffectClick = (e: EffectEnum) => {
@@ -94,11 +94,7 @@ export function DiagnosticsPanel({
 
   return (
     <div className={styles.wrapper}>
-      <button className="tab-title" onClick={() => setIsExpanded((v) => !v)}>
-        <span className="tab-title-toggle">{isExpanded ? '▾' : '▸'}</span>
-        <span className="tab-title-label">Diagnostics</span>
-      </button>
-      {isExpanded && (
+      <CollapsibleSection label="Diagnostics">
         <div className={styles.card}>
           <div className={styles.cardPadded}>
             {(weakEffects.length > 0 || overtrainedEffects.length > 0) && (
@@ -218,7 +214,7 @@ export function DiagnosticsPanel({
             </table>
           )}
         </div>
-      )}
+      </CollapsibleSection>
     </div>
   );
 }

@@ -3,10 +3,7 @@
 }
 
 .card {
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  overflow: hidden;
-  background: var(--bg);
+  composes: chartCard from '../charts/charts.module.css';
 }
 
 .cardPadded {
@@ -54,7 +51,7 @@
   border-bottom: 1px solid var(--border);
 }
 .bodyRowSelected {
-  background-color: color-mix(in srgb, var(--accent, #3b82f6) 12%, transparent);
+  background-color: color-mix(in srgb, var(--accent, #8839ef) 12%, transparent);
 }
 
 .cell {
