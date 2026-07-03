@@ -1,10 +1,11 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import type { ConjugateExercise } from '@dyel/core';
 import { normalizeToBaseE1RM } from '@dyel/core';
 import type { ConjugateDataPair } from '../../hooks/conjugate/useConjugateData';
 import type { SessionStats } from '../../hooks/data/useLastSessionStats';
 import { BaseRadarChart } from './BaseRadarChart';
 import { TooltipCard } from './TooltipCard';
+import { CollapsibleSection } from '../shared/CollapsibleSection';
 import { distinctDisplayNames } from '../../utils/appUtils';
 import styles from './VariationRadarChart.module.css';
 
@@ -23,7 +24,6 @@ export function VariationRadarChart({
   baselineName?: string;
   onVariationClick?: (variation: string) => void;
 }) {
-  const [isExpanded, setIsExpanded] = useState(true);
   const unit = rows[0]?.[1].unit ?? 'lbs';
 
   const data = useMemo(() => {
@@ -60,57 +60,56 @@ export function VariationRadarChart({
   const showTargetRing = data.some((d) => d.targetE1rm !== undefined);
 
   return (
-    <section className={styles.section}>
-      <button className="tab-title" onClick={() => setIsExpanded((v) => !v)}>
-        <span className="tab-title-toggle">{isExpanded ? '▾' : '▸'}</span>
-        <span className="tab-title-label">Normalized e1RM by variation</span>
-      </button>
-      {isExpanded && (
-        <BaseRadarChart
-          data={data}
-          angleKey="variation"
-          unit={unit}
-          chartKey={targetName}
-          overlayDataKey={showTargetRing ? 'targetE1rm' : undefined}
-          onClick={onVariationClick}
-          tooltip={{
-            content: ({ payload }) => {
-              const item = payload?.find((p) => p.dataKey === 'e1rm');
-              if (!item) {
-                return null;
-              }
-              const name = (item.payload as { variation: string }).variation;
-              const last = stats.lastSession.get(name);
-              const lastDate = last?.date;
-              const lastE1RM = last?.e1rm;
-              const bestSet = last;
-              const dateStr = lastDate
-                ? lastDate.toLocaleDateString(undefined, {
-                    month: 'short',
-                    day: 'numeric',
-                    year: 'numeric',
-                  })
-                : 'Never';
-              return (
-                <TooltipCard>
-                  <div className={styles.tooltipName}>{name}</div>
-                  <div>
-                    Normalized e1RM: {Number(item.value).toFixed(2)} {unit}
-                  </div>
-                  <div className={styles.tooltipMuted}>
-                    Last session:{' '}
-                    {lastE1RM !== undefined ? `${lastE1RM.toFixed(2)} ${unit} · ` : ''}
-                    {dateStr}
-                    {bestSet
-                      ? ` · ${bestSet.sets}×${bestSet.reps} @ ${bestSet.weight} ${unit}${bestSet.rpe != null ? ` · RPE ${bestSet.rpe}` : ''}`
-                      : ''}
-                  </div>
-                </TooltipCard>
-              );
-            },
-          }}
-        />
-      )}
-    </section>
+    <div className={styles.section}>
+      <CollapsibleSection label="Normalized e1RM by variation">
+        <div className={styles.card}>
+          <span className={styles.sectionLabel}>Variation Breakdown</span>
+          <BaseRadarChart
+            data={data}
+            angleKey="variation"
+            unit={unit}
+            chartKey={targetName}
+            overlayDataKey={showTargetRing ? 'targetE1rm' : undefined}
+            onClick={onVariationClick}
+            tooltip={{
+              content: ({ payload }) => {
+                const item = payload?.find((p) => p.dataKey === 'e1rm');
+                if (!item) {
+                  return null;
+                }
+                const name = (item.payload as { variation: string }).variation;
+                const last = stats.lastSession.get(name);
+                const lastDate = last?.date;
+                const lastE1RM = last?.e1rm;
+                const bestSet = last;
+                const dateStr = lastDate
+                  ? lastDate.toLocaleDateString(undefined, {
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric',
+                    })
+                  : 'Never';
+                return (
+                  <TooltipCard>
+                    <div className={styles.tooltipName}>{name}</div>
+                    <div>
+                      Normalized e1RM: {Number(item.value).toFixed(2)} {unit}
+                    </div>
+                    <div className={styles.tooltipMuted}>
+                      Last session:{' '}
+                      {lastE1RM !== undefined ? `${lastE1RM.toFixed(2)} ${unit} · ` : ''}
+                      {dateStr}
+                      {bestSet
+                        ? ` · ${bestSet.sets}×${bestSet.reps} @ ${bestSet.weight} ${unit}${bestSet.rpe != null ? ` · RPE ${bestSet.rpe}` : ''}`
+                        : ''}
+                    </div>
+                  </TooltipCard>
+                );
+              },
+            }}
+          />
+        </div>
+      </CollapsibleSection>
+    </div>
   );
 }
