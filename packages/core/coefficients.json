@@ -260,7 +260,7 @@
         { "w": 345, "c": 0.4866 }
       ],
       "units": "lbs",
-      "percentile": { "mean": 610, "std": 160 }
+      "percentile": { "mean": 215, "std": 42 }
     },
     "dots": {
       "coefficients": [-307.75076, 24.0900756, -0.1918759221, 0.0007391293, -1.093e-6],
@@ -268,16 +268,16 @@
       "min_bw": 40,
       "max_bw": 210,
       "percentile": {
-        "mean": 300,
-        "std": 80
+        "mean": 310,
+        "std": 52
       }
     },
     "wilks": {
       "coefficients": [-216.0475144, 16.2606339, -0.002388645, -0.00113732, 7.01863e-6, -1.291e-8],
       "units": "kg",
       "percentile": {
-        "mean": 300,
-        "std": 80
+        "mean": 315,
+        "std": 55
       }
     }
   },
@@ -447,7 +447,7 @@
         { "w": 250, "c": 0.5649 }
       ],
       "units": "lbs",
-      "percentile": { "mean": 455, "std": 115 }
+      "percentile": { "mean": 480, "std": 85 }
     },
     "dots": {
       "coefficients": [-57.96288, 13.6175032, -0.1126655495, 0.0005158568, -1.0706e-6],
@@ -455,8 +455,8 @@
       "min_bw": 40,
       "max_bw": 150,
       "percentile": {
-        "mean": 270,
-        "std": 70
+        "mean": 285,
+        "std": 48
       }
     },
     "wilks": {
@@ -465,8 +465,8 @@
       ],
       "units": "kg",
       "percentile": {
-        "mean": 270,
-        "std": 70
+        "mean": 315,
+        "std": 55
       }
     }
   }
