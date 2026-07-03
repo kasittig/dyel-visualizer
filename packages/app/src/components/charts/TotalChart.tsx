@@ -1,6 +1,7 @@
 import { Line, Tooltip } from 'recharts';
 import type { ChartPoint } from '@dyel/core';
 import { DateLineChart, ChartEmpty } from './DateLineChart';
+import { ChartTooltip } from './TooltipCard';
 import styles from './TotalChart.module.css';
 import {
   SQUAT_COLOR,
@@ -19,7 +20,26 @@ export function TotalChart({ chartData, unit }: { chartData: ChartPoint[]; unit:
     <div className={styles.card}>
       <span className={styles.sectionLabel}>e1RM Over Time</span>
       <DateLineChart data={chartData} unit={unit} yAxisWidth={55}>
-        <Tooltip formatter={(v, name) => [`${v} ${unit}`, String(name)]} />
+        <Tooltip
+          content={({ active, payload, label }) => {
+            if (!active || !payload?.length) {
+              return null;
+            }
+            return (
+              <ChartTooltip
+                label={label}
+                lines={payload.map((item) => ({
+                  key: String(item.dataKey),
+                  detail: (
+                    <span style={{ color: item.color }}>
+                      {item.name}: {item.value} {unit}
+                    </span>
+                  ),
+                }))}
+              />
+            );
+          }}
+        />
         <Line
           type="monotone"
           dataKey="squat"

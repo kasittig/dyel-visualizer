@@ -5,17 +5,6 @@
   composes: sectionLabel from '../charts/charts.module.css';
 }
 
-.tooltipDate {
-  font-weight: 600;
-  margin-bottom: 0.2rem;
-}
-.tooltipItem {
-  margin-top: 0.2rem;
-}
-.tooltipMuted {
-  opacity: 0.7;
-}
-
 .targetRow {
   font-size: 0.8rem;
   color: var(--text);

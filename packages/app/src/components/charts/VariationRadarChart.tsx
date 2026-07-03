@@ -4,7 +4,7 @@ import { normalizeToBaseE1RM } from '@dyel/core';
 import type { ConjugateDataPair } from '../../hooks/conjugate/useConjugateData';
 import type { SessionStats } from '../../hooks/data/useLastSessionStats';
 import { BaseRadarChart } from './BaseRadarChart';
-import { TooltipCard } from './TooltipCard';
+import { ChartTooltip } from './TooltipCard';
 import { CollapsibleSection } from '../shared/CollapsibleSection';
 import { distinctDisplayNames } from '../../utils/appUtils';
 import styles from './VariationRadarChart.module.css';
@@ -90,20 +90,25 @@ export function VariationRadarChart({
                     })
                   : 'Never';
                 return (
-                  <TooltipCard>
-                    <div className={styles.tooltipName}>{name}</div>
-                    <div>
-                      Normalized e1RM: {Number(item.value).toFixed(2)} {unit}
-                    </div>
-                    <div className={styles.tooltipMuted}>
-                      Last session:{' '}
-                      {lastE1RM !== undefined ? `${lastE1RM.toFixed(2)} ${unit} · ` : ''}
-                      {dateStr}
-                      {bestSet
-                        ? ` · ${bestSet.sets}×${bestSet.reps} @ ${bestSet.weight} ${unit}${bestSet.rpe != null ? ` · RPE ${bestSet.rpe}` : ''}`
-                        : ''}
-                    </div>
-                  </TooltipCard>
+                  <ChartTooltip
+                    lines={[
+                      {
+                        key: name,
+                        name,
+                        detail: `Normalized e1RM: ${Number(item.value).toFixed(2)} ${unit}`,
+                        extra: (
+                          <>
+                            Last session:{' '}
+                            {lastE1RM !== undefined ? `${lastE1RM.toFixed(2)} ${unit} · ` : ''}
+                            {dateStr}
+                            {bestSet
+                              ? ` · ${bestSet.sets}×${bestSet.reps} @ ${bestSet.weight} ${unit}${bestSet.rpe != null ? ` · RPE ${bestSet.rpe}` : ''}`
+                              : ''}
+                          </>
+                        ),
+                      },
+                    ]}
+                  />
                 );
               },
             }}

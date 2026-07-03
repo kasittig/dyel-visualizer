@@ -3,6 +3,7 @@ import { PieChart, Pie, Cell, Tooltip, Legend } from 'recharts';
 import type { ChartPoint } from '@dyel/core';
 import { CollapsibleSection } from '../shared/CollapsibleSection';
 import { BaseRadarChart } from './BaseRadarChart';
+import { ChartTooltip } from './TooltipCard';
 import { SQUAT_COLOR, BENCH_COLOR, DEADLIFT_COLOR } from './colors';
 import styles from './SigmaChart.module.css';
 
@@ -68,7 +69,26 @@ export function SigmaChart({ chartData, unit }: { chartData: ChartPoint[]; unit:
                   <Cell key={entry.lift} fill={LIFT_COLORS[entry.lift]} />
                 ))}
               </Pie>
-              <Tooltip formatter={(v) => `${v} ${unit}`} />
+              <Tooltip
+                content={({ active, payload }) => {
+                  if (!active || !payload?.length) {
+                    return null;
+                  }
+                  const item = payload[0];
+                  return (
+                    <ChartTooltip
+                      lines={[
+                        {
+                          key: String(item.name),
+                          name: String(item.name),
+                          color: item.color,
+                          detail: `e1RM: ${item.value} ${unit}`,
+                        },
+                      ]}
+                    />
+                  );
+                }}
+              />
               <Legend />
             </PieChart>
           </div>
@@ -78,7 +98,27 @@ export function SigmaChart({ chartData, unit }: { chartData: ChartPoint[]; unit:
             data={data}
             angleKey="lift"
             unit={unit}
-            tooltip={{ formatter: (v) => [`${v} ${unit}`, 'e1RM'] }}
+            tooltip={{
+              content: ({ payload }) => {
+                const item = payload?.find((p) => p.dataKey === 'e1rm');
+                if (!item) {
+                  return null;
+                }
+                const name = (item.payload as { lift: string }).lift;
+                return (
+                  <ChartTooltip
+                    lines={[
+                      {
+                        key: name,
+                        name,
+                        color: LIFT_COLORS[name],
+                        detail: `e1RM: ${item.value} ${unit}`,
+                      },
+                    ]}
+                  />
+                );
+              },
+            }}
           />
         )}
       </div>

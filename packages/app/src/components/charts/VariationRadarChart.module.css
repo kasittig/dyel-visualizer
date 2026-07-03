@@ -13,10 +13,3 @@
 .sectionLabel {
   composes: sectionLabel from './charts.module.css';
 }
-
-.tooltipName {
-  font-weight: 600;
-}
-.tooltipMuted {
-  opacity: 0.7;
-}
