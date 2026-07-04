@@ -33,9 +33,8 @@ parse/; never re-multiply.
 
 ## athlete.ts — UI state → context + scores
 
-    buildAthleteContext(entries, profile): AthleteContext   // sort, dedupe by date
-    wilks(totalKg, ctx, date): number
-    dots(totalKg, ctx, date): number
+    wilks(totalKg, ctx): number
+    dots(totalKg, ctx): number
 
 - Bodyweight comes ONLY from UI entries — never from parsed logs.
 - wilks/dots are pure polynomial evaluations; inputs in kg.
