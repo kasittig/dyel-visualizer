@@ -13,3 +13,11 @@ export type { AthleteContext } from './derive/athlete';
 export { wilks, dots } from './derive/athlete';
 export type { DiagnosticsReport, VariantAssessment, Quality } from './analyze/diagnose';
 export { diagnose } from './analyze/diagnose';
+export type {
+  DatasetSpec,
+  SeriesSpec,
+  CompositeSpec,
+  RenderParams,
+  RechartsRow,
+} from './dataset/build';
+export { buildDataset } from './dataset/build';
