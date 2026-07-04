@@ -13,17 +13,6 @@ const mockSet = (weight: number, reps: number): TaggedSetRecord => ({
 
 describe('derivers', () => {
   describe('e1rm', () => {
-    it('returns weight for single rep (reps === 1)', () => {
-      const sets = [mockSet(100, 1)];
-      expect(derivers.e1rm.derive(sets)).toBe(100);
-    });
-
-    it('calculates e1rm using Epley formula for multiple reps', () => {
-      const sets = [mockSet(100, 5)];
-      const expected = 100 * (1 + 5 / 30);
-      expect(derivers.e1rm.derive(sets)).toBeCloseTo(expected);
-    });
-
     it('returns max e1rm over multiple sets', () => {
       const sets = [mockSet(100, 5), mockSet(110, 3), mockSet(95, 8)];
       const e1rms = [

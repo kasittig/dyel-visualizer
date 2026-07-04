@@ -24,130 +24,71 @@ interface GridPoint {
 const mean = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
 
 const buildSessionGrid = (records: TaggedSetRecord[]): GridPoint[] => {
-  const bestByDate = new Map<number, number>();
-  for (const r of records) {
-    const e1rm = calcE1RM(r.weight, r.reps);
-    const prev = bestByDate.get(r.date);
-    if (prev === undefined || e1rm > prev) {
-      bestByDate.set(r.date, e1rm);
-    }
-  }
-  return [...bestByDate.entries()].map(([t, e1rm]) => ({ t, e1rm })).sort((a, b) => a.t - b.t);
+  const map = new Map<number, number>();
+  records.forEach((r) =>
+    map.set(r.date, Math.max(map.get(r.date) || 0, calcE1RM(r.weight, r.reps)))
+  );
+  return [...map.entries()].map(([t, e1rm]) => ({ t, e1rm })).sort((a, b) => a.t - b.t);
 };
 
-const interpolateGrid = (grid: GridPoint[], targetDate: number): number | null => {
-  if (grid.length === 0) {
+const interpolateGrid = (grid: GridPoint[], target: number): number | null => {
+  if (!grid.length) {
     return null;
   }
-  if (grid.length === 1) {
-    return grid[0].e1rm;
+  const edgeRate = (i: number, j: number) => {
+    const dt = grid[j].t - grid[i].t;
+    return dt ? (grid[j].e1rm - grid[i].e1rm) / dt : 0;
+  };
+
+  const first = grid[0],
+    last = grid[grid.length - 1];
+  if (target <= first.t) {
+    return Math.max(0, first.e1rm + edgeRate(0, 1) * (target - first.t));
+  }
+  if (target >= last.t) {
+    return Math.max(0, last.e1rm + edgeRate(grid.length - 2, grid.length - 1) * (target - last.t));
   }
 
-  const first = grid[0];
-  const last = grid[grid.length - 1];
-
-  if (targetDate <= first.t) {
-    const next = grid[1];
-    const dt = next.t - first.t;
-    const rate = dt === 0 ? 0 : (next.e1rm - first.e1rm) / dt;
-    return Math.max(0, first.e1rm + rate * (targetDate - first.t));
-  }
-  if (targetDate >= last.t) {
-    const prev = grid[grid.length - 2];
-    const dt = last.t - prev.t;
-    const rate = dt === 0 ? 0 : (last.e1rm - prev.e1rm) / dt;
-    return Math.max(0, last.e1rm + rate * (targetDate - last.t));
-  }
-
-  let lo = 0;
-  let hi = grid.length - 1;
+  let lo = 0,
+    hi = grid.length - 1;
   while (lo + 1 < hi) {
     const mid = (lo + hi) >> 1;
-    if (grid[mid].t <= targetDate) {
+    if (grid[mid].t <= target) {
       lo = mid;
     } else {
       hi = mid;
     }
   }
-  const a = grid[lo];
-  const b = grid[hi];
-  const dt = b.t - a.t;
-  if (dt === 0) {
-    return a.e1rm;
-  }
-  return a.e1rm + (b.e1rm - a.e1rm) * ((targetDate - a.t) / dt);
+  const a = grid[lo],
+    b = grid[hi],
+    dt = b.t - a.t;
+  return dt ? a.e1rm + (b.e1rm - a.e1rm) * ((target - a.t) / dt) : a.e1rm;
 };
 
-const fitVariantFactorAgainstGrid = (
+const fitMetric = (
   grid: GridPoint[],
-  variantRecords: TaggedSetRecord[]
-): { factor: number; n: number } => {
-  const ratios: number[] = [];
-  for (const r of variantRecords) {
-    if (r.reps <= 0) {
-      continue;
-    }
-    const predicted = interpolateGrid(grid, r.date);
-    if (predicted === null || predicted === 0) {
-      continue;
-    }
-    ratios.push(calcE1RM(r.weight, r.reps) / predicted);
-  }
-  return ratios.length === 0 ? { factor: 0, n: 0 } : { factor: mean(ratios), n: ratios.length };
+  records: TaggedSetRecord[],
+  fn: (p: number, r: TaggedSetRecord) => number
+) => {
+  const vals = records
+    .filter((r) => r.reps > 0)
+    .map((r) => ({ p: interpolateGrid(grid, r.date), r }))
+    .filter(({ p }) => p !== null)
+    .map(({ p, r }) => fn(p!, r));
+  return vals.length ? { v: mean(vals), n: vals.length } : null;
 };
 
-const fitAddlOffsetAgainstGrid = (
-  grid: GridPoint[],
-  variantRecords: TaggedSetRecord[]
-): { offsetKg: number; n: number } => {
-  const offsets: number[] = [];
-  for (const r of variantRecords) {
-    if (r.reps <= 0) {
-      continue;
-    }
-    const predicted = interpolateGrid(grid, r.date);
-    if (predicted === null) {
-      continue;
-    }
-    offsets.push(invertE1RM(predicted, r.reps) - r.weight);
-  }
-  return offsets.length === 0
-    ? { offsetKg: 0, n: 0 }
-    : { offsetKg: mean(offsets), n: offsets.length };
-};
-
-const groupBy = <T>(items: T[], keyOf: (item: T) => string): Map<string, T[]> => {
+const groupBy = <T>(items: T[], keyOf: (item: T) => string) => {
   const map = new Map<string, T[]>();
-  for (const item of items) {
-    const key = keyOf(item);
-    const arr = map.get(key);
-    if (arr) {
-      arr.push(item);
-    } else {
-      map.set(key, [item]);
-    }
-  }
+  items.forEach((item) => {
+    const k = keyOf(item);
+    map.set(k, [...(map.get(k) || []), item]);
+  });
   return map;
 };
 
-const liftFamilyTag = (tags: ReadonlySet<string>): string | undefined =>
-  [...tags].find((t) => t.startsWith('lift:'));
-
-const hasAddlTag = (tags: ReadonlySet<string>): boolean =>
-  [...tags].some((t) => t.startsWith('addl:'));
-
-const pickBaselineCanonical = (
-  entries: { canonical: string; records: TaggedSetRecord[] }[]
-): string => {
-  const compLiftEntries = entries.filter((e) => e.records.some((r) => r.tags.has('comp-lift')));
-  const pool = compLiftEntries.length > 0 ? compLiftEntries : entries;
-  return [...pool].sort(
-    (a, b) => b.records.length - a.records.length || a.canonical.localeCompare(b.canonical)
-  )[0].canonical;
-};
-
-const isBaselineCanonical = (model: NormalizationModel, canonical: string) =>
-  Object.values(model.baseline).includes(canonical);
+const getTag = (tags: ReadonlySet<string>, prefix: string) =>
+  [...tags].find((t) => t.startsWith(prefix));
 
 export function fitNormalizationModel(
   history: TaggedSetRecord[],
@@ -156,44 +97,41 @@ export function fitNormalizationModel(
   const byCanonical = groupBy(history, (r) => r.canonical);
   const byFamily = new Map<string, string[]>();
 
-  for (const [canonical, records] of byCanonical) {
-    const family = liftFamilyTag(records[0].tags);
-    if (!family) {
-      continue;
-    }
-    const arr = byFamily.get(family);
-    if (arr) {
-      arr.push(canonical);
-    } else {
-      byFamily.set(family, [canonical]);
+  for (const [can, recs] of byCanonical) {
+    const fam = getTag(recs[0]?.tags || new Set(), 'lift:');
+    if (fam) {
+      byFamily.set(fam, [...(byFamily.get(fam) || []), can]);
     }
   }
 
-  const baseline: Record<string, string> = {};
-  const variantFactor: Record<string, { factor: number; n: number }> = {};
-  const addlWtOffset: Record<string, { offsetKg: number; n: number }> = {};
+  const baseline: Record<string, string> = {},
+    variantFactor: NormalizationModel['variantFactor'] = {},
+    addlWtOffset: NormalizationModel['addlWtOffset'] = {};
 
   for (const [family, canonicals] of byFamily) {
-    const entries = canonicals.map((c) => ({ canonical: c, records: byCanonical.get(c)! }));
-    const baselineCanonical = pickBaselineCanonical(entries);
-    baseline[family] = baselineCanonical;
+    const entries = canonicals.map((c) => ({ c, r: byCanonical.get(c)! }));
+    const comp = entries.filter((e) => e.r.some((r) => r.tags.has('comp-lift')));
+    const [baseCan] = (comp.length ? comp : entries).sort(
+      (a, b) => b.r.length - a.r.length || a.c.localeCompare(b.c)
+    );
 
-    const grid = buildSessionGrid(byCanonical.get(baselineCanonical)!);
+    baseline[family] = baseCan.c;
+    const grid = buildSessionGrid(byCanonical.get(baseCan.c)!);
 
-    for (const { canonical, records } of entries) {
-      if (canonical === baselineCanonical) {
+    for (const { c, r } of entries) {
+      if (c === baseCan.c) {
         continue;
       }
 
-      const { factor, n } = fitVariantFactorAgainstGrid(grid, records);
-      if (n >= opts.minSamples) {
-        variantFactor[canonical] = { factor, n };
+      const f = fitMetric(grid, r, (p, rec) => calcE1RM(rec.weight, rec.reps) / p);
+      if (f && f.n >= opts.minSamples && f.v !== 0) {
+        variantFactor[c] = { factor: f.v, n: f.n };
       }
 
-      if (hasAddlTag(records[0].tags)) {
-        const { offsetKg, n: offsetN } = fitAddlOffsetAgainstGrid(grid, records);
-        if (offsetN >= opts.minSamples) {
-          addlWtOffset[canonical] = { offsetKg, n: offsetN };
+      if (getTag(r[0]?.tags || new Set(), 'addl:')) {
+        const o = fitMetric(grid, r, (p, rec) => invertE1RM(p, rec.reps) - rec.weight);
+        if (o && o.n >= opts.minSamples) {
+          addlWtOffset[c] = { offsetKg: o.v, n: o.n };
         }
       }
     }
@@ -202,32 +140,19 @@ export function fitNormalizationModel(
   return { fittedAt: Date.now(), baseline, variantFactor, addlWtOffset };
 }
 
-export function normalizeE1rm(
-  canonical: string,
-  e1rmKg: number,
-  model: NormalizationModel
-): number | null {
-  if (isBaselineCanonical(model, canonical)) {
-    return e1rmKg;
-  }
-  const entry = model.variantFactor[canonical];
-  if (!entry || entry.factor === 0) {
-    return null;
-  }
-  return e1rmKg / entry.factor;
-}
+const getFactor = (can: string, model: NormalizationModel) =>
+  Object.values(model.baseline).includes(can) ? 1 : model.variantFactor[can]?.factor || null;
 
-export function projectToVariant(
-  baselineE1rmKg: number,
-  targetCanonical: string,
+export const normalizeE1rm = (can: string, e1rmKg: number, model: NormalizationModel) => {
+  const f = getFactor(can, model);
+  return f ? e1rmKg / f : null;
+};
+
+export const projectToVariant = (
+  baseE1rmKg: number,
+  targetCan: string,
   model: NormalizationModel
-): number | null {
-  if (isBaselineCanonical(model, targetCanonical)) {
-    return baselineE1rmKg;
-  }
-  const entry = model.variantFactor[targetCanonical];
-  if (!entry || entry.factor === 0) {
-    return null;
-  }
-  return baselineE1rmKg * entry.factor;
-}
+) => {
+  const f = getFactor(targetCan, model);
+  return f ? baseE1rmKg * f : null;
+};
