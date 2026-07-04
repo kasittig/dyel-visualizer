@@ -3,138 +3,106 @@ import { ParseError, resolveUnit } from '../parser';
 import type { SetRecord, Unit } from '../../types';
 import { tokenize, TokenizerError } from './tokenizer';
 
-function convertToKg(weight: number, unit: Unit): number {
-  return unit === 'lbs' ? weight * 0.453592 : weight;
-}
+const convertToKg = (w: number, u: Unit) => (u === 'lbs' ? w * 0.453592 : w);
 
-function parseDate(dateStr: string): number {
+function parseDate(dateStr: string, lineNum: number, rawLine: string): number {
   const date = new Date(dateStr);
-  if (isNaN(date.getTime())) {
-    throw new Error(`Invalid date: ${dateStr}`);
+  if (Number.isNaN(date.getTime())) {
+    throw new ParseError(`Invalid date: ${dateStr}`, lineNum, rawLine);
   }
   return date.setHours(0, 0, 0, 0);
 }
 
 export const freeformParser: Parser = {
   id: 'freeform',
-
-  canParse: (input: RawInput): boolean => {
-    return input.name.endsWith('.txt') || input.content.includes('units:');
-  },
+  canParse: (input: RawInput) => input.name.endsWith('.txt') || input.content.includes('units:'),
 
   parse(input: RawInput, ctx: ParseContext): SetRecord[] {
-    const lines = input.content.split('\n');
     const records: SetRecord[] = [];
-    const effectiveCtx: ParseContext = { ...ctx };
+    const effectiveCtx = { ...ctx };
 
-    for (let lineNum = 0; lineNum < lines.length; lineNum++) {
-      const rawLine = lines[lineNum];
-      const line = rawLine.trim();
-
-      // Skip empty lines
+    input.content.split('\n').forEach((rawLine, idx) => {
+      const lineNum = idx + 1;
+      let line = rawLine.trim();
       if (!line) {
-        continue;
+        return;
       }
 
-      // Check for preamble with units declaration
-      let lineToProcess = line;
-      if (line.startsWith('units:')) {
-        const match = line.match(/^units:\s*(kg|lbs)(.*)$/i);
-        if (match) {
-          effectiveCtx.datasetUnit = match[1].toLowerCase() as Unit;
-          lineToProcess = match[2].trim();
-        } else {
-          continue; // Just a units declaration line with nothing after it
-        }
-        if (!lineToProcess) {
-          continue; // Nothing after the units declaration
-        }
+      // Handle inline context units prefix
+      const unitMatch = line.match(/^units:\s*(kg|lbs)(.*)$/i);
+      if (unitMatch) {
+        effectiveCtx.datasetUnit = unitMatch[1].toLowerCase() as Unit;
+        line = unitMatch[2].trim();
+      } else if (line.startsWith('units:')) {
+        return;
+      }
+      if (!line) {
+        return;
       }
 
-      // Parse the line: DATE EXERCISE_NAME WEIGHT_REPS_SPECIFICATION
-      // Date format: YYYY-MM-DD
-      const dateMatch = lineToProcess.match(/^(\d{4}-\d{2}-\d{2})\s+(\S.*)$/);
+      // Extract date and the remaining instruction string
+      const dateMatch = line.match(/^(\d{4}-\d{2}-\d{2})\s+(\S.*)$/);
       if (!dateMatch) {
         throw new ParseError(
-          `Invalid line format: expected DATE EXERCISE_NAME WEIGHT_REPS, got: ${lineToProcess}`,
-          lineNum + 1,
+          `Invalid line format: expected DATE EXERCISE_NAME WEIGHT_REPS, got: ${line}`,
+          lineNum,
           rawLine
         );
       }
 
-      const dateStr = dateMatch[1];
-      const restOfLine = dateMatch[2];
+      const date = parseDate(dateMatch[1], lineNum, rawLine);
+      const tokens = dateMatch[2].split(/\s+/);
+      let weightSpec = '';
 
-      let date: number;
-      try {
-        date = parseDate(dateStr);
-      } catch {
-        throw new ParseError(`Invalid date: ${dateStr}`, lineNum + 1, rawLine);
-      }
-
-      // Split the rest into exercise name and weight/reps specification
-      // Work backwards from the end: the weight/reps spec is at the end
-      const tokens = restOfLine.split(/\s+/);
-      let exerciseTokens: string[] = [];
-      let weightRecsSpec: string | null = null;
-
-      // Try successively longer suffixes until tokenization succeeds
-      for (let suffixLen = 1; suffixLen <= tokens.length; suffixLen++) {
-        const suffix = tokens.slice(tokens.length - suffixLen).join(' ');
+      // Backwards tokenization scan loop
+      for (let i = tokens.length - 1; i >= 0; i--) {
+        const suffix = tokens.slice(i).join(' ');
         try {
           tokenize(suffix);
-          // Successfully tokenized!
-          exerciseTokens = tokens.slice(0, tokens.length - suffixLen);
-          weightRecsSpec = suffix;
+          weightSpec = suffix;
+          tokens.splice(i); // Truncates tokens array down to just the exercise name
           break;
-        } catch {
-          // This suffix didn't work, try a longer one
+        } catch (err) {
+          // Only swallow tokenization failures; propagate critical engine bugs
+          if (!(err instanceof TokenizerError)) {
+            throw err;
+          }
         }
       }
 
-      if (weightRecsSpec === null) {
+      const exercise = tokens.join(' ');
+      if (!weightSpec) {
         throw new ParseError(
           `No valid weight/reps specification found in line: ${line}`,
-          lineNum + 1,
+          lineNum,
           rawLine
         );
       }
-
-      const exercise = exerciseTokens.join(' ');
       if (!exercise) {
-        throw new ParseError(`No exercise name found in line: ${line}`, lineNum + 1, rawLine);
+        throw new ParseError(`No exercise name found in line: ${line}`, lineNum, rawLine);
       }
 
-      let tokenOutput;
       try {
-        tokenOutput = tokenize(weightRecsSpec!);
+        const spec = tokenize(weightSpec);
+        spec.weights.forEach(({ value, unit }) => {
+          const finalUnit = resolveUnit(unit, effectiveCtx);
+          records.push({
+            date,
+            exercise,
+            weight: convertToKg(value, finalUnit),
+            reps: spec.reps,
+            rpe: spec.rpe,
+            meta: { rawUnit: finalUnit, rawWeight: `${value}${unit || ''}`, line: rawLine },
+          });
+        });
       } catch (err) {
-        const errorMsg = err instanceof TokenizerError ? err.message : 'Unknown tokenizer error';
-        throw new ParseError(errorMsg, lineNum + 1, rawLine);
+        throw new ParseError(
+          err instanceof TokenizerError ? err.message : 'Unknown tokenizer error',
+          lineNum,
+          rawLine
+        );
       }
-
-      // Process each weight in the weights array
-      for (const weightInfo of tokenOutput.weights) {
-        const recordUnit = weightInfo.unit;
-        const finalUnit = resolveUnit(recordUnit, effectiveCtx);
-        const weightKg = convertToKg(weightInfo.value, finalUnit);
-
-        const record: SetRecord = {
-          date,
-          exercise,
-          weight: weightKg,
-          reps: tokenOutput.reps,
-          rpe: tokenOutput.rpe,
-          meta: {
-            rawUnit: finalUnit,
-            rawWeight: `${weightInfo.value}${weightInfo.unit || ''}`,
-            line: rawLine,
-          },
-        };
-
-        records.push(record);
-      }
-    }
+    });
 
     return records;
   },
