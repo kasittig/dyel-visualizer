@@ -7,5 +7,7 @@ export type { ExerciseTagMap, TaggedSetRecord } from './tag/tag';
 export { tagRecords, matches } from './tag/tag';
 export type { SeriesDeriver } from './derive/derivers';
 export { derivers } from './derive/derivers';
+export type { NormalizationModel } from './derive/normalize';
+export { fitNormalizationModel, normalizeE1rm, projectToVariant } from './derive/normalize';
 export type { AthleteContext } from './derive/athlete';
 export { wilks, dots } from './derive/athlete';

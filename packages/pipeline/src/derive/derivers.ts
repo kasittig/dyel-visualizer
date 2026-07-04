@@ -1,11 +1,10 @@
 import type { TaggedSetRecord } from '../tag/tag';
+import { calcE1RM } from './e1rm';
 
 export interface SeriesDeriver {
   id: string;
   derive(daySets: TaggedSetRecord[]): number;
 }
-
-const calcE1RM = (w: number, r: number) => (r <= 1 ? w : w * (1 + r / 30));
 
 export const derivers: Record<string, SeriesDeriver> = {
   e1rm: {
