@@ -11,131 +11,30 @@ export interface SeriesSpec {
   include: TagQuery;
   derive: string;
 }
-
 export interface CompositeSpec {
   id: string;
   kind: 'composite';
-  components: Array<{ label: string; include: TagQuery }>;
+  components: { label: string; include: TagQuery }[];
   derive: 'e1rm';
   normalize: true;
   combine: 'sum';
   post?: 'wilks' | 'dots';
 }
-
 export type DatasetSpec = SeriesSpec | CompositeSpec;
-
 export interface RenderParams {
   chips?: { include: string[]; exclude: string[] };
   dateRange?: [number, number];
 }
-
 export interface RechartsRow {
   t: number;
   [column: string]: number;
 }
 
-const pointTags = (p: Point): ReadonlySet<string> => new Set([...p.tags, p.series]);
-
-function mergeChipsIntoQuery(base: TagQuery, chips?: RenderParams['chips']): TagQuery {
-  if (!chips) {
-    return base;
-  }
-  return {
-    all: [...(base.all ?? []), ...chips.include],
-    any: base.any,
-    none: [...(base.none ?? []), ...chips.exclude],
-  };
-}
-
-function buildSeriesRows(points: Point[], spec: SeriesSpec, query: TagQuery): RechartsRow[] {
-  const rows = new Map<number, RechartsRow>();
-
-  for (const p of points) {
-    if (!matches(pointTags(p), query)) {
-      continue;
-    }
-    // Assumes derive/ already collapsed to one value per (date, canonical);
-    // if multiple points share (t, series), last one wins.
-    const row = rows.get(p.t) ?? { t: p.t };
-    row[p.series] = p.v;
-    rows.set(p.t, row);
-  }
-
-  return [...rows.values()].sort((a, b) => a.t - b.t);
-}
-
-function normalizedComponentGrid(
-  points: Point[],
-  query: TagQuery,
-  model: NormalizationModel
-): Map<number, number> {
-  const grid = new Map<number, number>();
-
-  for (const p of points) {
-    if (!matches(pointTags(p), query)) {
-      continue;
-    }
-    const normalized = normalizeE1rm(p.series, p.v, model);
-    if (normalized === null) {
-      continue;
-    }
-    const prev = grid.get(p.t);
-    if (prev === undefined || normalized > prev) {
-      grid.set(p.t, normalized);
-    }
-  }
-
-  return grid;
-}
-
-function computeCompositeRows(
-  points: Point[],
-  spec: CompositeSpec,
-  mergedQueries: TagQuery[],
-  model: NormalizationModel
-): RechartsRow[] {
-  const grids = mergedQueries.map((q) => normalizedComponentGrid(points, q, model));
-  const allDates = [...new Set(grids.flatMap((g) => [...g.keys()]))].sort((a, b) => a - b);
-
-  const last: (number | undefined)[] = grids.map(() => undefined);
-  const rows: RechartsRow[] = [];
-
-  for (const date of allDates) {
-    grids.forEach((grid, i) => {
-      const v = grid.get(date);
-      if (v !== undefined) {
-        last[i] = v;
-      }
-    });
-
-    if (last.every((v) => v !== undefined)) {
-      const total = last.reduce((sum, v) => sum + v!, 0);
-      rows.push({ t: date, [spec.id]: total });
-    }
-  }
-
-  return rows;
-}
-
-function applyPost(
-  rows: RechartsRow[],
-  spec: CompositeSpec,
-  athlete: AthleteContext
-): RechartsRow[] {
-  if (!spec.post) {
-    return rows;
-  }
-  const transform = spec.post === 'wilks' ? wilks : dots;
-  return rows.map((row) => ({ ...row, [spec.id]: transform(row[spec.id], athlete) }));
-}
-
-function applyDateRange(rows: RechartsRow[], dateRange?: [number, number]): RechartsRow[] {
-  if (!dateRange) {
-    return rows;
-  }
-  const [start, end] = dateRange;
-  return rows.filter((row) => row.t >= start && row.t <= end);
-}
+const mergeChips = (base: TagQuery, chips?: RenderParams['chips']): TagQuery => ({
+  all: [...(base.all ?? []), ...(chips?.include ?? [])],
+  any: base.any,
+  none: [...(base.none ?? []), ...(chips?.exclude ?? [])],
+});
 
 export function buildDataset(
   points: Point[],
@@ -144,15 +43,58 @@ export function buildDataset(
   model: NormalizationModel,
   athlete: AthleteContext
 ): RechartsRow[] {
-  let rows: RechartsRow[];
+  let rows: RechartsRow[] = [];
 
   if (spec.kind === 'series') {
-    const query = mergeChipsIntoQuery(spec.include, ui.chips);
-    rows = buildSeriesRows(points, spec, query);
+    const q = mergeChips(spec.include, ui.chips);
+    const rowMap = new Map<number, RechartsRow>();
+
+    points.forEach((p) => {
+      if (matches(new Set([...p.tags, p.series]), q)) {
+        rowMap.set(p.t, { ...(rowMap.get(p.t) ?? { t: p.t }), [p.series]: p.v });
+      }
+    });
+    rows = [...rowMap.values()].sort((a, b) => a.t - b.t);
   } else {
-    const mergedQueries = spec.components.map((c) => mergeChipsIntoQuery(c.include, ui.chips));
-    rows = applyPost(computeCompositeRows(points, spec, mergedQueries, model), spec, athlete);
+    // 1. Generate grids mapping timestamp to maximum normalized e1rm value
+    const queries = spec.components.map((c) => mergeChips(c.include, ui.chips));
+    const grids = queries.map((q) => {
+      const grid = new Map<number, number>();
+      points.forEach((p) => {
+        if (matches(new Set([...p.tags, p.series]), q)) {
+          const val = normalizeE1rm(p.series, p.v, model);
+          if (val !== null && val > (grid.get(p.t) ?? -Infinity)) {
+            grid.set(p.t, val);
+          }
+        }
+      });
+      return grid;
+    });
+
+    // 2. Compute composite metrics across the sorted timeline using forward-filled lookups
+    const timestamps = [...new Set(grids.flatMap((g) => [...g.keys()]))].sort((a, b) => a - b);
+    const lastValues = new Array(grids.length).fill(undefined);
+
+    timestamps.forEach((t) => {
+      grids.forEach((grid, idx) => {
+        if (grid.has(t)) {
+          lastValues[idx] = grid.get(t);
+        }
+      });
+      if (lastValues.every((v) => v !== undefined)) {
+        rows.push({ t, [spec.id]: lastValues.reduce((sum, v) => sum + v, 0) });
+      }
+    });
+
+    // 3. Apply optional post-processing metrics (Wilks or Dots coefficients)
+    if (spec.post) {
+      const transform = spec.post === 'wilks' ? wilks : dots;
+      rows = rows.map((r) => ({ ...r, [spec.id]: transform(r[spec.id], athlete) }));
+    }
   }
 
-  return applyDateRange(rows, ui.dateRange);
+  // 4. Inline filtering using the date range constraints
+  return ui.dateRange
+    ? rows.filter((r) => r.t >= ui.dateRange![0] && r.t <= ui.dateRange![1])
+    : rows;
 }
