@@ -48,17 +48,19 @@ export const csvParser: Parser = {
 
     const headers = meta.fields || [];
     const headerMap = new Map(headers.map((h) => [h.toLowerCase(), h]));
+    const matchHeader = (field: string) =>
+      [...headerMap.entries()].find(([k]) => k.startsWith(field.toLowerCase()))?.[1];
 
     // 1. Structural Check
     const required = ['Date', 'Exercise', 'Reps', 'Weight'];
     for (const field of required) {
-      if (!headerMap.has(field.toLowerCase())) {
+      if (!matchHeader(field)) {
         throw new ParseError(`Missing required column: ${field}`, 1, headers.join(','));
       }
     }
 
     // 2. Extract Context Unit from the actual casing of the Weight header
-    const realWeightHeader = headerMap.get('weight')!;
+    const realWeightHeader = matchHeader('Weight')!;
     const effectiveCtx = {
       ...ctx,
       datasetUnit: extractUnitFromHeader(realWeightHeader) ?? ctx.datasetUnit,

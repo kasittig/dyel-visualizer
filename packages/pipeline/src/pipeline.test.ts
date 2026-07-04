@@ -2,15 +2,11 @@ import { describe, it, expect } from 'vitest';
 import * as fs from 'fs';
 import * as path from 'path';
 import { runPipeline } from './pipeline';
-import type { RawInput } from './parse/parser';
 import type { DatasetSpec } from './dataset/build';
-import type { AthleteContext } from './derive/athlete';
 
-const FIXTURES_DIR = path.join(__dirname, '../test/fixtures');
-
-const loadFixture = (name: string): RawInput => ({
+const loadFixture = (name: string) => ({
   name,
-  content: fs.readFileSync(path.join(FIXTURES_DIR, name), 'utf-8'),
+  content: fs.readFileSync(path.join(__dirname, '../test/fixtures', name), 'utf-8'),
 });
 
 const FIXTURE_NAMES = [
@@ -33,82 +29,71 @@ const specs: DatasetSpec[] = [
     include: { any: ['lift:bench'] },
     derive: 'e1rm',
   },
-  {
-    id: 'tonnage-per-lift',
-    kind: 'series',
-    include: {},
-    derive: 'tonnage',
-  },
+  { id: 'tonnage-per-lift', kind: 'series', include: {}, derive: 'tonnage' },
   {
     id: 'estimated-total',
     kind: 'composite',
+    derive: 'e1rm',
+    normalize: true,
+    combine: 'sum',
     components: [
       { label: 'squat', include: { any: ['lift:squat'] } },
       { label: 'bench', include: { any: ['lift:bench'] } },
       { label: 'deadlift', include: { any: ['lift:deadlift'] } },
     ],
-    derive: 'e1rm',
-    normalize: true,
-    combine: 'sum',
   },
   {
     id: 'wilks-total',
     kind: 'composite',
+    derive: 'e1rm',
+    normalize: true,
+    combine: 'sum',
+    post: 'wilks',
     components: [
       { label: 'squat', include: { any: ['lift:squat'] } },
       { label: 'bench', include: { any: ['lift:bench'] } },
       { label: 'deadlift', include: { any: ['lift:deadlift'] } },
     ],
-    derive: 'e1rm',
-    normalize: true,
-    combine: 'sum',
-    post: 'wilks',
   },
 ];
 
-const athlete: AthleteContext = { sex: 'M', bodyweight: 90 };
+const athlete = { sex: 'M' as const, bodyweight: 90 };
 
 describe('runPipeline (end-to-end)', () => {
-  const raw: RawInput[] = FIXTURE_NAMES.map(loadFixture);
+  const raw = FIXTURE_NAMES.map(loadFixture);
   const result = runPipeline(raw, specs, athlete, {});
 
-  it('produces a named dataset for every spec', () => {
-    expect(Object.keys(result.datasets).sort()).toEqual(specs.map((s) => s.id).sort());
-    for (const spec of specs) {
-      expect(Array.isArray(result.datasets[spec.id])).toBe(true);
-      for (const row of result.datasets[spec.id]) {
-        expect(typeof row.t).toBe('number');
-      }
-    }
+  it('runs successfully with a properly shaped output structure', () => {
+    // Verifies all specs generated datasets containing valid time rows
+    specs.forEach((s) => {
+      expect(result.datasets[s.id]).toBeInstanceOf(Array);
+      result.datasets[s.id].forEach((row) => expect(row.t).toBeTypeOf('number'));
+    });
+
+    // Holistic structural shape affirmation using toMatchObject
+    expect(result).toMatchObject({
+      parseErrors: [{ name: 'ParseError' }],
+      diagnostics: {
+        variants: expect.any(Array),
+        weaknesses: expect.any(Array),
+        unassessed: expect.any(Array),
+      },
+      unknownExercises: expect.any(Array),
+      unnormalized: expect.any(Array),
+    });
   });
 
-  it('collects a parse error from the malformed freeform fixture without throwing', () => {
-    expect(result.parseErrors.length).toBeGreaterThan(0);
-    expect(result.parseErrors[0]).toMatchObject({ name: 'ParseError' });
-  });
-
-  it('returns a well-shaped diagnostics report', () => {
-    expect(Array.isArray(result.diagnostics.variants)).toBe(true);
-    expect(Array.isArray(result.diagnostics.weaknesses)).toBe(true);
-    expect(Array.isArray(result.diagnostics.unassessed)).toBe(true);
-  });
-
-  it('returns arrays for unknown-exercise and unnormalized lists', () => {
-    expect(Array.isArray(result.unknownExercises)).toBe(true);
-    expect(Array.isArray(result.unnormalized)).toBe(true);
-  });
-
-  it('surfaces raw names with no alias entry as unknown exercises', () => {
-    const withUnknown = runPipeline(
-      [...raw, { name: 'unknown-exercise.txt', content: '2026-01-15 Curls 50x10 @8\n' }],
+  it('surfaces unmapped raw exercises', () => {
+    const fresh = runPipeline(
+      [...raw, { name: 'unmapped.txt', content: '2026-01-15 Curls 50x10 @8\n' }],
       specs,
       athlete,
       {}
     );
-    expect(withUnknown.unknownExercises).toContain('Curls');
+    expect(fresh.unknownExercises).toContain('Curls');
   });
 
-  it('re-runs the full pipeline from scratch on every call (no memoization)', () => {
+  it('re-runs the integration code from scratch without memoization', () => {
     const again = runPipeline(raw, specs, athlete, {});
     expect(again.datasets).toEqual(result.datasets);
     expect(again).not.toBe(result);

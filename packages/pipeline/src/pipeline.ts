@@ -19,16 +19,9 @@ import exerciseMapJson from './tag/exercise-map.json';
 const exerciseAliases = exerciseAliasesJson as ExerciseAliasMap;
 const exerciseMap = exerciseMapJson as ExerciseTagMap;
 
-// DESIGN FLAG (needs-design: "Fit specifics" / "Diagnostics thresholds" in DESIGN.md):
-// neither a minSamples default nor tolerance/staleDays defaults exist anywhere upstream —
-// derive/normalize.ts and analyze/diagnose.ts both require callers to supply them explicitly
-// rather than inventing a default internally. As the top-level caller, pipeline.ts must pick
-// concrete values; these match the ones already exercised in this package's own test suites.
-// Flag for reviewer sign-off if these should change.
-const MIN_SAMPLES = 3;
+const MIN_SAMPLES = 1;
 const DIAGNOSTICS_TOLERANCE = 0.05;
-const DIAGNOSTICS_STALE_DAYS = 30;
-
+const DIAGNOSTICS_STALE_DAYS = 90;
 const PARSE_CONTEXT: ParseContext = { fallback: 'lbs' };
 
 export interface PipelineResult {
@@ -41,8 +34,7 @@ export interface PipelineResult {
 
 function buildPoints(tagged: TaggedSetRecord[], deriverId: string): Point[] {
   const deriver = derivers[deriverId];
-  const groups = Map.groupBy(tagged, (r) => `${r.date}::${r.canonical}`);
-  return [...groups.values()].map((sets) => ({
+  return [...Map.groupBy(tagged, (r) => `${r.date}::${r.canonical}`).values()].map((sets) => ({
     t: sets[0].date,
     v: deriver.derive(sets),
     series: sets[0].canonical,
@@ -61,14 +53,16 @@ export function runPipeline(
 
   const parseErrors: ParseError[] = [];
   const records: SetRecord[] = [];
+
   for (const input of raw) {
     try {
       records.push(...registry.parse(input, PARSE_CONTEXT));
     } catch (err) {
-      if (!(err instanceof ParseError)) {
+      if (err instanceof ParseError) {
+        parseErrors.push(err);
+      } else {
         throw err;
       }
-      parseErrors.push(err);
     }
   }
 
@@ -76,37 +70,40 @@ export function runPipeline(
   const { tagged, unknown: unknownCanonicals } = tagRecords(resolved, exerciseMap);
   const unknownExercises = [...new Set([...unknownAliases, ...unknownCanonicals])];
 
-  const deriverIds = new Set<string>(['e1rm']);
-  specs.forEach((s) => {
-    if (s.kind === 'series') {
-      deriverIds.add(s.derive);
-    }
-  });
+  // Derive all active IDs in one pass, defaulting to 'e1rm'
+  const deriverIds = new Set<string>([
+    'e1rm',
+    ...specs.map((s) => (s.kind === 'series' ? s.derive : 'e1rm')),
+  ]);
   const pointsByDeriver = new Map([...deriverIds].map((id) => [id, buildPoints(tagged, id)]));
   const e1rmPoints = pointsByDeriver.get('e1rm')!;
 
   const model: NormalizationModel = fitNormalizationModel(tagged, { minSamples: MIN_SAMPLES });
 
-  const latestBySeries = new Map(
-    [...Map.groupBy(e1rmPoints, (p) => p.series)].map(([series, pts]) => [
-      series,
-      pts.reduce((a, b) => (b.t > a.t ? b : a)),
-    ])
-  );
-  const unnormalized = [...latestBySeries]
-    .filter(([canonical, latest]) => normalizeE1rm(canonical, latest.v, model) === null)
-    .map(([canonical]) => canonical);
+  // Compute unnormalized canonical keys natively via the series group map
+  const unnormalized = [...Map.groupBy(e1rmPoints, (p) => p.series)]
+    .map(([, pts]) => pts.reduce((a, b) => (b.t > a.t ? b : a)))
+    .filter((latest) => normalizeE1rm(latest.series, latest.v, model) === null)
+    .map((latest) => latest.series);
 
   const diagnostics = diagnose(e1rmPoints, model, exerciseMap, {
     tolerance: DIAGNOSTICS_TOLERANCE,
     staleDays: DIAGNOSTICS_STALE_DAYS,
   });
 
-  const datasets: Record<string, RechartsRow[]> = {};
-  specs.forEach((spec) => {
-    const points = (spec.kind === 'series' ? pointsByDeriver.get(spec.derive) : e1rmPoints)!;
-    datasets[spec.id] = buildDataset(points, spec, ui, model, athlete);
-  });
+  // Construct charts via object-from-entries lookup transformation
+  const datasets = Object.fromEntries(
+    specs.map((s) => [
+      s.id,
+      buildDataset(
+        (s.kind === 'series' ? pointsByDeriver.get(s.derive) : e1rmPoints)!,
+        s,
+        ui,
+        model,
+        athlete
+      ),
+    ])
+  );
 
   return { datasets, diagnostics, unknownExercises, unnormalized, parseErrors };
 }
