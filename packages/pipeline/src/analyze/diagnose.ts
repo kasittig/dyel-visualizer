@@ -17,25 +17,13 @@ export interface VariantAssessment {
 
 export interface DiagnosticsReport {
   variants: VariantAssessment[];
-  weaknesses: Array<{ quality: Quality; score: number; evidence: string[] }>;
+  weaknesses: { quality: Quality; score: number; evidence: string[] }[];
   unassessed: string[];
 }
 
 const DAY_MS = 86400000;
 
-const getTag = (tags: ReadonlySet<string>, prefix: string) =>
-  [...tags].find((t) => t.startsWith(prefix));
-
-const getFactor = (can: string, model: NormalizationModel) =>
-  Object.values(model.baseline).includes(can) ? 1 : model.variantFactor[can]?.factor || null;
-
 const latestOf = (points: Point[]) => points.reduce((a, b) => (b.t > a.t ? b : a));
-
-const groupBySeries = (points: Point[]) => {
-  const groups = new Map<string, Point[]>();
-  points.forEach((p) => groups.set(p.series, [...(groups.get(p.series) || []), p]));
-  return groups;
-};
 
 export function diagnose(
   points: Point[],
@@ -44,34 +32,30 @@ export function diagnose(
   opts: { tolerance: number; staleDays: number }
 ): DiagnosticsReport {
   const now = Date.now();
-  const groups = groupBySeries(points);
+
+  // Group by series and immediately find the latest point per series
+  const seriesLatest = Map.groupBy(points, (p) => p.series);
+  const latestBySeries = new Map([...seriesLatest].map(([s, p]) => [s, latestOf(p)]));
+
   const variants: VariantAssessment[] = [];
   const unassessed: string[] = [];
+  const votes = new Map<Quality, { score: number; evidence: string[] }>();
 
-  for (const [canonical, group] of groups) {
-    const latest = latestOf(group);
-    const lift = getTag(latest.tags, 'lift:');
-    const factor = getFactor(canonical, model);
-    const baselineCanonical = lift ? model.baseline[lift] : undefined;
-    const baselineLatest = baselineCanonical
-      ? groups
-          .get(baselineCanonical)
-          ?.reduce((a, b) => (!a || b.t > a.t ? b : a), undefined as Point | undefined)
-      : undefined;
+  for (const [canonical, latest] of latestBySeries) {
+    const lift = [...latest.tags].find((t) => t.startsWith('lift:'));
+    const factor = Object.values(model.baseline).includes(canonical)
+      ? 1
+      : model.variantFactor[canonical]?.factor;
+    const baseLatest = lift ? latestBySeries.get(model.baseline[lift]) : null;
 
-    if (!lift || !factor || !baselineCanonical || !baselineLatest) {
+    if (!lift || !factor || !baseLatest || now - latest.t > opts.staleDays * DAY_MS) {
       unassessed.push(canonical);
       continue;
     }
 
-    if (now - latest.t > opts.staleDays * DAY_MS) {
-      unassessed.push(canonical);
-      continue;
-    }
+    const expectedE1rmKg = factor * baseLatest.v;
+    const ratio = latest.v / expectedE1rmKg;
 
-    const expectedE1rmKg = factor * baselineLatest.v;
-    const actualE1rmKg = latest.v;
-    const ratio = actualE1rmKg / expectedE1rmKg;
     const status: VariantAssessment['status'] =
       Math.abs(ratio - 1) <= opts.tolerance
         ? 'optimal'
@@ -79,35 +63,31 @@ export function diagnose(
           ? 'weakness'
           : 'overperforming';
 
-    variants.push({
+    const v: VariantAssessment = {
       canonical,
       lift,
       expectedE1rmKg,
-      actualE1rmKg,
       ratio,
       status,
+      actualE1rmKg: latest.v,
       staleDays: (now - latest.t) / DAY_MS,
       effects: map[canonical]?.effects ?? [],
-    });
-  }
+    };
+    variants.push(v);
 
-  const votes = new Map<Quality, { score: number; evidence: string[] }>();
-  for (const v of variants) {
-    if (v.status === 'optimal') {
-      continue;
-    }
-    const delta = v.status === 'weakness' ? 1 : -1;
-    for (const quality of v.effects) {
-      const entry = votes.get(quality) || { score: 0, evidence: [] };
-      entry.score += delta;
-      entry.evidence.push(v.canonical);
-      votes.set(quality, entry);
+    // Vote tallying combined directly into the main loop
+    if (status !== 'optimal') {
+      const delta = status === 'weakness' ? 1 : -1;
+      v.effects.forEach((q) => {
+        const entry = votes.get(q) ?? { score: 0, evidence: [] };
+        votes.set(q, { score: entry.score + delta, evidence: [...entry.evidence, canonical] });
+      });
     }
   }
 
-  const weaknesses = [...votes.entries()]
-    .filter(([, { score }]) => score > 0)
-    .map(([quality, { score, evidence }]) => ({ quality, score, evidence }));
+  const weaknesses = [...votes]
+    .filter(([, v]) => v.score > 0)
+    .map(([quality, v]) => ({ quality, ...v }));
 
   return { variants, weaknesses, unassessed };
 }
