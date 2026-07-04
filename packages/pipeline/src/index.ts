@@ -21,3 +21,5 @@ export type {
   RechartsRow,
 } from './dataset/build';
 export { buildDataset } from './dataset/build';
+export type { PipelineResult } from './pipeline';
+export { runPipeline } from './pipeline';
