@@ -26,4 +26,4 @@
 - Never commit directly to `main`. Always create a new feature branch before committing.
 - Base your feature branches off of `main` unless told otherwise.
 - Keep your branch in sync with `git rebase main`
-- Submit any changes as a new PR. If you are given a Github issue number, make sure your PR includes the phrase "solves #issue".
+- Submit any changes as a new PR. If you are given a Github issue number, make sure your PR includes the phrase "closes #issue".
