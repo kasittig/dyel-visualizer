@@ -38,5 +38,4 @@ parse/; never re-multiply.
     dots(totalKg, ctx, date): number
 
 - Bodyweight comes ONLY from UI entries — never from parsed logs.
-- Bodyweight is linearly interpolated at the requested date.
 - wilks/dots are pure polynomial evaluations; inputs in kg.

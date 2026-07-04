@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { SetRecord } from '../types';
+import type { SetRecord } from '../types';
 import { tagRecords, matches } from './tag';
 import exerciseMap from './exercise-map.json';
 
