@@ -28,25 +28,18 @@ export class ParseError extends Error {
   }
 
   toString(): string {
-    const parts = [this.message];
-    if (this.line !== undefined) {
-      parts.push(`at line ${this.line}`);
-    }
-    if (this.rawText !== undefined) {
-      parts.push(`: ${this.rawText}`);
-    }
-    return parts.join(' ');
+    return [
+      this.message,
+      this.line !== undefined ? `at line ${this.line}` : undefined,
+      this.rawText !== undefined ? `: ${this.rawText}` : undefined,
+    ]
+      .filter(Boolean)
+      .join(' ');
   }
 }
 
 export function resolveUnit(recordUnit: Unit | undefined, ctx: ParseContext): Unit {
-  if (recordUnit !== undefined) {
-    return recordUnit;
-  }
-  if (ctx.datasetUnit !== undefined) {
-    return ctx.datasetUnit;
-  }
-  return ctx.fallback;
+  return recordUnit ?? ctx.datasetUnit ?? ctx.fallback;
 }
 
 export class ParserRegistry {
