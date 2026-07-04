@@ -20,3 +20,10 @@
 - Inside `packages/app`, always import shared modules from `@dyel/core`.
 - **CRITICAL:** Do NOT use relative path traversals (like `../../core`) to share code.
 - If changes are made to `@dyel/core`, you must explicitly prompt Claude to run `npm run build --workspace=@dyel/core` before testing `@dyel/app`.
+
+## Git
+
+- Never commit directly to `main`. Always create a new feature branch before committing.
+- Base your feature branches off of `main` unless told otherwise.
+- Keep your branch in sync with `git rebase main`
+- Submit any changes as a new PR. If you are given a Github issue number, make sure your PR includes the phrase "solves #issue".
