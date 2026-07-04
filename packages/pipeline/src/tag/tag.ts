@@ -1,17 +1,31 @@
 import type { SetRecord, TagQuery } from '../types';
 
 export interface ExerciseTagMapEntry {
-  canonical: string;
   tags: string[];
   effects?: string[];
 }
 
 export type ExerciseTagMap = Record<string, ExerciseTagMapEntry>;
+export type ExerciseAliasMap = Record<string, string>;
 
 export type TaggedSetRecord = SetRecord & {
   canonical: string;
   tags: ReadonlySet<string>;
 };
+
+export function resolveCanonicalNames(records: SetRecord[], aliases: ExerciseAliasMap) {
+  const unknown = new Set<string>();
+  const resolved = records.flatMap((r) => {
+    const canonical = aliases[r.exercise];
+    if (!canonical) {
+      unknown.add(r.exercise);
+      return [];
+    }
+    return [{ ...r, exercise: canonical }];
+  });
+
+  return { resolved, unknown: [...unknown] };
+}
 
 export function tagRecords(records: SetRecord[], map: ExerciseTagMap) {
   const unknown = new Set<string>();
@@ -21,7 +35,7 @@ export function tagRecords(records: SetRecord[], map: ExerciseTagMap) {
       unknown.add(r.exercise);
       return [];
     }
-    return [{ ...r, canonical: entry.canonical, tags: new Set(entry.tags) }];
+    return [{ ...r, canonical: r.exercise, tags: new Set(entry.tags) }];
   });
 
   return { tagged, unknown: [...unknown] };

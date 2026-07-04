@@ -6,11 +6,9 @@ describe('exercise-map.json', () => {
     expect(exerciseMap).toBeDefined();
     expect(typeof exerciseMap).toBe('object');
 
-    Object.entries(exerciseMap).forEach(([rawName, entry]) => {
-      expect(typeof rawName).toBe('string');
-      expect(entry).toHaveProperty('canonical');
+    Object.entries(exerciseMap).forEach(([canonical, entry]) => {
+      expect(typeof canonical).toBe('string');
       expect(entry).toHaveProperty('tags');
-      expect(typeof entry.canonical).toBe('string');
       expect(Array.isArray(entry.tags)).toBe(true);
       if (entry.effects) {
         expect(Array.isArray(entry.effects)).toBe(true);
@@ -22,11 +20,11 @@ describe('exercise-map.json', () => {
   });
 
   it('every entry has exactly one lift:* tag', () => {
-    Object.entries(exerciseMap).forEach(([rawName, entry]) => {
+    Object.entries(exerciseMap).forEach(([canonical, entry]) => {
       const liftTags = entry.tags.filter((tag) => tag.startsWith('lift:'));
       expect(liftTags.length).toBe(
         1,
-        `${rawName} should have exactly one lift:* tag, found: ${liftTags.join(', ')}`
+        `${canonical} should have exactly one lift:* tag, found: ${liftTags.join(', ')}`
       );
     });
   });
@@ -35,12 +33,12 @@ describe('exercise-map.json', () => {
     const allowedNamespaces = ['lift:', 'bar:', 'stance:', 'addl:', 'equip:'];
     const allowedBare = ['comp-lift', 'variation'];
 
-    Object.entries(exerciseMap).forEach(([rawName, entry]) => {
+    Object.entries(exerciseMap).forEach(([canonical, entry]) => {
       entry.tags.forEach((tag) => {
         const hasNamespace = allowedNamespaces.some((ns) => tag.startsWith(ns));
         const isBare = allowedBare.includes(tag);
 
-        expect(hasNamespace || isBare).toBe(true, `${rawName} has invalid tag: ${tag}`);
+        expect(hasNamespace || isBare).toBe(true, `${canonical} has invalid tag: ${tag}`);
       });
     });
   });
@@ -59,23 +57,9 @@ describe('exercise-map.json', () => {
     expect(variants.length).toBeGreaterThan(0, 'At least one bar variant with bar: tag required');
   });
 
-  it('covers raw names from fixture: near-variant-exercise-names', () => {
-    const fixtureNames = ['Bench', 'bench press', 'Comp Bench'];
-    fixtureNames.forEach((name) => {
-      expect(Object.prototype.hasOwnProperty.call(exerciseMap, name)).toBe(
-        true,
-        `exercise-map.json must include raw name: ${name}`
-      );
-    });
-  });
-
-  it('covers raw names from other fixtures', () => {
-    const fixtureNames = ['Squat', 'Deadlift'];
-    fixtureNames.forEach((name) => {
-      expect(Object.prototype.hasOwnProperty.call(exerciseMap, name)).toBe(
-        true,
-        `exercise-map.json must include raw name: ${name}`
-      );
+  it('tags the three competition lifts with comp-lift', () => {
+    ['bench', 'squat', 'deadlift'].forEach((canonical) => {
+      expect(exerciseMap[canonical as keyof typeof exerciseMap].tags).toContain('comp-lift');
     });
   });
 });
