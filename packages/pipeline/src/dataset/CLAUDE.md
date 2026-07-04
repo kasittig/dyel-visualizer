@@ -14,7 +14,7 @@ at the very end.
 ## SeriesSpec
 
 filter by TagQuery (tags + canonical ids) → derive per (date, series) →
-resample → pivot series to columns. Example: "e1RM per comp lift split by
+pivot series to columns. Example: "e1RM per comp lift split by
 variant" = include `any: ['lift:bench']`, derive e1rm, pivot by canonical.
 
 ## CompositeSpec (e.g. estimated total)
@@ -28,13 +28,11 @@ not just comp lifts. Wilks/DOTS charts are just the total + post transform.
 
 ## RenderParams (UI runtime)
 
-`chips` AND-merge into each spec's TagQuery; `resample` overrides the spec
-default (user toggle); `dateRange` filters.
+`chips` AND-merge into each spec's TagQuery; `dateRange` filters.
 
 ## Boundaries
 
 - Sibling of analyze/ — never import from it or export to it.
 - Output values stay kg ('weight' axes) or raw scores; display-unit
   conversion is the app's job.
-- Flag, don't decide: resample edges (partial weeks, empty buckets, week
-  start), carry-forward staleness policy.
+- Flag, don't decide: carry-forward staleness policy.
