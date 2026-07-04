@@ -1,4 +1,3 @@
-2026-01-13
-Bench 225x5 @8
-Squat 315x @7
-Deadlift 405x3 @9
+2026-01-13 Bench 225x5 @8
+2026-01-13 Squat 315x @7
+2026-01-13 Deadlift 405x3 @9

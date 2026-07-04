@@ -1,4 +1,3 @@
-2026-02-01
-Bench 225x5 @8
-bench press 235x3 @9
-Comp Bench 245x1 @9.5
+2026-02-01 Bench 225x5 @8
+2026-02-01 bench press 235x3 @9
+2026-02-01 Comp Bench 245x1 @9.5
