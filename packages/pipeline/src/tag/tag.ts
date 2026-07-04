@@ -1,4 +1,4 @@
-import { SetRecord, TagQuery } from '../types';
+import type { SetRecord, TagQuery } from '../types';
 
 export interface ExerciseTagMapEntry {
   canonical: string;
@@ -13,50 +13,29 @@ export type TaggedSetRecord = SetRecord & {
   tags: ReadonlySet<string>;
 };
 
-export function tagRecords(
-  records: SetRecord[],
-  map: ExerciseTagMap
-): { tagged: TaggedSetRecord[]; unknown: string[] } {
-  const tagged: TaggedSetRecord[] = [];
-  const unknownSet = new Set<string>();
-
-  for (const record of records) {
-    const entry = map[record.exercise];
-    if (entry) {
-      tagged.push({
-        ...record,
-        canonical: entry.canonical,
-        tags: new Set(entry.tags),
-      });
-    } else {
-      unknownSet.add(record.exercise);
+export function tagRecords(records: SetRecord[], map: ExerciseTagMap) {
+  const unknown = new Set<string>();
+  const tagged = records.flatMap((r) => {
+    const entry = map[r.exercise];
+    if (!entry) {
+      unknown.add(r.exercise);
+      return [];
     }
-  }
+    return [{ ...r, canonical: entry.canonical, tags: new Set(entry.tags) }];
+  });
 
-  return {
-    tagged,
-    unknown: Array.from(unknownSet),
-  };
+  return { tagged, unknown: [...unknown] };
 }
 
 export function matches(tags: ReadonlySet<string>, q: TagQuery): boolean {
-  if (q.all) {
-    if (!q.all.every((tag) => tags.has(tag))) {
-      return false;
-    }
+  if (q.all && !q.all.every((t) => tags.has(t))) {
+    return false;
   }
-
-  if (q.any) {
-    if (!q.any.some((tag) => tags.has(tag))) {
-      return false;
-    }
+  if (q.any && !q.any.some((t) => tags.has(t))) {
+    return false;
   }
-
-  if (q.none) {
-    if (q.none.some((tag) => tags.has(tag))) {
-      return false;
-    }
+  if (q.none && q.none.some((t) => tags.has(t))) {
+    return false;
   }
-
   return true;
 }
