@@ -1,31 +1,18 @@
 {
-  "Bench": {
-    "canonical": "bench",
-    "tags": ["lift:bench"]
-  },
-  "bench press": {
-    "canonical": "bench",
-    "tags": ["lift:bench"]
-  },
-  "Comp Bench": {
-    "canonical": "bench",
+  "bench": {
     "tags": ["lift:bench", "comp-lift"]
   },
-  "Squat": {
-    "canonical": "squat",
-    "tags": ["lift:squat"]
+  "squat": {
+    "tags": ["lift:squat", "comp-lift"]
   },
-  "Deadlift": {
-    "canonical": "deadlift",
-    "tags": ["lift:deadlift"]
+  "deadlift": {
+    "tags": ["lift:deadlift", "comp-lift"]
   },
   "bench-chains": {
-    "canonical": "bench-chains",
     "tags": ["lift:bench", "addl:chains"],
     "effects": ["lockout"]
   },
   "ssb-squat": {
-    "canonical": "ssb-squat",
     "tags": ["lift:squat", "bar:ssb"],
     "effects": ["posterior-chain"]
   }

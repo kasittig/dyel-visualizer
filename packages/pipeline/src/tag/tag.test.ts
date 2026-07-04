@@ -1,10 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import type { SetRecord } from '../types';
-import { tagRecords, matches } from './tag';
+import { tagRecords, resolveCanonicalNames, matches } from './tag';
 import exerciseMap from './exercise-map.json';
+import exerciseAliases from './exercise-aliases.json';
 
-describe('tagRecords', () => {
-  it('tags records with map entries', () => {
+describe('resolveCanonicalNames', () => {
+  it('rewrites exercise to its canonical name', () => {
     const records: SetRecord[] = [
       {
         date: 1706745600000,
@@ -15,15 +16,14 @@ describe('tagRecords', () => {
       },
     ];
 
-    const { tagged, unknown } = tagRecords(records, exerciseMap);
+    const { resolved, unknown } = resolveCanonicalNames(records, exerciseAliases);
 
-    expect(tagged).toHaveLength(1);
-    expect(tagged[0].canonical).toBe('bench');
-    expect(tagged[0].tags).toEqual(new Set(['lift:bench']));
+    expect(resolved).toHaveLength(1);
+    expect(resolved[0].exercise).toBe('bench');
     expect(unknown).toHaveLength(0);
   });
 
-  it('excludes unknown exercises from tagged output', () => {
+  it('excludes unresolved raw names from resolved output', () => {
     const records: SetRecord[] = [
       {
         date: 1706745600000,
@@ -33,13 +33,13 @@ describe('tagRecords', () => {
       },
     ];
 
-    const { tagged, unknown } = tagRecords(records, exerciseMap);
+    const { resolved, unknown } = resolveCanonicalNames(records, exerciseAliases);
 
-    expect(tagged).toHaveLength(0);
+    expect(resolved).toHaveLength(0);
     expect(unknown).toEqual(['Unknown Exercise']);
   });
 
-  it('deduplicates unknown exercise names', () => {
+  it('deduplicates unresolved raw names', () => {
     const records: SetRecord[] = [
       {
         date: 1706745600000,
@@ -61,43 +61,14 @@ describe('tagRecords', () => {
       },
     ];
 
-    const { tagged, unknown } = tagRecords(records, exerciseMap);
+    const { resolved, unknown } = resolveCanonicalNames(records, exerciseAliases);
 
-    expect(tagged).toHaveLength(0);
+    expect(resolved).toHaveLength(0);
     expect(unknown).toHaveLength(2);
     expect(new Set(unknown)).toEqual(new Set(['Unknown Exercise', 'Another Unknown']));
   });
 
-  it('handles mixed known and unknown exercises', () => {
-    const records: SetRecord[] = [
-      {
-        date: 1706745600000,
-        exercise: 'Bench',
-        weight: 102.06,
-        reps: 5,
-        rpe: 8,
-      },
-      {
-        date: 1706745600000,
-        exercise: 'Unknown Exercise',
-        weight: 100,
-        reps: 5,
-      },
-      {
-        date: 1706745600000,
-        exercise: 'Squat',
-        weight: 136.08,
-        reps: 3,
-      },
-    ];
-
-    const { tagged, unknown } = tagRecords(records, exerciseMap);
-
-    expect(tagged).toHaveLength(2);
-    expect(unknown).toEqual(['Unknown Exercise']);
-  });
-
-  it('tags near-variant exercise names to the same canonical', () => {
+  it('resolves near-variant exercise names to the same canonical', () => {
     const records: SetRecord[] = [
       {
         date: 1706745600000,
@@ -119,19 +90,112 @@ describe('tagRecords', () => {
       },
     ];
 
+    const { resolved, unknown } = resolveCanonicalNames(records, exerciseAliases);
+
+    expect(resolved).toHaveLength(3);
+    expect(unknown).toHaveLength(0);
+    expect(resolved.map((r) => r.exercise)).toEqual(['bench', 'bench', 'bench']);
+  });
+});
+
+describe('tagRecords', () => {
+  it('tags records with map entries', () => {
+    const records: SetRecord[] = [
+      {
+        date: 1706745600000,
+        exercise: 'bench',
+        weight: 102.06,
+        reps: 5,
+        rpe: 8,
+      },
+    ];
+
     const { tagged, unknown } = tagRecords(records, exerciseMap);
 
-    expect(tagged).toHaveLength(3);
+    expect(tagged).toHaveLength(1);
+    expect(tagged[0].canonical).toBe('bench');
+    expect(tagged[0].tags).toEqual(new Set(['lift:bench', 'comp-lift']));
     expect(unknown).toHaveLength(0);
+  });
 
-    const canonicals = tagged.map((r) => r.canonical);
-    expect(canonicals).toEqual(['bench', 'bench', 'bench']);
+  it('excludes unknown canonicals from tagged output', () => {
+    const records: SetRecord[] = [
+      {
+        date: 1706745600000,
+        exercise: 'unknown-canonical',
+        weight: 100,
+        reps: 5,
+      },
+    ];
+
+    const { tagged, unknown } = tagRecords(records, exerciseMap);
+
+    expect(tagged).toHaveLength(0);
+    expect(unknown).toEqual(['unknown-canonical']);
+  });
+
+  it('deduplicates unknown canonicals', () => {
+    const records: SetRecord[] = [
+      {
+        date: 1706745600000,
+        exercise: 'unknown-canonical',
+        weight: 100,
+        reps: 5,
+      },
+      {
+        date: 1706745600000,
+        exercise: 'unknown-canonical',
+        weight: 110,
+        reps: 3,
+      },
+      {
+        date: 1706745600000,
+        exercise: 'another-unknown',
+        weight: 90,
+        reps: 8,
+      },
+    ];
+
+    const { tagged, unknown } = tagRecords(records, exerciseMap);
+
+    expect(tagged).toHaveLength(0);
+    expect(unknown).toHaveLength(2);
+    expect(new Set(unknown)).toEqual(new Set(['unknown-canonical', 'another-unknown']));
+  });
+
+  it('handles mixed known and unknown canonicals', () => {
+    const records: SetRecord[] = [
+      {
+        date: 1706745600000,
+        exercise: 'bench',
+        weight: 102.06,
+        reps: 5,
+        rpe: 8,
+      },
+      {
+        date: 1706745600000,
+        exercise: 'unknown-canonical',
+        weight: 100,
+        reps: 5,
+      },
+      {
+        date: 1706745600000,
+        exercise: 'squat',
+        weight: 136.08,
+        reps: 3,
+      },
+    ];
+
+    const { tagged, unknown } = tagRecords(records, exerciseMap);
+
+    expect(tagged).toHaveLength(2);
+    expect(unknown).toEqual(['unknown-canonical']);
   });
 
   it('preserves all record properties', () => {
     const record: SetRecord = {
       date: 1706745600000,
-      exercise: 'Bench',
+      exercise: 'bench',
       weight: 102.06,
       reps: 5,
       rpe: 8,
@@ -149,7 +213,7 @@ describe('tagRecords', () => {
       rpe: record.rpe,
       meta: record.meta,
       canonical: 'bench',
-      tags: new Set(['lift:bench']),
+      tags: new Set(['lift:bench', 'comp-lift']),
     });
   });
 
@@ -157,7 +221,7 @@ describe('tagRecords', () => {
     const records: SetRecord[] = [
       {
         date: 1706745600000,
-        exercise: 'Comp Bench',
+        exercise: 'bench-chains',
         weight: 111.13,
         reps: 1,
       },
@@ -165,7 +229,7 @@ describe('tagRecords', () => {
 
     const { tagged } = tagRecords(records, exerciseMap);
 
-    expect(tagged[0].tags).toEqual(new Set(['lift:bench', 'comp-lift']));
+    expect(tagged[0].tags).toEqual(new Set(['lift:bench', 'addl:chains']));
   });
 });
 
