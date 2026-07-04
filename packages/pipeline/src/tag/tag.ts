@@ -15,14 +15,16 @@ export type TaggedSetRecord = SetRecord & {
 
 export function resolveCanonicalNames(records: SetRecord[], aliases: ExerciseAliasMap) {
   const unknown = new Set<string>();
-  const resolved = records.flatMap((r) => {
+
+  const resolved = records.reduce<SetRecord[]>((acc, r) => {
     const canonical = aliases[r.exercise];
-    if (!canonical) {
+    if (canonical) {
+      acc.push({ ...r, exercise: canonical });
+    } else {
       unknown.add(r.exercise);
-      return [];
     }
-    return [{ ...r, exercise: canonical }];
-  });
+    return acc;
+  }, []);
 
   return { resolved, unknown: [...unknown] };
 }
