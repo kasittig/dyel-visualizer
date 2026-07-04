@@ -21,7 +21,7 @@ parse/; never re-multiply.
 
 - `NormalizationModel` is a SERIALIZABLE record (plain objects, no Maps):
   `baseline` (lift family → baseline canonical), `variantFactor`
-  (canonical → { factor, n }), `addlWtOffset` ('addl:\*' tag → { offsetKg, n }).
+  (canonical → { factor, n }), `addlWtOffset` (canonical → { offsetKg, n }).
 - Fitting is deterministic arithmetic over tagged history — runs in-pipeline,
   produces no persisted artifact.
 - Baseline-only by design: variant→variant composes as variant→comp→variant.

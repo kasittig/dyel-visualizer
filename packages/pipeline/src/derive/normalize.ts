@@ -4,10 +4,6 @@ import { calcE1RM, invertE1RM } from './e1rm';
 // DESIGN FLAG (issue #429): no `minSamples` default exists anywhere in the legacy codebase
 // (packages/core). Callers must pass `opts.minSamples` explicitly; 3 is the recommended
 // starting point used in this module's own tests — flag any change for reviewer sign-off.
-//
-// `addlWtOffset` is keyed by canonical rather than by the raw `addl:*` tag (as the original
-// interface comment suggested), so that offsets fitted against different lift families'
-// baselines are never pooled together under one key — flagged for reviewer awareness.
 
 export interface NormalizationModel {
   fittedAt: number;
