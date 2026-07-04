@@ -53,7 +53,7 @@ export const freeformParser: Parser = {
 
       // Parse the line: DATE EXERCISE_NAME WEIGHT_REPS_SPECIFICATION
       // Date format: YYYY-MM-DD
-      const dateMatch = lineToProcess.match(/^(\d{4}-\d{2}-\d{2})\s+(.+)$/);
+      const dateMatch = lineToProcess.match(/^(\d{4}-\d{2}-\d{2})\s+(\S.*)$/);
       if (!dateMatch) {
         throw new ParseError(
           `Invalid line format: expected DATE EXERCISE_NAME WEIGHT_REPS, got: ${lineToProcess}`,
