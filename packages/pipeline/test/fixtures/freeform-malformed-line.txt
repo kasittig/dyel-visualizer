@@ -1,0 +1,4 @@
+2026-01-13
+Bench 225x5 @8
+Squat 315x @7
+Deadlift 405x3 @9
