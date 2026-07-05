@@ -1,43 +1,53 @@
 # tag/ — SetRecord[] → TaggedSetRecord[]
 
-Runtime tagging is a DICTIONARY LOOKUP, split across two precomputed files —
-both versioned in git, edited outside the app. All fuzziness (name
-canonicalization, tag assignment, effects) lives in this offline data, never
-in code. Never add fuzzy matching, string similarity, or inference here.
+Runtime tagging is a KEYWORD-DETECTOR PARSE, not a dictionary lookup. `detect/` holds a
+ported copy of `@dyel/core`'s exercise-name parser (`detect/detectors.ts` +
+`detect/parseExercise.ts`) plus a re-keyed copy of `@dyel/core`'s
+`modifierEffects.json` (`detect/modifier-effects.json`). This is a deliberate copy, not a
+dependency on `@dyel/core` — pipeline and core do not import from each other.
 
 ## Contract
 
-    function resolveCanonicalNames(records: SetRecord[], aliases: ExerciseAliasMap):
+    function resolveCanonicalNames(records: SetRecord[]):
       { resolved: SetRecord[]; unknown: string[] };
-    function tagRecords(records: SetRecord[], map: ExerciseTagMap):
+    function tagRecords(records: SetRecord[]):
       { tagged: TaggedSetRecord[]; unknown: string[] };
     function matches(tags: ReadonlySet<string>, q: TagQuery): boolean;  // all/any/none
 
-`resolveCanonicalNames` runs first (raw name → canonical), then `tagRecords`
-(canonical → tags/effects) on its `resolved` output. Unknown raw names or
-unknown canonicals → returned in each step's `unknown` for offline review.
-Never guess, never partial-match, never drop silently.
+`resolveCanonicalNames` runs first (raw name → canonical via `detect/parseExercise.ts` +
+`detect/canonical.ts`'s `buildCanonical`), then `tagRecords` (canonical → tags/effects via
+`buildTagsAndEffects`) on its `resolved` output. Both steps parse via the same
+`parseExercise`; canonical strings parse back through consistently for non-accessory
+lifts since the canonical format is itself built from parseable keywords.
 
-## exercise-aliases.json — raw name → canonical
+## Canonical format
 
-    "bench w/ chains": "bench-chains"    // fine-grained: variants are DISTINCT canonicals
+For non-accessory lifts: `${type}[-${bar}][-${stance}][-${equipment}][-${addlWts...}]`,
+omitting default values (`bar: standard`, `stance: competition`) and any absent component.
+For accessory lifts (parser always nulls bar/stance/equipment there): a kebab-slugified
+raw name, preserving per-exercise distinctness without a dictionary.
 
-## exercise-map.json — canonical → tags/effects
+## Tag/effects derivation
 
-    "bench-chains": {
-      "tags": ["lift:bench", "addl:chains", "variation"],
-      "effects": ["lockout", "tricep"]    // optional; consumed by analyze/
-    }
+`lift:${type}` always. If the exercise has zero modifiers (default bar/stance,
+no equipment, no addlWts) it also gets `comp-lift` — this only ever applies to the three
+bare canonicals themselves, never a variant. Otherwise it gets `bar:`/`stance:`/`equip:`/
+`addl:` tags for each present non-default component (no `comp-lift`, no other bare tag).
+Effects are looked up per present component as `${namespace}:${value}:${type}` in
+`detect/modifier-effects.json` and unioned (deduped via `Set`) onto
+`TaggedSetRecord.effects`.
 
-Tag namespaces: `lift:` (exactly one per exercise — lift-family grouping),
-`bar:`, `stance:`, `addl:`, `equip:`, plus bare tags (`comp-lift`,
-`variation`). Do NOT canonicalize variants down to their comp lift — variant
-identity must survive to charting; grouping happens via the `lift:` tag.
-`comp-lift` lives on the three competition-lift canonicals (`squat`, `bench`,
-`deadlift`) themselves, not on any particular raw alias — those lifts are
-always competition lifts regardless of which alias was used.
+## Unknown heuristic
+
+A record is unknown when `parseExercise(raw)` yields `type === 'accessory'` with
+null bar/stance/equipment and empty `addlWts` — i.e. every accessory lift, since the
+parser always nulls those fields for accessories. This is an accepted, imperfect
+limitation: a genuine accessory lift and an unrecognized/mistyped comp-lift variant are
+indistinguishable by this heuristic; both land in `unknown` for offline review.
 
 ## Boundaries
 
 - Tags are category-level (per exercise), never per-data-point.
 - This module owns the TagQuery matcher; dataset/ imports it.
+- `detect/` is internal to this module — nothing outside `tag/` should import from it
+  directly; go through `tag.ts`'s exports.

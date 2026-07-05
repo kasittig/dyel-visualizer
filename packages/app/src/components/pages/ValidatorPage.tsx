@@ -5,6 +5,7 @@ import { useTextValidation } from '../../hooks/infra/useTextValidation';
 import type { SheetValidationResult, ColumnInfo } from '@dyel/core';
 import { EXAMPLE_SHEET_URL } from '../../utils/appUtils';
 import type { InputMode } from '../../utils/appUtils';
+import { InputModeToggle } from '../shared/InputModeToggle';
 import styles from './ValidatorPage.module.css';
 
 function Check({ ok }: { ok: boolean }) {
@@ -258,26 +259,7 @@ export function ValidatorPage() {
         )}
       </p>
 
-      <div className={styles.modeToggle} role="tablist" aria-label="Data source">
-        <button
-          type="button"
-          role="tab"
-          aria-selected={mode === 'url'}
-          className={clsx(styles.modeButton, mode === 'url' && styles.modeButtonActive)}
-          onClick={() => setMode('url')}
-        >
-          Sheet URL
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={mode === 'text'}
-          className={clsx(styles.modeButton, mode === 'text' && styles.modeButtonActive)}
-          onClick={() => setMode('text')}
-        >
-          Paste text
-        </button>
-      </div>
+      <InputModeToggle mode={mode} onModeChange={setMode} />
 
       <form onSubmit={handleSubmit} className={styles.form}>
         {mode === 'url' ? (

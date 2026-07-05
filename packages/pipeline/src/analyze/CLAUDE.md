@@ -1,13 +1,13 @@
 # analyze/ — diagnostics from normalization residuals
 
 Expected variant e1RM = model factor × current baseline e1RM. Deviations flag
-weaknesses in the qualities that variant trains (`effects` from
-exercise-map.json). Pure analysis — outputs are computed fresh every run and
-NEVER stored on identity types.
+weaknesses in the qualities that variant trains (`effects`, computed during tagging and
+passed in as a canonical→effects map). Pure analysis — outputs are computed fresh every
+run and NEVER stored on identity types.
 
 ## Contract
 
-    function diagnose(points, model, map, opts: { tolerance; staleDays }): DiagnosticsReport
+    function diagnose(points, model, effectsByCanonical, opts: { tolerance; staleDays }): DiagnosticsReport
 
 - `VariantAssessment.ratio` = actual / expected (actual = latest e1rm point,
   pre-normalization). `status` = ratio vs tolerance band:

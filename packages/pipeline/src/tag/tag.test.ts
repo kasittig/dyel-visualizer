@@ -1,8 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { SetRecord } from '../types';
 import { tagRecords, resolveCanonicalNames, matches } from './tag';
-import exerciseMap from './exercise-map.json';
-import exerciseAliases from './exercise-aliases.json';
 
 describe('resolveCanonicalNames', () => {
   it('rewrites exercise to its canonical name', () => {
@@ -16,7 +14,7 @@ describe('resolveCanonicalNames', () => {
       },
     ];
 
-    const { resolved, unknown } = resolveCanonicalNames(records, exerciseAliases);
+    const { resolved, unknown } = resolveCanonicalNames(records);
 
     expect(resolved).toHaveLength(1);
     expect(resolved[0].exercise).toBe('bench');
@@ -33,7 +31,7 @@ describe('resolveCanonicalNames', () => {
       },
     ];
 
-    const { resolved, unknown } = resolveCanonicalNames(records, exerciseAliases);
+    const { resolved, unknown } = resolveCanonicalNames(records);
 
     expect(resolved).toHaveLength(0);
     expect(unknown).toEqual(['Unknown Exercise']);
@@ -61,7 +59,7 @@ describe('resolveCanonicalNames', () => {
       },
     ];
 
-    const { resolved, unknown } = resolveCanonicalNames(records, exerciseAliases);
+    const { resolved, unknown } = resolveCanonicalNames(records);
 
     expect(resolved).toHaveLength(0);
     expect(unknown).toHaveLength(2);
@@ -90,7 +88,7 @@ describe('resolveCanonicalNames', () => {
       },
     ];
 
-    const { resolved, unknown } = resolveCanonicalNames(records, exerciseAliases);
+    const { resolved, unknown } = resolveCanonicalNames(records);
 
     expect(resolved).toHaveLength(3);
     expect(unknown).toHaveLength(0);
@@ -110,7 +108,7 @@ describe('tagRecords', () => {
       },
     ];
 
-    const { tagged, unknown } = tagRecords(records, exerciseMap);
+    const { tagged, unknown } = tagRecords(records);
 
     expect(tagged).toHaveLength(1);
     expect(tagged[0].canonical).toBe('bench');
@@ -128,7 +126,7 @@ describe('tagRecords', () => {
       },
     ];
 
-    const { tagged, unknown } = tagRecords(records, exerciseMap);
+    const { tagged, unknown } = tagRecords(records);
 
     expect(tagged).toHaveLength(0);
     expect(unknown).toEqual(['unknown-canonical']);
@@ -156,7 +154,7 @@ describe('tagRecords', () => {
       },
     ];
 
-    const { tagged, unknown } = tagRecords(records, exerciseMap);
+    const { tagged, unknown } = tagRecords(records);
 
     expect(tagged).toHaveLength(0);
     expect(unknown).toHaveLength(2);
@@ -186,7 +184,7 @@ describe('tagRecords', () => {
       },
     ];
 
-    const { tagged, unknown } = tagRecords(records, exerciseMap);
+    const { tagged, unknown } = tagRecords(records);
 
     expect(tagged).toHaveLength(2);
     expect(unknown).toEqual(['unknown-canonical']);
@@ -203,7 +201,7 @@ describe('tagRecords', () => {
     };
     const records = [record];
 
-    const { tagged } = tagRecords(records, exerciseMap);
+    const { tagged } = tagRecords(records);
 
     expect(tagged[0]).toMatchObject({
       date: record.date,
@@ -227,9 +225,63 @@ describe('tagRecords', () => {
       },
     ];
 
-    const { tagged } = tagRecords(records, exerciseMap);
+    const { tagged } = tagRecords(records);
 
     expect(tagged[0].tags).toEqual(new Set(['lift:bench', 'addl:chains']));
+  });
+});
+
+describe('keyword-detector parsing', () => {
+  const rec = (exercise: string): SetRecord[] => [
+    { date: 1706745600000, exercise, weight: 100, reps: 5 },
+  ];
+
+  it.each([
+    ['ssb squat', 'SSB Squat', 'squat-ssb', 'bar:ssb'],
+    ['sumo deadlift', 'Sumo Deadlift', 'deadlift-sumo', 'stance:sumo'],
+    ['incline bench', 'Incline Bench', 'bench-incline', 'equip:incline'],
+  ])('detects %s as canonical %s with tag %s', (_, exercise, canonical, tag) => {
+    const { resolved } = resolveCanonicalNames(rec(exercise));
+    expect(resolved[0].exercise).toBe(canonical);
+
+    const { tagged } = tagRecords(resolved);
+    expect(tagged[0].tags.has(tag)).toBe(true);
+  });
+
+  it('resolves "floor press" to bench (TYPE_DETECTORS overlap), not deadlift', () => {
+    const { resolved } = resolveCanonicalNames(rec('floor press'));
+    expect(resolved[0].exercise).toBe('bench-floor');
+  });
+
+  it('builds a multi-component canonical for sumo squat with chains', () => {
+    const { resolved } = resolveCanonicalNames(rec('sumo squat (chains)'));
+    expect(resolved[0].exercise).toBe('squat-sumo-chains');
+
+    const { tagged } = tagRecords(resolved);
+    expect(tagged[0].tags).toEqual(new Set(['lift:squat', 'stance:sumo', 'addl:chains']));
+    expect(tagged[0].effects.length).toBeGreaterThan(0);
+    expect(new Set(tagged[0].effects)).toEqual(
+      new Set(['HIP_DOMINANT', 'POSTERIOR_CHAIN', 'BAR_SPEED'])
+    );
+  });
+
+  it('exposes TaggedSetRecord.effects matching modifier-effects.json', () => {
+    const { tagged } = tagRecords(rec('bench-chains'));
+    expect(tagged[0].effects).toEqual(['BAR_SPEED']);
+  });
+
+  it.each([
+    ['unrecognized accessory name', 'Face Pulls', true],
+    ['plain comp lift with all-default modifiers', 'Squat', false],
+  ])('unknown heuristic for %s (%s) resolves unknown=%s', (_, exercise, isUnknown) => {
+    const { resolved, unknown } = resolveCanonicalNames(rec(exercise));
+    if (isUnknown) {
+      expect(unknown).toEqual([exercise]);
+      expect(resolved).toHaveLength(0);
+    } else {
+      expect(unknown).toHaveLength(0);
+      expect(resolved).toHaveLength(1);
+    }
   });
 });
 

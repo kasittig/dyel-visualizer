@@ -1,14 +1,3 @@
-.check {
-  font-weight: 600;
-  margin-right: 0.4rem;
-}
-.checkOk {
-  color: var(--success);
-}
-.checkFail {
-  color: var(--danger);
-}
-
 .verdictBanner {
   display: flex;
   align-items: center;
@@ -32,51 +21,6 @@
 
 .section {
   margin-bottom: 1.5rem;
-}
-.sectionHeading {
-  margin-bottom: 0.75rem;
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--text);
-}
-
-.checklistUl {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  font-size: 0.95rem;
-}
-.checklistLi {
-  padding: 0.3rem 0;
-  color: var(--text-h);
-}
-
-.rowCountP {
-  color: var(--text-h);
-  margin-bottom: 0.5rem;
-}
-.skipped {
-  color: var(--danger);
-  margin-left: 0.4rem;
-}
-.liftTypeUl {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  font-size: 0.9rem;
-  color: var(--text);
-}
-.liftTypeLi {
-  padding: 0.2rem 0;
-}
-.liftTypeLabel {
-  text-transform: capitalize;
-  margin-right: 0.4rem;
-}
-.liftTypeCount {
-  color: var(--text-h);
 }
 
 .issueHeading {
@@ -104,54 +48,6 @@
   text-transform: uppercase;
   letter-spacing: 0.1em;
   color: var(--danger);
-}
-.rowIssueStack {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-.rowIssueCard {
-  padding: 0.75rem 1rem;
-  border-radius: 6px;
-  border: 1px solid var(--border);
-  background: var(--code-bg);
-  font-size: 0.9rem;
-  text-align: left;
-}
-.rowIssueHeader {
-  font-family: var(--heading);
-  font-weight: 600;
-  color: var(--text-h);
-  margin-bottom: 0.3rem;
-}
-.rowIssueExercise {
-  font-weight: 400;
-  color: var(--text);
-}
-.rowIssueUl {
-  margin: 0;
-  padding: 0 0 0 1.25rem;
-}
-.rowIssueLi {
-  color: var(--text-h);
-  padding: 0.1rem 0;
-}
-
-.visualizerLink {
-  display: inline-block;
-  margin-top: 0.5rem;
-  padding: 4px 14px;
-  background: var(--accent);
-  color: var(--on-accent);
-  border: 1px solid var(--accent);
-  border-radius: 999px;
-  text-decoration: none;
-  font-family: var(--heading);
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  transition: opacity 0.15s;
 }
 
 .main {

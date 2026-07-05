@@ -1,5 +1,4 @@
 import type { Point } from '../types';
-import type { ExerciseTagMap } from '../tag/tag';
 import type { NormalizationModel } from '../derive/normalize';
 
 export type Quality = string;
@@ -28,7 +27,7 @@ const latestOf = (points: Point[]) => points.reduce((a, b) => (b.t > a.t ? b : a
 export function diagnose(
   points: Point[],
   model: NormalizationModel,
-  map: ExerciseTagMap,
+  effectsByCanonical: ReadonlyMap<string, string[]>,
   opts: { tolerance: number; staleDays: number }
 ): DiagnosticsReport {
   const now = Date.now();
@@ -71,7 +70,7 @@ export function diagnose(
       status,
       actualE1rmKg: latest.v,
       staleDays: (now - latest.t) / DAY_MS,
-      effects: map[canonical]?.effects ?? [],
+      effects: effectsByCanonical.get(canonical) ?? [],
     };
     variants.push(v);
 
