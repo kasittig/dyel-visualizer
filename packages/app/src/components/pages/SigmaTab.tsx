@@ -4,7 +4,7 @@ import { CollapsibleSection } from '../shared/CollapsibleSection';
 import { EditableDateChip } from '../shared/EditableDateChip';
 import { useBaselineTargetExercises } from '../../hooks/data/useBaselineTargetExercises';
 import { buildChartData } from '@dyel/core';
-import type { LiftType, SessionStats } from '@dyel/core';
+import type { ChartPoint, LiftType, SessionStats } from '@dyel/core';
 import { TotalChart } from '../charts/TotalChart';
 import { SessionBarChart } from '../charts/SessionBarChart';
 import { SigmaChart } from '../charts/SigmaChart';
@@ -18,6 +18,7 @@ export function SigmaTab({
   effectiveTargetNames,
   dateRange,
   onDateRangeChange,
+  pipelineTotalChartData,
 }: {
   sigmaPairs: ConjugateDataPair[];
   sigmaStats: SessionStats;
@@ -26,6 +27,7 @@ export function SigmaTab({
   effectiveTargetNames: Partial<Record<LiftType, string>>;
   dateRange: DateRange;
   onDateRangeChange: (range: DateRange) => void;
+  pipelineTotalChartData: ChartPoint[];
 }) {
   const { baselineExByType, targetExByType } = useBaselineTargetExercises(
     sigmaPairs,
@@ -46,7 +48,7 @@ export function SigmaTab({
         label="Overview"
         trailing={<EditableDateChip dateRange={dateRange} onDateRangeChange={onDateRangeChange} />}
       >
-        <TotalChart chartData={chartData} unit={unit} />
+        <TotalChart chartData={pipelineTotalChartData} unit={unit} />
       </CollapsibleSection>
       <SigmaChart chartData={chartData} unit={unit} />
       <CollapsibleSection label="Total Volume">

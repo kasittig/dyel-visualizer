@@ -1,17 +1,15 @@
 import { useState, useRef } from 'react';
 import { runPipeline } from '@dyel/pipeline';
-import type { AthleteContext, PipelineResult } from '@dyel/pipeline';
+import type { PipelineResult } from '@dyel/pipeline';
 import { extractSheetRef } from '../../utils/appUtils';
 import { sheetCsvUrl, fetchSheetCsv } from '../../utils/sheetFetch';
-import { buildRawInput } from '../../utils/rawInputUtils';
+import { buildRawInput, PLACEHOLDER_ATHLETE } from '../../utils/rawInputUtils';
 
 type PipelineValidationState =
   | { status: 'idle' }
   | { status: 'loading' }
   | { status: 'error'; message: string }
   | { status: 'success'; result: PipelineResult };
-
-const PLACEHOLDER_ATHLETE: AthleteContext = { sex: 'M', bodyweight: 90 };
 
 export function usePipelineValidation(): {
   state: PipelineValidationState;

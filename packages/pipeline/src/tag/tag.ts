@@ -28,7 +28,11 @@ export function resolveCanonicalNames(records: SetRecord[]) {
       unknown.add(r.exercise);
       return acc;
     }
-    acc.push({ ...r, exercise: buildCanonical(ex, r.exercise) });
+    acc.push({
+      ...r,
+      exercise: buildCanonical(ex, r.exercise),
+      meta: { ...r.meta, rawExercise: r.exercise },
+    });
     return acc;
   }, []);
 
@@ -38,9 +42,14 @@ export function resolveCanonicalNames(records: SetRecord[]) {
 export function tagRecords(records: SetRecord[]) {
   const unknown = new Set<string>();
   const tagged = records.flatMap((r) => {
-    const ex = parseExercise(r.exercise);
+    // Re-parse the ORIGINAL raw name (preserved by resolveCanonicalNames), never the
+    // canonical slug — a slug like "bench-close" doesn't reliably re-parse through the
+    // same keyword detectors as its source text "Bench (CG)" and can silently lose
+    // modifiers (see issue: close-grip bench was mis-tagged comp-lift this way).
+    const rawExercise = r.meta?.rawExercise ?? r.exercise;
+    const ex = parseExercise(rawExercise);
     if (isUnknown(ex)) {
-      unknown.add(r.exercise);
+      unknown.add(rawExercise);
       return [];
     }
     const { tags, effects } = buildTagsAndEffects(ex);

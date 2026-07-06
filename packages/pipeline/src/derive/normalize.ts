@@ -1,5 +1,14 @@
 import type { TaggedSetRecord } from '../tag/tag';
 import { calcE1RM, invertE1RM } from './e1rm';
+import { isSpeedWork } from './derivers';
+
+// Fitting the model on speed/repetition-effort sets (see derivers.ts) would anchor the
+// baseline grid — and every variant factor fit against it — on wildly underestimated e1RMs.
+// Prefer effort sets; only fall back to speed-work sets when a canonical has nothing else.
+const effortOnly = (records: TaggedSetRecord[]): TaggedSetRecord[] => {
+  const effort = records.filter((r) => !isSpeedWork(r));
+  return effort.length ? effort : records;
+};
 
 // DESIGN FLAG (issue #429): no `minSamples` default exists anywhere in the legacy codebase
 // (packages/core). Callers must pass `opts.minSamples` explicitly; 3 is the recommended
@@ -22,7 +31,7 @@ const mean = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
 const buildSessionGrid = (records: TaggedSetRecord[]): GridPoint[] => {
   const map = new Map<number, number>();
   records.forEach((r) =>
-    map.set(r.date, Math.max(map.get(r.date) || 0, calcE1RM(r.weight, r.reps)))
+    map.set(r.date, Math.max(map.get(r.date) || 0, calcE1RM(r.weight, r.reps, r.rpe)))
   );
   return [...map.entries()].map(([t, e1rm]) => ({ t, e1rm })).sort((a, b) => a.t - b.t);
 };
@@ -30,6 +39,9 @@ const buildSessionGrid = (records: TaggedSetRecord[]): GridPoint[] => {
 const interpolateGrid = (grid: GridPoint[], target: number): number | null => {
   if (!grid.length) {
     return null;
+  }
+  if (grid.length === 1) {
+    return grid[0].e1rm;
   }
   const edgeRate = (i: number, j: number) => {
     const dt = grid[j].t - grid[i].t;
@@ -106,26 +118,33 @@ export function fitNormalizationModel(
 
   for (const [family, canonicals] of byFamily) {
     const entries = canonicals.map((c) => ({ c, r: byCanonical.get(c)! }));
-    const comp = entries.filter((e) => e.r.some((r) => r.tags.has('comp-lift')));
-    const [baseCan] = (comp.length ? comp : entries).sort(
-      (a, b) => b.r.length - a.r.length || a.c.localeCompare(b.c)
+    // A logged name containing "competition" (e.g. "Competition Bench") is a stronger
+    // signal of the true competition lift than the bare comp-lift tag alone — some logs
+    // use the bare name for other work (e.g. speed/rep-effort days) and reserve
+    // "Competition X" for the real thing.
+    const competitionNamed = entries.filter((e) =>
+      e.r.some((r) => /competition/i.test(r.meta?.rawExercise ?? ''))
     );
+    const comp = entries.filter((e) => e.r.some((r) => r.tags.has('comp-lift')));
+    const pool = competitionNamed.length ? competitionNamed : comp.length ? comp : entries;
+    const [baseCan] = pool.sort((a, b) => b.r.length - a.r.length || a.c.localeCompare(b.c));
 
     baseline[family] = baseCan.c;
-    const grid = buildSessionGrid(byCanonical.get(baseCan.c)!);
+    const grid = buildSessionGrid(effortOnly(byCanonical.get(baseCan.c)!));
 
     for (const { c, r } of entries) {
       if (c === baseCan.c) {
         continue;
       }
 
-      const f = fitMetric(grid, r, (p, rec) => calcE1RM(rec.weight, rec.reps) / p);
+      const effortR = effortOnly(r);
+      const f = fitMetric(grid, effortR, (p, rec) => calcE1RM(rec.weight, rec.reps, rec.rpe) / p);
       if (f && f.n >= opts.minSamples && f.v !== 0) {
         variantFactor[c] = { factor: f.v, n: f.n };
       }
 
       if (getTag(r[0]?.tags || new Set(), 'addl:')) {
-        const o = fitMetric(grid, r, (p, rec) => invertE1RM(p, rec.reps) - rec.weight);
+        const o = fitMetric(grid, effortR, (p, rec) => invertE1RM(p, rec.reps) - rec.weight);
         if (o && o.n >= opts.minSamples) {
           addlWtOffset[c] = { offsetKg: o.v, n: o.n };
         }

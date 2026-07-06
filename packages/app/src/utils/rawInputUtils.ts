@@ -1,5 +1,7 @@
-import type { RawInput } from '@dyel/pipeline';
+import type { AthleteContext, RawInput } from '@dyel/pipeline';
 import type { InputMode } from './appUtils';
+
+export const PLACEHOLDER_ATHLETE: AthleteContext = { sex: 'M', bodyweight: 90 };
 
 export function buildRawInput(mode: InputMode, content: string): RawInput {
   return { name: mode === 'url' ? 'sheet.csv' : 'pasted.txt', content };

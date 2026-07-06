@@ -9,7 +9,9 @@ const rec = (
   canonical: string,
   weight: number,
   reps: number,
-  tags: string[]
+  tags: string[],
+  sets?: number,
+  rawExercise?: string
 ): TaggedSetRecord => ({
   date,
   exercise: canonical,
@@ -17,6 +19,12 @@ const rec = (
   reps,
   canonical,
   tags: new Set(tags),
+  ...((sets !== undefined || rawExercise !== undefined) && {
+    meta: {
+      ...(sets !== undefined && { sets: String(sets) }),
+      ...(rawExercise !== undefined && { rawExercise }),
+    },
+  }),
 });
 
 const benchHistory: TaggedSetRecord[] = [
@@ -74,6 +82,89 @@ describe('fitNormalizationModel', () => {
     const model = fitNormalizationModel(history, { minSamples: 1 });
     const roundTripped = JSON.parse(JSON.stringify(model));
     expect(roundTripped).toEqual(model);
+  });
+});
+
+describe('fitNormalizationModel — speed-work filtering', () => {
+  const speedWorkPoint = rec(day(5), 'bench', 10, 1, ['lift:bench', 'comp-lift'], 9);
+  const variantAtSameDate = rec(day(5), 'bench-chains2', 90, 1, [
+    'lift:bench',
+    'addl:chains',
+    'variation',
+  ]);
+
+  it('excludes a 4+ set baseline entry from the interpolation grid used to fit variant factors', () => {
+    const withoutSpeedWork = fitNormalizationModel([...benchHistory, variantAtSameDate], {
+      minSamples: 1,
+    });
+    const withSpeedWork = fitNormalizationModel(
+      [...benchHistory, variantAtSameDate, speedWorkPoint],
+      { minSamples: 1 }
+    );
+
+    expect(withSpeedWork.variantFactor['bench-chains2'].factor).toBeCloseTo(
+      withoutSpeedWork.variantFactor['bench-chains2'].factor,
+      6
+    );
+  });
+
+  it('would otherwise anchor the grid on the speed-work point (sanity check on the test setup)', () => {
+    // Without the fix this is what a naive model would produce: the grid returns the bogus
+    // 10kg speed-work value exactly (it lands on the query date), giving a tiny factor.
+    const naiveFactor = 90 / 10;
+    const model = fitNormalizationModel([...benchHistory, variantAtSameDate, speedWorkPoint], {
+      minSamples: 1,
+    });
+    expect(model.variantFactor['bench-chains2'].factor).not.toBeCloseTo(naiveFactor, 1);
+  });
+});
+
+describe('fitNormalizationModel — competition-named baseline preference', () => {
+  it('prefers a "competition"-named variant as baseline over a comp-lift-tagged bare canonical', () => {
+    const bareBench: TaggedSetRecord[] = [
+      rec(day(1), 'bench', 100, 1, ['lift:bench', 'comp-lift'], undefined, 'Bench'),
+      rec(day(3), 'bench', 105, 1, ['lift:bench', 'comp-lift'], undefined, 'Bench'),
+    ];
+    const competitionNamedVariant: TaggedSetRecord[] = [
+      rec(
+        day(1),
+        'bench-chains3',
+        90,
+        1,
+        ['lift:bench', 'addl:chains', 'variation'],
+        undefined,
+        'Competition Bench with chains'
+      ),
+      rec(
+        day(5),
+        'bench-chains3',
+        92,
+        1,
+        ['lift:bench', 'addl:chains', 'variation'],
+        undefined,
+        'Competition Bench with chains'
+      ),
+      rec(
+        day(10),
+        'bench-chains3',
+        95,
+        1,
+        ['lift:bench', 'addl:chains', 'variation'],
+        undefined,
+        'Competition Bench with chains'
+      ),
+    ];
+
+    const model = fitNormalizationModel([...bareBench, ...competitionNamedVariant], {
+      minSamples: 1,
+    });
+
+    expect(model.baseline['lift:bench']).toBe('bench-chains3');
+  });
+
+  it('falls back to the comp-lift tag when no name contains "competition"', () => {
+    const model = fitNormalizationModel(history, { minSamples: 1 });
+    expect(model.baseline['lift:bench']).toBe('bench');
   });
 });
 

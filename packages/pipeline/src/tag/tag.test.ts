@@ -248,6 +248,15 @@ describe('keyword-detector parsing', () => {
     expect(tagged[0].tags.has(tag)).toBe(true);
   });
 
+  it('does not mis-tag close-grip bench as comp-lift via a lossy canonical-slug re-parse', () => {
+    const { resolved } = resolveCanonicalNames(rec('Bench (CG)'));
+    expect(resolved[0].exercise).toBe('bench-close');
+
+    const { tagged } = tagRecords(resolved);
+    expect(tagged[0].tags).toEqual(new Set(['lift:bench', 'stance:close']));
+    expect(tagged[0].tags.has('comp-lift')).toBe(false);
+  });
+
   it('resolves "floor press" to bench (TYPE_DETECTORS overlap), not deadlift', () => {
     const { resolved } = resolveCanonicalNames(rec('floor press'));
     expect(resolved[0].exercise).toBe('bench-floor');
