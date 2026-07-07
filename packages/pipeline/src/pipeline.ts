@@ -38,6 +38,18 @@ function buildPoints(tagged: TaggedSetRecord[], deriverId: string): Point[] {
   }));
 }
 
+function buildPointsByLabel(tagged: TaggedSetRecord[], deriverId: string): Point[] {
+  const deriver = derivers[deriverId];
+  return [
+    ...Map.groupBy(tagged, (r) => `${r.date}::${r.meta?.rawExercise ?? r.canonical}`).values(),
+  ].map((sets) => ({
+    t: sets[0].date,
+    v: deriver.derive(sets),
+    series: sets[0].meta?.rawExercise ?? sets[0].canonical,
+    tags: sets[0].tags,
+  }));
+}
+
 export function runPipeline(
   raw: RawInput[],
   specs: DatasetSpec[],
@@ -74,6 +86,16 @@ export function runPipeline(
   const pointsByDeriver = new Map([...deriverIds].map((id) => [id, buildPoints(tagged, id)]));
   const e1rmPoints = pointsByDeriver.get('e1rm')!;
 
+  // Compute deriver IDs needed specifically by groupBy: 'label' specs (avoid wasted work if none exist)
+  const labelGroupByDeriverIds = new Set<string>(
+    specs
+      .filter((s) => s.kind === 'series' && s.groupBy === 'label')
+      .map((s) => (s.kind === 'series' ? s.derive : 'e1rm'))
+  );
+  const pointsByLabelByDeriver = new Map(
+    [...labelGroupByDeriverIds].map((id) => [id, buildPointsByLabel(tagged, id)])
+  );
+
   const model: NormalizationModel = fitNormalizationModel(
     tagged,
     { minSamples: MIN_SAMPLES },
@@ -104,7 +126,11 @@ export function runPipeline(
     specs.map((s) => [
       s.id,
       buildDataset(
-        (s.kind === 'series' ? pointsByDeriver.get(s.derive) : e1rmPoints)!,
+        s.kind === 'series' && s.groupBy === 'label'
+          ? pointsByLabelByDeriver.get(s.derive)!
+          : s.kind === 'series'
+            ? pointsByDeriver.get(s.derive)!
+            : e1rmPoints,
         s,
         ui,
         model,

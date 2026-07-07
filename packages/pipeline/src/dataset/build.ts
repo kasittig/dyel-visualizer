@@ -10,6 +10,12 @@ export interface SeriesSpec {
   kind: 'series';
   include: TagQuery;
   derive: string;
+  // When 'label', the caller must pass points where p.series holds the raw logged exercise
+  // string instead of the canonical slug. This is an intentional, narrow exception to Point.series's
+  // normal "canonical id" contract, used only for charts that need per-exact-variant granularity
+  // (e.g., ConjugateCharts showing "Bench (1 board)" vs "Bench (2 board)" as distinct lines).
+  // Default (omitted) = canonical grouping, preserving existing behavior unchanged.
+  groupBy?: 'label';
 }
 export interface CompositeSpec {
   id: string;

@@ -11,5 +11,10 @@ Flat, logic-free root of the future dyel pipeline import graph.
 - `types.ts` contains ONLY type/interface declarations — no runtime logic, no default exports.
 - `SetRecord.weight` is always kg internally. Raw unit/weight before conversion live in `SetRecord.meta`, not as typed fields — unit handling is a parser concern, not a pipeline-types concern.
 - `Point.tags` is a `ReadonlySet<string>`, not an array — callers must not assume order or mutate it.
+- **`Point.series` normally holds a canonical exercise id (slug).** Narrow exception: when a `SeriesSpec`
+  sets `groupBy: 'label'`, the pipeline builds points where `p.series` holds the raw logged
+  exercise string (from `r.meta?.rawExercise`) instead of canonical, enabling charts to group by
+  exact logged variant for per-string granularity. This is opt-in via spec; omitted `groupBy`
+  preserves canonical grouping and all existing behavior.
 - Future modules (parse, tag, derive, analyze, dataset, pipeline) will each get their own file/directory here and must import from `./types`, never redefine these shapes.
 - `TaggedSetRecord` intentionally does not exist yet — it belongs to the future tag stage.

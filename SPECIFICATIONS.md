@@ -248,3 +248,71 @@ sanity/regression checks per the scope decision above (no legacy diff reimplemen
 `MIGRATION_PLAN.md`/`APP_COMPONENTS.md` updated. Verified: `npm test -w packages/app` —
 19 test files, 200 tests, all green (up from 16 files/181 tests before Phase 3), no
 regressions. Task 6 (independent QA re-verification) next.
+
+---
+
+# SPECIFICATIONS — ConjugateCharts normalization divergence (Phase 4 blocker scoping)
+
+Tracking doc for the first Phase 4 blocker from `MIGRATION_PLAN.md` — `ConjugateCharts`
+was migrated to `@dyel/pipeline` once, then deliberately reverted (`46f267f`) after
+`conjugateChartParity.test.ts` surfaced real legacy-vs-pipeline normalization divergence.
+Full root-cause + outcome writeup lives in `migration/ConjugateCharts.md`'s "Scoping
+session (2026-07-07)" section — this is the task-tracking summary.
+
+## Scope decisions made (user sign-off)
+
+- **Speed-work filtering (A):** drop pipeline's `effortOnly` exclusion in
+  `fitNormalizationModel` to match legacy's unfiltered fitting exactly (legacy has no
+  speed-work concept at all).
+- **Canonical/displayName grouping (B):** add a parallel points-by-label construction
+  path (opt-in `groupBy: 'label'` on `SeriesSpec`) rather than accept a coarser,
+  user-visible UX change — preserves today's per-exact-variant chart granularity.
+
+## Tasks
+
+- [x] Task 1: Correct stale "fully migrated" claim for `ConjugateCharts` in
+      `MIGRATION_PLAN.md`'s Phase 1 status section. (Target: `MIGRATION_PLAN.md`. Test:
+      none — doc-only)
+- [x] Task 2: Write root-cause scoping findings into `migration/ConjugateCharts.md`
+      (speed-work asymmetry, minSamples gating, canonical/label grouping mismatch,
+      normalized-series date-overlap anomaly). (Target: `migration/ConjugateCharts.md`.
+      Test: none — doc-only)
+- [x] Task 3 (A): Remove `effortOnly` speed-work filter from `fitNormalizationModel`
+      fitting; update `normalize.test.ts` to reflect inclusion instead of exclusion.
+      (Target: `packages/pipeline/src/derive/normalize.ts`. Test:
+      `npm test -w packages/pipeline -- normalize`)
+- [x] Task 4 (B): Add opt-in `groupBy: 'label'` to `SeriesSpec` + `buildPointsByLabel`
+      construction path in `runPipeline`; wire into `conjugateChartSpecs.ts`'s
+      `variations` spec. (Target: `packages/pipeline/src/dataset/build.ts`,
+      `packages/pipeline/src/pipeline.ts`, `packages/app/src/pipeline/conjugateChartSpecs.ts`.
+      Test: `npm test -w packages/app -- conjugateChartParity`)
+- [x] Task 5: Document final outcome in `migration/ConjugateCharts.md` (what was fixed,
+      real verified numbers, explicit non-promotion-to-hard-assert decision, residual
+      open items). (Target: `migration/ConjugateCharts.md`. Test: none — doc-only)
+- [ ] Task 6 (not started): Root-cause the residual `missingInA` nonzero gaps on
+      newly-matched variation series (squat/deadlift) now that vocabulary matches.
+- [ ] Task 7 (not started): Root-cause the normalized-series "no date overlap" anomaly
+      (finding #4) — untouched by Tasks 3-4, unchanged from original scoping.
+- [ ] Task 8 (not started): Actually swap `ConjugateCharts.tsx`/`useConjugateChartData.ts`
+      back onto `@dyel/pipeline` — this entire session narrowed the divergence but did
+      NOT attempt the component swap itself. Should not be attempted before Tasks 6-7
+      are at least assessed, per this doc's "Before re-attempting" note.
+
+## Verification
+
+`npm run build -w packages/pipeline && npm run build -w packages/app && npm test -w packages/pipeline && npm test -w packages/app`
+— all green (pipeline: 12 files/188 tests; app: 19 files/200 tests), independently
+re-verified via `qa-reviewer` (not self-reported) at each step.
+
+## Status
+
+Tasks 1-5 complete. Findings #1 (speed-work asymmetry) and #3 (canonical/label grouping,
+the largest gap) are fixed; #2 (minSamples) was found to be a non-issue on
+re-investigation (production already hardcodes `MIN_SAMPLES = 1`, matching legacy's
+effective `n >= 1`); #4 (normalized-series date-overlap) remains fully open and
+untouched. Parity harness's newly-matched per-variation soft-warns were deliberately
+**not** promoted to hard-assert — sample sizes are n=1-2 and `missingInA` is still
+nonzero for squat/deadlift, too sparse to call proven parity. `ConjugateCharts.tsx` and
+`useConjugateChartData.ts` remain unswapped, still on `@dyel/core` — the Phase 4 blocker
+is narrowed, not closed. Next: Tasks 6-8 above, or pick a different Phase 4 blocker
+(`VariationRadarChart`/`DiagnosticsPanel`).

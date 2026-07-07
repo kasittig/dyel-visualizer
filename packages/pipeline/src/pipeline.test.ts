@@ -98,4 +98,62 @@ describe('runPipeline (end-to-end)', () => {
     expect(again.datasets).toEqual(result.datasets);
     expect(again).not.toBe(result);
   });
+
+  describe('groupBy: label spec variant', () => {
+    it('produces one series per distinct raw logged string, not per canonical', () => {
+      // Create two variants that would normally share a canonical:
+      // "Bench (CG)" and "Bench (close grip)" both parse to the same canonical "bench-close"
+      const multiVariantContent =
+        '2026-01-10 Bench (CG) 185x5\n' +
+        '2026-01-10 Bench (close grip) 180x6\n' +
+        '2026-01-15 Bench (CG) 190x4\n' +
+        '2026-01-15 Bench (close grip) 185x5\n';
+
+      const labelSpecs: DatasetSpec[] = [
+        {
+          id: 'by-label',
+          kind: 'series',
+          include: { any: ['lift:bench'] },
+          derive: 'e1rm',
+          groupBy: 'label',
+        },
+        { id: 'by-canonical', kind: 'series', include: { any: ['lift:bench'] }, derive: 'e1rm' },
+      ];
+
+      const result = runPipeline(
+        [{ name: 'multi-variant.txt', content: multiVariantContent }],
+        labelSpecs,
+        athlete,
+        {}
+      );
+
+      const byLabel = result.datasets['by-label'];
+      const byCanonical = result.datasets['by-canonical'];
+
+      // Both should have data
+      expect(byLabel.length).toBeGreaterThan(0);
+      expect(byCanonical.length).toBeGreaterThan(0);
+
+      // Extract series keys (column names excluding 't')
+      const labelSeriesKeys = new Set(Object.keys(byLabel[0] || {}).filter((k) => k !== 't'));
+      const canonicalSeriesKeys = new Set(
+        Object.keys(byCanonical[0] || {}).filter((k) => k !== 't')
+      );
+
+      // The label-based grouping should show both raw strings as distinct series
+      // (or at minimum, have a different set of keys than canonical grouping when variants exist)
+      // If both variants share a canonical, byCanonical will collapse them to one series key,
+      // while byLabel will show both raw strings as separate columns
+      expect(labelSeriesKeys.size).toBeGreaterThanOrEqual(1);
+
+      // At a minimum, verify that label-based grouping actually uses rawExercise strings
+      // by checking that at least one series key looks like a raw exercise name, not a canonical slug
+      const hasRawExerciseName = Array.from(labelSeriesKeys).some((key) => key.includes('('));
+      expect(hasRawExerciseName).toBe(true);
+
+      // Both variants share canonical "bench-close", so canonical grouping collapses them to
+      // a single series key, while label grouping preserves both raw strings as distinct keys.
+      expect(canonicalSeriesKeys.size).toBeLessThan(labelSeriesKeys.size);
+    });
+  });
 });

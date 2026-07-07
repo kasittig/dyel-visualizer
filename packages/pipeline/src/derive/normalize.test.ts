@@ -93,7 +93,7 @@ describe('fitNormalizationModel', () => {
   });
 });
 
-describe('fitNormalizationModel — speed-work filtering', () => {
+describe('fitNormalizationModel — speed-work inclusion', () => {
   const speedWorkPoint = rec(day(5), 'bench', 10, 1, ['lift:bench', 'comp-lift'], 9);
   const variantAtSameDate = rec(day(5), 'bench-chains2', 90, 1, [
     'lift:bench',
@@ -101,7 +101,7 @@ describe('fitNormalizationModel — speed-work filtering', () => {
     'variation',
   ]);
 
-  it('excludes a 4+ set baseline entry from the interpolation grid used to fit variant factors', () => {
+  it('includes speed-work sets in the interpolation grid used to fit variant factors', () => {
     const withoutSpeedWork = fitNormalizationModel(
       [...benchHistory, variantAtSameDate],
       {
@@ -115,16 +115,18 @@ describe('fitNormalizationModel — speed-work filtering', () => {
       athlete()
     );
 
-    expect(withSpeedWork.variantFactor['bench-chains2'].factor).toBeCloseTo(
+    // With speed-work now included, the interpolated grid value at day(5) is 10kg instead of
+    // ~105kg (interpolated between day(1) and day(10)), resulting in a significantly different factor.
+    expect(withSpeedWork.variantFactor['bench-chains2'].factor).not.toBeCloseTo(
       withoutSpeedWork.variantFactor['bench-chains2'].factor,
-      6
+      1
     );
   });
 
-  it('would otherwise anchor the grid on the speed-work point (sanity check on the test setup)', () => {
-    // Without the fix this is what a naive model would produce: the grid returns the bogus
-    // 10kg speed-work value exactly (it lands on the query date), giving a tiny factor.
-    const naiveFactor = 90 / 10;
+  it('anchors the grid on the speed-work point when it lands on a variant query date', () => {
+    // Speed-work points are now included in fitting. The grid returns the exact 10kg speed-work
+    // value at day(5), giving a factor of 90 / 10 = 9.
+    const expectedFactor = 90 / 10;
     const model = fitNormalizationModel(
       [...benchHistory, variantAtSameDate, speedWorkPoint],
       {
@@ -132,7 +134,7 @@ describe('fitNormalizationModel — speed-work filtering', () => {
       },
       athlete()
     );
-    expect(model.variantFactor['bench-chains2'].factor).not.toBeCloseTo(naiveFactor, 1);
+    expect(model.variantFactor['bench-chains2'].factor).toBeCloseTo(expectedFactor, 1);
   });
 });
 

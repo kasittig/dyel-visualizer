@@ -17,6 +17,14 @@ filter by TagQuery (tags + canonical ids) → derive per (date, series) →
 pivot series to columns. Example: "e1RM per comp lift split by
 variant" = include `any: ['lift:bench']`, derive e1rm, pivot by canonical.
 
+**Opt-in label grouping:** When `groupBy: 'label'` is set, the caller must pass
+points where `p.series` holds the raw logged exercise string (from `r.meta?.rawExercise`)
+instead of the canonical slug. This creates one line per exact logged variant
+(e.g., `"Bench (1 board)"` vs `"Bench (2 board)"` as distinct series), matching
+legacy chart grouping granularity for charts requiring per-exact-variant detail
+(e.g., `ConjugateCharts` variations). Default (omitted `groupBy`) preserves canonical
+grouping and existing behavior.
+
 ## CompositeSpec (e.g. estimated total)
 
 Per component (typically the three `lift:*` families):

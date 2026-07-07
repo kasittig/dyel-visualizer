@@ -1,120 +1,114 @@
-# HANDOFF — Phase 3 of MIGRATION_PLAN.md (SessionBarChart + SigmaChart + DateLineChart) + DiagnosticsPanel re-scoping
+# HANDOFF — ConjugateCharts normalization-divergence scoping + partial fix (Phase 4 blocker)
 
 ## Context
 
 `migration-phase-1` is a feature branch implementing `MIGRATION_PLAN.md`'s pipeline-native
-migration of `packages/app` components off `@dyel/core` onto `@dyel/pipeline`. Phases 1
-(TotalChart, ConjugateCharts, DiagnosticsPanel, RepCalculator, StrengthScoreCalculator) and 2
-(SigmaTab, VariationRadarChart) were already complete going into this session. This session
-executed Phase 3 (`migration/SessionBarChart.md`, `migration/SigmaChart.md`,
-`migration/DateLineChart.md`), then did a re-scoping pass on `DiagnosticsPanel`'s deferred swap
-that corrected a stale doc assumption. Full task tracking lives in `SPECIFICATIONS.md`'s Phase 3
-section (bottom of the file).
+migration of `packages/app` components off `@dyel/core` onto `@dyel/pipeline`. Phases 1-3 were
+already complete going into this session. This session began Phase 4's first blocker:
+`ConjugateCharts`, which was migrated to `@dyel/pipeline` once and then deliberately reverted
+(`46f267f`) after its parity test (`conjugateChartParity.test.ts`) found real legacy-vs-pipeline
+normalization divergence. Full task tracking lives in `SPECIFICATIONS.md`'s newest section
+("ConjugateCharts normalization divergence"); full root-cause detail lives in
+`migration/ConjugateCharts.md`'s "Scoping session (2026-07-07)" section.
 
 ## Progress Overview
 
-- **`SessionBarChart.tsx`/`SigmaChart.tsx`/`DateLineChart.tsx` fully migrated** off
-  `@dyel/core` — all three were pure presentation shells with no aggregation logic of their
-  own, so this was a boundary-import cleanup, not a data migration. Added
-  `formatChartDate` (`packages/app/src/utils/pipelineChartUtils.ts`), an exact behavioral
-  clone of `@dyel/core`'s `formatDate` tick-formatter (kept distinct from the existing,
-  unrelated `Date => string` `formatDate` in `utils/dateUtils.ts`). All three now import
-  `ChartPoint` from `@dyel/pipeline`. Zero `@dyel/core` references remain in any of the three.
-- Added three new lightweight parity tests (all sanity/regression checks reusing
-  `compareChartSeries`, deliberately **not** new legacy-vs-pipeline diffs, since none of the
-  three components has independent logic to diff): `packages/app/src/pipeline/
-sessionBarChartParity.test.ts` (7 tests), `sigmaChartParity.test.ts` (4 tests),
-  `dateLineChartParity.test.ts` (8 tests).
-- Updated `MIGRATION_PLAN.md` (Phase 3 status section), `APP_COMPONENTS.md` (`SessionBarChart`/
-  `SigmaChart`/`DateLineChart` moved to "Already migrated"), `SPECIFICATIONS.md` (Phase 3
-  checklist fully checked off).
-- Full verification (independent `qa-reviewer` re-run, not just trusting the implementer):
-  `npm run build` clean for `packages/pipeline`/`packages/core`/`packages/app`; `npm test`
-  all green — **pipeline 12 files/188 tests, app 19 files/200 tests** (up from 16/181 before
-  this session). No regressions.
-- **Re-scoped `DiagnosticsPanel`'s deferred swap and corrected the docs.** `APP_COMPONENTS.md`
-  had characterized it as a "small, well-understood" swap (like `RepCalculator`/
-  `StrengthScoreCalculator`). Scoping it directly against `DiagnosticsPanel.tsx`'s actual
-  render logic (not just `diagnosticsPanelParity.test.ts`'s structural checks) found this is
-  false — see Decisions below. No code was changed for this; it was a docs-only correction.
-  `migration/DiagnosticsPanel.md`, `APP_COMPONENTS.md`, and `MIGRATION_PLAN.md` were all
-  updated to reflect the corrected assessment. The swap itself remains deferred and untouched.
+- **Root-caused the divergence into 4 concrete findings** (re-verified directly against code and
+  live test runs, not just relayed from old `HANDOFF.md` history):
+  1. Speed-work filtering asymmetry — pipeline excluded speed-work sets from normalization
+     fitting; legacy has no such concept at all.
+  2. minSamples gating — initially flagged as a gap, but re-investigation found production
+     already hardcodes `MIN_SAMPLES = 1` (`pipeline.ts`), matching legacy's effective `n >= 1`
+     requirement. **Not actually a live divergence source** — downgraded during scoping.
+  3. Canonical vs. displayName grouping granularity (the largest gap) — legacy groups by exact
+     logged string, pipeline by canonical slug; zero per-variation vocabulary overlap on the real
+     fixture for all three lift types.
+  4. Normalized-series "no date overlap" anomaly — reproducing live, unexplained.
+- **Fixed finding #1**: removed the `effortOnly` filter from `fitNormalizationModel`
+  (`packages/pipeline/src/derive/normalize.ts`) so it fits against unfiltered records, matching
+  legacy exactly. `derivers.ts`'s separate per-day `isSpeedWork` e1RM-derivation usage was
+  explicitly left untouched (different concern, affects every pipeline chart).
+- **Fixed finding #3**: added an opt-in `groupBy: 'label'` field to `SeriesSpec`
+  (`packages/pipeline/src/dataset/build.ts`) and a parallel `buildPointsByLabel` construction path
+  in `runPipeline` (`packages/pipeline/src/pipeline.ts`) that groups by `r.meta?.rawExercise`
+  (already preserved on every `TaggedSetRecord`, previously never read) instead of canonical.
+  Wired into `packages/app/src/pipeline/conjugateChartSpecs.ts`'s `variations` spec only (the
+  `normalized` composite spec is intentionally unaffected — composites should aggregate across
+  variants). This closed the previously-empty per-variation intersection: real matched series
+  now compare directly on the fixture (`Box Squat`, `Bench (American Bar)`,
+  `Bench (American Bar, CG)`, `Deadlift (opposite)`).
+- **Deliberately did not promote any newly-matched series to hard-assert** — sample sizes are
+  n=1–2 per series, and `missingInA` is still nonzero for squat/deadlift even with matching
+  labels. Left as soft-warn, consistent with existing project precedent (Session 4 only promoted
+  deadlift baseline _identity_ once robustly confirmed exact; numeric fitting divergence stays
+  permanent soft-warn).
+- **Did NOT swap `ConjugateCharts.tsx`/`useConjugateChartData.ts` back onto `@dyel/pipeline`** —
+  this session narrowed the divergence but never attempted the actual component swap. The
+  components still import from `@dyel/core` at runtime today.
+- Corrected a stale doc claim: `MIGRATION_PLAN.md` previously said `ConjugateCharts.md` was
+  "fully migrated" (leftover from before the `46f267f` revert) — now accurately reflects current
+  status and links to the scoping doc.
+- Full verification at every step was independently re-run via `qa-reviewer` from ground truth
+  (not trusted from `feature-implementer` self-reports) — this project has a documented history
+  of subagents misreporting test counts, confirmed again this session (one agent claimed
+  "35 files / 519 tests" for `packages/pipeline`; ground truth was 12 files / 188 tests. The
+  actual code diff was correct despite the wrong self-reported numbers).
 
 ## Decisions Made & Rationale
 
-- **`DiagnosticsPanel`'s swap is a real blocker, not a wiring task** — same category as
-  `VariationRadarChart`'s deferred swap. Concretely, pipeline's `diagnose()`
-  (`packages/pipeline/src/analyze/diagnose.ts`) is missing, relative to what
-  `DiagnosticsPanel.tsx` actually renders:
-  1. Canonical→display-name resolution (pipeline only has a bare `canonical` slug; grepped
-     `packages/pipeline/src` — no display-name concept exists anywhere).
-  2. A modifier-percentage-baseline-range model (`averageIndex`/`expectedBaseline`, e.g.
-     `"95–105%"`, from `generateDiagnostics.ts`'s equipment/stance/bar tables) — pipeline only
-     produces a flat `expectedE1rmKg`/`ratio`, no range.
-  3. A differently-classified status enum — not just a rename. Legacy:
-     `'optimal' | 'overtrained' | 'weakness'` via baseline min/max range. Pipeline:
-     `'optimal' | 'weakness' | 'overperforming'` via a flat tolerance band around ratio 1.0.
-     Real behavioral-divergence risk, which `diagnosticsPanelParity.test.ts` only soft-warns
-     on rather than reconciling.
-  4. No additional-weight (`addlWtOffset`) offset data.
-  5. `usePipelineDiagnostics`'s props (`inputMode`/`url`/`pastedText`/`refreshToken`,
-     self-fetching) don't match `DiagnosticsPanel.tsx`'s current pre-computed
-     `rows`/`targetName`/`variantFactor`/`addlWtOffset` props — a swap would also touch
-     `pages/LiftTabPanel.tsx`'s prop-drilling.
-
-  Per the project's existing convention (missing pipeline functionality is a proposed
-  pipeline change, not a client-side workaround), this is now tracked as deferred alongside
-  `ConjugateCharts`/`VariationRadarChart`, not attempted this session.
-
-- **`SessionBarChart`/`SigmaChart`/`DateLineChart` needed no new pipeline work** — all three
-  are presentation-only shells (confirmed by reading each component directly before
-  delegating), so their migration was purely the `ChartPoint`/`formatDate` boundary cleanup
-  already anticipated by their `migration/*.md` docs, with no surprises (unlike
-  `DiagnosticsPanel`).
-- Re-verified test/build numbers independently via a `qa-reviewer` subagent pass rather than
-  trusting the `feature-implementer`'s self-reported counts verbatim, per the standing project
-  practice (see prior `HANDOFF.md` note about a previously-wrong pipeline test count).
+- **A-2 (speed-work): match legacy exactly, drop pipeline's filter** — user's explicit choice
+  over keeping pipeline's methodologically-arguably-better exclusion. Implemented as scoped.
+- **B-1 (grouping): add a parallel label-grouped construction path** rather than accept coarser
+  canonical-based UX for `ConjugateCharts` — user's explicit choice, preserves today's per-variant
+  chart granularity without a user-visible regression. `Point.series`'s "canonical id" contract
+  now has one narrow, documented, opt-in exception (`groupBy: 'label'`) — updated
+  `packages/pipeline/CLAUDE.md` and `packages/pipeline/src/dataset/CLAUDE.md` to reflect this.
+- **No hard-assert promotion** — explicit call not to over-claim parity from n=1–2 sample sizes,
+  even though 0% diff was observed on those samples. `missingInA` nonzero on 2 of 4 matched
+  series means date-level divergence still exists beneath the now-matching vocabulary.
+- **Cleaned up a stray `test_output.txt`** (3581-line raw vitest dump) left in the repo root by
+  one of the verification passes — matches a previously-documented pattern in this repo's own
+  history of subagents leaving scratch log files; deleted, not committed.
 
 ## Open TODOs
 
-- None blocking for Phase 3 — it's fully closed out.
-- Next per `MIGRATION_PLAN.md`: **Phase 4** (`migration/LiftTabPanel.md`) is blocked on three
-  items, all of which now require real pipeline-side work (not just wiring):
-  1. `ConjugateCharts` re-migration — blocked on the unresolved normalization divergence that
-     caused its prior revert (`46f267f`).
-  2. `VariationRadarChart` swap — blocked on the same divergence risk, plus a last-session
-     tooltip-detail gap (date/sets/reps/weight/RPE) not present in the pipeline snapshot.
-  3. `DiagnosticsPanel` swap — blocked on the gaps enumerated above (display-name resolution,
-     percentage-baseline-range model, status-classification reconciliation, add'l-weight
-     offset data).
-     The Phase 0 `deadliftStance` prerequisite is itself already complete (see
-     `SPECIFICATIONS.md`'s Part A/B section) — it's not a blocker.
-- If picking up any of the three Phase 4 blockers, treat each as a pipeline-feature-addition
-  task first (scope what needs to be added to `@dyel/pipeline`), not a component-swap task —
-  that's the lesson from both `VariationRadarChart` and this session's `DiagnosticsPanel`
-  re-scoping.
-- `.claude/skills/handoff/SKILL.md` still shows as modified in `git status` (uncommitted,
-  pre-existing, unrelated to this session's work) — not touched or investigated here, same as
-  prior handoffs.
+1. **Root-cause why `missingInA` is still nonzero** for squat ("Box Squat") and deadlift
+   ("Deadlift (opposite)") now that labels match between legacy and pipeline — not investigated,
+   don't assume a cause without checking.
+2. **Root-cause finding #4** (normalized-series "no date overlap", squat/bench/deadlift all
+   affected) — completely untouched by this session's fixes, likely but not confirmed to be a
+   downstream symptom of the same label/grouping story played out differently for the
+   `normalized` composite spec.
+3. **Actually swap `ConjugateCharts.tsx`/`useConjugateChartData.ts` onto `@dyel/pipeline`** — not
+   started. Per `migration/ConjugateCharts.md`'s "Before re-attempting" note, should not be
+   attempted before at least assessing items 1-2 above, since they represent residual,
+   unquantified divergence risk.
+4. Once ConjugateCharts is actually swapped (or a decision is made to defer it further),
+   `MIGRATION_PLAN.md` Phase 4's other two blockers (`VariationRadarChart`, `DiagnosticsPanel`)
+   still need the same "real pipeline-side work" treatment before `LiftTabPanel.md` can proceed.
+5. `.claude/skills/handoff/SKILL.md` still shows as modified in `git status` (uncommitted,
+   pre-existing, unrelated to this session's work) — not touched or investigated here, same as
+   every prior handoff.
 
 ## Files Touched
 
-- `packages/app/src/utils/pipelineChartUtils.ts` (new `formatChartDate` helper)
-- `packages/app/src/components/charts/SessionBarChart.tsx` (migrated off `@dyel/core`)
-- `packages/app/src/components/charts/SigmaChart.tsx` (migrated off `@dyel/core`)
-- `packages/app/src/components/charts/DateLineChart.tsx` (migrated off `@dyel/core`)
-- `packages/app/src/pipeline/sessionBarChartParity.test.ts` (new)
-- `packages/app/src/pipeline/sigmaChartParity.test.ts` (new)
-- `packages/app/src/pipeline/dateLineChartParity.test.ts` (new)
-- `MIGRATION_PLAN.md` (Phase 3 status added; Phase 4 blocker description corrected)
-- `APP_COMPONENTS.md` (inventory updated; `DiagnosticsPanel` re-scoped from "small swap" to
-  "real blocker")
-- `migration/DiagnosticsPanel.md` (rewritten — swap marked deferred, with full gap analysis)
-- `SPECIFICATIONS.md` (Phase 3 checklist fully checked off)
+- `packages/pipeline/src/derive/normalize.ts` (removed `effortOnly` speed-work filter)
+- `packages/pipeline/src/derive/normalize.test.ts` (updated for inclusion, not exclusion)
+- `packages/pipeline/src/dataset/build.ts` (new opt-in `groupBy: 'label'` field on `SeriesSpec`)
+- `packages/pipeline/src/pipeline.ts` (new `buildPointsByLabel` + lazy label-grouped points map)
+- `packages/pipeline/src/pipeline.test.ts` (new `groupBy: 'label'` coverage)
+- `packages/app/src/pipeline/conjugateChartSpecs.ts` (`variations` spec now `groupBy: 'label'`)
+- `packages/pipeline/CLAUDE.md` (documented the `Point.series` label-grouping exception)
+- `packages/pipeline/src/dataset/CLAUDE.md` (documented `groupBy: 'label'` in `SeriesSpec` section)
+- `MIGRATION_PLAN.md` (corrected stale "fully migrated" `ConjugateCharts` claim)
+- `migration/ConjugateCharts.md` (scoping findings + final outcome sections)
+- `SPECIFICATIONS.md` (new tracking section for this work)
 - `HANDOFF.md` (this file)
+- Deleted (uncommitted scratch, not tracked): `test_output.txt`
 
 ## Suggested Next Skills
 
-- None required immediately. If resuming migration work, start by picking one of the three
-  Phase 4 blockers and scoping the actual `@dyel/pipeline` feature work needed (see Open TODOs)
-  before touching any component file.
+- None required immediately. If resuming this work, start with Open TODO #1 or #2
+  (root-causing the two residual anomalies) before attempting Open TODO #3 (the actual component
+  swap) — swapping before understanding residual divergence risks reintroducing exactly the bug
+  that motivated the original `46f267f` revert.

@@ -74,8 +74,11 @@ runtime, by design — swapping it in is left as a small, trivial follow-up:
 
 1. `TotalChart.md` — **fully migrated.** `ChartPoint` relocated to `@dyel/pipeline`; zero
    `@dyel/core` refs.
-2. `ConjugateCharts.md` — **fully migrated.** `LINE_COLORS` relocated to `@dyel/pipeline`;
-   `conjugateChartParity.test.ts` added.
+2. `ConjugateCharts.md` — **migrated then deliberately reverted.** `LINE_COLORS` relocated to
+   `@dyel/pipeline` and `conjugateChartParity.test.ts` added, but the component was reverted back
+   to `@dyel/core` (`46f267f`) after the parity test surfaced real normalization divergence.
+   Not currently migrated; re-attempting requires resolving that divergence first (see
+   `migration/ConjugateCharts.md`'s "Scoping session" section for the root-cause analysis).
 3. `DiagnosticsPanel.md` — **pipeline-native replacement ready, component not yet swapped.**
    New `usePipelineDiagnostics` hook wraps `PipelineResult.diagnostics`;
    `diagnosticsPanelParity.test.ts` passing. `DiagnosticsPanel.tsx` still calls

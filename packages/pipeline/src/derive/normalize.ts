@@ -1,15 +1,6 @@
 import type { TaggedSetRecord } from '../tag/tag';
 import { calcE1RM, invertE1RM } from './e1rm';
-import { isSpeedWork } from './derivers';
 import type { AthleteContext } from './athlete';
-
-// Fitting the model on speed/repetition-effort sets (see derivers.ts) would anchor the
-// baseline grid — and every variant factor fit against it — on wildly underestimated e1RMs.
-// Prefer effort sets; only fall back to speed-work sets when a canonical has nothing else.
-const effortOnly = (records: TaggedSetRecord[]): TaggedSetRecord[] => {
-  const effort = records.filter((r) => !isSpeedWork(r));
-  return effort.length ? effort : records;
-};
 
 // DESIGN FLAG (issue #429): no `minSamples` default exists anywhere in the legacy codebase
 // (packages/core). Callers must pass `opts.minSamples` explicitly; 3 is the recommended
@@ -159,21 +150,20 @@ export function fitNormalizationModel(
     const [baseCan] = pool.sort((a, b) => b.r.length - a.r.length || a.c.localeCompare(b.c));
 
     baseline[family] = baseCan.c;
-    const grid = buildSessionGrid(effortOnly(byCanonical[baseCan.c]!));
+    const grid = buildSessionGrid(byCanonical[baseCan.c]!);
 
     for (const { c, r } of entries) {
       if (c === baseCan.c) {
         continue;
       }
 
-      const effortR = effortOnly(r);
-      const f = fitMetric(grid, effortR, (p, rec) => calcE1RM(rec.weight, rec.reps, rec.rpe) / p);
+      const f = fitMetric(grid, r, (p, rec) => calcE1RM(rec.weight, rec.reps, rec.rpe) / p);
       if (f && f.n >= opts.minSamples && f.v !== 0) {
         variantFactor[c] = { factor: f.v, n: f.n };
       }
 
       if (getTag(r[0]?.tags || new Set(), 'addl:')) {
-        const o = fitMetric(grid, effortR, (p, rec) => invertE1RM(p, rec.reps) - rec.weight);
+        const o = fitMetric(grid, r, (p, rec) => invertE1RM(p, rec.reps) - rec.weight);
         if (o && o.n >= opts.minSamples) {
           addlWtOffset[c] = { offsetKg: o.v, n: o.n };
         }
