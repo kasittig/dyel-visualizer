@@ -189,6 +189,74 @@ describe('fitNormalizationModel — competition-named baseline preference', () =
   });
 });
 
+describe('fitNormalizationModel — bench paused/"commands" preference tier', () => {
+  it('prefers a paused (equip:pause), otherwise competition-shaped bench over a plain comp-lift bench', () => {
+    const benchWithPause: TaggedSetRecord[] = [
+      rec(day(1), 'bench', 100, 1, ['lift:bench', 'comp-lift']),
+      rec(day(5), 'bench', 105, 1, ['lift:bench', 'comp-lift']),
+      rec(day(1), 'bench-pause', 95, 1, ['lift:bench', 'equip:pause']),
+      rec(day(3), 'bench-pause', 97, 1, ['lift:bench', 'equip:pause']),
+    ];
+    const model = fitNormalizationModel(benchWithPause, { minSamples: 1 }, athlete());
+    expect(model.baseline['lift:bench']).toBe('bench-pause');
+  });
+
+  it('falls back to the comp-lift tag when no paused bench is present (existing behavior unaffected)', () => {
+    const model = fitNormalizationModel(history, { minSamples: 1 }, athlete());
+    expect(model.baseline['lift:bench']).toBe('bench');
+  });
+
+  it('does not treat a paused bench that also deviates on bar/stance/addlWt as competition-shaped', () => {
+    const benchWithNonCompPause: TaggedSetRecord[] = [
+      rec(day(1), 'bench', 100, 1, ['lift:bench', 'comp-lift']),
+      rec(day(5), 'bench', 105, 1, ['lift:bench', 'comp-lift']),
+      // Paused, but also chains — not competition-shaped, so should not win over plain comp-lift.
+      rec(day(1), 'bench-chains-pause', 80, 1, ['lift:bench', 'equip:pause', 'addl:chains']),
+      rec(day(3), 'bench-chains-pause', 82, 1, ['lift:bench', 'equip:pause', 'addl:chains']),
+    ];
+    const model = fitNormalizationModel(benchWithNonCompPause, { minSamples: 1 }, athlete());
+    expect(model.baseline['lift:bench']).toBe('bench');
+  });
+
+  it('does not leak the pausedPool tier into other lift families (e.g. squat)', () => {
+    const squatWithPauseTag: TaggedSetRecord[] = [
+      rec(day(1), 'squat', 200, 1, ['lift:squat', 'comp-lift']),
+      rec(day(5), 'squat', 210, 1, ['lift:squat', 'comp-lift']),
+      // A squat record tagged equip:pause should never be preferred via the bench-only tier.
+      rec(day(1), 'squat-pause', 180, 1, ['lift:squat', 'equip:pause']),
+    ];
+    const model = fitNormalizationModel(squatWithPauseTag, { minSamples: 1 }, athlete());
+    expect(model.baseline['lift:squat']).toBe('squat');
+  });
+
+  it('competition-named record still takes top priority over a paused bench', () => {
+    const benchWithNamedAndPause: TaggedSetRecord[] = [
+      rec(
+        day(1),
+        'bench-comp-named',
+        110,
+        1,
+        ['lift:bench', 'variation'],
+        undefined,
+        'Competition Bench'
+      ),
+      rec(
+        day(5),
+        'bench-comp-named',
+        115,
+        1,
+        ['lift:bench', 'variation'],
+        undefined,
+        'Competition Bench'
+      ),
+      rec(day(1), 'bench-pause', 95, 1, ['lift:bench', 'equip:pause']),
+      rec(day(3), 'bench-pause', 97, 1, ['lift:bench', 'equip:pause']),
+    ];
+    const model = fitNormalizationModel(benchWithNamedAndPause, { minSamples: 1 }, athlete());
+    expect(model.baseline['lift:bench']).toBe('bench-comp-named');
+  });
+});
+
 describe('normalizeE1rm', () => {
   it('returns input unchanged for the baseline canonical itself (identity, no lookup)', () => {
     const model = fitNormalizationModel(history, { minSamples: 2 }, athlete());

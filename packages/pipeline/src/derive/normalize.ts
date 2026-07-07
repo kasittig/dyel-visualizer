@@ -131,13 +131,31 @@ export function fitNormalizationModel(
     const stancePool = preferredStance
       ? entries.filter((e) => e.r.some((r) => r.tags.has(`stance:${preferredStance}`)))
       : [];
+    // A paused/"commands" bench (equip:pause, otherwise competition-shaped — no bar/stance/
+    // addlWt deviation) is a truer competition lift than a plain no-equipment bench, mirroring
+    // legacy's defaultCompExerciseName commandsBench preference. Only applies to lift:bench;
+    // pausedPool is always empty for other families by construction.
+    const pausedPool =
+      family === 'lift:bench'
+        ? entries.filter((e) =>
+            e.r.some(
+              (r) =>
+                r.tags.has('equip:pause') &&
+                !getTag(r.tags, 'bar:') &&
+                !getTag(r.tags, 'stance:') &&
+                !getTag(r.tags, 'addl:')
+            )
+          )
+        : [];
     const pool = competitionNamed.length
       ? competitionNamed
       : stancePool.length
         ? stancePool
-        : comp.length
-          ? comp
-          : entries;
+        : pausedPool.length
+          ? pausedPool
+          : comp.length
+            ? comp
+            : entries;
     const [baseCan] = pool.sort((a, b) => b.r.length - a.r.length || a.c.localeCompare(b.c));
 
     baseline[family] = baseCan.c;
