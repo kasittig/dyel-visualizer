@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import type { ChartPoint } from '@dyel/core';
-import { joinChartPointsByDate, diffSeries } from './diffChartSeries';
+import type { ChartPoint, ConjugateExercise } from '@dyel/core';
+import { joinChartPointsByDate, diffSeries, compareBaselineIdentity } from './diffChartSeries';
 
 // Set timezone to ensure regression tests for bare YYYY-MM-DD date handling are deterministic.
 // Negative-offset timezones (like America/New_York) expose the bug: bare '2026-02-02' is parsed
@@ -327,5 +327,143 @@ describe('diffSeries', () => {
     expect(result.missingInB).toBe(expected.missingInB);
     expect(result.maxAbsDiff).toBe(expected.maxAbsDiff);
     expect(result.maxRelDiff).toBe(expected.maxRelDiff);
+  });
+});
+
+describe('compareBaselineIdentity', () => {
+  const ex = (
+    displayName: string,
+    bar: ConjugateExercise['bar'] = 'standard',
+    stance: ConjugateExercise['stance'] = 'competition',
+    equipment: ConjugateExercise['equipment'] = null,
+    addlWts: ConjugateExercise['addlWts'] = []
+  ): ConjugateExercise => ({
+    type: 'squat',
+    displayName,
+    bar,
+    stance,
+    equipment,
+    addlWts,
+    averageIndex: null,
+    expectedBaseline: null,
+    status: null,
+    diagnostic: null,
+    effects: [],
+  });
+
+  it.each<
+    [
+      string,
+      string,
+      ConjugateExercise | undefined,
+      string | undefined,
+      'sumo' | 'conventional',
+      boolean,
+    ]
+  >([
+    ['squat: both undefined', 'squat', undefined, undefined, 'sumo', true],
+    ['squat: standard matches standard', 'squat', ex('Squat'), 'squat', 'sumo', true],
+    [
+      'squat: ssb legacy matches ssb canonical',
+      'squat',
+      ex('SSB Squat', 'ssb'),
+      'squat-ssb',
+      'sumo',
+      true,
+    ],
+    [
+      'squat: paused legacy matches pause canonical',
+      'squat',
+      ex('Paused Squat', 'standard', 'competition', 'pause'),
+      'squat-pause',
+      'sumo',
+      true,
+    ],
+    [
+      'squat: ssb mismatch (legacy ssb vs canonical standard)',
+      'squat',
+      ex('SSB Squat', 'ssb'),
+      'squat',
+      'sumo',
+      false,
+    ],
+    ['squat: legacy undefined vs canonical defined', 'squat', undefined, 'squat', 'sumo', false],
+    [
+      'squat: legacy defined vs canonical undefined',
+      'squat',
+      ex('Squat'),
+      undefined,
+      'sumo',
+      false,
+    ],
+    ['deadlift: both undefined', 'deadlift', undefined, undefined, 'sumo', true],
+    [
+      'deadlift: sumo stance matches',
+      'deadlift',
+      { ...ex('Sumo DL'), type: 'deadlift', stance: 'sumo' },
+      'deadlift-sumo',
+      'sumo',
+      true,
+    ],
+    [
+      'deadlift: conventional stance matches',
+      'deadlift',
+      { ...ex('Conventional DL'), type: 'deadlift', stance: 'conventional' },
+      'deadlift-conventional',
+      'sumo',
+      true,
+    ],
+    [
+      'deadlift: opposite with sumo preference → conventional',
+      'deadlift',
+      { ...ex('Opposite DL'), type: 'deadlift', stance: 'opposite' },
+      'deadlift-conventional',
+      'sumo',
+      true,
+    ],
+    [
+      'deadlift: null with sumo preference → sumo',
+      'deadlift',
+      { ...ex('DL'), type: 'deadlift', stance: null },
+      'deadlift-sumo',
+      'sumo',
+      true,
+    ],
+    [
+      'deadlift: bare canonical with no stance info resolves via athlete preference',
+      'deadlift',
+      { ...ex('DL'), type: 'deadlift', stance: null },
+      'deadlift',
+      'sumo',
+      true,
+    ],
+    [
+      'deadlift: sumo vs conventional mismatch',
+      'deadlift',
+      { ...ex('Sumo DL'), type: 'deadlift', stance: 'sumo' },
+      'deadlift-conventional',
+      'sumo',
+      false,
+    ],
+    [
+      'bench: standard matches standard',
+      'bench',
+      { ...ex('Bench'), type: 'bench' },
+      'bench',
+      'sumo',
+      true,
+    ],
+    [
+      'bench: with equipment matches',
+      'bench',
+      { ...ex('Paused Bench'), type: 'bench', equipment: 'pause' },
+      'bench-pause',
+      'sumo',
+      true,
+    ],
+  ])('%s', (_, family, legacy, canonical, deadliftStance, expectedMatches) => {
+    const result = compareBaselineIdentity(family, legacy, canonical, deadliftStance);
+    expect(result.family).toBe(family);
+    expect(result.matches).toBe(expectedMatches);
   });
 });

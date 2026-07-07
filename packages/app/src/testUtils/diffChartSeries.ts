@@ -1,4 +1,4 @@
-import type { ChartPoint } from '@dyel/core';
+import type { ChartPoint, ConjugateExercise } from '@dyel/core';
 
 /**
  * One joined row: the same local calendar date as seen by two independently-produced
@@ -9,6 +9,17 @@ export interface JoinedChartPoint {
   dateKey: string; // local YYYY-MM-DD
   a?: ChartPoint;
   b?: ChartPoint;
+}
+
+/**
+ * Result of comparing a legacy baseline `ConjugateExercise` with a pipeline canonical id string.
+ * Used in parity tests to verify the two implementations selected the same baseline exercise.
+ */
+export interface BaselineIdentityComparison {
+  family: string;
+  legacyLabel: string | null;
+  pipelineLabel: string | null;
+  matches: boolean;
 }
 
 /**
@@ -110,4 +121,103 @@ export function diffSeries(joined: JoinedChartPoint[], seriesName: string): Seri
   }
 
   return { seriesName, comparedCount, missingInA, missingInB, maxAbsDiff, maxRelDiff };
+}
+
+/**
+ * Rebuilds a canonical-format slug from a legacy `ConjugateExercise`'s structural fields
+ * (bar, stance, equipment, addlWts), omitting defaults (standard bar, competition stance)
+ * to match the pipeline's canonical format. Used for baseline identity comparison in parity tests.
+ */
+function buildBaselineCanonical(ex: ConjugateExercise): string {
+  const parts: string[] = [ex.type];
+
+  if (ex.bar && ex.bar !== 'standard') {
+    parts.push(ex.bar);
+  }
+  if (ex.stance && ex.stance !== 'competition') {
+    parts.push(ex.stance);
+  }
+  if (ex.equipment) {
+    parts.push(ex.equipment);
+  }
+  ex.addlWts.forEach((w) => {
+    if (w === 'rev. bands') {
+      parts.push('rev-bands');
+    } else {
+      parts.push(w);
+    }
+  });
+
+  return parts.join('-');
+}
+
+/**
+ * Compares a legacy `ConjugateExercise` baseline with a pipeline canonical id string,
+ * returning a comparison result with human-readable labels and a match boolean.
+ *
+ * For deadlift, compares resolved stance (accounting for 'opposite' and null stances).
+ * For squat/bench, compares full canonical structure (bar, equipment, addlWts).
+ *
+ * @param family - lift type ('squat', 'bench', 'deadlift')
+ * @param legacyEx - legacy ConjugateExercise or undefined
+ * @param pipelineCanonical - pipeline canonical id string or undefined
+ * @param deadliftStance - user's primary deadlift stance preference, for resolving 'opposite' and null
+ * @returns comparison with labels and match boolean
+ */
+export function compareBaselineIdentity(
+  family: string,
+  legacyEx: ConjugateExercise | undefined,
+  pipelineCanonical: string | undefined,
+  deadliftStance: 'sumo' | 'conventional' = 'sumo'
+): BaselineIdentityComparison {
+  const legacyLabel = legacyEx?.displayName ?? null;
+  const pipelineLabel = pipelineCanonical ?? null;
+
+  // Both undefined: match
+  if (!legacyEx && !pipelineCanonical) {
+    return { family, legacyLabel, pipelineLabel, matches: true };
+  }
+
+  // One undefined: mismatch
+  if (!legacyEx || !pipelineCanonical) {
+    return { family, legacyLabel, pipelineLabel, matches: false };
+  }
+
+  // For deadlift, compare resolved stance (accounting for opposite and null)
+  if (family === 'deadlift') {
+    const legacyStance =
+      legacyEx.stance === 'sumo' || legacyEx.stance === 'conventional'
+        ? legacyEx.stance
+        : legacyEx.stance === 'opposite'
+          ? deadliftStance === 'sumo'
+            ? 'conventional'
+            : 'sumo'
+          : deadliftStance;
+
+    const pipelineStance = pipelineCanonical.endsWith('-sumo')
+      ? 'sumo'
+      : pipelineCanonical.endsWith('-opposite')
+        ? deadliftStance === 'sumo'
+          ? 'conventional'
+          : 'sumo'
+        : pipelineCanonical.endsWith('-conventional')
+          ? 'conventional'
+          : deadliftStance; // Default/comp canonical (no stance suffix) uses athlete preference
+
+    return {
+      family,
+      legacyLabel: legacyStance,
+      pipelineLabel: pipelineStance,
+      matches: legacyStance === pipelineStance,
+    };
+  }
+
+  // For squat and bench, rebuild canonical from legacy fields and compare
+  const legacyCanonical = buildBaselineCanonical(legacyEx);
+  return {
+    family,
+    legacyLabel: legacyEx.displayName,
+    pipelineLabel: pipelineCanonical,
+    matches: legacyCanonical === pipelineCanonical,
+  };
 }
