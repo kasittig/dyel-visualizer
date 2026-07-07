@@ -8,6 +8,7 @@ Reusable test helpers shared across `packages/app` test suites (not app runtime 
 | `compareChartSeries.test.ts` | `it.each` matrix covering empty/missing/single/multi-value/undefined-filtering cases                                                                                                                 |
 | `diffChartSeries.ts`         | Joins two independently-produced `ChartPoint[]` arrays by local calendar date, then diffs a named series to produce `SeriesDiff` statistics (comparedCount, gaps, max absolute/relative differences) |
 | `diffChartSeries.test.ts`    | `it.each` matrix covering empty/join-mismatch/date-format-normalization/single-multi-point/gap/divergence cases                                                                                      |
+| `diffVariationSnapshot.ts`   | Reduces pipeline's per-variation time series to last-value-per-variation snapshot; diffs against legacy `normalizeToBaseE1RM` snapshot logic                                                         |
 
 ## Core-vs-pipeline parity test harness
 
