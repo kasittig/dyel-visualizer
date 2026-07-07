@@ -9,6 +9,7 @@ import { EditableDateChip } from '../shared/EditableDateChip';
 import { filterByDateRange } from '@dyel/core';
 import type { DateRange } from 'react-day-picker';
 import type { DeadliftStancePreference, LiftType } from '@dyel/core';
+import type { InputMode } from '../../utils/appUtils';
 
 export function LiftTabPanel({
   rows,
@@ -16,22 +17,30 @@ export function LiftTabPanel({
   liftType,
   targetName,
   baselineName,
-  onTargetChange,
   deadliftStance,
   onDeadliftStanceChange,
   dateRange,
   onDateRangeChange,
+  inputMode,
+  url,
+  pastedText,
+  refreshToken,
+  unit,
 }: {
   rows: ConjugateDataPair[];
   effectiveBaselineNames: Partial<Record<LiftType, string>>;
   liftType: LiftType;
   targetName: string;
   baselineName?: string;
-  onTargetChange: (name: string | null) => void;
   deadliftStance: DeadliftStancePreference;
   onDeadliftStanceChange: (s: DeadliftStancePreference) => void;
   dateRange: DateRange;
   onDateRangeChange: (range: DateRange) => void;
+  inputMode: InputMode;
+  url: string;
+  pastedText: string;
+  refreshToken: number;
+  unit: 'lbs' | 'kg';
 }) {
   const [selectedVariation, setSelectedVariation] = useState<string | null>(null);
 
@@ -54,11 +63,12 @@ export function LiftTabPanel({
         trailing={<EditableDateChip dateRange={dateRange} onDateRangeChange={onDateRangeChange} />}
       >
         <ConjugateCharts
-          rows={filteredRows}
-          baselineNames={effectiveBaselineNames}
-          stats={stats}
-          targetName={targetName}
-          onTargetChange={onTargetChange}
+          liftType={liftType}
+          inputMode={inputMode}
+          url={url}
+          pastedText={pastedText}
+          refreshToken={refreshToken}
+          unit={unit}
           highlightedVariation={selectedVariation}
           onVariationClick={handleVariationClick}
         />

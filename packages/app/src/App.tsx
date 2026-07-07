@@ -351,16 +351,15 @@ export function App() {
                 liftType={liftTab}
                 targetName={effectiveTargetNames[liftTab]!}
                 baselineName={effectiveBaselineNames[liftTab]}
-                onTargetChange={(name) =>
-                  setTabState((prev) => ({
-                    ...prev,
-                    [liftTab]: { ...prev[liftTab], targetName: name ?? undefined },
-                  }))
-                }
                 deadliftStance={deadliftStance}
                 onDeadliftStanceChange={setDeadliftStance}
                 dateRange={dateRange}
                 onDateRangeChange={setDateRange}
+                inputMode={inputMode}
+                url={url}
+                pastedText={pastedText}
+                refreshToken={refreshToken}
+                unit={dataUnit}
               />
             ) : null}
           </>

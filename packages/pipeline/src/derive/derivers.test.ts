@@ -2,13 +2,15 @@ import { describe, it, expect } from 'vitest';
 import { derivers } from './derivers';
 import type { TaggedSetRecord } from '../tag/tag';
 
-const mockSet = (weight: number, reps: number): TaggedSetRecord => ({
+const mockSet = (weight: number, reps: number, sets?: number, rpe?: number): TaggedSetRecord => ({
   date: 1706745600000,
   exercise: 'Bench',
   weight,
   reps,
+  rpe,
   canonical: 'bench',
   tags: new Set(['lift:bench']),
+  ...(sets !== undefined && { meta: { sets: String(sets) } }),
 });
 
 describe('derivers', () => {
@@ -37,6 +39,36 @@ describe('derivers', () => {
       const sets = [mockSet(100, 10), mockSet(120, 1)];
       const e1rms = [100 * (1 + 10 / 30), 120];
       expect(derivers.e1rm.derive(sets)).toBe(Math.max(...e1rms));
+    });
+
+    it.each([
+      [
+        'excludes a 2+ set speed-work entry in favor of a genuine effort set',
+        [mockSet(85, 3, 9), mockSet(95, 14, 1)],
+        95 * (1 + 14 / 30),
+      ],
+      [
+        'keeps a genuine single-set effort over a 2-set speed-work entry',
+        [mockSet(100, 1, 1), mockSet(85, 3, 2)],
+        100,
+      ],
+      [
+        'falls back to speed-work sets when nothing else is available that day',
+        [mockSet(85, 3, 9), mockSet(90, 3, 10)],
+        Math.max(85 * (1 + 3 / 30), 90 * (1 + 3 / 30)),
+      ],
+      [
+        'treats a missing sets count as a single genuine effort set',
+        [mockSet(100, 5)],
+        100 * (1 + 5 / 30),
+      ],
+      [
+        'trusts an explicit RPE even at 2+ sets, not treating it as speed work',
+        [mockSet(85, 3, 9), mockSet(120, 1, 3, 9)],
+        120 * (1 + (1 + (10 - 9)) / 30),
+      ],
+    ])('%s', (_, sets, expected) => {
+      expect(derivers.e1rm.derive(sets)).toBeCloseTo(expected);
     });
   });
 

@@ -6,10 +6,23 @@ export interface SeriesDeriver {
   derive(daySets: TaggedSetRecord[]): number;
 }
 
+// A set logged with 2+ working sets (e.g. "9x3 speed bench") is dynamic/repetition-effort
+// volume work, not a near-maximal attempt — Epley on that load wildly underestimates 1RM.
+// An attached RPE means the lifter explicitly rated the effort, so trust it regardless of
+// set count. Exclude everything else from e1rm derivation unless a day has nothing but
+// speed-work sets.
+const SPEED_WORK_SET_THRESHOLD = 2;
+export const isSpeedWork = (s: TaggedSetRecord) =>
+  s.rpe === undefined && Number(s.meta?.sets ?? 1) >= SPEED_WORK_SET_THRESHOLD;
+
 export const derivers: Record<string, SeriesDeriver> = {
   e1rm: {
     id: 'e1rm',
-    derive: (sets) => (sets.length ? Math.max(...sets.map((s) => calcE1RM(s.weight, s.reps))) : 0),
+    derive: (sets) => {
+      const effortSets = sets.filter((s) => !isSpeedWork(s));
+      const usable = effortSets.length ? effortSets : sets;
+      return usable.length ? Math.max(...usable.map((s) => calcE1RM(s.weight, s.reps, s.rpe))) : 0;
+    },
   },
   tonnage: {
     id: 'tonnage',

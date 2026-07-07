@@ -57,7 +57,7 @@ const specs: DatasetSpec[] = [
   },
 ];
 
-const athlete = { sex: 'M' as const, bodyweight: 90 };
+const athlete = { sex: 'M' as const, bodyweight: 90, deadliftStance: 'conventional' as const };
 
 describe('runPipeline (end-to-end)', () => {
   const raw = FIXTURE_NAMES.map(loadFixture);

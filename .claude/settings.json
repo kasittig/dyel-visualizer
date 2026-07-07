@@ -22,5 +22,6 @@
       "Read(./**/**/node_modules/**)",
       "Read(./packages/app/modifierEffects.json)"
     ]
-  }
+  },
+  "worktree": { "bgIsolation": "none" }
 }
