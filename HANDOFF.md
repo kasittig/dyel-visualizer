@@ -1,17 +1,17 @@
 # HANDOFF.md — TotalChart Core-vs-Pipeline Parity Testing
 
-## Status: Session 5 — bench paused/"commands" preference fix — COMPLETE ✅ (committed)
+## Status: Session 6 — ConjugateCharts revert IMPLEMENTED and verified (branch target: current branch)
 
-Session 4 executed the plan drafted at the start of this session (Open item #2 from Session 3) —
-resolved the deadlift baseline-selection priority question with explicit user sign-off, implemented
-it, fixed a stale-test regression that surfaced along the way, and verified everything with direct
-ground-truth test runs (not just subagent self-reports). All 6 planned tasks are done; see "Session
-4: Implementation" below. See "Open items" at the bottom for what's still outstanding (unchanged in
-kind from Session 3, since this session's scope was narrowly the one item it targeted).
+Session 6 planning produced a full task breakdown to revert `ConjugateCharts` from `@dyel/pipeline`
+back to `@dyel/core`, mirroring `TotalChart`'s already-reverted state. The user resolved the one open
+branch-target question (**current branch, `integrate-new-pipeline`**, not `migration-phase-1`) and
+all 7 tasks were then executed via `feature-implementer`/`qa-reviewer` in the same session. See
+"Session 6: Implementation" below for what landed, ground-truth verification numbers, and a new
+finding (variation-label-space mismatch) surfaced by the new parity harness.
 
-**Session 4.5 note:** all of Session 3's and Session 4's work had accumulated as uncommitted working-
-tree changes (nothing had actually been committed since `c3d4887`). It has now been split into 3
-logical, independently-buildable commits on `integrate-new-pipeline`:
+**Session 4.5 note (still accurate):** all of Session 3's and Session 4's work had accumulated as
+uncommitted working-tree changes (nothing had actually been committed since `c3d4887`). It was split
+into 3 logical, independently-buildable commits on `integrate-new-pipeline`:
 
 1. `Refactor compareChartSeries.test.ts to matrix/factory test style` — unrelated test-style cleanup.
 2. `Add athlete deadliftStance preference and stance-aware baseline priority` — Session 3 plumbing
@@ -23,8 +23,9 @@ logical, independently-buildable commits on `integrate-new-pipeline`:
    `totalChartParity.test.ts`.
 
 A pre-existing, unrelated `TODO.md` deletion was found in the working tree (not part of Sessions 3/4)
-and deliberately left uncommitted/untouched — flagged for the user to handle separately. `files/`
-(DESIGN.md, ISSUE_PROMPT.md, create_issues.sh, dated Jul 4) and stray `test-output.txt`/
+and was **pulled in and committed as part of Session 6's `git pull`** (see "Session 6: Implementation"
+below) — it turned out to already exist upstream as commit `c637206`, not a local-only stray change.
+`files/` (DESIGN.md, ISSUE_PROMPT.md, create_issues.sh, dated Jul 4) and stray `test-output.txt`/
 `test_output.txt` logs were likewise left out of any commit as out-of-scope scratch.
 
 ---
@@ -35,7 +36,145 @@ Add a live **core-vs-pipeline diff** to `totalChartParity.test.ts` (as an explic
 exception to the pipeline migration boundary rule), comparing the legacy `@dyel/core` TotalChart
 data computation against the new `@dyel/pipeline` implementation to catch behavioral divergence
 before production — and, as that harness matured, use it to find and close real gaps between the
-two implementations rather than just document them.
+two implementations rather than just document them. Session 6 extends this same philosophy to the
+`ConjugateCharts` revert: keep a parity harness alive across the revert instead of just deleting the
+pipeline path outright.
+
+---
+
+## Session 6: Implementation
+
+### Branch-target decision (resolved)
+
+User chose **current branch (`integrate-new-pipeline`)**, not `migration-phase-1`. The two extra
+items flagged for the `migration-phase-1` option (LINE_COLORS import revert, parity-test/doc
+cleanup for `c42d62d`) do not apply — the plan's base 7-task breakdown was executed as-is.
+
+### Task 0 (added ahead of the plan's Task 1) — working-tree/branch cleanup
+
+Investigation found the working tree's uncommitted diff (`App.tsx`, `SigmaTab.tsx`,
+`packages/pipeline/src/tag/detect/canonical.ts`, `packages/pipeline/src/tag/detect/parseExercise.ts`,
+and the `TODO.md` deletion) was **byte-identical** to two commits already sitting on
+`origin/integrate-new-pipeline` (`c637206` "Revert UI to legacy backend pending bugfixes" and
+`8001486` "Fix CodeQL polynomial-redos alerts") — the local branch was simply 2 commits behind and
+had never pulled. Stashed the working tree, fast-forward merged to `origin/integrate-new-pipeline`,
+then popped the stash (only the unrelated `HANDOFF.md` edit remained). Note: `origin`'s
+`integrate-new-pipeline` ref itself has since been deleted upstream (the branch was already merged
+via PR #454 and cleaned up), but the locally-cached remote-tracking ref still had the two commits'
+objects, so the fast-forward worked without a live remote fetch.
+
+### Tasks 1-5 — sequential revert (`feature-implementer`, one dispatch per file)
+
+Each task's target end-state was the exact pre-migration file content from git blob
+`9ac016e^:<path>` (the commit right before "Migrate TotalChart and ConjugateCharts to
+@dyel/pipeline"), used verbatim rather than re-derived:
+
+1. **`useConjugateChartData.ts`** — reverted to a thin `useMemo` wrapper around `@dyel/core`'s
+   `buildVariationChartData(rows, baselineNames, stats, targetName)`; re-exports `NORMALIZED_KEY`
+   from `@dyel/core` (`'__normalized__'`) instead of a local `'normalized'` constant.
+2. **`ConjugateCharts.tsx`** — reverted props to `{ rows, baselineNames, stats, targetName,
+onTargetChange, highlightedVariation?, onVariationClick? }`; restored the "Competition variation"
+   `<select>` dropdown (shown when `baselineExercise` is present) and the `sets×reps @ weight · RPE`
+   tooltip detail line (via `bestSetByLabelAndDate`).
+3. **`LiftTabPanel.tsx`** — now feeds `ConjugateCharts` from its already-local `filteredRows`/
+   `effectiveBaselineNames`/`stats`/`targetName`, plus a new required `onTargetChange` prop; dropped
+   `inputMode`/`url`/`pastedText`/`refreshToken`/`unit` (no longer needed to forward).
+4. **`App.tsx`** — restored `onTargetChange` → `setTabState` wiring at the `<LiftTabPanel>` call
+   site; stopped forwarding `inputMode`/`url`/`pastedText`/`refreshToken`/`unit` there (still used
+   elsewhere in the file for `SheetUrlPanel`/`RepCalculator`/etc., untouched).
+5. **`conjugateChartSpecs.ts`** — confirmed via `grep -rln conjugateChartSpecs packages/app/src` to
+   have zero remaining production importers (only itself); kept as parity-test-only infrastructure,
+   same treatment `totalChartSpecs.ts` gets.
+
+Each task's `feature-implementer` build-verified incrementally (`npm run build -w packages/app`),
+confirming errors were scoped only to not-yet-reverted downstream consumers at each step, ending in
+a fully green build after Task 4.
+
+### Task 6 — new regression harness: `conjugateChartParity.test.ts`
+
+Mirrors `totalChartParity.test.ts`'s structure (single `beforeAll`, hard-assert/soft-warn split,
+same `total-chart-sheet.csv` fixture), adapted for `ConjugateCharts`' per-lift-type
+`variations: string[]` axis instead of `TotalChart`'s fixed lift-id set. Outer loop over
+squat/bench/deadlift; inner comparison over variation names present in **both** the legacy
+`buildVariationChartData(...).variations` axis and the pipeline `conjugateChartSpecs`-driven
+output's column keys, diffed via the existing `testUtils/diffChartSeries.ts`
+(`joinChartPointsByDate` + `diffSeries`). `conjugateChartSpecs.ts` is now this test's only importer.
+
+**Result:** 8/8 tests passing.
+
+**New finding (not previously anticipated in the Session 6 plan):** the per-variation intersection
+is **empty for all three lift types** on the real fixture — legacy variation labels are
+free-form logged display names (e.g. `"Bench (1 board)"`, `"Deadlift (2" deficit, opposite)"`,
+`"Belt Squat (narrow stance)"`), while pipeline variation labels are canonical slugs (e.g.
+`"bench-american"`, `"deadlift-opposite"`, `"squat-box"`) — a much coarser, differently-named axis.
+Zero legacy display names ever match a pipeline canonical string, so the per-variation hard-assert
+(`comparedCount > 0`) never actually exercises live data; the harness instead soft-warns
+`"no matched variations between implementations"` for every lift type, and separately soft-warns
+`"no date overlap"` for the `normalized` series despite both sides having non-trivial point counts
+(squat: legacy 4 / pipeline 13; bench: legacy 22 / pipeline 22; deadlift: legacy 12 / pipeline 19).
+This is a **real, previously-undocumented gap** — broader than the already-tracked
+"canonical-grouping differences" in Open item #4 below, since it means the two implementations don't
+even share a common variation-naming vocabulary at the per-exercise-variant level, only at the
+lift-family level (`squat`/`bench`/`deadlift`). Logged as a new open item (#7 below) rather than
+silently accepted, since the harness's intersection-based join strategy currently can't catch
+_any_ real per-variation divergence until this is addressed (e.g. by mapping legacy display names to
+pipeline canonical slugs before joining, or comparing structurally instead of by label).
+
+### Task 7 — full verification (`qa-reviewer`)
+
+Ground-truth results, directly reported by the QA agent from live command output:
+
+```
+npm test -w packages/app         → 113 passed, 10 test files, exit 0 (includes 8 new conjugateChartParity tests)
+npm run build -w packages/app    → exit 0
+npm run build -w packages/pipeline → exit 0
+npm test -w packages/pipeline    → 178 passed, 12 test files, exit 0 (unaffected, sanity-checked)
+grep -rn "runPipeline\|@dyel/pipeline" packages/app/src/hooks/conjugate packages/app/src/components/conjugate
+                                  → no matches (pipeline-migration boundary fully reverted for these dirs)
+```
+
+`git diff --stat` for the revert itself (excluding the unrelated `HANDOFF.md` edit):
+
+```
+ packages/app/src/App.tsx                                    |  11 +-
+ packages/app/src/components/conjugate/ConjugateCharts.tsx    |  69 ++++++----
+ packages/app/src/components/pages/LiftTabPanel.tsx           |  24 +---
+ packages/app/src/hooks/conjugate/useConjugateChartData.ts    | 114 ++---------------
+ 4 files changed, 88 insertions(+), 130 deletions(-)
+ + packages/app/src/pipeline/conjugateChartParity.test.ts (new, untracked)
+```
+
+### Files touched (Session 6)
+
+- `packages/app/src/hooks/conjugate/useConjugateChartData.ts` — reverted to `@dyel/core` wrapper
+- `packages/app/src/components/conjugate/ConjugateCharts.tsx` — reverted props/JSX, restored
+  dropdown + tooltip detail line
+- `packages/app/src/components/pages/LiftTabPanel.tsx` — reverted `ConjugateCharts` wiring
+- `packages/app/src/App.tsx` — restored `onTargetChange` wiring at the `LiftTabPanel` call site
+- `packages/app/src/pipeline/conjugateChartParity.test.ts` — new, 8 tests
+- (Task 0, not part of the plan's original scope) fast-forwarded `integrate-new-pipeline` to pull in
+  already-upstream commits `c637206`/`8001486` (App.tsx/SigmaTab.tsx UI revert + CodeQL ReDoS fixes
+  - `TODO.md` deletion), clearing the stale local-branch state
+
+**Not committed yet** — all Session 6 changes are currently uncommitted working-tree state (plus the
+pulled `c637206`/`8001486` commits, which are now part of local history). Splitting into logical
+commits and opening a PR is still pending (see "Next Steps").
+
+---
+
+## Session 6: Findings (branch discovery + revert scope, from planning)
+
+- **`ConjugateCharts` was migrated to `@dyel/pipeline` in the same commit as `TotalChart`**
+  (`9ac016e`, "Migrate TotalChart and ConjugateCharts to @dyel/pipeline").
+- **A real `migration-phase-1` branch exists** (local + remote) that is _not_ a revert continuation
+  — it's the opposite direction, moving `ConjugateCharts` further onto pipeline. **Not used** — the
+  branch-target decision landed on the current branch instead (see "Session 6: Implementation"
+  above). Left as reference context in case a future session revisits that branch.
+- **Pre-migration code restored, unchanged, from `@dyel/core`:**
+  `packages/core/src/load/buildVariationChartData.ts` — produced exactly the shape `ConjugateCharts`
+  needed; the revert was a straight restoration, not new design work. Also brought back two UX
+  features the pipeline version had dropped: the "Competition variation" dropdown and the
+  sets/reps/RPE detail line in the chart tooltip.
 
 ---
 
@@ -216,6 +355,20 @@ npm run build -w packages/app    → exit 0
    _identity_ (which this session's and Session 3's work address) — baseline identity determines
    _which_ canonical is the reference point; variant-factor fitting determines how well _other_
    canonicals are normalized against that reference. Fixing identity does not fix fitting.
+5. ~~**`ConjugateCharts` revert branch-target decision**~~ — **RESOLVED in Session 6.** Landed on
+   the current branch (`integrate-new-pipeline`).
+6. **After the `ConjugateCharts` revert** (Session 6), `mergeWideRechartsRows`
+   (`packages/app/src/utils/pipelineChartUtils.ts`) and `usePipelineTotalChartData.ts` have no
+   remaining _production_ callers (the former is still used by `conjugateChartParity.test.ts`, the
+   latter is fully orphaned) — left alone deliberately, but worth a dedicated cleanup pass.
+7. **(New, Session 6)** `conjugateChartParity.test.ts`'s per-variation join is currently a no-op on
+   the real fixture — legacy display-name variation labels (e.g. `"Bench (1 board)"`) and pipeline
+   canonical-slug variation labels (e.g. `"bench-american"`) never intersect for any of
+   squat/bench/deadlift, so the harness's per-variation hard-assert branch never actually runs
+   against live data; it only exercises the "no matched variations" soft-warn path. See "Session 6:
+   Implementation" → Task 6 for full detail and example labels. Worth a dedicated session to either
+   (a) map legacy display names to pipeline canonical slugs before joining, or (b) redesign the
+   comparison to be structural (e.g. compare aggregate stats per lift type) rather than label-keyed.
 
 ---
 
@@ -302,6 +455,7 @@ npm test -w packages/pipeline
 # App-side diff/comparator + parity harness
 npm test -w packages/app -- diffChartSeries
 npm test -w packages/app -- totalChartParity
+npm test -w packages/app -- conjugateChartParity
 npm test -w packages/app
 
 # Full builds
@@ -313,7 +467,8 @@ npm run build -w packages/app
 
 ## Related Files & Context
 
-- **Test file:** `packages/app/src/pipeline/totalChartParity.test.ts`
+- **Test files:** `packages/app/src/pipeline/totalChartParity.test.ts`,
+  `packages/app/src/pipeline/conjugateChartParity.test.ts` (landed in Session 6)
 - **Diff utilities:** `packages/app/src/testUtils/diffChartSeries.ts` + `diffChartSeries.test.ts`
 - **Pipeline core logic:** `packages/pipeline/src/derive/athlete.ts`,
   `packages/pipeline/src/derive/normalize.ts`, `packages/pipeline/src/pipeline.ts`
@@ -322,8 +477,8 @@ npm run build -w packages/app
   `packages/core/src/utils/lifts/resolveDeadliftStance.ts`
 - **Pipeline canonical-naming logic:** `packages/pipeline/src/tag/detect/canonical.ts` (explicit
   stance always gets a suffix; bare canonical means "no stance info logged")
-- **Core exports:** `@dyel/core`: `parseConjugateData`, `buildChartData`, `buildSessionStats`,
-  `calculateVolumeCorrelation`
+- **Core exports:** `@dyel/core`: `parseConjugateData`, `buildChartData`, `buildVariationChartData`,
+  `buildSessionStats`, `calculateVolumeCorrelation`
 - **Pipeline exports:** `@dyel/pipeline`: `runPipeline`, `fitNormalizationModel`, `normalizeE1rm`;
   types: `AthleteContext`, `PipelineResult`, `NormalizationModel`
 - **App utils:** `src/utils/appDataUtils.ts`, `src/hooks/data/useBaselineTargetExercises.ts`
@@ -331,16 +486,30 @@ npm run build -w packages/app
   `packages/app/src/testUtils/CLAUDE.md` (harness docs)
 - **Tracked issue:** [#451](https://github.com/kasittig/dyel-visualizer/issues/451) —
   chain-count/band-tension canonical collapsing (appears resolved by `2c72ba8`; confirm before closing)
+- **Plan file (Session 6):** `/Users/kasittig/.claude/plans/how-would-you-move-mellow-pixel.md`
+  (original detailed breakdown) and
+  `/Users/kasittig/.claude/plans/load-handoff-md-break-elegant-tome.md` (execution plan actually
+  used, includes the Task 0 branch-cleanup step) — both describe the now-completed `ConjugateCharts`
+  revert.
+- **Related branch (Session 6):** `migration-phase-1` — moves `ConjugateCharts` further onto
+  pipeline rather than reverting it; not used this session, see "Session 6: Findings".
 
 ---
 
 ## Next Steps
 
-1. Confirm GitHub issue #451 can be closed (Open item #3).
-2. Consider whether the remaining normalization-fitting divergence (Open item #4) is worth a
-   dedicated future session — it's now the _only_ remaining source of per-series divergence (all
-   baseline-identity gaps across squat/bench/deadlift are resolved as of Session 5) and is
-   architecturally distinct from the baseline-identity work done in Sessions 3-5.
-3. Once ready, create a PR referencing this work off `integrate-new-pipeline` and merge to `main`.
-4. Handle the pre-existing, unrelated `TODO.md` deletion found in the working tree (Session 4.5) —
-   decide whether to restore it, commit the deletion, or leave it for a separate cleanup pass.
+1. **Commit Session 6's changes.** Currently all uncommitted working-tree state. Suggested split:
+   one commit for the 4 production-code reverts (`useConjugateChartData.ts`, `ConjugateCharts.tsx`,
+   `LiftTabPanel.tsx`, `App.tsx`), one commit for the new `conjugateChartParity.test.ts` harness, and
+   a decision on the unrelated `HANDOFF.md` edit (roll into one of the above or its own commit).
+2. Confirm GitHub issue #451 can be closed (Open item #3).
+3. Consider whether the remaining normalization-fitting divergence (Open item #4) is worth a
+   dedicated future session — it's the primary remaining source of per-series numeric divergence for
+   `TotalChart` (all baseline-identity gaps across squat/bench/deadlift are resolved as of Session 5)
+   and is architecturally distinct from the baseline-identity work done in Sessions 3-5.
+4. **(New, Session 6)** Decide how to address Open item #7 — `conjugateChartParity.test.ts`'s
+   per-variation join is currently a no-op due to legacy-display-name vs. pipeline-canonical-slug
+   label mismatch. Worth scoping as its own session.
+5. **(New, Session 6)** Dedicated cleanup pass for `mergeWideRechartsRows`/
+   `usePipelineTotalChartData.ts` orphaned-after-revert code (Open item #6).
+6. Once ready, create a PR referencing this work and merge to `main`.
