@@ -7,7 +7,7 @@ run and NEVER stored on identity types.
 
 ## Contract
 
-    function diagnose(points, model, effectsByCanonical, opts: { tolerance; staleDays }): DiagnosticsReport
+    function diagnose(points, model, effectsByCanonical, opts: { tolerance; staleDays }, now: number | undefined): DiagnosticsReport
 
 - `VariantAssessment.ratio` = actual / expected (actual = latest e1rm point,
   pre-normalization). `status` = ratio vs tolerance band:

@@ -86,7 +86,7 @@ export const csvParser: Parser = {
         throw new ParseError('Missing required field in row', lineNum, rawLineStr);
       }
 
-      const reps = parseFloat_(repsStr);
+      const reps = parseInt(repsStr);
       if (reps === null) {
         throw new ParseError(`Invalid reps: ${repsStr}`, lineNum, rawLineStr);
       }

@@ -3,22 +3,61 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 import { runPipeline } from '@dyel/pipeline';
 import type { ChartPoint } from '@dyel/core';
+import {
+  parseConjugateData,
+  buildSessionStats,
+  calculateVolumeCorrelation,
+  buildChartData,
+} from '@dyel/core';
 import { buildRawInput, PLACEHOLDER_ATHLETE } from '../utils/rawInputUtils';
 import { mergeRechartsRowsToChartPoints } from '../utils/pipelineChartUtils';
+import { compareChartSeries } from '../testUtils/compareChartSeries';
+import { joinChartPointsByDate, diffSeries } from '../testUtils/diffChartSeries';
+import { extractPairs, buildTabRows, computeEffectiveNames } from '../utils/appDataUtils';
+import { computeBaselineTargetExercises } from '../hooks/data/useBaselineTargetExercises';
+import { initialTabState } from '../utils/appUtils';
 import { TOTAL_CHART_SPECS } from './totalChartSpecs';
 
 const TOTAL_CHART_IDS = ['squat', 'bench', 'deadlift', 'pushPull', 'total'];
+const HARD_ASSERT_SERIES = ['squat', 'deadlift', 'pushPull', 'total'];
 
 describe('TotalChart core-vs-pipeline parity', () => {
   let fixtureContent: string;
   let pipelineOutput: ChartPoint[];
+  let legacyOutput: ChartPoint[];
+  let joined: ReturnType<typeof joinChartPointsByDate>;
 
   beforeAll(() => {
     const fixturePath = join(__dirname, '../../test/fixtures/total-chart-sheet.csv');
     fixtureContent = readFileSync(fixturePath, 'utf-8');
+
+    // Pipeline path
     const raw = buildRawInput('url', fixtureContent);
     const result = runPipeline([raw], TOTAL_CHART_SPECS, PLACEHOLDER_ATHLETE, {});
     pipelineOutput = mergeRechartsRowsToChartPoints(result.datasets, TOTAL_CHART_IDS, 'lbs');
+
+    // Legacy @dyel/core path using same fixture content
+    const pairs = parseConjugateData(fixtureContent);
+    const state = { status: 'success' as const, pairs };
+    const dataMap = extractPairs(state);
+    const tabRows = buildTabRows(dataMap);
+    const tabState = initialTabState();
+    const deadliftStance = 'sumo'; // Default documented in HANDOFF.md
+    const { effectiveBaselineNames, effectiveTargetNames } = computeEffectiveNames(
+      tabRows,
+      tabState,
+      deadliftStance
+    );
+    const { baselineExByType, targetExByType } = computeBaselineTargetExercises(
+      pairs,
+      effectiveBaselineNames,
+      effectiveTargetNames
+    );
+    const stats = buildSessionStats(pairs, effectiveBaselineNames, new Date());
+    const volume = calculateVolumeCorrelation(pairs);
+    legacyOutput = buildChartData(pairs, baselineExByType, targetExByType, stats, volume);
+
+    joined = joinChartPointsByDate(legacyOutput, pipelineOutput);
   });
 
   it('produces non-empty chart data from fixture', () => {
@@ -30,113 +69,70 @@ describe('TotalChart core-vs-pipeline parity', () => {
     const firstPoint = pipelineOutput[0];
     expect(firstPoint).toHaveProperty('date');
     expect(typeof firstPoint.date).toBe('string');
-    const hasAnyLift = ['squat', 'bench', 'deadlift', 'pushPull', 'total'].some(
-      (lift) => lift in firstPoint
-    );
+    const hasAnyLift = TOTAL_CHART_IDS.some((lift) => lift in firstPoint);
     expect(hasAnyLift).toBe(true);
   });
 
-  it('hard asserts: squat values are consistent and reasonable', () => {
-    const squatPoints = pipelineOutput.filter((p) => 'squat' in p && p.squat !== undefined);
-    expect(squatPoints.length).toBeGreaterThan(0);
-
-    squatPoints.forEach((p) => {
-      expect(typeof p.squat).toBe('number');
-      expect(p.squat).toBeGreaterThan(0);
-      expect(p.squat).toBeLessThan(10000);
+  it.each(HARD_ASSERT_SERIES)('hard asserts: %s values are consistent and reasonable', (series) => {
+    const { count, values, range, ratio } = compareChartSeries(pipelineOutput, series);
+    expect(count).toBeGreaterThan(0);
+    values.forEach((v) => {
+      expect(v).toBeGreaterThan(0);
+      expect(v).toBeLessThan(10000);
     });
-
-    const values = squatPoints.map((p) => p.squat).filter((v): v is number => v !== undefined);
-    const min = Math.min(...values);
-    const max = Math.max(...values);
-    expect(max - min).toBeGreaterThan(0);
-    expect(max / min).toBeLessThan(3);
+    expect(range).toBeGreaterThan(0);
+    expect(ratio).toBeLessThan(3);
   });
 
-  it('hard asserts: deadlift values are consistent and reasonable', () => {
-    const deadliftPoints = pipelineOutput.filter(
-      (p) => 'deadlift' in p && p.deadlift !== undefined
-    );
-    expect(deadliftPoints.length).toBeGreaterThan(0);
+  // Legacy (@dyel/core) and pipeline (@dyel/pipeline) independently reimplement e1RM variant-factor
+  // normalization with materially different fitting behavior: pipeline's fitNormalizationModel
+  // (packages/pipeline/src/derive/normalize.ts) excludes "speed work" sets (high-rep/no-RPE days)
+  // from the fit entirely, while legacy's fitVariantFactor (packages/core/src/utils/math/e1rm.ts)
+  // does not; the two also differ in minimum-sample gating behavior and (independently) in
+  // canonical/name-grouping granularity. A related, more specific bug — chain-count and
+  // band-tension modifiers (e.g. "light rev. bands" vs "mini rev. bands") collapsing into a
+  // single pipeline canonical and corrupting the affected variant fits — is tracked separately
+  // as GitHub issue #451; that fix will narrow but not eliminate the broader divergence described
+  // above. Until pipeline's normalization-fitting behavior is deliberately reconciled with (or
+  // intentionally diverged from, with sign-off) legacy's, this test documents real per-series
+  // divergence rather than asserting a fabricated tolerance band.
+  it.each(TOTAL_CHART_IDS)(
+    'core-vs-pipeline soft-warn: %s divergence from legacy normalization (tracked, not yet reconciled)',
+    (series) => {
+      const diff = diffSeries(joined, series);
 
-    deadliftPoints.forEach((p) => {
-      expect(typeof p.deadlift).toBe('number');
-      expect(p.deadlift).toBeGreaterThan(0);
-      expect(p.deadlift).toBeLessThan(10000);
-    });
+      // Hard assertion: joined data must have overlapping dates (catches date-parsing regressions)
+      expect(diff.comparedCount).toBeGreaterThan(0);
 
-    const values = deadliftPoints
-      .map((p) => p.deadlift)
-      .filter((v): v is number => v !== undefined);
-    const min = Math.min(...values);
-    const max = Math.max(...values);
-    expect(max - min).toBeGreaterThan(0);
-    expect(max / min).toBeLessThan(3);
-  });
-
-  it('hard asserts: pushPull values are consistent and reasonable', () => {
-    const ppPoints = pipelineOutput.filter((p) => 'pushPull' in p && p.pushPull !== undefined);
-    expect(ppPoints.length).toBeGreaterThan(0);
-
-    ppPoints.forEach((p) => {
-      expect(typeof p.pushPull).toBe('number');
-      expect(p.pushPull).toBeGreaterThan(0);
-      expect(p.pushPull).toBeLessThan(10000);
-    });
-
-    const values = ppPoints.map((p) => p.pushPull).filter((v): v is number => v !== undefined);
-    const min = Math.min(...values);
-    const max = Math.max(...values);
-    expect(max - min).toBeGreaterThan(0);
-    expect(max / min).toBeLessThan(3);
-  });
-
-  it('hard asserts: total values are sum-like and reasonable', () => {
-    const totalPoints = pipelineOutput.filter((p) => 'total' in p && p.total !== undefined);
-    expect(totalPoints.length).toBeGreaterThan(0);
-
-    totalPoints.forEach((p) => {
-      expect(typeof p.total).toBe('number');
-      expect(p.total).toBeGreaterThan(0);
-      expect(p.total).toBeLessThan(10000);
-    });
-
-    const values = totalPoints.map((p) => p.total).filter((v): v is number => v !== undefined);
-    const min = Math.min(...values);
-    const max = Math.max(...values);
-    expect(max - min).toBeGreaterThan(0);
-    expect(max / min).toBeLessThan(3);
-  });
+      // Soft warn: log real diagnostic numbers for visibility, not for gating
+      console.warn(
+        `core-vs-pipeline ${series}: compared=${diff.comparedCount} missingInA=${diff.missingInA} missingInB=${diff.missingInB} maxAbsDiff=${diff.maxAbsDiff} maxRelDiff=${(diff.maxRelDiff * 100).toFixed(1)}%`
+      );
+    }
+  );
 
   it('soft warn: bench values exist and are reasonable (known divergence from core)', () => {
-    const benchPoints = pipelineOutput.filter((p) => 'bench' in p && p.bench !== undefined);
+    const { count, values, ratio } = compareChartSeries(pipelineOutput, 'bench');
 
-    if (benchPoints.length === 0) {
+    if (count === 0) {
       console.warn('No bench data points found in pipeline output');
       return;
     }
 
-    benchPoints.forEach((p) => {
-      if (typeof p.bench !== 'number' || p.bench <= 0) {
-        console.warn(`Unexpected bench value at ${p.date}: ${p.bench}`);
+    values.forEach((v) => {
+      if (typeof v !== 'number' || v <= 0) {
+        console.warn(`Unexpected bench value: ${v}`);
       }
-      if (p.bench > 10000) {
-        console.warn(`Unreasonable bench value at ${p.date}: ${p.bench} lbs`);
+      if (v > 10000) {
+        console.warn(`Unreasonable bench value: ${v} lbs`);
       }
     });
 
-    const values = benchPoints.map((p) => p.bench).filter((v): v is number => v !== undefined);
-    if (values.length > 1) {
-      const min = Math.min(...values);
-      const max = Math.max(...values);
-      if (max / min > 3) {
-        console.warn(
-          `Large bench variation detected: ${min} to ${max} lbs (${(max / min).toFixed(2)}x)`
-        );
-      }
+    if (values.length > 1 && ratio > 3) {
+      console.warn(`Large bench variation detected: ratio ${ratio.toFixed(2)}x`);
     }
 
-    expect(benchPoints.length).toBeGreaterThan(0);
+    expect(count).toBeGreaterThan(0);
   });
 
   it('dates are in chronological order', () => {

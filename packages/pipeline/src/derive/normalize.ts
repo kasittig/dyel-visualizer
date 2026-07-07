@@ -86,15 +86,6 @@ const fitMetric = (
   return vals.length ? { v: mean(vals), n: vals.length } : null;
 };
 
-const groupBy = <T>(items: T[], keyOf: (item: T) => string) => {
-  const map = new Map<string, T[]>();
-  items.forEach((item) => {
-    const k = keyOf(item);
-    map.set(k, [...(map.get(k) || []), item]);
-  });
-  return map;
-};
-
 const getTag = (tags: ReadonlySet<string>, prefix: string) =>
   [...tags].find((t) => t.startsWith(prefix));
 
@@ -102,10 +93,13 @@ export function fitNormalizationModel(
   history: TaggedSetRecord[],
   opts: { minSamples: number }
 ): NormalizationModel {
-  const byCanonical = groupBy(history, (r) => r.canonical);
+  const byCanonical = Object.groupBy(history, (r) => r.canonical);
   const byFamily = new Map<string, string[]>();
 
-  for (const [can, recs] of byCanonical) {
+  for (const [can, recs] of Object.entries(byCanonical)) {
+    if (!recs) {
+      continue;
+    }
     const fam = getTag(recs[0]?.tags || new Set(), 'lift:');
     if (fam) {
       byFamily.set(fam, [...(byFamily.get(fam) || []), can]);
@@ -117,7 +111,7 @@ export function fitNormalizationModel(
     addlWtOffset: NormalizationModel['addlWtOffset'] = {};
 
   for (const [family, canonicals] of byFamily) {
-    const entries = canonicals.map((c) => ({ c, r: byCanonical.get(c)! }));
+    const entries = canonicals.map((c) => ({ c, r: byCanonical[c]! }));
     // A logged name containing "competition" (e.g. "Competition Bench") is a stronger
     // signal of the true competition lift than the bare comp-lift tag alone — some logs
     // use the bare name for other work (e.g. speed/rep-effort days) and reserve
@@ -130,7 +124,7 @@ export function fitNormalizationModel(
     const [baseCan] = pool.sort((a, b) => b.r.length - a.r.length || a.c.localeCompare(b.c));
 
     baseline[family] = baseCan.c;
-    const grid = buildSessionGrid(effortOnly(byCanonical.get(baseCan.c)!));
+    const grid = buildSessionGrid(effortOnly(byCanonical[baseCan.c]!));
 
     for (const { c, r } of entries) {
       if (c === baseCan.c) {

@@ -29,7 +29,7 @@ export function tokenize(line: string): TokenizerOutput {
       next = tokens[i + 1];
 
     if (t.startsWith('@') && t.length > 1) {
-      rpe = parseInt(t.slice(1), 10);
+      rpe = parseFloat(t.slice(1));
     } else if (/^x\d+$/i.test(t) || /^\d+rm$/i.test(t)) {
       reps = parseInt(t.replace(/x|rm/gi, ''), 10);
     } else if (/^\d+x\d+$/i.test(t)) {

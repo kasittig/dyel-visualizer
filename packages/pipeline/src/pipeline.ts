@@ -83,10 +83,16 @@ export function runPipeline(
 
   const effectsByCanonical = new Map(tagged.map((r) => [r.canonical, [...r.effects]]));
 
-  const diagnostics = diagnose(e1rmPoints, model, effectsByCanonical, {
-    tolerance: DIAGNOSTICS_TOLERANCE,
-    staleDays: DIAGNOSTICS_STALE_DAYS,
-  });
+  const diagnostics = diagnose(
+    e1rmPoints,
+    model,
+    effectsByCanonical,
+    {
+      tolerance: DIAGNOSTICS_TOLERANCE,
+      staleDays: DIAGNOSTICS_STALE_DAYS,
+    },
+    undefined
+  );
 
   // Construct charts via object-from-entries lookup transformation
   const datasets = Object.fromEntries(

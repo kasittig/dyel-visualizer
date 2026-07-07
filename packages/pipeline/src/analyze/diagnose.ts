@@ -28,9 +28,10 @@ export function diagnose(
   points: Point[],
   model: NormalizationModel,
   effectsByCanonical: ReadonlyMap<string, string[]>,
-  opts: { tolerance: number; staleDays: number }
+  opts: { tolerance: number; staleDays: number },
+  now: number | undefined
 ): DiagnosticsReport {
-  const now = Date.now();
+  now = now ?? Date.now();
 
   // Group by series and immediately find the latest point per series
   const seriesLatest = Map.groupBy(points, (p) => p.series);
