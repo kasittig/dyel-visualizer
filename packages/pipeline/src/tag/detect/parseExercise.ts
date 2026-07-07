@@ -1,4 +1,4 @@
-import type { ConjugateAddlWt, ParsedExercise } from './conjugate-types';
+import type { ParsedAddlWt, ParsedExercise } from './conjugate-types';
 import { BAR_DETECTORS, EQUIPMENT_DETECTORS, STANCE_DETECTORS, TYPE_DETECTORS } from './detectors';
 import type { Detector } from './detectors';
 
@@ -28,13 +28,29 @@ export function parseExercise(name: string): ParsedExercise {
 
   const has = (phrase: string) => lower.includes(phrase);
   const hasReverseBands = has('reverse band') || has('rev. band') || has('rev band');
-  const hasChains = has('chain');
-  const hasBands = !hasReverseBands && has('band');
-  const addlWts: ConjugateAddlWt[] = [
-    ...(hasChains ? (['chains'] as const) : []),
-    ...(hasBands ? (['bands'] as const) : []),
-    ...(hasReverseBands ? (['rev. bands'] as const) : []),
-  ];
+  const addlWts: ParsedAddlWt[] = [];
+
+  // Chains: parse digit or "double" word for magnitude, default to "1"
+  if (has('chain')) {
+    const digitMatch = lower.match(/(\d+)\s*chains?/);
+    const doubleMatch = lower.match(/\bdouble\s+chains?/);
+    const magnitude = digitMatch ? digitMatch[1] : doubleMatch ? '2' : '1';
+    addlWts.push({ kind: 'chains', magnitude });
+  }
+
+  // Regular bands (non-reverse): parse tension descriptor, default to "unspecified"
+  if (!hasReverseBands && has('band')) {
+    const magnitude =
+      ['light', 'mini', 'micro', 'heavy', 'medium'].find((word) => has(word)) ?? 'unspecified';
+    addlWts.push({ kind: 'bands', magnitude });
+  }
+
+  // Reverse bands: parse tension descriptor, default to "unspecified"
+  if (hasReverseBands) {
+    const magnitude =
+      ['light', 'mini', 'micro', 'heavy', 'medium'].find((word) => has(word)) ?? 'unspecified';
+    addlWts.push({ kind: 'rev. bands', magnitude });
+  }
 
   const isDumbbell = lower.includes('dumbbell') || tokens.has('db');
   const type = isDumbbell ? 'accessory' : (parseLiftType(base, tokens) ?? 'accessory');

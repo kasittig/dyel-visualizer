@@ -29,7 +29,12 @@ export function buildCanonical(ex: ParsedExercise, rawName: string): string {
   if (ex.equipment) {
     parts.push(ex.equipment);
   }
-  parts.push(...ex.addlWts.map((w) => ADDL_WT_SLUGS[w]));
+  parts.push(
+    ...ex.addlWts.map(
+      (w) =>
+        `${ADDL_WT_SLUGS[w.kind]}${w.kind === 'chains' && w.magnitude === '1' ? '' : `-${w.magnitude}`}`
+    )
+  );
   return parts.join('-');
 }
 
@@ -70,9 +75,11 @@ export function buildTagsAndEffects(ex: ParsedExercise): { tags: Set<string>; ef
     effectsMap[`equip:${ex.equipment}:${ex.type}`]?.effects.forEach((e) => effects.add(e));
   }
   for (const w of ex.addlWts) {
-    const slug = ADDL_WT_SLUGS[w];
-    tags.add(`addl:${slug}`);
-    effectsMap[`addl:${slug}:${ex.type}`]?.effects.forEach((e) => effects.add(e));
+    const slug = ADDL_WT_SLUGS[w.kind];
+    tags.add(`addl:${slug}:${w.magnitude}`);
+    (
+      effectsMap[`addl:${slug}:${w.magnitude}:${ex.type}`] ?? effectsMap[`addl:${slug}:${ex.type}`]
+    )?.effects.forEach((e) => effects.add(e));
   }
 
   return { tags, effects: [...effects] };

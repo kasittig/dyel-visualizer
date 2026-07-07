@@ -39,6 +39,11 @@ export type ConjugateEquipment =
 
 export type ConjugateAddlWt = 'bands' | 'rev. bands' | 'chains';
 
+export interface ParsedAddlWt {
+  kind: ConjugateAddlWt;
+  magnitude: string;
+}
+
 export type LiftType = 'squat' | 'bench' | 'deadlift' | 'accessory';
 
 export interface ParsedExercise {
@@ -46,5 +51,5 @@ export interface ParsedExercise {
   bar: ConjugateBar | null;
   stance: ConjugateStance | null;
   equipment: ConjugateEquipment | null;
-  addlWts: ConjugateAddlWt[];
+  addlWts: ParsedAddlWt[];
 }

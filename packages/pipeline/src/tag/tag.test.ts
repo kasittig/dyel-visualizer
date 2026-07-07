@@ -227,7 +227,7 @@ describe('tagRecords', () => {
 
     const { tagged } = tagRecords(records);
 
-    expect(tagged[0].tags).toEqual(new Set(['lift:bench', 'addl:chains']));
+    expect(tagged[0].tags).toEqual(new Set(['lift:bench', 'addl:chains:1']));
   });
 });
 
@@ -267,7 +267,7 @@ describe('keyword-detector parsing', () => {
     expect(resolved[0].exercise).toBe('squat-sumo-chains');
 
     const { tagged } = tagRecords(resolved);
-    expect(tagged[0].tags).toEqual(new Set(['lift:squat', 'stance:sumo', 'addl:chains']));
+    expect(tagged[0].tags).toEqual(new Set(['lift:squat', 'stance:sumo', 'addl:chains:1']));
     expect(tagged[0].effects.length).toBeGreaterThan(0);
     expect(new Set(tagged[0].effects)).toEqual(
       new Set(['HIP_DOMINANT', 'POSTERIOR_CHAIN', 'BAR_SPEED'])
