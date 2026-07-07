@@ -335,13 +335,14 @@ export function App() {
               </div>
             ) : effectiveActiveTab === 'sigma' ? (
               <SigmaTab
-                sigmaPairs={filteredSigmaPairs}
-                sigmaStats={sigmaStats}
-                volumeByDate={volumeByDate}
-                effectiveBaselineNames={effectiveBaselineNames}
-                effectiveTargetNames={effectiveTargetNames}
+                inputMode={inputMode}
+                url={url}
+                pastedText={pastedText}
+                refreshToken={refreshToken}
                 dateRange={dateRange}
                 onDateRangeChange={setDateRange}
+                unit={dataUnit}
+                volumeByDate={volumeByDate}
               />
             ) : liftTab !== null ? (
               <LiftTabPanel

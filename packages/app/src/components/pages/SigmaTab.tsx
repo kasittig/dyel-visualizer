@@ -1,44 +1,42 @@
-import { useMemo } from 'react';
 import type { DateRange } from 'react-day-picker';
 import { CollapsibleSection } from '../shared/CollapsibleSection';
 import { EditableDateChip } from '../shared/EditableDateChip';
-import { useBaselineTargetExercises } from '../../hooks/data/useBaselineTargetExercises';
-import { buildChartData } from '@dyel/core';
-import type { LiftType, SessionStats } from '@dyel/core';
+import { usePipelineTotalChartData } from '../../hooks/pipeline/usePipelineTotalChartData';
+import { mergeVolumeIntoChartPoints } from '../../utils/pipelineChartUtils';
 import { TotalChart } from '../charts/TotalChart';
 import { SessionBarChart } from '../charts/SessionBarChart';
 import { SigmaChart } from '../charts/SigmaChart';
-import type { ConjugateDataPair } from '../../hooks/conjugate/useConjugateData';
+import type { InputMode } from '../../utils/appUtils';
 
 export function SigmaTab({
-  sigmaPairs,
-  sigmaStats,
-  volumeByDate,
-  effectiveBaselineNames,
-  effectiveTargetNames,
+  inputMode,
+  url,
+  pastedText,
+  refreshToken,
   dateRange,
   onDateRangeChange,
+  unit,
+  volumeByDate,
 }: {
-  sigmaPairs: ConjugateDataPair[];
-  sigmaStats: SessionStats;
-  volumeByDate: Map<string, number>;
-  effectiveBaselineNames: Partial<Record<LiftType, string>>;
-  effectiveTargetNames: Partial<Record<LiftType, string>>;
+  inputMode: InputMode;
+  url: string;
+  pastedText: string;
+  refreshToken: number;
   dateRange: DateRange;
   onDateRangeChange: (range: DateRange) => void;
+  unit: 'lbs' | 'kg';
+  volumeByDate: Map<string, number>;
 }) {
-  const { baselineExByType, targetExByType } = useBaselineTargetExercises(
-    sigmaPairs,
-    effectiveBaselineNames,
-    effectiveTargetNames
+  const pipelineChartData = usePipelineTotalChartData(
+    inputMode,
+    url,
+    pastedText,
+    refreshToken,
+    dateRange,
+    unit
   );
 
-  const chartData = useMemo(
-    () => buildChartData(sigmaPairs, baselineExByType, targetExByType, sigmaStats, volumeByDate),
-    [sigmaPairs, baselineExByType, targetExByType, sigmaStats, volumeByDate]
-  );
-
-  const unit = sigmaPairs[0]?.[1].unit ?? 'lbs';
+  const chartData = mergeVolumeIntoChartPoints(pipelineChartData, volumeByDate);
 
   return (
     <>

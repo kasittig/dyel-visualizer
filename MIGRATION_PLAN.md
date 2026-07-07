@@ -101,3 +101,39 @@ migrate").
 Next: swap over the 3 "ready to migrate" components whenever desired (each is now a small,
 low-risk change backed by a passing parity test), then Phase 2 (`SigmaTab.md`,
 `VariationRadarChart.md`).
+
+## Phase 2 status
+
+**Complete.** Both Phase 2 items landed on `migration-phase-1`:
+
+6. `SigmaTab.md` — **fully migrated.** `SigmaTab.tsx` now sources its squat/bench/deadlift/
+   pushPull/total data from `usePipelineTotalChartData` (`runPipeline` + `TOTAL_CHART_SPECS`,
+   previously dead code — nothing called it) instead of `@dyel/core`'s `buildChartData`, merging
+   in the `volume`/accessory-volume series via a new `mergeVolumeIntoChartPoints` helper
+   (`utils/pipelineChartUtils.ts`) against the `volumeByDate` prop, which was already computed
+   independently in `App.tsx` (via `calculateVolumeCorrelation`) and needed no pipeline-side
+   change. `SigmaTab.tsx` has zero `@dyel/core` imports. `sigmaTabParity.test.ts` added
+   (17 tests): hard-asserts squat/deadlift/pushPull/total and the `volume` series (exact match,
+   since both sides source it from the same `calculateVolumeCorrelation` call), soft-warns bench
+   per the same documented normalization divergence as `totalChartParity.test.ts`.
+7. `VariationRadarChart.md` — **pipeline-native replacement validated, component swap
+   intentionally deferred.** `variationRadarChartParity.test.ts` added (5 tests), reusing
+   `conjugateChartSpecs()` + `testUtils/diffVariationSnapshot.ts`'s
+   `snapshotVariationsFromLegacy`/`snapshotVariationsFromPipeline`/`diffVariationSnapshots` over
+   the real fixture — no divergence surfaced on the current fixture, but the harness soft-warns
+   (doesn't hard-assert equality) since the underlying per-variation normalization is the same
+   logic `ConjugateCharts` was reverted away from after a prior parity test found real divergence
+   (`46f267f`; see `HANDOFF.md`). `VariationRadarChart.tsx` itself is **not** swapped over yet —
+   deferred for two reasons: (1) avoid reintroducing the same divergence risk into a second
+   user-facing chart before that divergence is root-caused/reconciled, and (2) the pipeline
+   snapshot only carries e1RM values, not the last-session detail (date, sets, reps, weight, RPE)
+   the component's tooltip currently shows, which would need to be sourced separately before a
+   swap is even feature-complete. See `migration/VariationRadarChart.md` for the updated plan.
+
+Full verification: `npm run build -w packages/pipeline && npm run build -w packages/core &&
+npm run build -w packages/app` clean; `npm test -w packages/app` — 16 test files, 181 tests, all
+passing (up from 14 files/159 tests before Phase 2).
+
+See `APP_COMPONENTS.md` for the updated inventory. Next: Phase 3 (`SessionBarChart.md`,
+`SigmaChart.md`, `DateLineChart.md`) once someone picks it up, or resolve the `ConjugateCharts`/
+`VariationRadarChart` normalization divergence to unblock those two swap-overs.

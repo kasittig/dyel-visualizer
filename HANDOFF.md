@@ -1,88 +1,105 @@
-# HANDOFF — migration-phase-1 rebase onto main + doc reconciliation
+# HANDOFF — Phase 2 of MIGRATION_PLAN.md (SigmaTab + VariationRadarChart)
 
 ## Context
 
-`migration-phase-1` is a feature branch (PR #456) implementing Phase 1 of
-`MIGRATION_PLAN.md`: building pipeline-native replacements and core-vs-pipeline
-parity tests for app components, without switching the components over to
-`@dyel/pipeline` yet (that swap-over is intentionally deferred). Separately,
-`main` had already gone through a full revert of `ConjugateCharts` from
-`@dyel/pipeline` back to `@dyel/core` (commit `46f267f`) after a parity test
-surfaced real divergence between the two implementations. This session's goal
-was to rebase `migration-phase-1` onto the now-updated `main` and reconcile
-any resulting conflicts/doc drift.
+`migration-phase-1` is a feature branch (PR #456) implementing `MIGRATION_PLAN.md`'s
+pipeline-native migration of `packages/app` components off `@dyel/core` onto `@dyel/pipeline`.
+Phase 1 (TotalChart, ConjugateCharts, DiagnosticsPanel, RepCalculator, StrengthScoreCalculator)
+was already complete going into this session. This session executed Phase 2:
+`migration/SigmaTab.md` and `migration/VariationRadarChart.md`. Full task tracking lives in
+`SPECIFICATIONS.md` (the Phase 2 section, at the bottom of the file — the top section is an
+older, unrelated, now-confirmed-complete `deadliftStance`/baseline-identity workstream; don't
+confuse the two).
 
 ## Progress Overview
 
-- Rebased `migration-phase-1` (was `9b1fd3e`) onto `main` (`aee213e`); final
-  branch head is `14b0ccf`. Branch was already force-pushed to
-  `origin/migration-phase-1` by the user.
-- Two conflicts during rebase, both centered on `ConjugateCharts`:
-  `packages/app/src/components/conjugate/ConjugateCharts.tsx` and
-  `packages/app/src/pipeline/conjugateChartParity.test.ts`. Resolved by
-  keeping `main`'s version verbatim (confirmed via `git diff main` showing no
-  difference on either file) — i.e., `migration-phase-1` no longer re-migrates
-  `ConjugateCharts` to `@dyel/pipeline`; it stays on `@dyel/core` per the
-  earlier revert.
-- QA ran full build + test suite post-rebase: `packages/pipeline` and
-  `packages/core` build clean; 668 tests pass across all three packages (188
-  pipeline, 321 core, 159 app), no regressions.
-- Updated PR #456's description (via `gh api ... --method PATCH`, per the
-  known `gh pr edit --body` breakage on this repo) to remove the now-false
-  claim that `ConjugateCharts` was migrated, and to reflect current test
-  counts.
-- Updated two docs that had drifted out of sync with the code after the
-  rebase resolution:
-  - `APP_COMPONENTS.md` — moved `ConjugateCharts` from "Already migrated" to
-    "Ready to migrate," explained it still calls `useConjugateChartData` →
-    `@dyel/core`'s `buildVariationChartData`, and flagged that any future
-    re-migration attempt must first resolve the divergence documented in
-    `HANDOFF.md` Session 6 (this file, historically) before swapping back.
-  - `migration/ConjugateCharts.md` — rewritten from a forward-looking "add a
-    parity test" plan (stale) to a description of the parity test that
-    already exists, why `conjugateChartSpecs.ts` is kept around with no
-    runtime importer (solely to back the parity test), and an explicit
-    warning against re-attempting the ConjugateCharts pipeline migration
-    without resolving the prior divergence.
+- **`SigmaTab.tsx` fully migrated** off `@dyel/core`'s `buildChartData` onto
+  `usePipelineTotalChartData` (`runPipeline` + `TOTAL_CHART_SPECS`) — this hook already existed
+  but was dead code (nothing called it) until this session. Added
+  `mergeVolumeIntoChartPoints` (`packages/app/src/utils/pipelineChartUtils.ts`) to merge in the
+  `volume`/accessory-volume series from the `volumeByDate` prop (computed independently in
+  `App.tsx` via `calculateVolumeCorrelation`, no pipeline-side gap). `SigmaTab.tsx`'s props
+  changed from `sigmaPairs`/`sigmaStats`/`effectiveBaselineNames`/`effectiveTargetNames` to
+  `inputMode`/`url`/`pastedText`/`refreshToken`/`unit`/`volumeByDate` (`dateRange`/
+  `onDateRangeChange` unchanged); `App.tsx`'s call site updated to match. Zero `@dyel/core`
+  imports remain in `SigmaTab.tsx`.
+- Added `packages/app/src/pipeline/sigmaTabParity.test.ts` (17 tests): hard-asserts
+  squat/deadlift/pushPull/total sanity + exact `volume` match (both sides source it from the
+  same `calculateVolumeCorrelation` call), soft-warns bench per the already-documented
+  normalization divergence (see `totalChartParity.test.ts`'s comment block).
+- Added `packages/app/src/pipeline/variationRadarChartParity.test.ts` (5 tests): validates the
+  pipeline-native snapshot replacement for `VariationRadarChart` (via `conjugateChartSpecs()` +
+  `testUtils/diffVariationSnapshot.ts`'s snapshot/diff functions) against legacy
+  `normalizeToBaseE1RM`, per lift type. No divergence surfaced on the current fixture, but the
+  test only soft-warns (never hard-asserts equality) — see Decisions below for why.
+- Updated `MIGRATION_PLAN.md` (Phase 2 status section), `APP_COMPONENTS.md` (`SigmaTab` moved to
+  "Already migrated"; `VariationRadarChart` added to "Ready to migrate" with explicit
+  swap-deferral rationale), `migration/VariationRadarChart.md` (rewritten — step 2, the component
+  swap, marked deferred rather than done).
+- Full verification (re-run independently after a QA subagent's report on
+  `packages/pipeline` looked wrong — see Decisions): `npm run build` clean for
+  `packages/pipeline`/`packages/core`/`packages/app`; `npm test` all green —
+  **pipeline 12 files/188 tests, core 22 files/321 tests, app 16 files/181 tests.** No
+  regressions.
 
 ## Decisions Made & Rationale
 
-- **Kept `main`'s ConjugateCharts revert during the rebase** (user's explicit
-  choice) rather than re-applying `migration-phase-1`'s pipeline
-  re-migration — avoids silently re-introducing a bug that a prior session
-  deliberately reverted after parity-test-surfaced divergence.
-- **Used `gh api ... PATCH` instead of `gh pr edit --body`** to update PR
-  #456 — `gh pr edit --body` silently no-ops on this repo due to a Projects
-  (classic) GraphQL deprecation issue (known, documented workaround).
-- **Docs now explicitly gate any future ConjugateCharts re-migration** behind
-  resolving the historical divergence, to prevent a future session from
-  redoing the same mistake without realizing prior context.
+- **`VariationRadarChart.tsx`'s actual component swap-over is intentionally NOT done**, even
+  though its parity test passes cleanly. Two independent reasons, either sufficient alone: (1)
+  its per-variation normalization is the same category of logic that `ConjugateCharts` was
+  **reverted** away from after a prior parity test surfaced real divergence (`46f267f`) — a
+  clean run on this fixture doesn't prove that divergence is reconciled, only that this fixture
+  doesn't exercise it; (2) the pipeline snapshot only has last-value e1RM numbers, not the
+  last-session tooltip detail (date/sets/reps/weight/RPE) the component currently renders, so
+  this isn't a drop-in hook swap like the three Phase-1 deferred components. Both blockers are
+  spelled out in `migration/VariationRadarChart.md` and `APP_COMPONENTS.md` so a future session
+  doesn't attempt the swap without addressing them.
+- **SigmaTab's `volume` series needed no pipeline change** — it was already sourced independently
+  of `buildChartData` (via `calculateVolumeCorrelation` in `App.tsx`), so the migration is a pure
+  merge-at-the-app-layer rather than a new `DatasetSpec`.
+- **Re-verified `packages/pipeline`'s test count directly** rather than trusting a `qa-reviewer`
+  subagent's report verbatim — it claimed "0 test files (passWithNoTests)" for
+  `packages/pipeline`, which was wrong; a direct re-run showed 12 files/188 tests passing. Treat
+  subagent QA reports as a first pass, not gospel, when a number looks suspicious (e.g. an
+  unexpectedly-empty result for a package known to have tests).
+- Discovered and fixed a stale checklist: the top section of `SPECIFICATIONS.md` (deadliftStance/
+  baseline-identity work) was already fully implemented in code (verified directly — `athlete.ts`,
+  `rawInputUtils.ts`, `pipeline.ts`, and `totalChartParity.test.ts`'s baseline-identity assertions
+  all present and passing) but its checkboxes were never marked done. Marked complete rather than
+  re-doing the work.
 
 ## Open TODOs
 
-- None blocking. Optional follow-ups if picked back up later:
-  - If someone wants to re-attempt migrating `ConjugateCharts` to
-    `@dyel/pipeline`, first read the divergence root-cause writeup previously
-    tracked under "Session 6" in this file's history (variation-label-space
-    mismatch, normalization-fitting divergence) before starting.
-  - The three other "ready to migrate" components (`DiagnosticsPanel`,
-    `RepCalculator`, `StrengthScoreCalculator`) still have their actual
-    component swap-overs deferred — pipeline-native replacements + parity
-    tests are ready and passing; swapping is described as small/low-risk in
-    `APP_COMPONENTS.md`.
-  - `.claude/skills/handoff/SKILL.md` has an unrelated uncommitted change in
-    the working tree (unrelated to this session's work) — not touched or
-    committed here.
+- None blocking for Phase 2 — it's fully closed out.
+- Next per `MIGRATION_PLAN.md`: **Phase 3** — `migration/SessionBarChart.md` and
+  `migration/SigmaChart.md` (do together, same underlying `ChartPoint`/`formatDate` cleanup from
+  Phase 1's TotalChart work, reusing SigmaTab's now-pipeline-sourced fixtures), then
+  `migration/DateLineChart.md` (wants Phase 1's TotalChart + this session's SigmaTab work already
+  landed, which they are).
+- Separately, unblocking the two deferred component swaps (`ConjugateCharts` re-migration,
+  `VariationRadarChart` swap) requires root-causing the shared normalization-fitting divergence
+  between legacy and pipeline (tracked partly via GitHub issue #451, partly via the soft-warn
+  diagnostics already logged in `totalChartParity.test.ts`/`sigmaTabParity.test.ts`) — not part of
+  Phase 3, but worth flagging as the actual blocker behind two "ready but deferred" items.
+- `.claude/skills/handoff/SKILL.md` still shows as modified in `git status` (uncommitted, pre-existing,
+  unrelated to this session's work) — not touched or investigated here, same as last handoff.
 
 ## Files Touched
 
-- `APP_COMPONENTS.md` (doc update)
-- `migration/ConjugateCharts.md` (doc update)
-- `handoff.md` (this file)
-- (Remote only, no local diff) PR #456 description on GitHub
+- `packages/app/src/utils/pipelineChartUtils.ts` (new `mergeVolumeIntoChartPoints` helper)
+- `packages/app/src/components/pages/SigmaTab.tsx` (migrated off `@dyel/core`)
+- `packages/app/src/App.tsx` (updated `<SigmaTab>` call site props)
+- `packages/app/src/pipeline/sigmaTabParity.test.ts` (new)
+- `packages/app/src/pipeline/variationRadarChartParity.test.ts` (new)
+- `MIGRATION_PLAN.md` (Phase 2 status section added)
+- `APP_COMPONENTS.md` (inventory updated)
+- `migration/VariationRadarChart.md` (rewritten — swap marked deferred)
+- `SPECIFICATIONS.md` (Phase 2 checklist fully checked off; old Part A/B checklist retroactively
+  marked complete)
+- `HANDOFF.md` (this file)
 
 ## Suggested Next Skills
 
-- None required immediately. If resuming pipeline migration work, start by
-  reading `MIGRATION_PLAN.md` and `APP_COMPONENTS.md`'s "Ready to migrate"
-  section for the next candidate component swap-over.
+- None required immediately. If resuming migration work, start Phase 3 by reading
+  `migration/SessionBarChart.md` and `migration/SigmaChart.md` together (they share the same
+  underlying cleanup), then `migration/DateLineChart.md`.

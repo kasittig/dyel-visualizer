@@ -1,5 +1,4 @@
-import type { RechartsRow } from '@dyel/pipeline';
-import type { ChartPoint } from '@dyel/core';
+import type { RechartsRow, ChartPoint } from '@dyel/pipeline';
 
 // Pipeline output is always kg (see packages/pipeline/src/dataset/CLAUDE.md); display-unit
 // conversion is the app's job, so lbs-displaying callers convert here at the merge boundary.
@@ -37,4 +36,40 @@ export function mergeWideRechartsRows(rows: RechartsRow[], unit: 'lbs' | 'kg'): 
       return point;
     })
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+}
+
+/** Local (not UTC) YYYY-MM-DD key for a `ChartPoint.date` string, for cross-timezone-safe joins. */
+function localDateKey(date: string): string {
+  // Bare YYYY-MM-DD date strings are already local calendar keys; no need to round-trip through
+  // new Date() (which parses them as UTC midnight, causing off-by-one in negative-offset timezones).
+  const dateOnlyMatch = /^\d{4}-\d{2}-\d{2}$/.exec(date);
+  if (dateOnlyMatch) {
+    return date;
+  }
+
+  // Full datetime/instant strings: extract local date components.
+  const d = new Date(date);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+/**
+ * Merges volume data from `volumeByDate` into `chartData` by matching local calendar dates.
+ * For each point in chartData, looks up its date in volumeByDate and adds a `volume` key if found.
+ * Points with no matching volume entry have the `volume` key omitted (not set to undefined).
+ */
+export function mergeVolumeIntoChartPoints(
+  chartData: ChartPoint[],
+  volumeByDate: Map<string, number>
+): ChartPoint[] {
+  return chartData.map((point) => {
+    const dateKey = localDateKey(String(point.date));
+    const volume = volumeByDate.get(dateKey);
+    if (volume !== undefined) {
+      return { ...point, volume };
+    }
+    return point;
+  });
 }
