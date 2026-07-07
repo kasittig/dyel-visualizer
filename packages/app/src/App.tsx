@@ -19,7 +19,6 @@ import {
 import type { DeadliftStancePreference, LiftType } from '@dyel/core';
 import { useLastSessionStats } from './hooks/data/useLastSessionStats';
 import { useBaselineTargetExercises } from './hooks/data/useBaselineTargetExercises';
-import { usePipelineTotalChartData } from './hooks/pipeline/usePipelineTotalChartData';
 import { useLocalStorageState } from './hooks/infra/useLocalStorageState';
 import { extractSheetRef, initialTabState, MAIN_TABS } from './utils/appUtils';
 import type { InputMode, PageTab, TabState } from './utils/appUtils';
@@ -246,15 +245,6 @@ export function App() {
 
   const dataUnit = filteredSigmaPairs[0]?.[1].unit ?? 'lbs';
 
-  const pipelineTotalChartData = usePipelineTotalChartData(
-    inputMode,
-    url,
-    pastedText,
-    refreshToken,
-    dateRange,
-    dataUnit
-  );
-
   function handleUrlChange(newUrl: string) {
     setUrl(newUrl);
     setPanelForcedOpen(false);
@@ -350,7 +340,6 @@ export function App() {
                 volumeByDate={volumeByDate}
                 effectiveBaselineNames={effectiveBaselineNames}
                 effectiveTargetNames={effectiveTargetNames}
-                pipelineTotalChartData={pipelineTotalChartData}
                 dateRange={dateRange}
                 onDateRangeChange={setDateRange}
               />
