@@ -10,16 +10,10 @@ per the pipeline migration boundary rule (migrated components must call only
   `pipeline/totalChartSpecs.ts`. `ChartPoint` is now declared pipeline-natively
   in `packages/pipeline/src/dataset/build.ts` and imported from `@dyel/pipeline`
   — zero remaining `@dyel/core` references (closed out in Phase 1, Track 1).
-- `components/conjugate/ConjugateCharts.tsx` — via `useConjugateChartData` +
-  `pipeline/conjugateChartSpecs.ts`. `LINE_COLORS` is now declared in
-  `packages/pipeline/src/utils/colors.ts` and imported from `@dyel/pipeline` —
-  zero remaining `@dyel/core` references. Parity test added at
-  `packages/app/src/pipeline/conjugateChartParity.test.ts` (closed out in
-  Phase 1, Track 2).
 
 ## Ready to migrate (pipeline-native replacement + parity test exist, component not yet switched over)
 
-These three have a working pipeline-native implementation and a passing
+These four have a working pipeline-native implementation and a passing
 core-vs-pipeline parity test already in place, but the component itself still
 calls `@dyel/core` at runtime — swapping it over is intentionally deferred.
 Wiring one in should be a small, low-risk change (swap the hook/function call,
@@ -27,6 +21,21 @@ update the prop signature if the new hook needs different inputs than the
 component currently receives) now that the parity test has already validated
 the replacement's behavior against legacy.
 
+- `components/conjugate/ConjugateCharts.tsx` — still calls
+  `useConjugateChartData` (`@dyel/core`'s `buildVariationChartData`
+  internally) and imports `LINE_COLORS`/`RepCalcStats` directly from
+  `@dyel/core`. This was previously migrated to `@dyel/pipeline` but was
+  **deliberately reverted** back to `@dyel/core` (see `46f267f` "Revert
+  ConjugateCharts from @dyel/pipeline back to @dyel/core" and
+  `HANDOFF.md`) after divergence was found between the two
+  implementations. Pipeline-native replacement still exists at
+  `packages/app/src/pipeline/conjugateChartSpecs.ts` (a `DatasetSpec[]`
+  builder with no other importer) and is exercised by the core-vs-pipeline
+  regression harness at `packages/app/src/pipeline/conjugateChartParity.test.ts`
+  — this parity test is what surfaced the divergence and is what any future
+  re-migration attempt needs to satisfy before the component is swapped
+  back over. Do not re-attempt the swap without resolving the documented
+  divergence first.
 - `components/shared/DiagnosticsPanel.tsx` — still calls `generateDiagnostics`
   (`@dyel/core`). Pipeline-native replacement ready: new
   `usePipelineDiagnostics` hook (`packages/app/src/hooks/pipeline/usePipelineDiagnostics.ts`)
@@ -87,9 +96,13 @@ Components that still call `@dyel/core` for real business logic:
 ## Status
 
 Phase 1 of `MIGRATION_PLAN.md`'s pipeline-side work is complete: `TotalChart`
-and `ConjugateCharts` are fully migrated. `DiagnosticsPanel`, `RepCalculator`,
+is fully migrated. `ConjugateCharts`, `DiagnosticsPanel`, `RepCalculator`,
 and `StrengthScoreCalculator` each have a pipeline-native replacement and a
 passing parity test (see "Ready to migrate" above), but the actual component
 swap-over is intentionally deferred — the components still call `@dyel/core`
-at runtime. Swapping any of the three should be a small, well-understood
-change now that the parity tests have validated the replacement logic.
+at runtime. `ConjugateCharts` specifically was migrated once already and
+**reverted** after the parity test surfaced real divergence from legacy
+(see `HANDOFF.md`, Session 6); any future attempt to swap it back over must
+resolve that divergence first. Swapping any of the other three should be a
+small, well-understood change now that the parity tests have validated the
+replacement logic.
