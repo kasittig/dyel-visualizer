@@ -1,43 +1,59 @@
 import type { SetRecord, TagQuery } from '../types';
-
-export interface ExerciseTagMapEntry {
-  tags: string[];
-  effects?: string[];
-}
-
-export type ExerciseTagMap = Record<string, ExerciseTagMapEntry>;
-export type ExerciseAliasMap = Record<string, string>;
+import { parseExercise } from './detect/parseExercise';
+import { buildCanonical, buildTagsAndEffects } from './detect/canonical';
+import type { ParsedExercise } from './detect/conjugate-types';
 
 export type TaggedSetRecord = SetRecord & {
   canonical: string;
   tags: ReadonlySet<string>;
+  effects: readonly string[];
 };
 
-export function resolveCanonicalNames(records: SetRecord[], aliases: ExerciseAliasMap) {
+function isUnknown(ex: ParsedExercise): boolean {
+  return (
+    ex.type === 'accessory' &&
+    ex.bar === null &&
+    ex.stance === null &&
+    ex.equipment === null &&
+    ex.addlWts.length === 0
+  );
+}
+
+export function resolveCanonicalNames(records: SetRecord[]) {
   const unknown = new Set<string>();
 
   const resolved = records.reduce<SetRecord[]>((acc, r) => {
-    const canonical = aliases[r.exercise];
-    if (canonical) {
-      acc.push({ ...r, exercise: canonical });
-    } else {
+    const ex = parseExercise(r.exercise);
+    if (isUnknown(ex)) {
       unknown.add(r.exercise);
+      return acc;
     }
+    acc.push({
+      ...r,
+      exercise: buildCanonical(ex, r.exercise),
+      meta: { ...r.meta, rawExercise: r.exercise },
+    });
     return acc;
   }, []);
 
   return { resolved, unknown: [...unknown] };
 }
 
-export function tagRecords(records: SetRecord[], map: ExerciseTagMap) {
+export function tagRecords(records: SetRecord[]) {
   const unknown = new Set<string>();
   const tagged = records.flatMap((r) => {
-    const entry = map[r.exercise];
-    if (!entry) {
-      unknown.add(r.exercise);
+    // Re-parse the ORIGINAL raw name (preserved by resolveCanonicalNames), never the
+    // canonical slug — a slug like "bench-close" doesn't reliably re-parse through the
+    // same keyword detectors as its source text "Bench (CG)" and can silently lose
+    // modifiers (see issue: close-grip bench was mis-tagged comp-lift this way).
+    const rawExercise = r.meta?.rawExercise ?? r.exercise;
+    const ex = parseExercise(rawExercise);
+    if (isUnknown(ex)) {
+      unknown.add(rawExercise);
       return [];
     }
-    return [{ ...r, canonical: r.exercise, tags: new Set(entry.tags) }];
+    const { tags, effects } = buildTagsAndEffects(ex);
+    return [{ ...r, canonical: r.exercise, tags, effects }];
   });
 
   return { tagged, unknown: [...unknown] };

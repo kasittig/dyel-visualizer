@@ -19,6 +19,12 @@ const ValidatorPage = lazy(() =>
   import('./components/pages/ValidatorPage.tsx').then((m) => ({ default: m.ValidatorPage }))
 );
 
+const PipelineValidationPage = lazy(() =>
+  import('./components/pages/PipelineValidationPage.tsx').then((m) => ({
+    default: m.PipelineValidationPage,
+  }))
+);
+
 function resolvePageComponent(page: string | null) {
   if (page === 'conjugate') {
     return (
@@ -41,13 +47,20 @@ function resolvePageComponent(page: string | null) {
       </Suspense>
     );
   }
+  if (page === 'pipeline-validation') {
+    return (
+      <Suspense>
+        <PipelineValidationPage />
+      </Suspense>
+    );
+  }
   if (page === null) {
     return <App />;
   }
   return <p>Page not found.</p>;
 }
 
-const KNOWN_PAGES = new Set(['conjugate', 'index', 'validator']);
+const KNOWN_PAGES = new Set(['conjugate', 'index', 'validator', 'pipeline-validation']);
 
 function resolvePage(): string | null {
   const queryPage = new URLSearchParams(window.location.search).get('page');

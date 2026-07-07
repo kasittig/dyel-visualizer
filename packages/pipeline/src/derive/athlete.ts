@@ -1,6 +1,7 @@
 export interface AthleteContext {
   sex: 'M' | 'F';
   bodyweight: number;
+  deadliftStance: 'sumo' | 'conventional';
 }
 
 const WILKS: Record<AthleteContext['sex'], number[]> = {

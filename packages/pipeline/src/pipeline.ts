@@ -3,7 +3,7 @@ import type { RawInput, ParseContext } from './parse/parser';
 import { ParseError, ParserRegistry } from './parse/parser';
 import { csvParser } from './parse/csv';
 import { freeformParser } from './parse/freeform/parser';
-import type { ExerciseAliasMap, ExerciseTagMap, TaggedSetRecord } from './tag/tag';
+import type { TaggedSetRecord } from './tag/tag';
 import { resolveCanonicalNames, tagRecords } from './tag/tag';
 import { derivers } from './derive/derivers';
 import type { NormalizationModel } from './derive/normalize';
@@ -13,11 +13,6 @@ import type { DiagnosticsReport } from './analyze/diagnose';
 import { diagnose } from './analyze/diagnose';
 import type { DatasetSpec, RenderParams, RechartsRow } from './dataset/build';
 import { buildDataset } from './dataset/build';
-import exerciseAliasesJson from './tag/exercise-aliases.json';
-import exerciseMapJson from './tag/exercise-map.json';
-
-const exerciseAliases = exerciseAliasesJson as ExerciseAliasMap;
-const exerciseMap = exerciseMapJson as ExerciseTagMap;
 
 const MIN_SAMPLES = 1;
 const DIAGNOSTICS_TOLERANCE = 0.05;
@@ -30,6 +25,7 @@ export interface PipelineResult {
   unknownExercises: string[];
   unnormalized: string[];
   parseErrors: ParseError[];
+  model: NormalizationModel;
 }
 
 function buildPoints(tagged: TaggedSetRecord[], deriverId: string): Point[] {
@@ -66,8 +62,8 @@ export function runPipeline(
     }
   }
 
-  const { resolved, unknown: unknownAliases } = resolveCanonicalNames(records, exerciseAliases);
-  const { tagged, unknown: unknownCanonicals } = tagRecords(resolved, exerciseMap);
+  const { resolved, unknown: unknownAliases } = resolveCanonicalNames(records);
+  const { tagged, unknown: unknownCanonicals } = tagRecords(resolved);
   const unknownExercises = [...new Set([...unknownAliases, ...unknownCanonicals])];
 
   // Derive all active IDs in one pass, defaulting to 'e1rm'
@@ -78,7 +74,11 @@ export function runPipeline(
   const pointsByDeriver = new Map([...deriverIds].map((id) => [id, buildPoints(tagged, id)]));
   const e1rmPoints = pointsByDeriver.get('e1rm')!;
 
-  const model: NormalizationModel = fitNormalizationModel(tagged, { minSamples: MIN_SAMPLES });
+  const model: NormalizationModel = fitNormalizationModel(
+    tagged,
+    { minSamples: MIN_SAMPLES },
+    athlete
+  );
 
   // Compute unnormalized canonical keys natively via the series group map
   const unnormalized = [...Map.groupBy(e1rmPoints, (p) => p.series)]
@@ -86,10 +86,18 @@ export function runPipeline(
     .filter((latest) => normalizeE1rm(latest.series, latest.v, model) === null)
     .map((latest) => latest.series);
 
-  const diagnostics = diagnose(e1rmPoints, model, exerciseMap, {
-    tolerance: DIAGNOSTICS_TOLERANCE,
-    staleDays: DIAGNOSTICS_STALE_DAYS,
-  });
+  const effectsByCanonical = new Map(tagged.map((r) => [r.canonical, [...r.effects]]));
+
+  const diagnostics = diagnose(
+    e1rmPoints,
+    model,
+    effectsByCanonical,
+    {
+      tolerance: DIAGNOSTICS_TOLERANCE,
+      staleDays: DIAGNOSTICS_STALE_DAYS,
+    },
+    undefined
+  );
 
   // Construct charts via object-from-entries lookup transformation
   const datasets = Object.fromEntries(
@@ -105,5 +113,5 @@ export function runPipeline(
     ])
   );
 
-  return { datasets, diagnostics, unknownExercises, unnormalized, parseErrors };
+  return { datasets, diagnostics, unknownExercises, unnormalized, parseErrors, model };
 }
