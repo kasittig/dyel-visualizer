@@ -1,6 +1,12 @@
 import { useMemo, useState, type CSSProperties } from 'react';
-import type { InputMode } from '../../utils/appUtils';
-import { usePipelineDiagnostics } from '../../hooks/pipeline/usePipelineDiagnostics';
+import { generateDiagnostics } from '@dyel/core';
+import type {
+  ConjugateExercise,
+  DeadliftStancePreference,
+  EffectEnum,
+  RepCalcStats,
+} from '@dyel/core';
+import type { ConjugateDataPair } from '../../hooks/conjugate/useConjugateData';
 import { CollapsibleSection } from './CollapsibleSection';
 import styles from './DiagnosticsPanel.module.css';
 
@@ -11,53 +17,67 @@ function formatEffect(effect: string): string {
     .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
+function formatAddlWts(ex: ConjugateExercise): string | undefined {
+  if (ex.addlWtOffset === undefined) {
+    return undefined;
+  }
+  const label = ex.addlWts
+    .map((w) =>
+      w
+        .split(' ')
+        .map((p) => p[0].toUpperCase() + p.slice(1))
+        .join(' ')
+    )
+    .join(' + ');
+  const sign = ex.addlWtOffset >= 0 ? '+' : '-';
+  return `${label}: ${sign}${Math.abs(ex.addlWtOffset).toFixed(1)}lbs`;
+}
+
 export function DiagnosticsPanel({
-  inputMode,
-  url,
-  pastedText,
-  refreshToken,
+  rows,
+  targetName,
   deadliftStance,
   onDeadliftStanceChange,
   onVariationClick,
   highlightedVariation,
+  variantFactor,
+  addlWtOffset,
 }: {
-  inputMode: InputMode;
-  url: string;
-  pastedText: string;
-  refreshToken: number;
-  deadliftStance: 'sumo' | 'conventional';
-  onDeadliftStanceChange: (s: 'sumo' | 'conventional') => void;
+  rows: ConjugateDataPair[];
+  targetName: string;
+  deadliftStance: DeadliftStancePreference;
+  onDeadliftStanceChange: (s: DeadliftStancePreference) => void;
   onVariationClick?: (name: string | null) => void;
   highlightedVariation?: string | null;
+  variantFactor: RepCalcStats['variantFactor'];
+  addlWtOffset: RepCalcStats['addlWtOffset'];
 }) {
-  const [activeEffect, setActiveEffect] = useState<string | null>(null);
+  const [activeEffect, setActiveEffect] = useState<EffectEnum | null>(null);
 
-  const handleEffectClick = (e: string) => {
+  const handleEffectClick = (e: EffectEnum) => {
     setActiveEffect((prev) => (prev === e ? null : e));
     onVariationClick?.(null);
   };
+  const hasDeadlift = useMemo(() => rows.some(([ex]) => ex.type === 'deadlift'), [rows]);
 
-  const { variants, hasDeadlift } = usePipelineDiagnostics(
-    inputMode,
-    url,
-    pastedText,
-    refreshToken,
-    deadliftStance
+  const results = useMemo(
+    () => generateDiagnostics(rows, targetName, { variantFactor, addlWtOffset }, deadliftStance),
+    [rows, targetName, deadliftStance, variantFactor, addlWtOffset]
   );
 
   const { weakEffects, overtrainedEffects } = useMemo(() => {
-    const counter = new Map<string, number>();
-    for (const v of variants) {
-      if (v.status !== 'overperforming' && v.status !== 'weakness') {
+    const counter = new Map<EffectEnum, number>();
+    for (const r of results) {
+      if (r.status !== 'overtrained' && r.status !== 'weakness') {
         continue;
       }
-      const delta = v.status === 'overperforming' ? 1 : -1;
-      for (const e of v.effects) {
+      const delta = r.status === 'overtrained' ? 1 : -1;
+      for (const e of r.effects) {
         counter.set(e, (counter.get(e) ?? 0) + delta);
       }
     }
-    const weakEffects: string[] = [];
-    const overtrainedEffects: string[] = [];
+    const weakEffects: EffectEnum[] = [];
+    const overtrainedEffects: EffectEnum[] = [];
     for (const [e, count] of counter) {
       if (count < 0) {
         weakEffects.push(e);
@@ -66,9 +86,9 @@ export function DiagnosticsPanel({
       }
     }
     return { weakEffects, overtrainedEffects };
-  }, [variants]);
+  }, [results]);
 
-  if (variants.length === 0) {
+  if (results.length === 0) {
     return null;
   }
 
@@ -129,37 +149,38 @@ export function DiagnosticsPanel({
               </fieldset>
             )}
           </div>
-          {variants.length > 0 && (
+          {results.length > 0 && (
             <table className={styles.table}>
               <thead>
                 <tr className={styles.thead}>
                   <th className={styles.cellLeft}>Variation</th>
                   <th className={styles.cellLeft}>Effects</th>
-                  <th className={styles.cellMono}>Ratio</th>
+                  <th className={styles.cellMono}>Avg Index</th>
+                  <th className={styles.cellMono}>Baseline Range</th>
                   <th className={styles.cellLeft}>Diagnostic</th>
                 </tr>
               </thead>
               <tbody>
-                {variants.map((v) => {
-                  const { status } = v;
+                {results.map((r) => {
+                  const { status } = r;
                   const diagnosticColor =
                     status === 'optimal'
                       ? 'var(--success)'
-                      : status === 'overperforming'
+                      : status === 'overtrained'
                         ? 'var(--warning)'
                         : 'var(--danger)';
                   const diagnosticLabel =
                     status === 'optimal'
                       ? 'Optimal'
-                      : status === 'overperforming'
+                      : status === 'overtrained'
                         ? 'Overtrained'
                         : 'Weakness';
                   const isHighlighted =
-                    v.canonical === highlightedVariation ||
-                    (activeEffect !== null && v.effects.includes(activeEffect));
+                    r.displayName === highlightedVariation ||
+                    (activeEffect !== null && r.effects.includes(activeEffect));
                   return (
                     <tr
-                      key={v.canonical}
+                      key={r.displayName}
                       className={
                         isHighlighted
                           ? `${styles.bodyRow} ${styles.bodyRowSelected}`
@@ -167,13 +188,19 @@ export function DiagnosticsPanel({
                       }
                       onClick={() => {
                         setActiveEffect(null);
-                        onVariationClick?.(v.canonical);
+                        onVariationClick?.(r.displayName);
                       }}
                       style={{ cursor: onVariationClick ? 'pointer' : undefined }}
                     >
-                      <td className={styles.cell}>{v.canonical}</td>
-                      <td className={styles.cellText}>{v.effects.map(formatEffect).join(', ')}</td>
-                      <td className={styles.cellMono}>{(v.ratio * 100).toFixed(1)}%</td>
+                      <td className={styles.cell}>{r.displayName}</td>
+                      <td className={styles.cellText}>
+                        {[
+                          ...r.effects.map(formatEffect),
+                          ...(r.addlWtOffset !== undefined ? [formatAddlWts(r)!] : []),
+                        ].join(', ')}
+                      </td>
+                      <td className={styles.cellMono}>{r.averageIndex?.toFixed(1) ?? '-'}%</td>
+                      <td className={styles.cellMono}>{r.expectedBaseline}</td>
                       <td
                         className={styles.cellDiagnostic}
                         style={{ '--diagnostic-color': diagnosticColor } as CSSProperties}

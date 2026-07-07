@@ -327,14 +327,7 @@ export function App() {
             {effectiveActiveTab === 'calculator' ? (
               <div className={styles.calculatorRow}>
                 <div>
-                  <RepCalculator
-                    tabRows={tabRows}
-                    baselineNames={effectiveBaselineNames}
-                    inputMode={inputMode}
-                    url={url}
-                    pastedText={pastedText}
-                    refreshToken={refreshToken}
-                  />
+                  <RepCalculator tabRows={tabRows} baselineNames={effectiveBaselineNames} />
                 </div>
                 <div>
                   <StrengthScoreCalculator competitionTotal={competitionTotal} unit={dataUnit} />
