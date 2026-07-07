@@ -1,6 +1,6 @@
 # HANDOFF.md — TotalChart Core-vs-Pipeline Parity Testing
 
-## Status: Session 4 — deadlift comp-lift-vs-stance priority fix — COMPLETE ✅ (now committed)
+## Status: Session 5 — bench paused/"commands" preference fix — COMPLETE ✅ (committed)
 
 Session 4 executed the plan drafted at the start of this session (Open item #2 from Session 3) —
 resolved the deadlift baseline-selection priority question with explicit user sign-off, implemented
@@ -157,13 +157,13 @@ normalization-fitting divergences below still soft-warn).
 
 Directly re-ran (ground truth, not relayed from a subagent) after all Session 4 changes:
 
-| series   | Session 3 | Session 4 | delta     |
-| -------- | --------- | --------- | --------- |
-| squat    | 31.4%     | 31.4%     | unchanged |
-| bench    | 16.3%     | 16.3%     | unchanged |
-| deadlift | 25.4%     | 25.4%     | unchanged |
-| pushPull | 17.6%     | 17.6%     | unchanged |
-| total    | 22.6%     | 22.6%     | unchanged |
+| series   | Session 3 | Session 4 | Session 5 | delta (S4→S5)                  |
+| -------- | --------- | --------- | --------- | ------------------------------ |
+| squat    | 31.4%     | 31.4%     | 31.4%     | unchanged                      |
+| bench    | 16.3%     | 16.3%     | 16.3%     | unchanged (identity ≠ fitting) |
+| deadlift | 25.4%     | 25.4%     | 25.4%     | unchanged                      |
+| pushPull | 17.6%     | 17.6%     | 16.3%     | improved (bench identity fix)  |
+| total    | 22.6%     | 22.6%     | 20.4%     | improved (bench identity fix)  |
 
 **Note:** the numeric per-series divergence is unaffected by this session's work — that's expected.
 This session fixed baseline **identity** (which canonical is selected as the deadlift baseline),
@@ -197,11 +197,11 @@ npm run build -w packages/app    → exit 0
 
 ## Open items (NOT part of this session's scope — flagging for visibility)
 
-1. **Bench equipment-preference gap** (found Session 3, unchanged) — legacy's preference for
-   paused/"commands" bench as the true competition lift has no pipeline equivalent. Not yet
-   reconciled or scoped. Candidate for a future, analogous plan (an explicit "prefers paused/
-   commands bench" athlete preference, mirroring this session's `deadliftStance` pattern). **See
-   "Session 5 scoping" below — investigated and design-scoped (not implemented) this session.**
+1. ~~**Bench equipment-preference gap**~~ — **RESOLVED in Session 5.** Added a `pausedPool`
+   baseline-priority tier (mirroring the deadlift `stancePool` pattern) so a paused/"commands"
+   bench now outranks a plain comp-lift-tagged bench, matching legacy's hardcoded
+   `commandsBench` preference. Bench baseline identity is now hard-asserted alongside
+   squat/deadlift. See "Session 5: Implementation" below.
 2. ~~**Deadlift comp-lift-vs-stance-preference shadowing**~~ — **RESOLVED this session.** Pool
    priority now puts explicit `deadliftStance` preference ahead of the inferred bare `comp-lift`
    tag; deadlift baseline identity is now hard-asserted and matches on the real fixture.
@@ -219,56 +219,72 @@ npm run build -w packages/app    → exit 0
 
 ---
 
-## Session 5 scoping: bench equipment-preference fix (design only, NOT implemented)
+## Session 5: Implementation — bench paused/"commands" preference fix
 
-Investigated Open item #1 to produce an implementation-ready design for a future session. No pipeline
-or test code was changed for this — it's scoping only.
+Executed the task breakdown scoped at the start of this session (Open item #1). All 4 planned tasks
+are done.
 
-### Finding
+### Finding (unchanged from scoping)
 
 - **Legacy** (`packages/core/src/utils/lifts/defaultSelections.ts`, `defaultCompExerciseName`): among
   "competition-shaped" candidates (standard bar, competition stance, no added weight), _unconditionally_
   prefers entries tagged `equipment === 'pause'` (paused/"commands" bench) over plain no-equipment
-  entries. **Unlike `deadliftStance`, this is not a user preference — it's hardcoded in legacy.** So,
-  unlike Session 3's `deadliftStance` work, **no new `AthleteContext` field is needed** for parity;
-  this is a pure pool-priority rule, scoped to `lift:bench` only.
-- **Pipeline already detects the tag, just doesn't consume it for baseline selection:**
-  `packages/pipeline/src/tag/detect/detectors.ts` recognizes `'pause'`/`'command'` in raw names;
-  `canonical.ts`'s `buildTagsAndEffects` emits `equip:pause` when `ex.equipment` is set — but that
-  same function only assigns the `comp-lift` tag when bar/stance/equipment/addlWt are **all** absent.
-  So a paused-bench entry never lands in the existing `comp` pool in `normalize.ts` today and falls
-  through to the generic `entries` fallback — **this is the actual gap**.
-- **Precedent to mirror:** `fitNormalizationModel`'s pool-selection block (just added this session's
-  `stancePool` tier) is the direct template — build a bench-only `pausedPool` from entries tagged
-  `equip:pause` (analogous to `stancePool` filtering on `stance:${preferredStance}`), and splice it
-  into the priority chain ahead of the plain `comp` pool, for `lift:bench` only (mirrors how
-  `stancePool` only applies to `lift:deadlift`).
+  entries. **Unlike `deadliftStance`, this is not a user preference — it's hardcoded in legacy**, so
+  no new `AthleteContext` field was needed; this is a pure pool-priority rule, scoped to `lift:bench`
+  only.
+- **Pipeline already detected the tag, just didn't consume it for baseline selection:** the
+  `equip:pause` tag existed (`packages/pipeline/src/tag/detect/canonical.ts`) but a paused-bench
+  entry never landed in the existing `comp` pool (which requires `comp-lift`, itself gated on having
+  **zero** modifiers at all) — it fell through to the generic `entries` fallback.
 
-### Open question before implementing
+### Task 1 — `pausedPool` tier (`packages/pipeline/src/derive/normalize.ts`)
 
-Legacy's "competition-shaped" gate also requires standard bar + competition stance + no added weight,
-not just `equipment === 'pause'` in isolation. Need to confirm what pipeline tags represent "standard
-bar" and "no addl weight" (likely absence of a `bar:*`/`addl:*` tag, symmetric with how `comp-lift`
-itself is gated in `canonical.ts`) so a new `pausedPool` filter doesn't accidentally include a paused
-lift that's _also_, say, banded. Must be checked against `canonical.ts`'s exact `comp-lift` gating
-logic and confirmed empirically against the real fixture (same "don't assume, check the fixture"
-discipline Session 4 used for deadlift) — not just inferred from the legacy source.
+Added a bench-only `pausedPool`: entries tagged `equip:pause` that are otherwise competition-shaped
+(no `bar:`/`stance:`/`addl:` tag present — checked directly against `canonical.ts`'s exact `comp-lift`
+gating logic, not just inferred from the legacy source, to avoid matching a paused lift that's also,
+say, banded). Spliced into the priority chain ahead of `comp`:
+`competitionNamed > stancePool (deadlift only) > pausedPool (bench only) > comp > entries`.
+Squat/deadlift priority is unaffected (`pausedPool` is always `[]` for non-bench families).
 
-### Proposed task breakdown (for a future implementation session)
+### Task 2 — test coverage (`packages/pipeline/src/derive/normalize.test.ts`)
 
-- [ ] Task 1: Add `pausedPool` tier to bench's pool-priority chain in `fitNormalizationModel`
-      (Target: `packages/pipeline/src/derive/normalize.ts`,
-      Test: `npm test -w packages/pipeline -- normalize`)
-- [ ] Task 2: Add `it.each`/regression coverage for paused-bench-wins-over-plain-comp and
-      paused-bench-does-not-leak-into-other-families
-      (Target: `packages/pipeline/src/derive/normalize.test.ts`, Test: same as Task 1)
-- [ ] Task 3: Re-run the real fixture through `totalChartParity.test.ts`'s bench baseline-identity
-      comparison; if it now matches, promote bench from soft-warn to hard assert, mirroring
-      squat/deadlift (Target: `packages/app/src/pipeline/totalChartParity.test.ts`,
-      Test: `npm test -w packages/app -- totalChartParity`)
-- [ ] Task 4: Full regression gate — `npm test -w packages/pipeline`,
-      `npm run build -w packages/pipeline`, `npm test -w packages/app`,
-      `npm run build -w packages/app`
+Added 5 new tests: paused-bench-wins-over-plain-comp, falls-back-to-comp-lift-when-no-paused-bench
+(regression, unaffected), a paused-but-also-chains bench does NOT count as competition-shaped, the
+tier doesn't leak into other families (squat), and `competitionNamed` still wins over a paused bench.
+
+**Result:** `npm test -w packages/pipeline -- normalize` → 27/27 passing (22 pre-existing + 5 new).
+
+### Task 3 — parity-test promotion (`totalChartParity.test.ts`)
+
+Checked the real fixture empirically (did not assume): after the Task 1 fix, bench's baseline identity
+**now matches** between legacy and pipeline — the "baseline bench mismatch" soft-warn no longer fires.
+Simplified the baseline-identity `it.each` block to a uniform hard assert
+(`expect(comparison.matches).toBe(true)`) across squat/bench/deadlift, removing the bench-specific
+soft-warn branch.
+
+**Result:** `npm test -w packages/app -- totalChartParity` → 17/17 passing, no baseline-identity
+soft-warn output at all now (only the numeric normalization-fitting divergences below still soft-warn).
+
+**Side effect:** fixing bench identity also improved the numeric divergence for series that aggregate
+over bench — pushPull dropped from 17.6% to 16.3%, total from 22.6% to 20.4%. Bench's own numeric
+divergence (16.3%) is unaffected — identity and fitting are distinct problems, same distinction
+Session 4 documented for deadlift; Open item #4 (fitting) remains open.
+
+### Task 4 — full regression gate
+
+```
+npm test -w packages/pipeline    → 178 passed, 12 test files, exit 0
+npm run build -w packages/pipeline → exit 0
+npm test -w packages/app         → 105 passed, 9 test files, exit 0
+npm run build -w packages/app    → exit 0
+```
+
+### Files touched (Session 5)
+
+- `packages/pipeline/src/derive/normalize.ts` — bench `pausedPool` priority tier
+- `packages/pipeline/src/derive/normalize.test.ts` — 5 new tests
+- `packages/app/src/pipeline/totalChartParity.test.ts` — bench promoted from soft-warn to hard
+  assert in the baseline-identity `it.each` block, alongside squat/deadlift
 
 ---
 
@@ -320,12 +336,11 @@ npm run build -w packages/app
 
 ## Next Steps
 
-1. Implement the Session 5 bench-equivalent fix scoped above (Open item #1), if it matters for real
-   users — task breakdown ready above.
-2. Confirm GitHub issue #451 can be closed (Open item #3).
-3. Consider whether the remaining normalization-fitting divergence (Open item #4) is worth a
-   dedicated future session — it's the largest remaining source of the 16-31% per-series divergence
-   and is architecturally distinct from the baseline-identity work done in Sessions 3-4.
-4. Once ready, create a PR referencing this work off `integrate-new-pipeline` and merge to `main`.
-5. Handle the pre-existing, unrelated `TODO.md` deletion found in the working tree (Session 4.5) —
+1. Confirm GitHub issue #451 can be closed (Open item #3).
+2. Consider whether the remaining normalization-fitting divergence (Open item #4) is worth a
+   dedicated future session — it's now the _only_ remaining source of per-series divergence (all
+   baseline-identity gaps across squat/bench/deadlift are resolved as of Session 5) and is
+   architecturally distinct from the baseline-identity work done in Sessions 3-5.
+3. Once ready, create a PR referencing this work off `integrate-new-pipeline` and merge to `main`.
+4. Handle the pre-existing, unrelated `TODO.md` deletion found in the working tree (Session 4.5) —
    decide whether to restore it, commit the deletion, or leave it for a separate cleanup pass.
