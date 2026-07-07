@@ -1,6 +1,7 @@
 import type { TaggedSetRecord } from '../tag/tag';
 import { calcE1RM, invertE1RM } from './e1rm';
 import { isSpeedWork } from './derivers';
+import type { AthleteContext } from './athlete';
 
 // Fitting the model on speed/repetition-effort sets (see derivers.ts) would anchor the
 // baseline grid — and every variant factor fit against it — on wildly underestimated e1RMs.
@@ -91,7 +92,8 @@ const getTag = (tags: ReadonlySet<string>, prefix: string) =>
 
 export function fitNormalizationModel(
   history: TaggedSetRecord[],
-  opts: { minSamples: number }
+  opts: { minSamples: number },
+  athlete: AthleteContext
 ): NormalizationModel {
   const byCanonical = Object.groupBy(history, (r) => r.canonical);
   const byFamily = new Map<string, string[]>();
@@ -120,7 +122,22 @@ export function fitNormalizationModel(
       e.r.some((r) => /competition/i.test(r.meta?.rawExercise ?? ''))
     );
     const comp = entries.filter((e) => e.r.some((r) => r.tags.has('comp-lift')));
-    const pool = competitionNamed.length ? competitionNamed : comp.length ? comp : entries;
+    const preferredStance =
+      family === 'lift:deadlift'
+        ? athlete.deadliftStance === 'sumo'
+          ? 'sumo'
+          : 'conventional'
+        : null;
+    const stancePool = preferredStance
+      ? entries.filter((e) => e.r.some((r) => r.tags.has(`stance:${preferredStance}`)))
+      : [];
+    const pool = competitionNamed.length
+      ? competitionNamed
+      : stancePool.length
+        ? stancePool
+        : comp.length
+          ? comp
+          : entries;
     const [baseCan] = pool.sort((a, b) => b.r.length - a.r.length || a.c.localeCompare(b.c));
 
     baseline[family] = baseCan.c;

@@ -25,6 +25,7 @@ export interface PipelineResult {
   unknownExercises: string[];
   unnormalized: string[];
   parseErrors: ParseError[];
+  model: NormalizationModel;
 }
 
 function buildPoints(tagged: TaggedSetRecord[], deriverId: string): Point[] {
@@ -73,7 +74,11 @@ export function runPipeline(
   const pointsByDeriver = new Map([...deriverIds].map((id) => [id, buildPoints(tagged, id)]));
   const e1rmPoints = pointsByDeriver.get('e1rm')!;
 
-  const model: NormalizationModel = fitNormalizationModel(tagged, { minSamples: MIN_SAMPLES });
+  const model: NormalizationModel = fitNormalizationModel(
+    tagged,
+    { minSamples: MIN_SAMPLES },
+    athlete
+  );
 
   // Compute unnormalized canonical keys natively via the series group map
   const unnormalized = [...Map.groupBy(e1rmPoints, (p) => p.series)]
@@ -108,5 +113,5 @@ export function runPipeline(
     ])
   );
 
-  return { datasets, diagnostics, unknownExercises, unnormalized, parseErrors };
+  return { datasets, diagnostics, unknownExercises, unnormalized, parseErrors, model };
 }

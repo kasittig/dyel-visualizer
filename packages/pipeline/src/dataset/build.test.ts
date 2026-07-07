@@ -20,7 +20,7 @@ const model = (overrides?: Partial<NormalizationModel>): NormalizationModel => (
   ...overrides,
 });
 
-const athlete = { sex: 'M' as const, bodyweight: 83 };
+const athlete = { sex: 'M' as const, bodyweight: 83, deadliftStance: 'conventional' as const };
 const noUi: RenderParams = {};
 
 describe('buildDataset — SeriesSpec', () => {
