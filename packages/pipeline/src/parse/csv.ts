@@ -70,7 +70,6 @@ export const csvParser: Parser = {
     const hasUnitColumn = headerMap.has('unit');
     const realUnitHeader = headerMap.get('unit') || '';
     const realRpeHeader = headerMap.get('rpe') || '';
-    const realSetsHeader = matchHeader('Sets') || '';
 
     return data.map((row, idx) => {
       const lineNum = idx + 2; // +1 for 0-index, +1 for header row
@@ -86,7 +85,7 @@ export const csvParser: Parser = {
         throw new ParseError('Missing required field in row', lineNum, rawLineStr);
       }
 
-      const reps = parseInt(repsStr);
+      const reps = parseFloat_(repsStr);
       if (reps === null) {
         throw new ParseError(`Invalid reps: ${repsStr}`, lineNum, rawLineStr);
       }
@@ -114,8 +113,6 @@ export const csvParser: Parser = {
       const finalUnit = resolveUnit(recordUnit, effectiveCtx);
       const rpeStr = row[realRpeHeader];
       const rpeVal = rpeStr ? parseFloat_(rpeStr) : null;
-      const setsStr = row[realSetsHeader];
-      const setsVal = setsStr ? parseFloat_(setsStr) : null;
 
       return {
         date: parseDate(dateStr),
@@ -123,11 +120,7 @@ export const csvParser: Parser = {
         weight: convertToKg(weight, finalUnit),
         reps,
         rpe: rpeVal ?? undefined,
-        meta: {
-          rawUnit: finalUnit,
-          rawWeight: weightStr,
-          ...(setsVal !== null && { sets: String(setsVal) }),
-        },
+        meta: { rawUnit: finalUnit, rawWeight: weightStr },
       };
     });
   },

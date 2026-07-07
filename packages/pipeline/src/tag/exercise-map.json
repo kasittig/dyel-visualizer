@@ -1,0 +1,19 @@
+{
+  "bench": {
+    "tags": ["lift:bench", "comp-lift"]
+  },
+  "squat": {
+    "tags": ["lift:squat", "comp-lift"]
+  },
+  "deadlift": {
+    "tags": ["lift:deadlift", "comp-lift"]
+  },
+  "bench-chains": {
+    "tags": ["lift:bench", "addl:chains"],
+    "effects": ["lockout"]
+  },
+  "ssb-squat": {
+    "tags": ["lift:squat", "bar:ssb"],
+    "effects": ["posterior-chain"]
+  }
+}

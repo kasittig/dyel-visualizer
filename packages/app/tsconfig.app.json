@@ -32,8 +32,7 @@
 
     /* Workspace package resolution */
     "paths": {
-      "@dyel/core": ["../core/src/index.ts"],
-      "@dyel/pipeline": ["../pipeline/src/index.ts"]
+      "@dyel/core": ["../core/src/index.ts"]
     }
   },
   "include": ["src", "../../global.d.ts"],
