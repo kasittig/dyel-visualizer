@@ -289,13 +289,59 @@ session (2026-07-07)" section — this is the task-tracking summary.
 - [x] Task 5: Document final outcome in `migration/ConjugateCharts.md` (what was fixed,
       real verified numbers, explicit non-promotion-to-hard-assert decision, residual
       open items). (Target: `migration/ConjugateCharts.md`. Test: none — doc-only)
-- [ ] Task 6 (not started): Root-cause the residual `missingInA` nonzero gaps on
-      newly-matched variation series (squat/deadlift) now that vocabulary matches.
+- [x] Task 6: Root-cause the residual `missingInA` nonzero gaps on newly-matched
+      variation series (squat/deadlift). **Root-caused (2026-07-07 follow-up), confirmed
+      against ground truth and the raw fixture, NOT fixed** — new Finding #5: day-level
+      effort/volume filtering asymmetry. Legacy's `splitByEffort`
+      (`packages/app/src/utils/appDataUtils.ts`) drops entire "volume" days
+      (`sets > 1 && rpe === null`) before `buildVariationChartData` runs; pipeline's
+      `derivers.ts` `e1rm` deriver never drops a day (falls back to speed-work sets when
+      no effort sets exist), and `conjugateChartSpecs.ts` has no day-level effort filter
+      at all. Confirmed exactly against `test/fixtures/total-chart-sheet.csv`: Box Squat's
+      1 extra pipeline date (2/6/2026, pure volume) and Deadlift (opposite)'s 2 extra
+      pipeline dates (2/6, 3/6, both pure volume) match the reported `missingInA=1`/`=2`
+      exactly. Full writeup in `migration/ConjugateCharts.md`'s new "Follow-up session
+      (2026-07-07): missingInA root-caused" section. (Target: none this task — root-cause
+      only. Test: `npm test -w packages/app -- conjugateChartParity`, unchanged
+      8/8 passing, numbers re-verified via `qa-reviewer`)
+- [x] Task 6b: Closed Finding #5 by adding a day-level "max-effort" deriver
+      (`'e1rm-max-effort'` in `packages/pipeline/src/derive/derivers.ts`, implemented by a
+      teammate) mirroring legacy's `splitByEffort` — filters to max-effort sets via the
+      existing `isSpeedWork` predicate and returns `null` (day excluded, not zero-filled) when
+      a day has none, instead of `e1rm`'s fallback-to-speed-work-sets behavior. Wired into
+      **both** `conjugateChartSpecs.ts`'s `variations` series spec and its `normalized`
+      composite spec (not just `variations`), since legacy's `buildVariationChartData`
+      computes both from the same `maxEffort`-filtered rows.
+      **Also found and fixed a separate, pre-existing bug** in
+      `conjugateChartParity.test.ts` while investigating an apparent side effect: its
+      `pipelineVariationKeys` computation only read `Object.keys(pipeline.variations[0])` —
+      the first row's keys, not the union across all rows — so the "matched variation"
+      intersection check was only ever accidentally comparing one arbitrary variation per
+      lift type. Fixed to `pipeline.variations.flatMap((row) => Object.keys(row))`. With
+      both fixes in place, **every matched variation across all three lift types now shows
+      `missingInA=0, missingInB=0`** (full date-level per-variation parity; remaining
+      `maxAbsDiff`/`maxRelDiff` on a few bench/deadlift series, all ≤1.1%, is pre-existing
+      rounding-level divergence, not a new finding). Verified via
+      `npm test -w packages/app -- conjugateChartParity` (8/8 passing) and independently
+      re-confirmed via `qa-reviewer`; full real output archived in
+      `migration/ConjugateCharts.md`. All three `normalized` composites now have matching
+      legacy/pipeline point counts (squat 4/4, bench 22/22, deadlift 12/12) though the
+      "no date overlap" warning itself persists (Finding #4's date-value-alignment root
+      cause is still open, not resolved by this fix). No regressions: full suite
+      (`npm run build -w packages/pipeline && npm run build -w packages/app && npm test -w
+    packages/pipeline && npm test -w packages/app`) green — pipeline 12 files/195 tests,
+      app 19 files/200 tests (unchanged from baseline, includes the one-line harness-bug
+      fix). (Target: `packages/app/src/pipeline/conjugateChartSpecs.ts`,
+      `packages/app/src/pipeline/conjugateChartParity.test.ts`. Test:
+      `npm test -w packages/app -- conjugateChartParity`)
 - [ ] Task 7 (not started): Root-cause the normalized-series "no date overlap" anomaly
-      (finding #4) — untouched by Tasks 3-4, unchanged from original scoping.
+      (finding #4) — untouched by Tasks 3-4, unchanged from original scoping. Now suspect
+      Finding #5 (day-level effort asymmetry) is a likely contributing cause here too
+      (same unfiltered day set feeds the `normalized` composite), but unconfirmed for that
+      spec specifically — check, don't assume.
 - [ ] Task 8 (not started): Actually swap `ConjugateCharts.tsx`/`useConjugateChartData.ts`
       back onto `@dyel/pipeline` — this entire session narrowed the divergence but did
-      NOT attempt the component swap itself. Should not be attempted before Tasks 6-7
+      NOT attempt the component swap itself. Should not be attempted before Tasks 6b-7
       are at least assessed, per this doc's "Before re-attempting" note.
 
 ## Verification
@@ -306,13 +352,28 @@ re-verified via `qa-reviewer` (not self-reported) at each step.
 
 ## Status
 
-Tasks 1-5 complete. Findings #1 (speed-work asymmetry) and #3 (canonical/label grouping,
-the largest gap) are fixed; #2 (minSamples) was found to be a non-issue on
-re-investigation (production already hardcodes `MIN_SAMPLES = 1`, matching legacy's
-effective `n >= 1`); #4 (normalized-series date-overlap) remains fully open and
-untouched. Parity harness's newly-matched per-variation soft-warns were deliberately
-**not** promoted to hard-assert — sample sizes are n=1-2 and `missingInA` is still
-nonzero for squat/deadlift, too sparse to call proven parity. `ConjugateCharts.tsx` and
-`useConjugateChartData.ts` remain unswapped, still on `@dyel/core` — the Phase 4 blocker
-is narrowed, not closed. Next: Tasks 6-8 above, or pick a different Phase 4 blocker
+Tasks 1-6b complete. Findings #1 (speed-work asymmetry), #3 (canonical/label grouping, the
+largest gap), and now #5 (day-level effort/volume filtering asymmetry) are fixed; #2
+(minSamples) was found to be a non-issue on re-investigation (production already hardcodes
+`MIN_SAMPLES = 1`, matching legacy's effective `n >= 1`). Finding #5 was closed by wiring a
+new `'e1rm-max-effort'` deriver (implemented in `packages/pipeline/src/derive/derivers.ts`
+by a teammate) into both the `variations` and `normalized` specs in
+`conjugateChartSpecs.ts`; a separate pre-existing test-harness bug (`pipelineVariationKeys`
+only reading row 0's keys instead of the union across all rows) was found and fixed along the
+way. Verified real numbers (`npm test -w packages/app -- conjugateChartParity`, 8/8 passing,
+independently re-confirmed via `qa-reviewer`): **every matched per-variation series across
+all three lift types now shows `missingInA=0, missingInB=0`** — full date-level per-variation
+parity, a much stronger result than the original Finding #5 scoping anticipated. All three
+`normalized` composites now have matching legacy/pipeline point counts (squat 4/4, bench
+22/22, deadlift 12/12), though the "no date overlap" warning persists — #4 (normalized-series
+date-overlap) is narrowed (point counts now align) but **not** resolved; its
+date-value-alignment root cause remains open and is now the clear top-priority remaining
+item. No regressions: full suite green — pipeline 12 files/195 tests, app 19 files/200 tests
+(unchanged from baseline, includes the harness-bug one-liner). Parity harness's per-variation
+soft-warns were deliberately **not** promoted to hard-assert despite the 0%-diff/0-gap
+results — sample sizes remain n=1-5 per series, still judged too sparse to call proven
+parity by this project's established precedent. `ConjugateCharts.tsx` and
+`useConjugateChartData.ts` remain unswapped, still on `@dyel/core` — the Phase 4 blocker is
+narrowed further, not closed. Next: Task 7 (Finding #4 date-value-alignment root-cause), then
+Task 8 (component swap), or pick a different Phase 4 blocker
 (`VariationRadarChart`/`DiagnosticsPanel`).

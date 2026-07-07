@@ -163,6 +163,189 @@ Findings #2 and #4 remain unresolved but are now better characterized.
   aggregate across variants—that's correct). Finding #4 is completely untouched and
   remains fully open.
 
+### Follow-up session (2026-07-07): missingInA root-caused
+
+Picked up the residual open question from Finding #3 above ("why does `missingInA`
+remain nonzero for squat/deadlift even after label-matching fixed the vocabulary gap?").
+Root-caused and confirmed against ground truth (re-ran
+`npm test -w packages/app -- conjugateChartParity` via `qa-reviewer`, matches exactly:
+squat `Box Squat` compared=2/missingInA=1, deadlift `Deadlift (opposite)`
+compared=2/missingInA=2).
+
+**Root cause: day-level effort/volume filtering asymmetry (new finding, call it #5).**
+
+- Legacy's `splitByEffort` (`packages/app/src/utils/appDataUtils.ts`) classifies every
+  logged row as `maxEffort` (`session.sets === 1 || session.rpe !== null`) or `volume`
+  (multi-set, no RPE) **before** `buildVariationChartData` ever runs. Only `maxEffort`
+  rows reach the variation chart — volume-only days for a given variation are dropped
+  entirely, not just deprioritized.
+- Pipeline's `derivers.ts` `e1rm` deriver never drops a day. It filters out speed-work
+  sets (`isSpeedWork`: no RPE, 2+ sets) when picking the day's best set, but **falls back
+  to the speed-work sets themselves** if a day has no effort sets at all (`usable =
+effortSets.length ? effortSets : sets`) — so a day that legacy would classify as pure
+  `volume` and exclude still produces a real e1RM point on the pipeline side.
+- `conjugateChartSpecs.ts`'s `variations` spec has no analogue of this day/session-level
+  split — its `include` predicate only filters by `lift:${liftType}` tag. There is no
+  pipeline-side tag or filter expressing "max-effort day" at all.
+- **Confirmed directly against the fixture** (`test/fixtures/total-chart-sheet.csv`):
+  - `Box Squat`: 2/2/2026 (sets=1 → maxEffort) and 6/8/2026 (sets=1 → maxEffort) are the
+    only two legacy-visible dates. 2/6/2026 (sets=5, no RPE → volume, legacy drops it)
+    still produces a pipeline point via the deriver's fallback (no effort sets that day)
+    → exactly 1 extra pipeline-only date → `missingInA=1`.
+  - `Deadlift (opposite)`: legacy-visible dates are 3/9/2026 (sets=1) and 5/4/2026 (has
+    both a sets=1/weight=250 maxEffort row and a sets=2/weight=175 volume row on the same
+    day — legacy and pipeline agree here since the deriver also prefers the effort set
+    when one exists). 2/6/2026 (sets=8, no RPE) and 3/6/2026 (sets=6, no RPE) are pure
+    volume days legacy drops entirely, but the deriver's fallback still produces points
+    for both → exactly 2 extra pipeline-only dates → `missingInA=2`.
+- **Not fixed this session** — this is a genuine behavioral gap (not a bug in either
+  implementation individually), and closing it means deciding pipeline-side design: e.g.
+  a new day-level "effort" concept (tag or filter) mirroring legacy's `splitByEffort`, so
+  `conjugateChartSpecs.ts` can exclude volume-only days from the `variations` spec the
+  same way legacy does. This is an architecture decision in the same class as Findings
+  #1 and #3 (both required explicit user sign-off before implementation) — flagged for
+  sign-off, not implemented speculatively.
+- **Relationship to Finding #4**: likely a contributing (not necessarily sole) cause of
+  the `normalized` composite's date-overlap anomaly too, since the composite spec draws
+  from the same unfiltered day set — still a hypothesis, not confirmed for that spec.
+
+### Finding #5 fix: `e1rm-max-effort` deriver implemented (2026-07-07, second follow-up)
+
+A teammate implemented the day-level "max-effort" concept flagged as needing sign-off in
+Finding #5 and Task 6b (`SPECIFICATIONS.md`): a new `'e1rm-max-effort'` deriver id in
+`packages/pipeline/src/derive/derivers.ts`. Unlike `e1rm` (which falls back to computing
+an e1RM from speed-work sets when a day has none of its own max-effort sets), `e1rm-max-effort`
+filters to max-effort sets (single-set entries, or any set with an explicit RPE) via the
+existing `isSpeedWork` predicate and returns `null` — not a fallback value — for a day with
+no max-effort sets. Callers (`pipeline.ts`/`dataset/build.ts`, already updated by the
+teammate) exclude that day's point entirely rather than zero-filling it, mirroring legacy's
+`splitByEffort` day-level exclusion exactly.
+
+This session wired the new deriver into `packages/app/src/pipeline/conjugateChartSpecs.ts`,
+changing `derive` from `'e1rm'` to `'e1rm-max-effort'` on **both** the `variations` series
+spec and the `normalized` composite spec — not just `variations` — because legacy's
+`buildVariationChartData` (`packages/core/src/load/buildVariationChartData.ts`) computes
+both its per-variation series and its `normalizedByDate`/`__normalized__` composite from the
+exact same `maxEffort`-filtered `rows` parameter. `CompositeSpec.derive` in
+`packages/pipeline/src/dataset/build.ts` was already typed as `string` (not narrowed to the
+`'e1rm'` literal), so no type-widening work was needed; `npm run build -w packages/app`
+passed cleanly with no changes required beyond the two `derive` field edits.
+
+**Real before/after numbers** (`npm test -w packages/app -- conjugateChartParity`, 8/8 passing
+both before and after):
+
+Before (baseline, prior session):
+
+```
+core-vs-pipeline squat Box Squat: compared=2 missingInA=1 missingInB=0 maxAbsDiff=0 maxRelDiff=0.0%
+core-vs-pipeline squat normalized: no date overlap (legacy has 4 points, pipeline has 13 points)
+core-vs-pipeline bench Bench (American Bar): compared=1 missingInA=0 missingInB=0 maxAbsDiff=1 maxRelDiff=1.0%
+core-vs-pipeline bench Bench (American Bar, CG): compared=1 missingInA=0 missingInB=0 maxAbsDiff=0 maxRelDiff=0.0%
+core-vs-pipeline bench normalized: no date overlap (legacy has 22 points, pipeline has 22 points)
+core-vs-pipeline deadlift Deadlift (opposite): compared=2 missingInA=2 missingInB=0 maxAbsDiff=0 maxRelDiff=0.0%
+core-vs-pipeline deadlift normalized: no date overlap (legacy has 12 points, pipeline has 19 points)
+```
+
+After (this session, real run output, verbatim):
+
+```
+core-vs-pipeline squat Box Squat: compared=2 missingInA=0 missingInB=0 maxAbsDiff=0 maxRelDiff=0.0%
+core-vs-pipeline squat normalized: no date overlap (legacy has 4 points, pipeline has 4 points)
+core-vs-pipeline bench Bench (American Bar): compared=1 missingInA=0 missingInB=0 maxAbsDiff=1 maxRelDiff=1.0%
+core-vs-pipeline bench Bench (American Bar, CG): compared=1 missingInA=0 missingInB=0 maxAbsDiff=0 maxRelDiff=0.0%
+core-vs-pipeline bench normalized: no date overlap (legacy has 22 points, pipeline has 22 points)
+core-vs-pipeline deadlift Deadlift (2" deficit): compared=2 missingInA=0 missingInB=0 maxAbsDiff=0 maxRelDiff=0.0%
+core-vs-pipeline deadlift normalized: no date overlap (legacy has 12 points, pipeline has 12 points)
+```
+
+**Observed improvements:**
+
+- Squat `Box Squat` `missingInA` dropped from 1 to 0 — exactly the hypothesized fix; the pure
+  volume day (2/6/2026) that pipeline previously fallback-derived a point for is now correctly
+  excluded, matching legacy's day count.
+- Deadlift's matched variation initially appeared to change from `Deadlift (opposite)`
+  (previously `missingInA=2`) to `Deadlift (2" deficit)` (`missingInA=0`) after this fix.
+  **Investigated further and root-caused as a separate, pre-existing test-harness bug**, not a
+  data regression: `conjugateChartParity.test.ts` computed `pipelineVariationKeys` from
+  `Object.keys(pipeline.variations[0] || {})` — only the FIRST row's (earliest date's) keys,
+  not the union of variation columns across all rows. Since most dates in this wide-format
+  series only have one variation logged, this meant the "intersection" check was only ever
+  accidentally comparing whichever single variation happened to be logged on the earliest
+  surviving date, not a true intersection. Confirmed directly by running the pipeline
+  standalone: `Deadlift (opposite)` was present all along at 2026-03-09 (235) and 2026-05-04
+  (250) — correct, undropped data — it just no longer sorted into row 0 after this session's
+  fix shifted which date is earliest. **Fixed the harness bug**: changed the key extraction to
+  `pipeline.variations.flatMap((row) => Object.keys(row)).filter((k) => k !== 'date')` (union
+  across all rows). No hard-assert regressions from this fix — all 8 tests still pass,
+  including the newly-surfaced `Deadlift (opposite)` match (`compared=2, maxAbsDiff=0`).
+- **With the harness bug fixed, per-variation parity is dramatically better than originally
+  scoped.** Every matched variation across all three lift types now shows `missingInA=0,
+missingInB=0` — full date-level parity on every per-variation series checked, real numbers
+  (verbatim, independently re-verified via `qa-reviewer`):
+  ```
+  core-vs-pipeline squat Belt Squat (narrow stance): compared=1 missingInA=0 missingInB=0 maxAbsDiff=0 maxRelDiff=0.0%
+  core-vs-pipeline squat Box Squat: compared=2 missingInA=0 missingInB=0 maxAbsDiff=0 maxRelDiff=0.0%
+  core-vs-pipeline squat Squat: compared=1 missingInA=0 missingInB=0 maxAbsDiff=0 maxRelDiff=0.0%
+  core-vs-pipeline bench Bench: compared=1 missingInA=0 missingInB=0 maxAbsDiff=0 maxRelDiff=0.0%
+  core-vs-pipeline bench Bench (1 board): compared=1 missingInA=0 missingInB=0 maxAbsDiff=0 maxRelDiff=0.0%
+  core-vs-pipeline bench Bench (2 board): compared=3 missingInA=0 missingInB=0 maxAbsDiff=0 maxRelDiff=0.0%
+  core-vs-pipeline bench Bench (American Bar): compared=1 missingInA=0 missingInB=0 maxAbsDiff=1 maxRelDiff=1.0%
+  core-vs-pipeline bench Bench (American Bar, CG): compared=1 missingInA=0 missingInB=0 maxAbsDiff=0 maxRelDiff=0.0%
+  core-vs-pipeline bench Bench (CG): compared=1 missingInA=0 missingInB=0 maxAbsDiff=1 maxRelDiff=0.8%
+  core-vs-pipeline bench Bench (Duffalo): compared=1 missingInA=0 missingInB=0 maxAbsDiff=0 maxRelDiff=0.0%
+  core-vs-pipeline bench Bench (Slingshot): compared=1 missingInA=0 missingInB=0 maxAbsDiff=0 maxRelDiff=0.0%
+  core-vs-pipeline bench Bench (Slingshot, chain): compared=1 missingInA=0 missingInB=0 maxAbsDiff=0 maxRelDiff=0.0%
+  core-vs-pipeline bench Bench (bands): compared=1 missingInA=0 missingInB=0 maxAbsDiff=0 maxRelDiff=0.0%
+  core-vs-pipeline bench Bench (chain): compared=1 missingInA=0 missingInB=0 maxAbsDiff=0 maxRelDiff=0.0%
+  core-vs-pipeline bench Bench (commands): compared=2 missingInA=0 missingInB=0 maxAbsDiff=1 maxRelDiff=0.7%
+  core-vs-pipeline bench Bench Builder: compared=5 missingInA=0 missingInB=0 maxAbsDiff=0 maxRelDiff=0.0%
+  core-vs-pipeline bench Floor Press: compared=2 missingInA=0 missingInB=0 maxAbsDiff=1 maxRelDiff=0.7%
+  core-vs-pipeline bench Floor Press (Swiss bar): compared=1 missingInA=0 missingInB=0 maxAbsDiff=1 maxRelDiff=0.8%
+  core-vs-pipeline bench Floor Press (chain): compared=2 missingInA=0 missingInB=0 maxAbsDiff=0 maxRelDiff=0.0%
+  core-vs-pipeline bench Incline Bench: compared=1 missingInA=0 missingInB=0 maxAbsDiff=1 maxRelDiff=1.1%
+  core-vs-pipeline deadlift Deadlift: compared=2 missingInA=0 missingInB=0 maxAbsDiff=1 maxRelDiff=0.4%
+  core-vs-pipeline deadlift Deadlift (2" block): compared=2 missingInA=0 missingInB=0 maxAbsDiff=0 maxRelDiff=0.0%
+  core-vs-pipeline deadlift Deadlift (2" deficit): compared=2 missingInA=0 missingInB=0 maxAbsDiff=0 maxRelDiff=0.0%
+  core-vs-pipeline deadlift Deadlift (2" deficit, opposite): compared=1 missingInA=0 missingInB=0 maxAbsDiff=0 maxRelDiff=0.0%
+  core-vs-pipeline deadlift Deadlift (bands): compared=1 missingInA=0 missingInB=0 maxAbsDiff=0 maxRelDiff=0.0%
+  core-vs-pipeline deadlift Deadlift (light rev. bands): compared=1 missingInA=0 missingInB=0 maxAbsDiff=0 maxRelDiff=0.0%
+  core-vs-pipeline deadlift Deadlift (mini rev. bands): compared=1 missingInA=0 missingInB=0 maxAbsDiff=0 maxRelDiff=0.0%
+  core-vs-pipeline deadlift Deadlift (opposite): compared=2 missingInA=0 missingInB=0 maxAbsDiff=0 maxRelDiff=0.0%
+  ```
+  Remaining `maxAbsDiff`/`maxRelDiff` on a handful of bench/deadlift series (all ≤1.1%) are
+  pre-existing rounding-level divergence already documented in earlier sessions, not a new
+  finding — none of it is date-alignment (`missingInA`/`missingInB` are 0 across the board).
+- All three `normalized` composites: pipeline's point count now exactly matches legacy's
+  (squat 4/4, bench 22/22, deadlift 12/12) instead of over-producing (previously 13, 22, 19).
+  This is a real, verified narrowing of Finding #4's symptom (the composite spec now also
+  excludes non-max-effort days, so point counts align) — but the "no date overlap" warning
+  itself is UNCHANGED: even with matching counts, `diffSeries`/`joinChartPointsByDate` still
+  reports zero comparable dates for all three lift types. Finding #4's root cause (why the
+  actual date VALUES don't align, not just counts) remains open and unconfirmed — do not treat
+  this as closed. Given how thoroughly Finding #5 turned out to explain the per-variation
+  divergence, Finding #4 is now the clear priority for a follow-up session.
+- No regressions observed: no previously-passing hard-assert failed, and no `maxAbsDiff`/
+  `maxRelDiff` got worse for any series.
+
+**Full regression suite** (`npm run build -w packages/pipeline && npm run build -w packages/app
+&& npm test -w packages/pipeline && npm test -w packages/app`, all green):
+
+- `npm run build -w packages/pipeline`: clean, exit 0.
+- `npm run build -w packages/app`: clean, exit 0.
+- `npm test -w packages/pipeline`: **12 files / 195 tests**, all passing (up from 12/188 —
+  the teammate's `e1rm-max-effort` deriver work added tests, notably `derivers.test.ts` now
+  26 tests).
+- `npm test -w packages/app`: **19 files / 200 tests**, all passing — identical file/test
+  counts to the pre-session baseline, confirming zero regressions elsewhere in the app suite
+  (this count includes the harness-bug fix to `conjugateChartParity.test.ts`, a one-line
+  change to the variation-key-extraction logic, not a new test file).
+
+**Component swap-over status: still NOT done.** `ConjugateCharts.tsx` and
+`useConjugateChartData.ts` remain on `@dyel/core`; this session only updated
+`conjugateChartSpecs.ts` (the parity-test-only pipeline-native replacement) and re-verified
+parity numbers. Per-variation matches were deliberately left as soft-warn, not promoted to
+hard-assert — same n=1-2 sample-size rationale as prior sessions.
+
 #### Components NOT yet swapped
 
 **Critical clarification**: `ConjugateCharts.tsx` and `useConjugateChartData.ts`

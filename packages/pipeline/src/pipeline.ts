@@ -30,24 +30,31 @@ export interface PipelineResult {
 
 function buildPoints(tagged: TaggedSetRecord[], deriverId: string): Point[] {
   const deriver = derivers[deriverId];
-  return [...Map.groupBy(tagged, (r) => `${r.date}::${r.canonical}`).values()].map((sets) => ({
-    t: sets[0].date,
-    v: deriver.derive(sets),
-    series: sets[0].canonical,
-    tags: sets[0].tags,
-  }));
+  return [...Map.groupBy(tagged, (r) => `${r.date}::${r.canonical}`).values()].flatMap((sets) => {
+    const v = deriver.derive(sets);
+    return v === null
+      ? []
+      : [{ t: sets[0].date, v, series: sets[0].canonical, tags: sets[0].tags }];
+  });
 }
 
 function buildPointsByLabel(tagged: TaggedSetRecord[], deriverId: string): Point[] {
   const deriver = derivers[deriverId];
   return [
     ...Map.groupBy(tagged, (r) => `${r.date}::${r.meta?.rawExercise ?? r.canonical}`).values(),
-  ].map((sets) => ({
-    t: sets[0].date,
-    v: deriver.derive(sets),
-    series: sets[0].meta?.rawExercise ?? sets[0].canonical,
-    tags: sets[0].tags,
-  }));
+  ].flatMap((sets) => {
+    const v = deriver.derive(sets);
+    return v === null
+      ? []
+      : [
+          {
+            t: sets[0].date,
+            v,
+            series: sets[0].meta?.rawExercise ?? sets[0].canonical,
+            tags: sets[0].tags,
+          },
+        ];
+  });
 }
 
 export function runPipeline(
@@ -79,10 +86,7 @@ export function runPipeline(
   const unknownExercises = [...new Set([...unknownAliases, ...unknownCanonicals])];
 
   // Derive all active IDs in one pass, defaulting to 'e1rm'
-  const deriverIds = new Set<string>([
-    'e1rm',
-    ...specs.map((s) => (s.kind === 'series' ? s.derive : 'e1rm')),
-  ]);
+  const deriverIds = new Set<string>(['e1rm', ...specs.map((s) => s.derive)]);
   const pointsByDeriver = new Map([...deriverIds].map((id) => [id, buildPoints(tagged, id)]));
   const e1rmPoints = pointsByDeriver.get('e1rm')!;
 
@@ -128,9 +132,7 @@ export function runPipeline(
       buildDataset(
         s.kind === 'series' && s.groupBy === 'label'
           ? pointsByLabelByDeriver.get(s.derive)!
-          : s.kind === 'series'
-            ? pointsByDeriver.get(s.derive)!
-            : e1rmPoints,
+          : pointsByDeriver.get(s.derive)!,
         s,
         ui,
         model,

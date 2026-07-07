@@ -99,6 +99,71 @@ describe('runPipeline (end-to-end)', () => {
     expect(again).not.toBe(result);
   });
 
+  describe('e1rm-max-effort deriver spec variant', () => {
+    it('excludes speed-work-only days that e1rm would still include', () => {
+      // 2026-01-10 has only speed-work sets (2+ sets, no RPE) for bench.
+      const speedWorkOnlyContent =
+        'Date,Exercise,Reps,Weight (lbs),Sets\n2026-01-10,Bench,3,85,9\n';
+
+      const maxEffortSpecs: DatasetSpec[] = [
+        {
+          id: 'e1rm-max-effort-bench',
+          kind: 'series',
+          include: { any: ['lift:bench'] },
+          derive: 'e1rm-max-effort',
+        },
+        { id: 'e1rm-bench', kind: 'series', include: { any: ['lift:bench'] }, derive: 'e1rm' },
+      ];
+
+      const result = runPipeline(
+        [{ name: 'speed-work-only.csv', content: speedWorkOnlyContent }],
+        maxEffortSpecs,
+        athlete,
+        {}
+      );
+
+      // e1rm falls back to the speed-work sets and produces a row for that date.
+      expect(result.datasets['e1rm-bench'].length).toBeGreaterThan(0);
+      // e1rm-max-effort excludes the day entirely since there are no max-effort sets.
+      expect(result.datasets['e1rm-max-effort-bench']).toEqual([]);
+    });
+
+    it('respects a composite spec derive field instead of defaulting to e1rm points', () => {
+      const speedWorkOnlyContent =
+        'Date,Exercise,Reps,Weight (lbs),Sets\n' +
+        '2026-01-10,Squat,3,200,9\n2026-01-10,Bench,3,85,9\n2026-01-10,Deadlift,3,250,9\n' +
+        '2026-01-15,Squat,5,200,\n2026-01-15,Bench,5,150,\n2026-01-15,Deadlift,5,250,\n';
+
+      const compositeSpecs: DatasetSpec[] = [
+        {
+          id: 'estimated-total-max-effort',
+          kind: 'composite',
+          derive: 'e1rm-max-effort',
+          normalize: true,
+          combine: 'sum',
+          components: [
+            { label: 'squat', include: { any: ['lift:squat'] } },
+            { label: 'bench', include: { any: ['lift:bench'] } },
+            { label: 'deadlift', include: { any: ['lift:deadlift'] } },
+          ],
+        },
+      ];
+
+      const result = runPipeline(
+        [{ name: 'composite-max-effort.csv', content: speedWorkOnlyContent }],
+        compositeSpecs,
+        athlete,
+        {}
+      );
+
+      // Only 2026-01-15 has max-effort sets for all three lifts, so only that date
+      // should be able to produce a composite row (speed-work-only 01-10 is excluded).
+      const rows = result.datasets['estimated-total-max-effort'];
+      expect(rows.length).toBeGreaterThan(0);
+      expect(rows.every((r) => r.t !== new Date('2026-01-10').getTime())).toBe(true);
+    });
+  });
+
   describe('groupBy: label spec variant', () => {
     it('produces one series per distinct raw logged string, not per canonical', () => {
       // Create two variants that would normally share a canonical:

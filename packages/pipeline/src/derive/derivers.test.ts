@@ -72,6 +72,33 @@ describe('derivers', () => {
     });
   });
 
+  describe('e1rm-max-effort', () => {
+    it.each([
+      [
+        'returns the effort set e1rm alongside a 2+ set speed-work entry',
+        [mockSet(100, 1, 1), mockSet(85, 3, 9)],
+        100,
+      ],
+      [
+        'trusts an explicit RPE even at 2+ sets, not treating it as speed work',
+        [mockSet(85, 3, 9), mockSet(120, 1, 3, 9)],
+        120 * (1 + (1 + (10 - 9)) / 30),
+      ],
+    ])('%s', (_, sets, expected) => {
+      expect(derivers['e1rm-max-effort'].derive(sets)).toBeCloseTo(expected);
+    });
+
+    it('returns null for a day with only speed-work sets, unlike e1rm which falls back', () => {
+      const sets = [mockSet(85, 3, 9), mockSet(90, 3, 10)];
+      expect(derivers.e1rm.derive(sets)).toEqual(expect.any(Number));
+      expect(derivers['e1rm-max-effort'].derive(sets)).toBeNull();
+    });
+
+    it('returns null for empty sets', () => {
+      expect(derivers['e1rm-max-effort'].derive([])).toBeNull();
+    });
+  });
+
   describe('tonnage', () => {
     it('calculates sum of weight * reps', () => {
       const sets = [mockSet(100, 5), mockSet(110, 3), mockSet(95, 8)];
@@ -128,8 +155,9 @@ describe('derivers', () => {
   });
 
   describe('deriver registry', () => {
-    it('has all three derivers registered', () => {
+    it('has all four derivers registered', () => {
       expect(Object.keys(derivers)).toContain('e1rm');
+      expect(Object.keys(derivers)).toContain('e1rm-max-effort');
       expect(Object.keys(derivers)).toContain('tonnage');
       expect(Object.keys(derivers)).toContain('top-set');
     });

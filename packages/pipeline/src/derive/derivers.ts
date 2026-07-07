@@ -3,7 +3,7 @@ import { calcE1RM } from './e1rm';
 
 export interface SeriesDeriver {
   id: string;
-  derive(daySets: TaggedSetRecord[]): number;
+  derive(daySets: TaggedSetRecord[]): number | null;
 }
 
 // A set logged with 2+ working sets (e.g. "9x3 speed bench") is dynamic/repetition-effort
@@ -22,6 +22,15 @@ export const derivers: Record<string, SeriesDeriver> = {
       const effortSets = sets.filter((s) => !isSpeedWork(s));
       const usable = effortSets.length ? effortSets : sets;
       return usable.length ? Math.max(...usable.map((s) => calcE1RM(s.weight, s.reps, s.rpe))) : 0;
+    },
+  },
+  'e1rm-max-effort': {
+    id: 'e1rm-max-effort',
+    derive: (sets) => {
+      const effortSets = sets.filter((s) => !isSpeedWork(s));
+      return effortSets.length
+        ? Math.max(...effortSets.map((s) => calcE1RM(s.weight, s.reps, s.rpe)))
+        : null;
     },
   },
   tonnage: {

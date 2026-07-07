@@ -128,7 +128,7 @@ describe('ConjugateCharts core-vs-pipeline parity', () => {
 
       // Get variation names: intersection of what both implementations produced
       const pipelineVariationKeys = new Set(
-        Object.keys(pipeline.variations[0] || {}).filter((k) => k !== 'date')
+        pipeline.variations.flatMap((row) => Object.keys(row)).filter((k) => k !== 'date')
       );
       const matchedVariations = legacy.variations.filter((v) => pipelineVariationKeys.has(v));
 

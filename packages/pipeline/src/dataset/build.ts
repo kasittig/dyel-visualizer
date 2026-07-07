@@ -21,7 +21,7 @@ export interface CompositeSpec {
   id: string;
   kind: 'composite';
   components: { label: string; include: TagQuery }[];
-  derive: 'e1rm';
+  derive: string;
   normalize: true;
   combine: 'sum';
   post?: 'wilks' | 'dots';
