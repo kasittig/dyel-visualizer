@@ -30,6 +30,8 @@ export interface RechartsRow {
   [column: string]: number;
 }
 
+export type ChartPoint = Record<string, string | number>;
+
 const mergeChips = (base: TagQuery, chips?: RenderParams['chips']): TagQuery => ({
   all: [...(base.all ?? []), ...(chips?.include ?? [])],
   any: base.any,
