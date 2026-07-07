@@ -7,11 +7,25 @@ const ADDL_WT_SLUGS: Record<ConjugateAddlWt, string> = {
   'rev. bands': 'rev-bands',
 };
 
+// Manual single-pass scan (no regex) so slugify runs in guaranteed linear time
+// regardless of input shape - avoids CodeQL's polynomial-redos concern for a
+// chained-quantifier regex approach on library/uncontrolled exercise-name input.
 function slugify(value: string): string {
-  return value
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
+  let slug = '';
+  let pendingDash = false;
+  for (const ch of value.toLowerCase()) {
+    const isAlphanumeric = (ch >= 'a' && ch <= 'z') || (ch >= '0' && ch <= '9');
+    if (!isAlphanumeric) {
+      pendingDash = true;
+      continue;
+    }
+    if (pendingDash && slug) {
+      slug += '-';
+    }
+    pendingDash = false;
+    slug += ch;
+  }
+  return slug;
 }
 
 export function buildCanonical(ex: ParsedExercise, rawName: string): string {

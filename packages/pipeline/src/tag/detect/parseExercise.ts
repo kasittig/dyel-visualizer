@@ -30,10 +30,13 @@ export function parseExercise(name: string): ParsedExercise {
   const hasReverseBands = has('reverse band') || has('rev. band') || has('rev band');
   const addlWts: ParsedAddlWt[] = [];
 
-  // Chains: parse digit or "double" word for magnitude, default to "1"
+  // Chains: parse digit or "double" word for magnitude, default to "1".
+  // Quantifiers are bounded (rather than +/*) so this can't be flagged as a
+  // polynomial-time regex on uncontrolled input - no realistic exercise name
+  // has hundreds of digits or whitespace characters before "chains".
   if (has('chain')) {
-    const digitMatch = lower.match(/(\d+)\s*chains?/);
-    const doubleMatch = lower.match(/\bdouble\s+chains?/);
+    const digitMatch = lower.match(/(\d{1,4})\s{0,4}chains?/);
+    const doubleMatch = lower.match(/\bdouble\s{1,4}chains?/);
     const magnitude = digitMatch ? digitMatch[1] : doubleMatch ? '2' : '1';
     addlWts.push({ kind: 'chains', magnitude });
   }
