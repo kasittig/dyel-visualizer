@@ -53,45 +53,22 @@ Each subdirectory has an `index.ts` barrel and a `CLAUDE.md` with per-file descr
 
 **Key modules:**
 
-| Path                                           | Purpose                                                                                                                                                                                                            |
-| ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `src/utils/appUtils.ts`                        | Pure helpers (`extractSheetRef`, `toggleInSet`, `initialTabState`), type aliases (`LiftType`, `PageTab`, `TabState`), and URL/tab constants — no React dependency                                                  |
-| `src/components/charts/BaseRadarChart.tsx`     | Shared Recharts radar wrapper; accepts `angleKey`, `unit`, `tooltip`, optional `onClick`                                                                                                                           |
-| `src/components/pages/SigmaTab.tsx`            | "Σ" overview tab: `TotalChart` + `SessionBarChart` + `SigmaRadarChart` across all lift types                                                                                                                       |
-| `src/components/pages/LiftTabPanel.tsx`        | Per-lift tab content: `ConjugateCharts` + `VariationRadarChart` with shared variation-highlight state                                                                                                              |
-| `src/components/shared/RepCalculator.tsx`      | Calculator tab: predicts weight-for-reps and reps-for-weight using `findBestE1RM` from `@dyel/core`                                                                                                                |
-| `src/components/shared/DiagnosticsPanel.tsx`   | Diagnostics panel using `generateDiagnostics` from `@dyel/core`                                                                                                                                                    |
-| `src/components/shared/DateRangePicker.tsx`    | Date range input using `react-day-picker` + Radix Popover                                                                                                                                                          |
-| `src/components/pages/IndexPage.tsx`           | Landing page listing linked sheets; fetches from a hardcoded published index sheet via `useIndexData`                                                                                                              |
-| `src/hooks/data/useBaselineTargetExercises.ts` | Exports pure `computeBaselineTargetExercises` (for use outside React, e.g. tests) plus a `useMemo`-wrapped hook; builds `baselineExByType` and `targetExByType` maps; shared by `TotalChart` and `SigmaRadarChart` |
-| `src/hooks/conjugate/useConjugateChartData.ts` | All data aggregation for `ConjugateCharts` (grouping, normalization, forward-fill); the component itself is presentation-only                                                                                      |
-| `src/hooks/data/useIndexData.ts`               | Fetches and parses the published index sheet CSV; returns `IndexEntry[]`                                                                                                                                           |
-| `src/utils/sheetCacheUtils.ts`                 | Pure serialize/deserialize helpers for caching `ConjugateDataPair[]` to localStorage (handles `Date` round-tripping)                                                                                               |
-| `src/testUtils/compareChartSeries.ts`          | Reusable series-extraction/statistics helper for chart-output assertions in tests (see "Core-vs-pipeline parity testing" below)                                                                                    |
-| `src/pipeline/totalChartParity.test.ts`        | Example consumer of the parity-test harness pattern below                                                                                                                                                          |
+| Path                                           | Purpose                                                                                                                                                           |
+| ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/utils/appUtils.ts`                        | Pure helpers (`extractSheetRef`, `toggleInSet`, `initialTabState`), type aliases (`LiftType`, `PageTab`, `TabState`), and URL/tab constants — no React dependency |
+| `src/components/charts/BaseRadarChart.tsx`     | Shared Recharts radar wrapper; accepts `angleKey`, `unit`, `tooltip`, optional `onClick`                                                                          |
+| `src/components/pages/SigmaTab.tsx`            | "Σ" overview tab: `TotalChart` + `SessionBarChart` + `SigmaRadarChart` across all lift types                                                                      |
+| `src/components/pages/LiftTabPanel.tsx`        | Per-lift tab content: `ConjugateCharts` + `VariationRadarChart` with shared variation-highlight state                                                             |
+| `src/components/shared/RepCalculator.tsx`      | Calculator tab: predicts weight-for-reps and reps-for-weight using `findBestE1RM` from `@dyel/core`                                                               |
+| `src/components/shared/DiagnosticsPanel.tsx`   | Diagnostics panel using `generateDiagnostics` from `@dyel/core`                                                                                                   |
+| `src/components/shared/DateRangePicker.tsx`    | Date range input using `react-day-picker` + Radix Popover                                                                                                         |
+| `src/components/pages/IndexPage.tsx`           | Landing page listing linked sheets; fetches from a hardcoded published index sheet via `useIndexData`                                                             |
+| `src/hooks/data/useBaselineTargetExercises.ts` | Builds `baselineExByType` and `targetExByType` maps; shared by `TotalChart` and `SigmaRadarChart`                                                                 |
+| `src/hooks/conjugate/useConjugateChartData.ts` | All data aggregation for `ConjugateCharts` (grouping, normalization, forward-fill); the component itself is presentation-only                                     |
+| `src/hooks/data/useIndexData.ts`               | Fetches and parses the published index sheet CSV; returns `IndexEntry[]`                                                                                          |
+| `src/utils/sheetCacheUtils.ts`                 | Pure serialize/deserialize helpers for caching `ConjugateDataPair[]` to localStorage (handles `Date` round-tripping)                                              |
 
 **Dev proxy:** `vite.config.ts` defines a `sheetsProxyPlugin` that forwards `/sheets-proxy/*` to `https://docs.google.com/*` using Node's `fetch`, which follows redirects server-side and avoids CORS issues. In production `useConjugateData` hits Google directly — this only works with published sheets.
-
-## Core-vs-pipeline parity testing
-
-As charts migrate from `@dyel/core` to `@dyel/pipeline` (see the pipeline migration boundary rule: migrated components call only `runPipeline`, never `@dyel/core`), use this harness pattern to regression-test the new pipeline output rather than trusting it blind. See `src/testUtils/CLAUDE.md` for full detail; summary:
-
-1. Capture a real (not synthetic) CSV fixture from a published sheet into `packages/app/test/fixtures/`, via the dev server's `/sheets-proxy` (documented per-fixture in `packages/app/test/fixtures/CLAUDE.md`).
-2. In a `*.test.ts` colocated with the migrated feature (e.g. `src/pipeline/totalChartParity.test.ts`), load the fixture once in `beforeAll`, run it through the real `runPipeline` + the production `DatasetSpec[]`, and merge to `ChartPoint[]` with the same `utils/pipelineChartUtils.ts` helpers the app uses.
-3. Use `src/testUtils/compareChartSeries.ts` (`it.each` over series names) for hard assertions on any series that must match exactly; use a soft `console.warn`-only test for any series with a known, accepted divergence from the legacy implementation.
-4. This is a regression harness, not a `@dyel/core` reimplementation check — it does not run the old code path side-by-side; it asserts the new pipeline's output is internally consistent and sane against real data.
-
-Extend this pattern for future chart migrations instead of inventing new one-off comparison scripts.
-
-### Intentional exception: core-vs-pipeline live diff in tests
-
-`packages/app/src/pipeline/totalChartParity.test.ts` is a deliberate, scoped exception to the pipeline migration boundary rule (which mandates that migrated chart components call only `runPipeline`, never `@dyel/core`). This test file imports directly from both `@dyel/core` (`parseConjugateData`, `buildSessionStats`, `calculateVolumeCorrelation`, `buildChartData`) and `@dyel/pipeline` (`runPipeline`) to run the legacy implementation and pipeline implementation over the same fixture in parallel, then use `src/testUtils/diffChartSeries.ts` (`joinChartPointsByDate` + `diffSeries`) to diff the two outputs.
-
-**Why this exception is safe:** It is confined to a test file (never shipped runtime code); the actual migrated `TotalChart`/`ConjugateCharts` components themselves continue to call only `runPipeline`, fully satisfying the real boundary. The test exists specifically to regression-test the migration itself — catching divergence between old and new implementations rather than reintroducing a legacy runtime dependency into production code.
-
-**Handling known divergence:** Real differences between legacy and pipeline normalization-fitting are treated as soft-warn (logged via `console.warn`, not hard-fail) rather than hard assertions. See the comment block directly above the `core-vs-pipeline soft-warn: %s divergence...` test in `totalChartParity.test.ts` for the full root-cause explanation (speed-work filtering, minimum-sample gating, canonical grouping granularity), and GitHub issue #451 for a specific tracked contributing bug (chain-count/band-tension canonical collapsing).
-
-**Forward rule:** Any new direct `@dyel/core` import inside a migrated chart's actual runtime component (not a test file) remains a boundary violation and should be treated as a proposed pipeline change per the existing convention — this exception is test-file-only.
 
 ## Constraints
 

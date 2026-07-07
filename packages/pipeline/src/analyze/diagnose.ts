@@ -1,4 +1,5 @@
 import type { Point } from '../types';
+import type { ExerciseTagMap } from '../tag/tag';
 import type { NormalizationModel } from '../derive/normalize';
 
 export type Quality = string;
@@ -27,11 +28,10 @@ const latestOf = (points: Point[]) => points.reduce((a, b) => (b.t > a.t ? b : a
 export function diagnose(
   points: Point[],
   model: NormalizationModel,
-  effectsByCanonical: ReadonlyMap<string, string[]>,
-  opts: { tolerance: number; staleDays: number },
-  now: number | undefined
+  map: ExerciseTagMap,
+  opts: { tolerance: number; staleDays: number }
 ): DiagnosticsReport {
-  now = now ?? Date.now();
+  const now = Date.now();
 
   // Group by series and immediately find the latest point per series
   const seriesLatest = Map.groupBy(points, (p) => p.series);
@@ -71,7 +71,7 @@ export function diagnose(
       status,
       actualE1rmKg: latest.v,
       staleDays: (now - latest.t) / DAY_MS,
-      effects: effectsByCanonical.get(canonical) ?? [],
+      effects: map[canonical]?.effects ?? [],
     };
     variants.push(v);
 

@@ -1,8 +1,8 @@
 import { useState } from 'react';
+import clsx from 'clsx';
 import { useIndexData } from '../../hooks/data/useIndexData';
 import { EXAMPLE_SHEET_URL, EXAMPLE_VISUALIZER_URL } from '../../utils/appUtils';
 import type { InputMode } from '../../utils/appUtils';
-import { InputModeToggle } from './InputModeToggle';
 import styles from './SheetUrlPanel.module.css';
 
 /** App header: title plus the collapsible data-source panel (Sheet URL or pasted text) and helper links. */
@@ -91,7 +91,26 @@ export function SheetUrlPanel({
               See if your training log is compatible
             </a>
           </p>
-          <InputModeToggle mode={mode} onModeChange={onModeChange} />
+          <div className={styles.modeToggle} role="tablist" aria-label="Data source">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={mode === 'url'}
+              className={clsx(styles.modeButton, mode === 'url' && styles.modeButtonActive)}
+              onClick={() => onModeChange('url')}
+            >
+              Sheet URL
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={mode === 'text'}
+              className={clsx(styles.modeButton, mode === 'text' && styles.modeButtonActive)}
+              onClick={() => onModeChange('text')}
+            >
+              Paste text
+            </button>
+          </div>
           {mode === 'url' ? (
             <>
               {indexData.status === 'success' && (

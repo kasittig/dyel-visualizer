@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { diagnose } from './diagnose';
+import type { ExerciseTagMap } from '../tag/tag';
 import type { NormalizationModel } from '../derive/normalize';
 import type { Point } from '../types';
 
@@ -11,12 +12,12 @@ const pt = (s: string, v: number, t: number, tags: string[]): Point => ({
   tags: new Set(tags),
 });
 
-const map = new Map<string, string[]>([
-  ['bench', []],
-  ['bench-chains', ['lockout']],
-  ['bench-close-grip', ['lockout', 'tricep']],
-  ['bench-paused', ['off-chest']],
-]);
+const map: ExerciseTagMap = {
+  bench: { tags: ['lift:bench'] },
+  'bench-chains': { tags: ['lift:bench'], effects: ['lockout'] },
+  'bench-close-grip': { tags: ['lift:bench'], effects: ['lockout', 'tricep'] },
+  'bench-paused': { tags: ['lift:bench'], effects: ['off-chest'] },
+};
 
 const model: NormalizationModel = {
   fittedAt: day(1),

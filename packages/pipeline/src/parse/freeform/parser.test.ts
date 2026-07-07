@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { freeformParser, parseFreeformText } from './parser';
+import { freeformParser } from './parser';
 import { ParseError } from '../parser';
 import type { RawInput, ParseContext } from '../parser';
 import * as fs from 'fs';
@@ -299,21 +299,6 @@ describe('freeformParser', () => {
       const input: RawInput = { name: 'freeform-malformed-line.txt', content: fixture };
 
       expect(() => freeformParser.parse(input, ctx)).toThrow(ParseError);
-    });
-  });
-
-  describe('parseFreeformText', () => {
-    it.each([
-      ['simple form', '2026-01-10 Bench 315x5 @8\n'],
-      ['multi-weight shorthand', '2026-01-12 Squat 315/335/355 x3\n'],
-      ['inline unit suffix', '2026-01-09 Bench 100kg x 5\n'],
-      ['reversed form', '2026-01-11 Bench 3x5 @ 315\n'],
-      ['preamble units', 'units: kg 2026-01-08 Squat 140x5 @8\n'],
-    ])('produces same result as freeformParser.parse for %s', (_, content) => {
-      const directResult = parseFreeformText(content, ctx);
-      const parserResult = freeformParser.parse({ name: 'test.txt', content }, ctx);
-
-      expect(directResult).toEqual(parserResult);
     });
   });
 });
