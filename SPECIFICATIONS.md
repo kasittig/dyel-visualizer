@@ -329,20 +329,44 @@ session (2026-07-07)" section — this is the task-tracking summary.
       "no date overlap" warning itself persists (Finding #4's date-value-alignment root
       cause is still open, not resolved by this fix). No regressions: full suite
       (`npm run build -w packages/pipeline && npm run build -w packages/app && npm test -w
-    packages/pipeline && npm test -w packages/app`) green — pipeline 12 files/195 tests,
+  packages/pipeline && npm test -w packages/app`) green — pipeline 12 files/195 tests,
       app 19 files/200 tests (unchanged from baseline, includes the one-line harness-bug
       fix). (Target: `packages/app/src/pipeline/conjugateChartSpecs.ts`,
       `packages/app/src/pipeline/conjugateChartParity.test.ts`. Test:
       `npm test -w packages/app -- conjugateChartParity`)
-- [ ] Task 7 (not started): Root-cause the normalized-series "no date overlap" anomaly
-      (finding #4) — untouched by Tasks 3-4, unchanged from original scoping. Now suspect
-      Finding #5 (day-level effort asymmetry) is a likely contributing cause here too
-      (same unfiltered day set feeds the `normalized` composite), but unconfirmed for that
-      spec specifically — check, don't assume.
+- [x] Task 7: Root-cause the normalized-series "no date overlap" anomaly (finding #4).
+      **Root-caused and fixed (2026-07-07, third follow-up) as a test-harness bug, NOT a
+      real data divergence** — Finding #5's day-level-asymmetry hypothesis was wrong.
+      `conjugateChartParity.test.ts`'s `beforeAll` renamed the pipeline composite's output
+      key to `NORMALIZED_KEY` via `if (liftType in point)`, but the composite's actual
+      `RechartsRow` key is `spec.id` (the literal string `'normalized'`, from
+      `conjugateChartSpecs.ts`'s `normalized` spec + `dataset/build.ts`'s
+      `rows.push({ t, [spec.id]: ... })`), never `liftType`. The rename never fired, so
+      `diffSeries` never found a pipeline-side value on any date, always reporting "no date
+      overlap" even when dates were fully aligned (confirmed directly via a standalone debug
+      script: squat's pipeline and legacy `normalized` dates were byte-identical all along).
+      Fixed to `if ('normalized' in point)`. One file touched:
+      `packages/app/src/pipeline/conjugateChartParity.test.ts` (5-line change, comments +
+      condition). Verified (`npm test -w packages/app -- conjugateChartParity`, 8/8 passing,
+      independently re-confirmed via `qa-reviewer`): squat's `normalized` composite is now
+      exact parity (`compared=4 missingInA=0 missingInB=0 maxAbsDiff=0`), but unmasking the
+      real comparison revealed bench (9.8% maxRelDiff) and deadlift (5.1% maxRelDiff) DO have
+      genuine value divergence on the `normalized` composite — always present in the data,
+      just never measurable before this fix. Flagged as new Finding #6, not yet root-caused
+      (see `migration/ConjugateCharts.md`). No regressions: full suite green — pipeline 12
+      files/195 tests, app 19 files/200 tests, unchanged from baseline. (Target:
+      `packages/app/src/pipeline/conjugateChartParity.test.ts`. Test:
+      `npm test -w packages/app -- conjugateChartParity`)
 - [ ] Task 8 (not started): Actually swap `ConjugateCharts.tsx`/`useConjugateChartData.ts`
       back onto `@dyel/pipeline` — this entire session narrowed the divergence but did
-      NOT attempt the component swap itself. Should not be attempted before Tasks 6b-7
-      are at least assessed, per this doc's "Before re-attempting" note.
+      NOT attempt the component swap itself. Should not be attempted before Task 9 (new
+      Finding #6, bench/deadlift normalized-composite value divergence) is at least
+      assessed, per this doc's "Before re-attempting" note.
+- [ ] Task 9 (not started, new): Root-cause Finding #6 — why bench/deadlift `normalized`
+      composites show real 5-10% value divergence from legacy while squat is exact. Not
+      investigated yet; candidates include per-variant normalization-factor fitting
+      differences or canonical-vs-label grouping feeding the composite differently than the
+      per-variation series, but unconfirmed.
 
 ## Verification
 
@@ -352,28 +376,23 @@ re-verified via `qa-reviewer` (not self-reported) at each step.
 
 ## Status
 
-Tasks 1-6b complete. Findings #1 (speed-work asymmetry), #3 (canonical/label grouping, the
-largest gap), and now #5 (day-level effort/volume filtering asymmetry) are fixed; #2
-(minSamples) was found to be a non-issue on re-investigation (production already hardcodes
-`MIN_SAMPLES = 1`, matching legacy's effective `n >= 1`). Finding #5 was closed by wiring a
-new `'e1rm-max-effort'` deriver (implemented in `packages/pipeline/src/derive/derivers.ts`
-by a teammate) into both the `variations` and `normalized` specs in
-`conjugateChartSpecs.ts`; a separate pre-existing test-harness bug (`pipelineVariationKeys`
-only reading row 0's keys instead of the union across all rows) was found and fixed along the
-way. Verified real numbers (`npm test -w packages/app -- conjugateChartParity`, 8/8 passing,
+Tasks 1-7 complete. Findings #1 (speed-work asymmetry), #3 (canonical/label grouping, the
+largest gap), #5 (day-level effort/volume filtering asymmetry), and now #4 (normalized-series
+"no date overlap" anomaly) are all resolved. #2 (minSamples) was found to be a non-issue on
+re-investigation. Finding #4 turned out to be a test-harness key-name bug (comparing against
+the wrong `RechartsRow` key), not a real data-alignment problem — squat's `normalized`
+composite is exact (0% diff) once the harness compares the right key. Unmasking the real
+comparison surfaced a genuinely new item, Finding #6: bench (9.8% maxRelDiff) and deadlift
+(5.1% maxRelDiff) `normalized` composites show real value divergence, not yet root-caused.
+Verified real numbers (`npm test -w packages/app -- conjugateChartParity`, 8/8 passing,
 independently re-confirmed via `qa-reviewer`): **every matched per-variation series across
-all three lift types now shows `missingInA=0, missingInB=0`** — full date-level per-variation
-parity, a much stronger result than the original Finding #5 scoping anticipated. All three
-`normalized` composites now have matching legacy/pipeline point counts (squat 4/4, bench
-22/22, deadlift 12/12), though the "no date overlap" warning persists — #4 (normalized-series
-date-overlap) is narrowed (point counts now align) but **not** resolved; its
-date-value-alignment root cause remains open and is now the clear top-priority remaining
-item. No regressions: full suite green — pipeline 12 files/195 tests, app 19 files/200 tests
-(unchanged from baseline, includes the harness-bug one-liner). Parity harness's per-variation
-soft-warns were deliberately **not** promoted to hard-assert despite the 0%-diff/0-gap
-results — sample sizes remain n=1-5 per series, still judged too sparse to call proven
-parity by this project's established precedent. `ConjugateCharts.tsx` and
+all three lift types now shows `missingInA=0, missingInB=0`** (unchanged from prior session);
+`normalized` composites now show real compared/diff numbers instead of a false "no overlap"
+(squat exact, bench/deadlift newly-measurable divergence). No regressions: full suite green —
+pipeline 12 files/195 tests, app 19 files/200 tests (unchanged from baseline, includes this
+session's 5-line harness fix). Parity harness's per-variation soft-warns remain **not**
+promoted to hard-assert — sample sizes remain n=1-5 per series, still judged too sparse to
+call proven parity by this project's established precedent. `ConjugateCharts.tsx` and
 `useConjugateChartData.ts` remain unswapped, still on `@dyel/core` — the Phase 4 blocker is
-narrowed further, not closed. Next: Task 7 (Finding #4 date-value-alignment root-cause), then
-Task 8 (component swap), or pick a different Phase 4 blocker
-(`VariationRadarChart`/`DiagnosticsPanel`).
+narrowed further, not closed. Next: Task 9 (Finding #6 root-cause), then Task 8 (component
+swap), or pick a different Phase 4 blocker (`VariationRadarChart`/`DiagnosticsPanel`).

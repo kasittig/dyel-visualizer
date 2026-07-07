@@ -354,6 +354,78 @@ divergence but did not attempt or complete the actual component swap-over. That 
 distinct, not-yet-started follow-up task for whoever picks up Phase 4 in
 `MIGRATION_PLAN.md` next.
 
+### Finding #4 resolved: test-harness key-name bug, not real divergence (2026-07-07, third follow-up)
+
+Picked up Open TODO #1 from `HANDOFF.md` (root-cause Finding #4's "no date overlap"
+anomaly on the `normalized` composite, which persisted even after Finding #5's fix made
+legacy/pipeline point counts match exactly for all three lift types).
+
+**Root cause: another test-harness bug, structurally identical in spirit to the
+`pipelineVariationKeys` bug fixed alongside Finding #5.** `conjugateChartParity.test.ts`'s
+`beforeAll` renames the pipeline composite's output key to `NORMALIZED_KEY`
+(`__normalized__`) before diffing against legacy, via:
+
+```ts
+if (liftType in point) {
+  point[NORMALIZED_KEY] = point[liftType];
+  delete point[liftType];
+}
+```
+
+This assumed the composite's `RechartsRow` key was the lift type string (e.g. `'squat'`).
+It is not: `conjugateChartSpecs.ts`'s `normalized` spec has `id: 'normalized'`, and
+`packages/pipeline/src/dataset/build.ts`'s composite branch pushes rows keyed by
+`spec.id` (`rows.push({ t, [spec.id]: ... })`) — i.e. the literal string `'normalized'`,
+not `liftType`. So `liftType in point` was always `false`, the rename never happened, and
+every `diffSeries(joined, NORMALIZED_KEY)` call found no value on the pipeline side for
+any date — misreporting "no date overlap" for all three lift types even when the
+underlying dates were fully aligned.
+
+**Confirmed via a standalone debug script before touching the test**: for squat, both
+legacy and pipeline `normalized` series independently produced the identical date set
+(`2026-02-02`, `2026-03-02`, `2026-06-08`, `2026-06-22`), proving Finding #4 was never a
+real data-alignment problem — the harness itself was comparing against the wrong key and
+silently reporting a false negative on every date.
+
+**Fix**: changed the check to `'normalized' in point` (matching the composite spec's
+actual `id`), updated the two stale comments above it accordingly. One file touched:
+`packages/app/src/pipeline/conjugateChartParity.test.ts`. No production/pipeline code
+changed — this was purely a test-harness defect.
+
+**Real before/after numbers** (`npm test -w packages/app -- conjugateChartParity`, 8/8
+passing both before and after):
+
+Before (masked by the bug):
+
+```
+core-vs-pipeline squat normalized: no date overlap (legacy has 4 points, pipeline has 4 points)
+core-vs-pipeline bench normalized: no date overlap (legacy has 22 points, pipeline has 22 points)
+core-vs-pipeline deadlift normalized: no date overlap (legacy has 12 points, pipeline has 12 points)
+```
+
+After (real comparison, unmasked):
+
+```
+core-vs-pipeline squat normalized: compared=4 missingInA=0 missingInB=0 maxAbsDiff=0 maxRelDiff=0.0%
+core-vs-pipeline bench normalized: compared=22 missingInA=0 missingInB=0 maxAbsDiff=17 maxRelDiff=9.8%
+core-vs-pipeline deadlift normalized: compared=12 missingInA=0 missingInB=0 maxAbsDiff=14 maxRelDiff=5.1%
+```
+
+**New residual finding, not yet root-caused (call it Finding #6): squat's `normalized`
+composite is exact (0% diff), but bench (9.8%) and deadlift (5.1%) show real,
+previously-invisible value divergence.** This was always present in the underlying data —
+the bug only prevented it from ever being measured — so it is not a regression introduced
+by this session's fix, but it is a genuinely new open item. Not investigated this session
+beyond confirming the numbers via independent `qa-reviewer` re-verification; likely
+candidates given the project's established divergence patterns (per-variant normalization
+factor fitting, canonical vs. label grouping feeding the composite differently than the
+per-variation series) but unconfirmed — flag as the next priority, do not assume a cause.
+
+**No regressions**: full suite green — `npm test -w packages/pipeline` 12 files/195 tests,
+`npm test -w packages/app` 19 files/200 tests (both builds clean), identical counts to the
+pre-session baseline (only a 5-line change to one existing test file, no new tests added).
+Independently re-verified via `qa-reviewer`.
+
 ## Verification
 
 `npm test -w packages/app -- conjugateChartParity`

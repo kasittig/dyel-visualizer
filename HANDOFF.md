@@ -1,4 +1,4 @@
-# HANDOFF — ConjugateCharts Finding #5 closed via `e1rm-max-effort` deriver (Phase 4 blocker)
+# HANDOFF — ConjugateCharts Finding #4 closed (test-harness bug); new Finding #6 opened
 
 ## Context
 
@@ -10,132 +10,126 @@ normalization divergence. Full task tracking lives in `SPECIFICATIONS.md`'s "Con
 normalization divergence" section; full root-cause/outcome detail lives in
 `migration/ConjugateCharts.md`.
 
-This session picked up Open TODO #1 from the prior handoff: root-cause (and, per explicit user
-direction mid-session, fix) the residual `missingInA` nonzero gaps that remained after a prior
-session's fixes for Findings #1 (speed-work filtering) and #3 (canonical/label grouping).
+This session picked up Open TODO #1 from the prior handoff: root-cause Finding #4, the
+`normalized` composite's persistent "no date overlap" soft-warn that survived the prior
+session's Finding #5 fix (which made legacy/pipeline point counts match exactly for all three
+lift types, but the actual date _values_ still supposedly didn't align).
 
 ## Progress Overview
 
-- **Root-caused a new divergence, Finding #5: day-level effort/volume filtering asymmetry.**
-  Legacy's `splitByEffort` (`packages/app/src/utils/appDataUtils.ts`) completely drops "volume"
-  days (`sets > 1 && rpe === null`) before `buildVariationChartData` ever runs. Pipeline's `e1rm`
-  deriver never drops a day — it falls back to computing an e1RM from speed-work sets when a day
-  has no max-effort set. Confirmed exactly against the real fixture (`Box Squat`'s 1 extra
-  pipeline date, `Deadlift (opposite)`'s 2 extra pipeline dates matched the reported
-  `missingInA=1`/`=2` precisely) and independently re-verified via `qa-reviewer` before writing
-  anything up.
-- **User explicitly directed a fix** (not just further root-causing): "implement a day level 'max
-  effort' concept. workouts should be either 'max effort' or 'dynamic effort', depending if they
-  have a max set or not."
-- **Implemented and shipped the fix**, split across 3 delegated passes, each independently
-  re-verified via `qa-reviewer` (not trusted from self-reports, per this project's documented
-  history of subagents misreporting numbers):
-  1. New `'e1rm-max-effort'` deriver id in `packages/pipeline/src/derive/derivers.ts` — reuses
-     the existing `isSpeedWork` predicate, returns `null` (not a fallback value) for a day with
-     no max-effort sets. The existing `e1rm` deriver is byte-for-byte unchanged (other
-     already-migrated charts depend on its current fallback behavior; a pre-existing test locks
-     that in). `pipeline.ts`'s `buildPoints`/`buildPointsByLabel` now drop groups whose deriver
-     returns `null` instead of constructing a zero/null point. `CompositeSpec.derive`
-     (`dataset/build.ts`) widened from the literal `'e1rm'` to `string` so composite specs can
-     opt into other deriver ids; `pipeline.ts`'s composite-dataset branch now looks up
-     `pointsByDeriver.get(s.derive)` generically instead of hardcoding `e1rmPoints`.
-  2. Wired `packages/app/src/pipeline/conjugateChartSpecs.ts`'s `variations` AND `normalized`
-     specs to `'e1rm-max-effort'` (both, not just `variations` — legacy's
-     `buildVariationChartData` computes both its per-variation series and its normalized
-     composite from the same `maxEffort`-filtered rows).
-  3. **Found and fixed a separate, pre-existing bug** while investigating an odd side effect
-     (deadlift's matched-variation name changed after the fix): `conjugateChartParity.test.ts`'s
-     `pipelineVariationKeys` only read `Object.keys(pipeline.variations[0])` — the first row's
-     keys, not the union across all rows — so the "matched variation" intersection check was
-     only ever accidentally comparing one arbitrary variation per lift type. Fixed to
-     `pipeline.variations.flatMap((row) => Object.keys(row))`.
-- **Final verified result, much stronger than originally scoped**: every matched per-variation
-  series across squat/bench/deadlift now shows `missingInA=0, missingInB=0` — full date-level
-  parity. Remaining `maxAbsDiff`/`maxRelDiff` (≤1.1% on a few bench/deadlift series) is
-  pre-existing, already-documented rounding divergence, not a new finding. All three `normalized`
-  composites now have matching legacy/pipeline point counts (squat 4/4, bench 22/22,
-  deadlift 12/12), though the "no date overlap" warning itself still fires — Finding #4
-  (normalized-series date-value-alignment) is narrowed (counts align) but **not resolved**; its
-  root cause (why the actual date values still don't overlap despite matching counts) remains
-  open and is now the clear top-priority remaining item.
+- **Root-caused Finding #4 by direct evidence, not speculation.** Before touching any code,
+  wrote a standalone debug script (temp test file, deleted after use) that printed the real
+  legacy and pipeline `normalized` date arrays for squat side by side. They were byte-identical
+  (`2026-02-02`, `2026-03-02`, `2026-06-08`, `2026-06-22` on both sides) — proving the "no date
+  overlap" warning was never describing a real data problem. This immediately falsified the
+  handoff's leading hypothesis (Finding #5's day-level effort asymmetry contributing to this
+  too) and pointed at the test harness itself.
+- **Found the actual bug**: `conjugateChartParity.test.ts`'s `beforeAll` renames the pipeline
+  composite's output key to `NORMALIZED_KEY` (`__normalized__`) via `if (liftType in point)`,
+  based on a comment claiming "Pipeline normalized composite uses liftType as the key." That
+  comment was wrong — `conjugateChartSpecs.ts`'s `normalized` spec has `id: 'normalized'`, and
+  `packages/pipeline/src/dataset/build.ts`'s composite branch pushes rows keyed by `spec.id`
+  (the literal string `'normalized'`), never by `liftType`. So `liftType in point` was always
+  `false`, the rename never fired, and every `diffSeries(joined, NORMALIZED_KEY)` call found no
+  value on the pipeline side for any date — misreporting "no date overlap" for all three lift
+  types regardless of actual alignment. Structurally the same class of defect as the
+  `pipelineVariationKeys` row-0-only bug fixed in the prior session (a test-harness key/shape
+  mismatch, not a data problem).
+- **Fixed via delegated `feature-implementer` pass**: changed the condition to
+  `if ('normalized' in point)` and corrected the two stale comments. One file touched:
+  `packages/app/src/pipeline/conjugateChartParity.test.ts` (5-line change). Independently
+  re-verified via `qa-reviewer` (separate agent from the one that made the change), per this
+  project's documented history of subagents misreporting numbers.
+- **Real, unmasked result**: squat's `normalized` composite is now exact parity
+  (`compared=4 missingInA=0 missingInB=0 maxAbsDiff=0 maxRelDiff=0.0%`). But unmasking the real
+  comparison revealed bench and deadlift genuinely do NOT match: bench
+  `maxRelDiff=9.8%`, deadlift `maxRelDiff=5.1%` — real, previously-unmeasurable divergence that
+  was always in the data, just invisible behind the false "no overlap" warning. This is a new
+  open item, **Finding #6**, not yet root-caused.
+- **QA verification caught a wrinkle worth flagging for future sessions**: the first
+  `qa-reviewer` run reported 2 failing test files (`diagnosticsPanelParity.test.ts`,
+  `strengthScoreCalculatorParity.test.ts`, `ReferenceError: __MODIFIER__EFFECTS__`/
+  `__COEFFICIENTS__` not defined) in a full-suite run. Investigated directly rather than trusting
+  either report blindly: ran those two files standalone (both passed, 13/13), then reran a full
+  clean `npm run build` (pipeline+core+app) followed by `npm test -w packages/pipeline` and
+  `npm test -w packages/app` from a fresh shell — both fully green, matching the documented
+  baseline exactly (pipeline 12 files/195 tests, app 19 files/200 tests). Concluded the 2
+  failures were a non-reproducing environment/isolation flake specific to that one `qa-reviewer`
+  invocation, not caused by this session's change and not a real regression. Flagging this
+  pattern (rather than silently ignoring it) in case it recurs for a future session — if it does,
+  it's worth investigating whether some vitest run mode/pool setting is fragile around
+  build-time-injected globals (`__MODIFIER__EFFECTS__`, `__COEFFICIENTS__`).
 - **No regressions**: full suite green — `packages/pipeline` 12 files/195 tests,
-  `packages/app` 19 files/200 tests (both builds clean), independently re-verified via
-  `qa-reviewer` at every checkpoint, not self-reported.
-- **Did NOT** promote any newly-matching series to hard-assert (soft-warn preserved, per
-  established project precedent — sample sizes are n=1-5 per series, still judged too sparse to
-  call proven parity even at 0% diff).
+  `packages/app` 19 files/200 tests (both builds clean), identical counts to the pre-session
+  baseline (only the 5-line harness fix, no new test files).
+- **Did NOT** investigate Finding #6 (bench/deadlift normalized-composite value divergence) —
+  flagged as the clear next priority, not attempted this session.
 - **Did NOT** attempt the actual `ConjugateCharts.tsx`/`useConjugateChartData.ts` component swap
-  onto `@dyel/pipeline` — still on `@dyel/core` at runtime. Deliberately deferred, same as prior
-  sessions, pending Finding #4.
+  onto `@dyel/pipeline` — still on `@dyel/core` at runtime. Deliberately deferred, same as every
+  prior session, now pending Finding #6 instead of Finding #4.
 
 ## Decisions Made & Rationale
 
-- **New deriver id, not a modified `e1rm`** — `e1rm-max-effort` was added alongside the existing
-  `e1rm` rather than changing `e1rm`'s behavior directly. Changing `e1rm` itself would have
-  changed behavior for every other already-migrated pipeline chart (TotalChart, SessionBarChart,
-  SigmaChart, DateLineChart) that depends on its current fallback semantics, and broken an
-  existing test that explicitly locks in that fallback. This follows the same "narrow, opt-in
-  exception" pattern established by the prior session's `groupBy: 'label'` fix.
-- **Wired into both `variations` and `normalized` specs** — verified from legacy's actual code
-  (`buildVariationChartData`) that both are computed from the same `maxEffort`-filtered rows;
-  scoping the fix to `variations` only (as the prior session's label-grouping fix did, for
-  different reasons) would have been inconsistent with legacy here.
-- **Fixed the test-harness bug rather than accepting the confusing side effect** — when
-  deadlift's matched variation name changed after the deriver fix, investigated directly (ran
-  the pipeline standalone outside the test) before assuming either a regression or a coincidence.
-  Confirmed `Deadlift (opposite)`'s data was intact and correct; the harness itself had a latent
-  bug unrelated to correctness of the deriver fix. Fixing it was a small, clearly-scoped
-  improvement that also made the final reported parity numbers exhaustive rather than
-  accidental — did not want to hand off numbers built on a harness known to be undercounting.
-- **Still not promoting to hard-assert** despite 0%-diff, 0-gap results across the board — kept
-  consistent with this project's established precedent (documented in `migration/ConjugateCharts.md`)
-  of requiring larger sample sizes before hard-asserting parity, even when observed numbers look
-  perfect.
-- **Every step independently re-verified via `qa-reviewer`** (separate from the
-  `feature-implementer` agents that made the changes) before being written into docs — this
-  project has documented history of subagents misreporting test counts; ground-truth
-  verification caught nothing wrong this session, but the practice was followed rigorously.
+- **Verified the anomaly with a throwaway debug script before touching any real code** — given
+  this project's repeated pattern of subagents/test harnesses misreporting numbers, confirmed
+  the actual date values matched (not just point counts) before forming a root-cause hypothesis.
+  This caught that the leading hypothesis in the prior handoff (Finding #5 contributing to
+  Finding #4) was wrong, saving a wasted investigation down that path.
+- **Delegated the fix to `feature-implementer`, verification to a separate `qa-reviewer`** —
+  consistent with this project's established practice of not trusting subagent self-reports;
+  the QA pass's numbers were independently re-confirmed by rerunning the same commands directly
+  when its full-suite run showed unexpected failures, rather than either accepting or dismissing
+  them without investigation.
+- **Investigated the QA flake instead of silently discarding it** — rather than assuming the
+  2 failing files reported by `qa-reviewer` were "probably nothing," ran them standalone and
+  reran the full suite from a clean build to confirm they were non-reproducing before writing
+  up a "no regressions" conclusion. Documented the pattern in case it's a real intermittent issue
+  worth someone's attention later.
+- **Did not attempt Finding #6 this session** — root-causing it needs its own investigation
+  (likely per-variant normalization-factor fitting or canonical/label grouping differences
+  feeding the composite differently than the per-variation series, per
+  `migration/ConjugateCharts.md`'s notes, but unconfirmed) and this session was scoped to
+  closing out Finding #4 specifically, per the prior handoff's explicit instruction to solve
+  Open TODO #1.
 
 ## Open TODOs
 
-1. **Root-cause Finding #4**: normalized-series "no date overlap" anomaly. Point counts now match
-   exactly between legacy and pipeline (squat 4/4, bench 22/22, deadlift 12/12) after this
-   session's fix, but `diffSeries`/`joinChartPointsByDate` still reports zero comparable dates
-   for all three lift types — meaning the actual date VALUES still don't align even though the
-   counts do. Not investigated this session beyond confirming it's unchanged/narrowed. This is
-   the clear next priority — full detail and hypothesis space in `migration/ConjugateCharts.md`'s
-   "Finding #4" sections.
-2. **Actually swap `ConjugateCharts.tsx`/`useConjugateChartData.ts` onto `@dyel/pipeline`** — not
-   started. Per `migration/ConjugateCharts.md`'s "Before re-attempting" note, should not be
-   attempted before Finding #4 is at least assessed.
+1. **Root-cause Finding #6**: bench (9.8%) and deadlift (5.1%) `normalized` composite value
+   divergence from legacy, while squat is exact (0%). Not investigated this session beyond
+   confirming the real numbers via `qa-reviewer`. This is the clear next priority — full detail
+   in `migration/ConjugateCharts.md`'s new "Finding #4 resolved" section.
+2. **Actually swap `ConjugateCharts.tsx`/`useConjugateChartData.ts` onto `@dyel/pipeline`** —
+   not started. Should not be attempted before Finding #6 is at least assessed, per
+   `migration/ConjugateCharts.md`'s "Before re-attempting" note (same reasoning as every prior
+   session — swapping before understanding residual divergence risks reintroducing the bug that
+   motivated the original `46f267f` revert).
 3. Once ConjugateCharts is actually swapped (or a decision is made to defer it further),
    `MIGRATION_PLAN.md` Phase 4's other two blockers (`VariationRadarChart`, `DiagnosticsPanel`)
    still need the same "real pipeline-side work" treatment before `LiftTabPanel.md` can proceed.
 4. `.claude/skills/handoff/SKILL.md` still shows as modified in `git status` (uncommitted,
    pre-existing, unrelated to this session's work) — not touched or investigated here, same as
    every prior handoff.
+5. If a future session sees flaky `ReferenceError: __MODIFIER__EFFECTS__`/`__COEFFICIENTS__ is
+not defined` failures in `diagnosticsPanelParity.test.ts`/`strengthScoreCalculatorParity.test.ts`
+   during a full-suite run that don't reproduce standalone or on a rerun, this session hit the
+   same thing once and couldn't reproduce it after a clean rebuild — worth a closer look if it
+   keeps happening, but not investigated further here since it never reproduced.
 
 ## Files Touched
 
-- `packages/pipeline/src/derive/derivers.ts` (new `'e1rm-max-effort'` deriver; `e1rm` unchanged)
-- `packages/pipeline/src/derive/derivers.test.ts` (new coverage for `'e1rm-max-effort'`)
-- `packages/pipeline/src/pipeline.ts` (null-exclusion in `buildPoints`/`buildPointsByLabel`;
-  composite branch now uses `pointsByDeriver.get(s.derive)` generically)
-- `packages/pipeline/src/pipeline.test.ts` (new coverage: null-exclusion behavior, composite spec
-  respecting `spec.derive`)
-- `packages/pipeline/src/dataset/build.ts` (`CompositeSpec.derive` widened from literal `'e1rm'`
-  to `string`)
-- `packages/app/src/pipeline/conjugateChartSpecs.ts` (`variations` and `normalized` specs now use
-  `derive: 'e1rm-max-effort'`)
-- `packages/app/src/pipeline/conjugateChartParity.test.ts` (fixed `pipelineVariationKeys` to union
-  keys across all rows, not just row 0)
-- `migration/ConjugateCharts.md` (Finding #5 root-cause + fix outcome, full real parity numbers)
-- `SPECIFICATIONS.md` (Task 6b marked complete, Status section updated)
+- `packages/app/src/pipeline/conjugateChartParity.test.ts` (fixed the `normalized`-composite
+  key-rename condition from `liftType in point` to `'normalized' in point`; corrected two stale
+  comments)
+- `migration/ConjugateCharts.md` (Finding #4 root-cause + fix outcome + new Finding #6, full
+  real parity numbers)
+- `SPECIFICATIONS.md` (Task 7 marked complete, new Task 9 added for Finding #6, Status section
+  updated)
 - `HANDOFF.md` (this file)
 
 ## Suggested Next Skills
 
 - None required immediately. If resuming this work, start with Open TODO #1 (root-causing
-  Finding #4's date-value-alignment anomaly) before attempting Open TODO #2 (the actual
-  component swap) — same reasoning as every prior session: swapping before understanding
-  residual divergence risks reintroducing the bug that motivated the original `46f267f` revert.
+  Finding #6's bench/deadlift normalized-composite value divergence) before attempting Open
+  TODO #2 (the actual component swap) — same reasoning as every prior session: swapping before
+  understanding residual divergence risks reintroducing the bug that motivated the original
+  `46f267f` revert.

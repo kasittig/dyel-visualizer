@@ -53,14 +53,14 @@ describe('ConjugateCharts core-vs-pipeline parity', () => {
       const specs = conjugateChartSpecs(liftType);
       const result = runPipeline([raw], specs, PLACEHOLDER_ATHLETE, {});
       const variationRows = mergeWideRechartsRows(result.datasets.variations ?? [], 'lbs');
-      // Pipeline normalized composite uses liftType as the key, not NORMALIZED_KEY
+      // Pipeline normalized composite uses 'normalized' as the key (the composite spec's id), not NORMALIZED_KEY
       const normalizedRows = mergeWideRechartsRows(result.datasets.normalized ?? [], 'lbs');
-      // Rename the liftType key to NORMALIZED_KEY for consistent comparison
+      // Rename the 'normalized' key to NORMALIZED_KEY for consistent comparison
       const normalizedPoints: ChartPoint[] = normalizedRows.map((row) => {
         const point: ChartPoint = { ...row };
-        if (liftType in point) {
-          point[NORMALIZED_KEY] = point[liftType];
-          delete point[liftType];
+        if ('normalized' in point) {
+          point[NORMALIZED_KEY] = point['normalized'];
+          delete point['normalized'];
         }
         return point;
       });
