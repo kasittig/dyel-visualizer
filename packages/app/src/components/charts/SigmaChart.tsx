@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { PieChart, Pie, Cell, Tooltip, Legend } from 'recharts';
-import type { ChartPoint } from '@dyel/core';
+import type { ChartPoint } from '@dyel/pipeline';
 import { CollapsibleSection } from '../shared/CollapsibleSection';
 import { BaseRadarChart } from './BaseRadarChart';
 import { ChartTooltip } from './TooltipCard';

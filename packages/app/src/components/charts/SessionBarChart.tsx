@@ -8,8 +8,8 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import { formatDate } from '@dyel/core';
-import type { ChartPoint } from '@dyel/core';
+import type { ChartPoint } from '@dyel/pipeline';
+import { formatChartDate } from '../../utils/pipelineChartUtils';
 import { ChartEmpty } from './DateLineChart';
 import { ChartTooltip } from './TooltipCard';
 import styles from './SessionBarChart.module.css';
@@ -29,7 +29,7 @@ export function SessionBarChart({ chartData, unit }: { chartData: ChartPoint[]; 
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis
             dataKey="date"
-            tickFormatter={formatDate}
+            tickFormatter={formatChartDate}
             angle={-45}
             textAnchor="end"
             interval="preserveStartEnd"

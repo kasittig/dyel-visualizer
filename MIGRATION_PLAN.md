@@ -137,3 +137,40 @@ passing (up from 14 files/159 tests before Phase 2).
 See `APP_COMPONENTS.md` for the updated inventory. Next: Phase 3 (`SessionBarChart.md`,
 `SigmaChart.md`, `DateLineChart.md`) once someone picks it up, or resolve the `ConjugateCharts`/
 `VariationRadarChart` normalization divergence to unblock those two swap-overs.
+
+## Phase 3 status
+
+**Complete.** All three items landed on `migration-phase-1`:
+
+8. `SessionBarChart.md` — **fully migrated.** `formatDate` relocated to a new
+   `formatChartDate` helper in `packages/app/src/utils/pipelineChartUtils.ts` (exact same
+   tick-formatting behavior as `@dyel/core`'s version); `ChartPoint` now imported from
+   `@dyel/pipeline`. Zero `@dyel/core` references remain in `SessionBarChart.tsx`.
+   `pipeline/sessionBarChartParity.test.ts` added — lightweight sanity/regression check (no
+   legacy diff, since the component has no aggregation logic of its own) over squat/bench/
+   deadlift/volume series sourced from the same pipeline fixture `sigmaTabParity.test.ts` uses.
+9. `SigmaChart.md` — **fully migrated.** Its only `@dyel/core` dependency (the `ChartPoint`
+   type) now imports from `@dyel/pipeline`. `pipeline/sigmaChartParity.test.ts` added — thin
+   consumer check replicating the component's own last-value squat/bench/deadlift extraction
+   logic over the pipeline-derived fixture.
+10. `DateLineChart.md` — **fully migrated.** Same `formatChartDate`/`ChartPoint` treatment as
+    `SessionBarChart`. `pipeline/dateLineChartParity.test.ts` added — smoke/regression check
+    over all five series consumed by its real callers (`TotalChart`'s squat/bench/deadlift/
+    pushPull/total, `SigmaTab`'s Σ line), confirming the shell's data shape (chronological
+    order, valid ISO dates, sane values) rather than re-diffing legacy vs. pipeline.
+
+Full verification: `npm run build -w packages/pipeline`, `npm run build -w packages/core`,
+`npm run build -w packages/app` all clean; `npm test -w packages/app` — 19 test files, 200
+tests, all passing (up from 16 files/181 tests before Phase 3). No regressions.
+
+See `APP_COMPONENTS.md` for the updated inventory. Next: Phase 4 (`LiftTabPanel.md`), which is
+explicitly blocked on `ConjugateCharts` (#2), `VariationRadarChart` (#7), `DiagnosticsPanel` (#3),
+and the Phase 0 `deadliftStance` work. The `deadliftStance` prerequisite is itself already complete
+(see `SPECIFICATIONS.md`'s Part A/B section). `DiagnosticsPanel` was initially assumed to be the
+cheap one (small hook swap, parity test already passing) but a follow-up scoping pass this session
+found otherwise: `diagnose()` has no canonical→display-name resolution, no
+modifier-percentage-baseline-range model, and a differently-classified status enum versus what
+`DiagnosticsPanel.tsx`'s render logic actually needs — see `migration/DiagnosticsPanel.md`'s Status
+section and `APP_COMPONENTS.md`'s updated entry. All three remaining blockers
+(`ConjugateCharts`/`VariationRadarChart`/`DiagnosticsPanel`) now require real pipeline-side work
+before their swaps can proceed, not just wiring.

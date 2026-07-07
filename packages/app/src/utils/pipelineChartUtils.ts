@@ -38,6 +38,14 @@ export function mergeWideRechartsRows(rows: RechartsRow[], unit: 'lbs' | 'kg'): 
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 }
 
+/** Formats a date string for chart axis ticks; falls back to the raw string if unparseable. */
+export function formatChartDate(str: string): string {
+  const d = /^\d{4}-\d{2}-\d{2}$/.test(str) ? new Date(str + 'T00:00:00') : new Date(str);
+  return isNaN(d.getTime())
+    ? str
+    : d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: '2-digit' });
+}
+
 /** Local (not UTC) YYYY-MM-DD key for a `ChartPoint.date` string, for cross-timezone-safe joins. */
 function localDateKey(date: string): string {
   // Bare YYYY-MM-DD date strings are already local calendar keys; no need to round-trip through

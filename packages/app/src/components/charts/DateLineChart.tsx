@@ -1,7 +1,7 @@
 import type React from 'react';
 import { CartesianGrid, LineChart, ResponsiveContainer, XAxis, YAxis } from 'recharts';
-import { formatDate } from '@dyel/core';
-import type { ChartPoint } from '@dyel/core';
+import type { ChartPoint } from '@dyel/pipeline';
+import { formatChartDate } from '../../utils/pipelineChartUtils';
 import styles from './DateLineChart.module.css';
 
 /** The "No data found." placeholder shared by the time-series charts. */
@@ -38,7 +38,7 @@ export function DateLineChart({
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis
             dataKey="date"
-            tickFormatter={formatDate}
+            tickFormatter={formatChartDate}
             angle={-45}
             textAnchor="end"
             interval="preserveStartEnd"

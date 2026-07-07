@@ -165,3 +165,86 @@ Task 1 complete: `SigmaTab.tsx` now sources squat/bench/deadlift/pushPull/total 
 `@dyel/core` imports remain in `SigmaTab.tsx`. `App.tsx` call site updated. Verified: pipeline/core/app
 builds clean, `npm test -w packages/app` — 159 tests, 14 files, all green, no regressions.
 Next: Tasks 2 and 3 (parity tests) in parallel.
+
+---
+
+# SPECIFICATIONS — Phase 3 of MIGRATION_PLAN.md (SessionBarChart + SigmaChart + DateLineChart)
+
+Tracking doc for Phase 3 execution (`migration/SessionBarChart.md` + `migration/SigmaChart.md` +
+`migration/DateLineChart.md`), coordinated by team-lead. See `MIGRATION_PLAN.md` for ordering
+rationale and `APP_COMPONENTS.md` for the full component inventory.
+
+## Scope decisions made before delegating
+
+- All three components are presentation-only shells with **no independent aggregation logic** —
+  unlike `TotalChart`/`ConjugateCharts`/`SigmaTab`, their migration is a pure `@dyel/core` boundary
+  cleanup (type-only `ChartPoint` import + `formatDate` relocation), not a normalization/aggregation
+  reimplementation. Confirmed directly in code:
+  - `SessionBarChart.tsx`: imports `formatDate` + `ChartPoint` from `@dyel/core`.
+  - `SigmaChart.tsx`: imports only the `ChartPoint` type from `@dyel/core`.
+  - `DateLineChart.tsx`: imports `formatDate` + `ChartPoint` from `@dyel/core`.
+- `ChartPoint` already has a `@dyel/pipeline` export (`packages/pipeline/src/dataset/build.ts`,
+  re-exported from `packages/pipeline/src/index.ts`) — used already by `TotalChart.tsx`. No new
+  pipeline work needed, just switching the three remaining import sites.
+- `formatDate` needs relocating exactly once (shared by `SessionBarChart.tsx` and
+  `DateLineChart.tsx`) to a new `formatChartDate` helper in
+  `packages/app/src/utils/pipelineChartUtils.ts` (already the home for `ChartPoint`-adjacent
+  app-level helpers), preserving `@dyel/core`'s exact tick-formatting behavior (`str: string =>
+string`, short month/day/2-digit-year). Named distinctly from the existing (unrelated)
+  `Date => string` `formatDate` in `utils/dateUtils.ts` to avoid confusion/collision.
+- Per each migration doc, none of the three new parity tests should reimplement a legacy-vs-pipeline
+  diff — `sessionBarChartParity.test.ts` is a lightweight regression check (via
+  `compareChartSeries`) on `SigmaTab`'s already-validated pipeline-derived `ChartPoint[]`
+  (squat/bench/deadlift/volume), `sigmaChartParity.test.ts` a thinner consumer check (last-value
+  squat/bench/deadlift), and `dateLineChartParity.test.ts` a smoke/regression check across the
+  shell's real consumers (`TotalChart`'s full series set + `SigmaTab`'s Σ line). All three reuse
+  `sigmaTabParity.test.ts`'s fixture-loading pattern (`total-chart-sheet.csv` + `runPipeline` +
+  `TOTAL_CHART_SPECS`) rather than inventing new fixtures or diff helpers.
+
+## Task list
+
+- [x] Task 1: Add `formatChartDate` to `packages/app/src/utils/pipelineChartUtils.ts` (relocated
+      from `@dyel/core`'s `formatDate`, same behavior); update `SessionBarChart.tsx` and
+      `DateLineChart.tsx` to import `ChartPoint` from `@dyel/pipeline` and use `formatChartDate` as
+      the axis tick formatter; update `SigmaChart.tsx`'s `ChartPoint` import to `@dyel/pipeline`.
+      Confirm zero `@dyel/core` imports remain in all three files. (Target:
+      `packages/app/src/utils/pipelineChartUtils.ts`,
+      `packages/app/src/components/charts/SessionBarChart.tsx`,
+      `packages/app/src/components/charts/SigmaChart.tsx`,
+      `packages/app/src/components/charts/DateLineChart.tsx`. Test:
+      `npm run build -w packages/app`)
+- [x] Task 2: Add `packages/app/src/pipeline/sessionBarChartParity.test.ts` — lightweight regression
+      test using `compareChartSeries` over `SigmaTab`'s pipeline-derived `ChartPoint[]` (squat/
+      bench/deadlift/volume), following `sigmaTabParity.test.ts`'s fixture-loading setup. (Test:
+      `npm test -w packages/app -- sessionBarChartParity`)
+- [x] Task 3: Add `packages/app/src/pipeline/sigmaChartParity.test.ts` — thin consumer test
+      asserting last-value squat/bench/deadlift via `compareChartSeries` over the same
+      pipeline-derived fixture data. (Test: `npm test -w packages/app -- sigmaChartParity`)
+- [x] Task 4: Add `packages/app/src/pipeline/dateLineChartParity.test.ts` — smoke/regression check
+      (via `compareChartSeries`) confirming `TotalChart`'s full series set and `SigmaTab`'s Σ line
+      still render identical `ChartPoint[]` shapes post-migration. (Test:
+      `npm test -w packages/app -- dateLineChartParity`)
+- [x] Task 5: Update docs: `MIGRATION_PLAN.md` (Phase 3 status section), `APP_COMPONENTS.md`
+      (move `SessionBarChart`/`SigmaChart`/`DateLineChart` from "Not yet migrated" to "Already
+      migrated"), this file's Status section. (Target: `MIGRATION_PLAN.md`, `APP_COMPONENTS.md`,
+      `SPECIFICATIONS.md`. Test: none — doc-only)
+- [ ] Task 6 (QA): Full verification — `npm run build -w packages/pipeline`,
+      `npm run build -w packages/core`, `npm run build -w packages/app`, `npm test -w packages/app`
+      (all files, not just the three new ones) — confirm no regressions and all three new parity
+      tests pass.
+
+## Verification
+
+`npm run build -w packages/pipeline && npm run build -w packages/core && npm run build -w packages/app && npm test -w packages/app`
+— all green, including `sessionBarChartParity`, `sigmaChartParity`, and `dateLineChartParity`.
+
+## Status
+
+Tasks 1-5 complete. `formatChartDate` added to `pipelineChartUtils.ts`;
+`SessionBarChart.tsx`/`SigmaChart.tsx`/`DateLineChart.tsx` all have zero remaining
+`@dyel/core` references. Three new parity tests added (`sessionBarChartParity.test.ts`,
+`sigmaChartParity.test.ts`, `dateLineChartParity.test.ts`) — all lightweight
+sanity/regression checks per the scope decision above (no legacy diff reimplemented).
+`MIGRATION_PLAN.md`/`APP_COMPONENTS.md` updated. Verified: `npm test -w packages/app` —
+19 test files, 200 tests, all green (up from 16 files/181 tests before Phase 3), no
+regressions. Task 6 (independent QA re-verification) next.
