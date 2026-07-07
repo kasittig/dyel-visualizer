@@ -1,5 +1,16 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 import clsx from 'clsx';
+import {
+  findBestE1RM,
+  predictWeightForReps,
+  predictRepsForWeight,
+  buildSessionStats,
+  familyKey,
+  CONJUGATE_BARS,
+  CONJUGATE_STANCES,
+  CONJUGATE_EQUIPMENT,
+  CONJUGATE_ADDL_WTS,
+} from '@dyel/core';
 import type {
   ConjugateAddlWt,
   ConjugateBar,
@@ -7,75 +18,14 @@ import type {
   ConjugateEquipment,
   ConjugateExercise,
   ConjugateStance,
+  E1RMEstimate,
   LiftType,
+  SessionStats,
 } from '@dyel/core';
-import type { Point } from '@dyel/pipeline';
-import {
-  findBestE1RMFromPipeline,
-  predictWeightForReps,
-  predictRepsForWeight,
-  type E1RMEstimate,
-} from '../../pipeline/repCalculatorUtils';
-import { usePipelineRepCalculator } from '../../hooks/pipeline/usePipelineRepCalculator';
 import type { SplitRows } from '../../utils/appDataUtils';
 import { distinctDisplayNames, LIFT_TABS } from '../../utils/appUtils';
-import type { InputMode } from '../../utils/appUtils';
 import styles from './RepCalculator.module.css';
 import { CollapsibleSection } from '../shared/CollapsibleSection';
-
-// Static constants for conjugate exercise facets (moved from @dyel/core)
-const CONJUGATE_BARS = [
-  'ssb',
-  'american',
-  'swiss',
-  'cambered',
-  'standard',
-  'trap',
-  'zercher',
-  'duffalo',
-  'dumbbell',
-  'bamboo',
-  'belt',
-  'goblet',
-] as const satisfies readonly ConjugateBar[];
-
-const CONJUGATE_STANCES = [
-  'close',
-  'narrow',
-  'sumo',
-  'conventional',
-  'competition',
-  'front',
-  'opposite',
-  'medium',
-  'wide',
-  'romanian',
-  'slingshot',
-  'builder',
-] as const satisfies readonly ConjugateStance[];
-
-const CONJUGATE_EQUIPMENT = [
-  'incline',
-  'decline',
-  'blocks',
-  'deficit',
-  'board',
-  'pause',
-  'floor',
-  'box',
-  'rack',
-] as const satisfies readonly ConjugateEquipment[];
-
-const CONJUGATE_ADDL_WTS = [
-  'bands',
-  'rev. bands',
-  'chains',
-] as const satisfies readonly ConjugateAddlWt[];
-
-// Helper function to compute family key for exercise grouping
-function familyKey(ex: ConjugateExercise): string {
-  return [ex.type, ex.bar ?? '', ex.stance ?? '', ex.equipment ?? ''].join('|');
-}
 
 const LIFT_LABELS: Record<LiftType, string> = {
   squat: 'Squat',
@@ -100,17 +50,9 @@ function sourceNote(estimate: E1RMEstimate): string {
 export function RepCalculator({
   tabRows,
   baselineNames,
-  inputMode,
-  url,
-  pastedText,
-  refreshToken,
 }: {
   tabRows: Record<LiftType, SplitRows>;
   baselineNames: Partial<Record<string, string>>;
-  inputMode: InputMode;
-  url: string;
-  pastedText: string;
-  refreshToken: number;
 }) {
   const [liftType, setLiftType] = useState<LiftType>('squat');
   const [selectedName, setSelectedName] = useState('');
@@ -121,36 +63,22 @@ export function RepCalculator({
   const [selectedEquipment, setSelectedEquipment] = useState<ConjugateEquipment | null>(null);
   const [selectedAddlWt, setSelectedAddlWt] = useState<ConjugateAddlWt | null>(null);
 
-  const model = usePipelineRepCalculator(inputMode, url, pastedText, refreshToken);
-
-  const pairsByTab = useMemo(() => {
-    return Object.fromEntries(LIFT_TABS.map((tab) => [tab, tabRows[tab].maxEffort])) as Record<
-      LiftType,
-      ConjugateDataPair[]
-    >;
-  }, [tabRows]);
-
-  const pointsByCanonical = useMemo(() => {
-    const points: Record<string, Point[]> = {};
-    for (const pairs of Object.values(pairsByTab)) {
-      for (const [exercise, session] of pairs) {
-        const canonical = exercise.displayName;
-        if (!points[canonical]) {
-          points[canonical] = [];
-        }
-        points[canonical].push({
-          t: session.date.getTime(),
-          v: session.e1rm,
-          series: canonical,
-          tags: new Set(['lift:' + exercise.type]),
-        });
-      }
-    }
-    return points;
-  }, [pairsByTab]);
+  const { pairsByTab, statsByTab } = useMemo(() => {
+    const today = new Date();
+    const pairs = Object.fromEntries(
+      LIFT_TABS.map((tab) => [tab, tabRows[tab].maxEffort])
+    ) as Record<LiftType, ConjugateDataPair[]>;
+    const stats = Object.fromEntries(
+      LIFT_TABS.map((tab) => [tab, buildSessionStats(pairs[tab], baselineNames, today)])
+    ) as Record<LiftType, SessionStats>;
+    return { pairsByTab: pairs, statsByTab: stats };
+  }, [tabRows, baselineNames]);
 
   const pairs = pairsByTab[liftType];
+  const stats = statsByTab[liftType];
+
   const unit = pairs[0]?.[1].unit ?? 'lbs';
+
   const hasAccessories = tabRows.accessory.all.length > 0;
 
   const exercisesForType = useMemo(
@@ -233,22 +161,11 @@ export function RepCalculator({
   ]);
 
   const estimate = useMemo(() => {
-    if (!facetExercise || !baselineNames[liftType]) {
+    if (!facetExercise) {
       return null;
     }
-    const baselineCanonical = baselineNames[liftType];
-    const baselinePoints = pointsByCanonical[baselineCanonical];
-    if (!baselinePoints) {
-      return null;
-    }
-    return findBestE1RMFromPipeline(
-      facetExercise.displayName,
-      baselineCanonical,
-      baselinePoints,
-      model,
-      baselineNames[liftType]!
-    );
-  }, [facetExercise, baselineNames, liftType, pointsByCanonical, model]);
+    return findBestE1RM(facetExercise, stats, baselineNames[liftType], new Date());
+  }, [facetExercise, stats, baselineNames, liftType]);
 
   // Keep a ref so the exercise-change effect always reads the current reps value
   // without reps being a dependency (which would cause circular updates when typing weight).

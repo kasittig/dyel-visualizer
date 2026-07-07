@@ -65,28 +65,39 @@ the best set to hand out concurrently, then Phase 2/3 fall out naturally, with
 
 ## Status
 
-**Phase 1 complete.** All five items landed on branch `migration-phase-1`, each with a
-parity test and verified via `feature-implementer` + independent `qa-reviewer` passes:
+**Phase 1: pipeline-side work + parity tests complete; component swap-over deliberately
+deferred for 3 of 5 items.** All five items landed on branch `migration-phase-1`, each with
+a parity test verified via `feature-implementer` + independent `qa-reviewer` passes. Two are
+fully migrated (component wired to pipeline); three have a validated pipeline-native
+replacement and passing parity test, but the component itself still calls `@dyel/core` at
+runtime, by design — swapping it in is left as a small, trivial follow-up:
 
-1. `TotalChart.md` — `ChartPoint` relocated to `@dyel/pipeline`; zero `@dyel/core` refs.
-2. `ConjugateCharts.md` — `LINE_COLORS` relocated to `@dyel/pipeline`;
+1. `TotalChart.md` — **fully migrated.** `ChartPoint` relocated to `@dyel/pipeline`; zero
+   `@dyel/core` refs.
+2. `ConjugateCharts.md` — **fully migrated.** `LINE_COLORS` relocated to `@dyel/pipeline`;
    `conjugateChartParity.test.ts` added.
-3. `DiagnosticsPanel.md` — migrated to `PipelineResult.diagnostics` via new
-   `usePipelineDiagnostics` hook; `diagnosticsPanelParity.test.ts` added.
-4. `RepCalculator.md` — migrated to `findBestE1RMFromPipeline` via new
-   `usePipelineRepCalculator` hook; `repCalculatorParity.test.ts` added. Took three passes
-   (first left runtime `@dyel/core` imports in place; second relocated the dependency into
-   a new app-level util that still called `@dyel/core`'s `buildSessionStats` rather than
-   eliminating it, and hit a broken build in a stale worktree; third pass correctly wired
-   the existing pipeline-native `findBestE1RMFromPipeline` into the component and deleted
-   the core-backed wrapper file).
-5. `StrengthScoreCalculator.md` — new `computeStrengthScores` added to `@dyel/pipeline`
-   (Wilks/DOTS/Schwartz-Malone/percentile-rank); `strengthScoreCalculatorParity.test.ts`
-   added.
+3. `DiagnosticsPanel.md` — **pipeline-native replacement ready, component not yet swapped.**
+   New `usePipelineDiagnostics` hook wraps `PipelineResult.diagnostics`;
+   `diagnosticsPanelParity.test.ts` passing. `DiagnosticsPanel.tsx` still calls
+   `generateDiagnostics` (`@dyel/core`).
+4. `RepCalculator.md` — **pipeline-native replacement ready, component not yet swapped.** New
+   `usePipelineRepCalculator` hook + `findBestE1RMFromPipeline` mirror legacy `findBestE1RM`'s
+   logic over pipeline `Point[]`/`NormalizationModel` data; `repCalculatorParity.test.ts`
+   passing. `RepCalculator.tsx` still calls `findBestE1RM`/`buildSessionStats` (`@dyel/core`).
+   (Getting the pipeline-native helper itself correct took three passes — see git history —
+   but the helper is now validated by the parity test independent of the component.)
+5. `StrengthScoreCalculator.md` — **pipeline-native replacement ready, component not yet
+   swapped.** New `computeStrengthScores` added to `@dyel/pipeline` (Wilks/DOTS/
+   Schwartz-Malone/percentile-rank); `strengthScoreCalculatorParity.test.ts` passing.
+   `StrengthScoreCalculator.tsx` still calls `calculateMetrics` (`@dyel/core`) — swapping
+   this one is a one-line change (same signature).
 
 Full verification: `npm run build -w packages/pipeline && npm run build -w packages/app`
 clean; `npm test -w packages/app` — 14 test files, 169 tests, all passing.
 
-See `APP_COMPONENTS.md` for the updated "Already migrated" inventory.
+See `APP_COMPONENTS.md` for the updated inventory ("Already migrated" vs. "Ready to
+migrate").
 
-Next: Phase 2 (`SigmaTab.md`, `VariationRadarChart.md`).
+Next: swap over the 3 "ready to migrate" components whenever desired (each is now a small,
+low-risk change backed by a passing parity test), then Phase 2 (`SigmaTab.md`,
+`VariationRadarChart.md`).

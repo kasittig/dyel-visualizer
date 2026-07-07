@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import clsx from 'clsx';
-import { computeStrengthScores } from '@dyel/pipeline';
+import { calculateMetrics } from '@dyel/core';
 import { CollapsibleSection } from './CollapsibleSection';
 import styles from './StrengthScoreCalculator.module.css';
 
@@ -51,7 +51,7 @@ export function StrengthScoreCalculator({
     if (competitionTotal === null || !bodyweight || bodyweightNum <= 0 || isNaN(bodyweightNum)) {
       return null;
     }
-    return computeStrengthScores(bodyweightNum, competitionTotal, gender === 'female', unit);
+    return calculateMetrics(bodyweightNum, competitionTotal, gender === 'female', unit);
   }, [competitionTotal, bodyweight, bodyweightNum, unit, gender]);
 
   const totalDisplay =
