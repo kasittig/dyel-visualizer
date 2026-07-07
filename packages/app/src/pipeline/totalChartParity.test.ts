@@ -97,19 +97,11 @@ describe('TotalChart core-vs-pipeline parity', () => {
         deadliftStance
       );
 
-      // Squat and deadlift: hard assert (deadlift now fixed to match legacy baseline)
-      if (family === 'squat' || family === 'deadlift') {
-        expect(comparison.matches).toBe(true);
-      } else {
-        // Bench: soft warn if mismatched, but assert both sides have a baseline
-        // (known equipment-preference mismatch, documented in HANDOFF.md)
-        expect(legacyEx || pipelineCanonical).toBeDefined();
-        if (!comparison.matches) {
-          console.warn(
-            `baseline ${family} mismatch: legacy="${comparison.legacyLabel}" vs pipeline="${comparison.pipelineLabel}"`
-          );
-        }
-      }
+      // Hard assert for all three families: squat/deadlift already matched; bench now
+      // matches too after adding the paused/"commands" bench preference tier to
+      // fitNormalizationModel (packages/pipeline/src/derive/normalize.ts), mirroring
+      // legacy's defaultCompExerciseName commandsBench preference.
+      expect(comparison.matches).toBe(true);
     }
   );
 
