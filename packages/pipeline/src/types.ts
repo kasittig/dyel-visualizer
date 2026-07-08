@@ -6,6 +6,7 @@ export interface SetRecord {
   weight: number; // ALWAYS kg internally — unit conversion happens in the parser, not here
   reps: number;
   rpe?: number;
+  sets?: number; // CSV parser only (freeform records leave it undefined)
   meta?: Record<string, string>; // rawUnit, rawWeight, source, line — audit trail
 }
 

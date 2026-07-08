@@ -89,7 +89,10 @@ export function runPipeline(
   const { resolved, unknown: unkAliases } = resolveCanonicalNames(records);
   const { tagged, unknown: unkCanonicals } = tagRecords(resolved);
   const unknownExercises = [...new Set([...unkAliases, ...unkCanonicals])];
-  const model = fitNormalizationModel(tagged, { minSamples: MIN_SAMPLES }, athlete);
+  const fitInput = tagged.filter((record) => {
+    return record.sets === undefined || record.sets === 1 || record.rpe !== undefined;
+  });
+  const model = fitNormalizationModel(fitInput, { minSamples: MIN_SAMPLES }, athlete);
 
   const deriverIds = new Set<string>([
     'e1rm',

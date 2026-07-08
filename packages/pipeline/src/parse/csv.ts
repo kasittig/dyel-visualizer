@@ -99,6 +99,7 @@ export const csvParser: Parser = {
         weight: convertToKg(weight, fUnit),
         reps,
         rpe: rpe ?? undefined,
+        sets: (row[rSets] ? parseFloat_(row[rSets]) : null) ?? 1,
         meta: { rawUnit: fUnit, rawWeight: wStr, ...(sets !== null && { sets: String(sets) }) },
       };
     });
