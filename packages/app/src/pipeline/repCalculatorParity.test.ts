@@ -14,69 +14,53 @@ import type { Point, NormalizationModel } from '@dyel/pipeline';
 describe('RepCalculator parity: legacy vs pipeline', () => {
   describe('predictWeightForReps', () => {
     it.each([
-      ['baseline: e1rm=300, 1 rep', 300, 1, 300],
-      ['baseline: e1rm=300, 3 reps', 300, 3, 273],
-      ['baseline: e1rm=300, 5 reps', 300, 5, 257],
-      ['baseline: e1rm=300, 10 reps', 300, 10, 225],
-      ['zero reps returns 0', 300, 0, 0],
-      ['negative reps returns 0', 300, -1, 0],
-    ])('%s', (_, e1rm, reps, expectedApprox) => {
+      ['1 rep', 300, 1, 300],
+      ['3 reps', 300, 3, 273],
+      ['5 reps', 300, 5, 257],
+      ['10 reps', 300, 10, 225],
+      ['0 reps', 300, 0, 0],
+      ['neg reps', 300, -1, 0],
+    ])('%s', (_msg: string, e1rm: number, reps: number, expected: number) => {
       const legacy = coreWeightForReps(e1rm, reps);
       const pipeline = pipelineWeightForReps(e1rm, reps);
-
-      // Both implementations should be nearly identical
       expect(pipeline).toBeCloseTo(legacy, 1);
-      expect(Math.round(pipeline)).toBe(Math.round(expectedApprox));
+      expect(Math.round(pipeline)).toBe(Math.round(expected));
     });
   });
 
   describe('predictRepsForWeight', () => {
     it.each([
-      ['e1rm=300, weight=300 (equal) → 1 rep', 300, 300, 1],
-      ['e1rm=300, weight=250 → 6 reps', 300, 250, 6],
-      ['e1rm=300, weight=200 → 15 reps', 300, 200, 15],
-      ['e1rm=300, weight=150 → 30 reps', 300, 150, 30],
-      ['zero weight returns 1', 300, 0, 1],
-      ['negative weight returns 1', 300, -10, 1],
-      ['weight >= e1rm returns 1', 300, 300, 1],
-    ])('%s', (_, e1rm, weight, expectedApprox) => {
+      ['equal', 300, 300, 1],
+      ['250wt', 300, 250, 6],
+      ['200wt', 300, 200, 15],
+      ['150wt', 300, 150, 30],
+      ['0wt', 300, 0, 1],
+      ['neg wt', 300, -10, 1],
+      ['over wt', 300, 350, 1],
+    ])('%s', (_msg: string, e1rm: number, weight: number, expected: number) => {
       const legacy = coreRepsForWeight(e1rm, weight);
       const pipeline = pipelineRepsForWeight(e1rm, weight);
-
-      // Both implementations should be nearly identical
       expect(pipeline).toBeCloseTo(legacy, 1);
-      expect(Math.abs(pipeline - expectedApprox)).toBeLessThan(0.1);
+      expect(Math.abs(pipeline - expected)).toBeLessThan(0.1);
     });
   });
 
   describe('selectBestE1RMPoint', () => {
-    it('returns null for empty points array', () => {
+    it('handles empty arrays, maximum lookups, and identical value ties', () => {
       expect(selectBestE1RMPoint([])).toBeNull();
-    });
 
-    it('selects the point with maximum e1rm value', () => {
-      const points: Point[] = [
+      const pts: Point[] = [
         { t: 1704067200000, v: 250, series: 'squat', tags: new Set(['lift:squat']) },
         { t: 1704153600000, v: 280, series: 'squat', tags: new Set(['lift:squat']) },
         { t: 1704240000000, v: 270, series: 'squat', tags: new Set(['lift:squat']) },
       ];
+      expect(selectBestE1RMPoint(pts)).toMatchObject({ e1rm: 280, t: 1704153600000 });
 
-      const result = selectBestE1RMPoint(points);
-      expect(result).not.toBeNull();
-      expect(result!.e1rm).toBe(280);
-      expect(result!.t).toBe(1704153600000);
-    });
-
-    it('handles points with all identical values', () => {
-      const points: Point[] = [
+      const samePts: Point[] = [
         { t: 1704067200000, v: 250, series: 'bench', tags: new Set(['lift:bench']) },
         { t: 1704153600000, v: 250, series: 'bench', tags: new Set(['lift:bench']) },
       ];
-
-      const result = selectBestE1RMPoint(points);
-      expect(result).not.toBeNull();
-      expect(result!.e1rm).toBe(250);
-      expect(result!.t).toBe(1704067200000); // First point with max value
+      expect(selectBestE1RMPoint(samePts)).toMatchObject({ e1rm: 250, t: 1704067200000 });
     });
   });
 
@@ -89,198 +73,129 @@ describe('RepCalculator parity: legacy vs pipeline', () => {
         'high bar squat': { factor: 0.95, n: 8 },
         'pause squat': { factor: 0.88, n: 5 },
       },
-      addlWtOffset: {
-        'competition squat chains': { offsetKg: 15, n: 4 },
-      },
+      addlWtOffset: { 'competition squat chains': { offsetKg: 15, n: 4 } },
+    };
+    const makePoints = (v = 300, t = 1704067200000): Point[] => {
+      return [{ t, v, series: 'competition squat', tags: new Set(['lift:squat']) }];
     };
 
-    it('returns null if no baseline source name provided', () => {
-      const points: Point[] = [
-        { t: 1704067200000, v: 300, series: 'competition squat', tags: new Set(['lift:squat']) },
-      ];
+    it('returns null on missing inputs or variant validation failures', () => {
+      expect(
+        findBestE1RMFromPipeline(
+          'competition squat',
+          'competition squat',
+          makePoints(),
+          model,
+          '',
+          new Date()
+        )
+      ).toBeNull();
+      expect(
+        findBestE1RMFromPipeline(
+          'competition squat',
+          'competition squat',
+          [],
+          model,
+          'Baseline Squat',
+          new Date()
+        )
+      ).toBeNull();
+      expect(
+        findBestE1RMFromPipeline(
+          'unknown variant squat',
+          'competition squat',
+          makePoints(),
+          model,
+          'Competition Squat',
+          new Date()
+        )
+      ).toBeNull();
 
-      const result = findBestE1RMFromPipeline(
-        'competition squat',
-        'competition squat',
-        points,
-        model,
-        '',
-        new Date()
-      );
-      expect(result).toBeNull();
+      const badFactorModel = {
+        ...model,
+        variantFactor: { ...model.variantFactor, 'bad squat': { factor: 0, n: 2 } },
+      };
+      expect(
+        findBestE1RMFromPipeline(
+          'bad squat',
+          'competition squat',
+          makePoints(),
+          badFactorModel,
+          'Competition Squat',
+          new Date()
+        )
+      ).toBeNull();
     });
 
-    it('returns null if no baseline e1rm points', () => {
-      const result = findBestE1RMFromPipeline(
-        'competition squat',
-        'competition squat',
-        [],
-        model,
-        'Baseline Squat',
-        new Date()
-      );
-      expect(result).toBeNull();
-    });
-
-    it('returns exact e1rm when target equals baseline', () => {
-      const points: Point[] = [
-        { t: 1704067200000, v: 250, series: 'competition squat', tags: new Set(['lift:squat']) },
-        { t: 1704153600000, v: 300, series: 'competition squat', tags: new Set(['lift:squat']) },
+    it('projects valid matching values, structural scales, date captures, and clamps values', () => {
+      // Fix TS2554: Added generic string typed Set boundaries to match accurate pipeline Point specs
+      const exactPts: Point[] = [
+        { t: 1704067200000, v: 250, series: 'comp', tags: new Set<string>(['lift:squat']) },
+        { t: 1704153600000, v: 300, series: 'comp', tags: new Set<string>(['lift:squat']) },
       ];
-
-      const result = findBestE1RMFromPipeline(
+      const exact = findBestE1RMFromPipeline(
         'competition squat',
         'competition squat',
-        points,
+        exactPts,
         model,
         'Competition Squat',
         new Date()
       );
+      expect(exact).toMatchObject({ e1rm: 300, method: 'exact', sourceName: 'Competition Squat' });
 
-      expect(result).not.toBeNull();
-      expect(result!.e1rm).toBe(300);
-      expect(result!.method).toBe('exact');
-      expect(result!.sourceName).toBe('Competition Squat');
-    });
-
-    it('applies variant factor to baseline e1rm for target exercise', () => {
-      const points: Point[] = [
-        { t: 1704067200000, v: 300, series: 'competition squat', tags: new Set(['lift:squat']) },
-      ];
-
-      const result = findBestE1RMFromPipeline(
+      const factored = findBestE1RMFromPipeline(
         'high bar squat',
         'competition squat',
-        points,
+        makePoints(),
         model,
         'Competition Squat',
         new Date()
       );
+      expect(factored?.e1rm).toBeCloseTo(300 * 0.95, 1);
+      expect(factored?.method).toBe('variantFactor');
 
-      expect(result).not.toBeNull();
-      expect(result!.e1rm).toBeCloseTo(300 * 0.95, 1); // 285
-      expect(result!.method).toBe('variantFactor');
-    });
-
-    it('subtracts addlWt offset from projected e1rm', () => {
-      const points: Point[] = [
-        { t: 1704067200000, v: 300, series: 'competition squat', tags: new Set(['lift:squat']) },
-      ];
-
-      // Create a model with an offset for a chained variant
-      const modelWithOffset: NormalizationModel = {
+      const offsetModel = {
         ...model,
         variantFactor: {
           ...model.variantFactor,
           'competition squat chains': { factor: 1.0, n: 4 },
         },
-        addlWtOffset: {
-          'competition squat chains': { offsetKg: 20, n: 4 },
-        },
+        addlWtOffset: { 'competition squat chains': { offsetKg: 20, n: 4 } },
       };
-
-      const result = findBestE1RMFromPipeline(
+      const offsetRes = findBestE1RMFromPipeline(
         'competition squat chains',
         'competition squat',
-        points,
-        modelWithOffset,
+        makePoints(),
+        offsetModel,
         'Competition Squat',
         new Date()
       );
+      expect(offsetRes?.e1rm).toBeCloseTo(300 - 20, 1);
 
-      expect(result).not.toBeNull();
-      expect(result!.e1rm).toBeCloseTo(300 - 20, 1); // 280 = 300*1.0 - 20
-      expect(result!.method).toBe('variantFactor');
-    });
-
-    it('returns null when variant factor is missing or invalid', () => {
-      const points: Point[] = [
-        { t: 1704067200000, v: 300, series: 'competition squat', tags: new Set(['lift:squat']) },
-      ];
-
-      const result = findBestE1RMFromPipeline(
-        'unknown variant squat',
+      const dated = findBestE1RMFromPipeline(
         'competition squat',
-        points,
+        'competition squat',
+        makePoints(300, 1704067200000),
         model,
         'Competition Squat',
         new Date()
       );
+      expect(dated?.date.getTime()).toBe(1704067200000);
 
-      expect(result).toBeNull();
-    });
-
-    it('returns null when variant factor is <= 0', () => {
-      const modelWithBadFactor: NormalizationModel = {
+      const clampModel = {
         ...model,
-        variantFactor: {
-          ...model.variantFactor,
-          'bad squat': { factor: 0, n: 2 },
-        },
+        variantFactor: { ...model.variantFactor, 'light squat': { factor: 1.0, n: 2 } },
+        addlWtOffset: { 'light squat': { offsetKg: 350, n: 2 } },
       };
-
-      const points: Point[] = [
-        { t: 1704067200000, v: 300, series: 'competition squat', tags: new Set(['lift:squat']) },
-      ];
-
-      const result = findBestE1RMFromPipeline(
-        'bad squat',
-        'competition squat',
-        points,
-        modelWithBadFactor,
-        'Competition Squat',
-        new Date()
-      );
-
-      expect(result).toBeNull();
-    });
-
-    it('preserves baseline date in result', () => {
-      const baselineTime = 1704067200000; // 2024-01-01
-      const points: Point[] = [
-        { t: baselineTime, v: 300, series: 'competition squat', tags: new Set(['lift:squat']) },
-      ];
-
-      const result = findBestE1RMFromPipeline(
-        'competition squat',
-        'competition squat',
-        points,
-        model,
-        'Competition Squat',
-        new Date()
-      );
-
-      expect(result).not.toBeNull();
-      expect(result!.date.getTime()).toBe(baselineTime);
-    });
-
-    it('clamps negative offset result to 0', () => {
-      const modelWithLargeOffset: NormalizationModel = {
-        ...model,
-        variantFactor: {
-          ...model.variantFactor,
-          'light squat': { factor: 1.0, n: 2 },
-        },
-        addlWtOffset: {
-          'light squat': { offsetKg: 350, n: 2 }, // Larger than baseline e1rm
-        },
-      };
-
-      const points: Point[] = [
-        { t: 1704067200000, v: 300, series: 'competition squat', tags: new Set(['lift:squat']) },
-      ];
-
-      const result = findBestE1RMFromPipeline(
+      const clamped = findBestE1RMFromPipeline(
         'light squat',
         'competition squat',
-        points,
-        modelWithLargeOffset,
+        makePoints(),
+        clampModel,
         'Competition Squat',
         new Date()
       );
-
-      expect(result).not.toBeNull();
-      expect(result!.e1rm).toBe(0); // Math.max(0, 300 - 350)
+      expect(clamped?.e1rm).toBe(0);
     });
   });
 });

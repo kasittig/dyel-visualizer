@@ -1,12 +1,3 @@
-/**
- * Pipeline-output sanity/regression test for SigmaChart.
- *
- * SigmaChart has no independent aggregation logic of its own — it derives its display data by
- * taking the LAST non-undefined value of squat/bench/deadlift across the ChartPoint[] array it is
- * handed (see the `useMemo` in components/charts/SigmaChart.tsx). This is NOT a legacy-vs-pipeline
- * diff (see sigmaTabParity.test.ts for that intentional exception); it replicates that same
- * last-value extraction over pipeline-derived fixture data and asserts the result is sane.
- */
 import { describe, it, expect, beforeAll } from 'vitest';
 import { readFileSync } from 'fs';
 import { join } from 'path';
@@ -20,41 +11,42 @@ import {
 } from '../utils/pipelineChartUtils';
 import { TOTAL_CHART_SPECS } from './totalChartSpecs';
 
-const TOTAL_CHART_IDS = ['squat', 'bench', 'deadlift', 'pushPull', 'total'];
+const TOTAL_CHART_IDS: string[] = ['squat', 'bench', 'deadlift', 'pushPull', 'total'];
 
-/** Mirrors SigmaChart's own useMemo: last non-undefined value per lift, in array order. */
 function lastValuesByLift(chartData: ChartPoint[]) {
-  let lastSquat: number | undefined;
-  let lastBench: number | undefined;
-  let lastDeadlift: number | undefined;
+  const result: Record<string, number | undefined> = {
+    squat: undefined,
+    bench: undefined,
+    deadlift: undefined,
+  };
   for (const point of chartData) {
-    if (point.squat !== undefined) {
-      lastSquat = point.squat as number;
-    }
-    if (point.bench !== undefined) {
-      lastBench = point.bench as number;
-    }
-    if (point.deadlift !== undefined) {
-      lastDeadlift = point.deadlift as number;
-    }
+    ['squat', 'bench', 'deadlift'].forEach((lift) => {
+      const v = point[lift as keyof ChartPoint];
+      if (typeof v === 'number') {
+        result[lift] = v;
+      }
+    });
   }
-  return { squat: lastSquat, bench: lastBench, deadlift: lastDeadlift };
+  return result;
 }
 
 describe('SigmaChart pipeline data sanity', () => {
-  let pipelineOutput: ChartPoint[];
+  let pipelineOutput: ChartPoint[] = [];
 
   beforeAll(() => {
-    const fixturePath = join(__dirname, '../../test/fixtures/total-chart-sheet.csv');
-    const fixtureContent = readFileSync(fixturePath, 'utf-8');
-
-    const pairs = parseConjugateData(fixtureContent);
-    const volumeByDate = calculateVolumeCorrelation(pairs);
-
-    const raw = buildRawInput('url', fixtureContent);
-    const result = runPipeline([raw], TOTAL_CHART_SPECS, PLACEHOLDER_ATHLETE, {});
-    pipelineOutput = mergeRechartsRowsToChartPoints(result.datasets, TOTAL_CHART_IDS, 'lbs');
-    pipelineOutput = mergeVolumeIntoChartPoints(pipelineOutput, volumeByDate);
+    const txt: string = readFileSync(
+      join(__dirname, '../../test/fixtures/total-chart-sheet.csv'),
+      'utf-8'
+    );
+    const vol = calculateVolumeCorrelation(parseConjugateData(txt));
+    const res = runPipeline(
+      [buildRawInput('url', txt)],
+      TOTAL_CHART_SPECS,
+      PLACEHOLDER_ATHLETE,
+      {}
+    );
+    const pts = mergeRechartsRowsToChartPoints(res.datasets, TOTAL_CHART_IDS, 'lbs');
+    pipelineOutput = mergeVolumeIntoChartPoints(pts, vol);
   });
 
   it('produces non-empty chart data from fixture', () => {
@@ -63,9 +55,8 @@ describe('SigmaChart pipeline data sanity', () => {
 
   it.each(['squat', 'bench', 'deadlift'])(
     'last-value extraction: %s is a positive, sane number',
-    (lift) => {
-      const lastValues = lastValuesByLift(pipelineOutput);
-      const value = lastValues[lift as keyof typeof lastValues];
+    (lift: string) => {
+      const value = lastValuesByLift(pipelineOutput)[lift];
       expect(value).toBeDefined();
       expect(value as number).toBeGreaterThan(0);
       expect(value as number).toBeLessThan(10000);

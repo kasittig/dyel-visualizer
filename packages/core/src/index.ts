@@ -11,6 +11,7 @@ export type {
   EffectEnum,
   LiftType,
   GroupedConjugatePairs,
+  LiftUnits,
 } from './types/conjugate';
 export { variantLabel, familyKey } from './types/conjugate';
 export {

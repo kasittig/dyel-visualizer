@@ -24,6 +24,7 @@ function datedPair(dateStr: string): ConjugateDataPair {
       weight: 100,
       e1rm: 120,
       unit: 'lbs',
+      rpe: null,
     },
   ];
 }

@@ -32,6 +32,7 @@ const rec = (
   reps,
   canonical,
   tags: new Set(tags),
+  effects: [],
   ...((sets !== undefined || rawExercise !== undefined) && {
     meta: {
       ...(sets !== undefined && { sets: String(sets) }),
@@ -56,90 +57,45 @@ const squatHistory: TaggedSetRecord[] = [
 
 const history = [...benchHistory, ...squatHistory];
 
-describe('fitNormalizationModel', () => {
-  it('picks exactly one baseline canonical per lift:* family (prefers comp-lift tag)', () => {
+describe('fitNormalizationModel core and speed-work behavior', () => {
+  it('resolves baselines, applies sample filters, fits offsets, and verifies JSON serialization', () => {
     const model = fitNormalizationModel(history, { minSamples: 1 }, athlete());
     expect(model.baseline['lift:bench']).toBe('bench');
     expect(model.baseline['lift:squat']).toBe('squat');
-  });
+    expect(JSON.parse(JSON.stringify(model))).toEqual(model);
 
-  it('falls back to most-sampled canonical when no comp-lift tag exists in the family', () => {
-    const noCompLiftHistory: TaggedSetRecord[] = [
+    const noComp = [
       rec(day(1), 'ohp-a', 50, 5, ['lift:ohp']),
       rec(day(3), 'ohp-a', 52, 5, ['lift:ohp']),
       rec(day(5), 'ohp-a', 54, 5, ['lift:ohp']),
       rec(day(1), 'ohp-b', 40, 5, ['lift:ohp']),
     ];
-    const model = fitNormalizationModel(noCompLiftHistory, { minSamples: 1 }, athlete());
-    expect(model.baseline['lift:ohp']).toBe('ohp-a');
-  });
-
-  it('omits variantFactor entries below minSamples', () => {
-    const model = fitNormalizationModel(history, { minSamples: 3 }, athlete());
-    expect(model.variantFactor['bench-chains']).toBeUndefined();
-  });
-
-  it('includes variantFactor entries at/above minSamples, carrying n', () => {
-    const model = fitNormalizationModel(history, { minSamples: 2 }, athlete());
-    expect(model.variantFactor['bench-chains']).toEqual({ factor: expect.any(Number), n: 2 });
-    // After Task 10a offset-adjustment: weights are offset-corrected (+20kg) before fitting,
-    // resulting in a factor of 1.0 (80+20=100 vs baseline 100, 90+20=110 vs baseline 110)
-    expect(model.variantFactor['bench-chains'].factor).toBeCloseTo(1, 5);
-  });
-
-  it('fits addlWtOffset per-canonical, not pooled across families sharing the same addl tag', () => {
-    const model = fitNormalizationModel(history, { minSamples: 2 }, athlete());
-    expect(model.addlWtOffset['bench-chains']).toEqual({ offsetKg: 20, n: 2 });
-    expect(model.addlWtOffset['squat-chains']).toEqual({ offsetKg: 55, n: 2 });
-  });
-
-  it('produces a plain-JSON-serializable model (JSON.stringify/parse round-trip)', () => {
-    const model = fitNormalizationModel(history, { minSamples: 1 }, athlete());
-    const roundTripped = JSON.parse(JSON.stringify(model));
-    expect(roundTripped).toEqual(model);
-  });
-});
-
-describe('fitNormalizationModel — speed-work inclusion', () => {
-  const speedWorkPoint = rec(day(5), 'bench', 10, 1, ['lift:bench', 'comp-lift'], 9);
-  // Use a non-addlWt variant to test speed-work inclusion without offset adjustment interference
-  const variantAtSameDate = rec(day(5), 'bench-paused', 95, 1, ['lift:bench', 'variation']);
-
-  it('includes speed-work sets in the interpolation grid used to fit variant factors', () => {
-    const withoutSpeedWork = fitNormalizationModel(
-      [...benchHistory, variantAtSameDate],
-      {
-        minSamples: 1,
-      },
-      athlete()
-    );
-    const withSpeedWork = fitNormalizationModel(
-      [...benchHistory, variantAtSameDate, speedWorkPoint],
-      { minSamples: 1 },
-      athlete()
+    expect(fitNormalizationModel(noComp, { minSamples: 1 }, athlete()).baseline['lift:ohp']).toBe(
+      'ohp-a'
     );
 
-    // With speed-work now included, the interpolated grid value at day(5) is 10kg instead of
-    // ~105kg (interpolated between day(1) and day(10)), resulting in a significantly different factor.
-    // These factors should differ because the grid interpolation changes.
-    expect(withSpeedWork.variantFactor['bench-paused'].factor).not.toBeCloseTo(
-      withoutSpeedWork.variantFactor['bench-paused'].factor,
+    expect(
+      fitNormalizationModel(history, { minSamples: 3 }, athlete()).variantFactor['bench-chains']
+    ).toBeUndefined();
+
+    const m2 = fitNormalizationModel(history, { minSamples: 2 }, athlete());
+    expect(m2.variantFactor['bench-chains']).toEqual({ factor: expect.any(Number), n: 2 });
+    expect(m2.variantFactor['bench-chains'].factor).toBeCloseTo(1, 5);
+    expect(m2.addlWtOffset['bench-chains']).toEqual({ offsetKg: 20, n: 2 });
+    expect(m2.addlWtOffset['squat-chains']).toEqual({ offsetKg: 55, n: 2 });
+  });
+
+  it('includes speed-work sets in grid interpolation and anchors variant query dates', () => {
+    const sw = rec(day(5), 'bench', 10, 1, ['lift:bench', 'comp-lift'], 9),
+      vDate = rec(day(5), 'bench-paused', 95, 1, ['lift:bench', 'variation']);
+    const wOut = fitNormalizationModel([...benchHistory, vDate], { minSamples: 1 }, athlete());
+    const wIn = fitNormalizationModel([...benchHistory, vDate, sw], { minSamples: 1 }, athlete());
+
+    expect(wIn.variantFactor['bench-paused'].factor).not.toBeCloseTo(
+      wOut.variantFactor['bench-paused'].factor,
       1
     );
-  });
-
-  it('anchors the grid on the speed-work point when it lands on a variant query date', () => {
-    // Speed-work points are now included in fitting. The grid returns the exact 10kg speed-work
-    // value at day(5), giving a factor of 95 / 10 = 9.5.
-    const expectedFactor = 95 / 10;
-    const model = fitNormalizationModel(
-      [...benchHistory, variantAtSameDate, speedWorkPoint],
-      {
-        minSamples: 1,
-      },
-      athlete()
-    );
-    expect(model.variantFactor['bench-paused'].factor).toBeCloseTo(expectedFactor, 1);
+    expect(wIn.variantFactor['bench-paused'].factor).toBeCloseTo(95 / 10, 1);
   });
 });
 
@@ -354,7 +310,7 @@ describe('round-trip', () => {
 describe('fitNormalizationModel — deadlift stance preference tier', () => {
   it.each<[string, 'sumo' | 'conventional', TaggedSetRecord[], string]>([
     [
-      'sumo preference with sumo-tagged history → baseline is sumo canonical',
+      'sumo preference matched',
       'sumo',
       [
         rec(day(1), 'deadlift-sumo', 200, 1, ['lift:deadlift', 'stance:sumo']),
@@ -364,7 +320,7 @@ describe('fitNormalizationModel — deadlift stance preference tier', () => {
       'deadlift-sumo',
     ],
     [
-      'conventional preference with conventional-tagged history → baseline is conventional canonical',
+      'conv preference matched',
       'conventional',
       [
         rec(day(1), 'deadlift-conventional', 190, 1, ['lift:deadlift', 'stance:conventional']),
@@ -374,7 +330,7 @@ describe('fitNormalizationModel — deadlift stance preference tier', () => {
       'deadlift-conventional',
     ],
     [
-      'default (non-sumo preference) with conventional-tagged history → baseline is conventional canonical',
+      'default non-sumo path',
       'conventional',
       [
         rec(day(1), 'deadlift-conventional', 190, 1, ['lift:deadlift', 'stance:conventional']),
@@ -382,33 +338,31 @@ describe('fitNormalizationModel — deadlift stance preference tier', () => {
       ],
       'deadlift-conventional',
     ],
-  ])('%s', (_, stance, deadliftHistory, expectedBaseline) => {
-    const model = fitNormalizationModel(
-      deadliftHistory,
-      { minSamples: 1 },
-      athlete({ deadliftStance: stance })
-    );
-    expect(model.baseline['lift:deadlift']).toBe(expectedBaseline);
+  ])('%s', (_, stance, deadliftHistory, expected) => {
+    expect(
+      fitNormalizationModel(deadliftHistory, { minSamples: 1 }, athlete({ deadliftStance: stance }))
+        .baseline['lift:deadlift']
+    ).toBe(expected);
   });
 
-  it('regression: stance-preference tier takes priority over comp-lift-tagged record', () => {
-    const deadliftHistory: TaggedSetRecord[] = [
-      rec(day(1), 'deadlift-comp', 220, 1, ['lift:deadlift', 'comp-lift']),
-      rec(day(5), 'deadlift-comp', 225, 1, ['lift:deadlift', 'comp-lift']),
+  it('verifies precedence rules: competition-named over stance-preference, over comp-lift-tagged', () => {
+    const baseHistory = [
       rec(day(1), 'deadlift-sumo', 200, 1, ['lift:deadlift', 'stance:sumo']),
       rec(day(3), 'deadlift-sumo', 210, 1, ['lift:deadlift', 'stance:sumo']),
     ];
-    const model = fitNormalizationModel(
-      deadliftHistory,
-      { minSamples: 1 },
-      athlete({ deadliftStance: 'sumo' })
-    );
-    // Stance preference takes priority over comp-lift tag, so baseline should be deadlift-sumo
-    expect(model.baseline['lift:deadlift']).toBe('deadlift-sumo');
-  });
 
-  it('regression: competition-named record takes priority over stance-preference tier', () => {
-    const deadliftHistory: TaggedSetRecord[] = [
+    const h1 = [
+      rec(day(1), 'deadlift-comp', 220, 1, ['lift:deadlift', 'comp-lift']),
+      rec(day(5), 'deadlift-comp', 225, 1, ['lift:deadlift', 'comp-lift']),
+      ...baseHistory,
+    ];
+    expect(
+      fitNormalizationModel(h1, { minSamples: 1 }, athlete({ deadliftStance: 'sumo' })).baseline[
+        'lift:deadlift'
+      ]
+    ).toBe('deadlift-sumo');
+
+    const h2 = [
       rec(
         day(1),
         'deadlift-comp-named',
@@ -427,102 +381,46 @@ describe('fitNormalizationModel — deadlift stance preference tier', () => {
         undefined,
         'Competition Deadlift'
       ),
-      rec(
-        day(3),
-        'deadlift-comp-named',
-        240,
-        1,
-        ['lift:deadlift', 'variation'],
-        undefined,
-        'Competition Deadlift'
-      ),
-      rec(day(1), 'deadlift-sumo', 200, 1, ['lift:deadlift', 'stance:sumo']),
-      rec(day(3), 'deadlift-sumo', 210, 1, ['lift:deadlift', 'stance:sumo']),
+      ...baseHistory,
     ];
-    const model = fitNormalizationModel(
-      deadliftHistory,
-      { minSamples: 1 },
-      athlete({ deadliftStance: 'sumo' })
-    );
-    // Competition-named takes top priority, superseding stance preference
-    expect(model.baseline['lift:deadlift']).toBe('deadlift-comp-named');
+    expect(
+      fitNormalizationModel(h2, { minSamples: 1 }, athlete({ deadliftStance: 'sumo' })).baseline[
+        'lift:deadlift'
+      ]
+    ).toBe('deadlift-comp-named');
   });
 });
 
 describe('fitNormalizationModel — Task 10a: addlWtOffset fit-time adjustment', () => {
-  it('fits variantFactor for addlWt canonical using offset-adjusted weights (differs from naive unadjusted fit)', () => {
-    // This test proves that Task 10a's offset-adjustment of weights before fitting actually changes the fit result.
+  it('applies offset-adjusted weights for factors and isolates non-addlWt variants', () => {
     const model = fitNormalizationModel(history, { minSamples: 2 }, athlete());
-
-    // The offset-adjusted fit for bench-chains (offset=20kg):
-    // - day 1: (80+20=100) / 100 = 1.0
-    // - day 10: (90+20=110) / 110 = 1.0
-    // - mean = 1.0
     expect(model.variantFactor['bench-chains'].factor).toBeCloseTo(1, 5);
-
-    // Now compute what the fit would be WITHOUT offset adjustment (naive unadjusted):
-    // - day 1: 80 / 100 = 0.8
-    // - day 10: 90 / 110 = 0.818...
-    // - mean ≈ 0.809...
-    // These are clearly different, proving the offset adjustment changed the fit.
     expect(model.variantFactor['bench-chains'].factor).not.toBeCloseTo(0.809090909, 2);
-  });
 
-  it('non-addlWt canonicals are fit on raw (non-offset-adjusted) weights unchanged', () => {
-    // squat-chains has no addl tag in this history, so it should use the raw weight fit path.
-    // This test ensures Task 10a doesn't affect canonicals without addlWt tags.
     const noAddlHistory: TaggedSetRecord[] = [
       rec(day(1), 'squat', 200, 1, ['lift:squat', 'comp-lift']),
       rec(day(10), 'squat', 220, 1, ['lift:squat', 'comp-lift']),
-      // Non-addlWt variant (no addl tag)
       rec(day(1), 'squat-pause', 180, 1, ['lift:squat', 'variation']),
       rec(day(10), 'squat-pause', 200, 1, ['lift:squat', 'variation']),
     ];
-    const model = fitNormalizationModel(noAddlHistory, { minSamples: 2 }, athlete());
-    // Should be fit on raw weights: (180/200 + 200/220) / 2 ≈ 0.9045
-    expect(model.variantFactor['squat-pause']).toBeDefined();
-    // Just verify it exists and is non-zero (exact value depends on interpolation)
-    expect(model.variantFactor['squat-pause'].factor).toBeGreaterThan(0);
-    // Verify no offset was fit for this non-addlWt canonical
-    expect(model.addlWtOffset['squat-pause']).toBeUndefined();
+    const mNoAddl = fitNormalizationModel(noAddlHistory, { minSamples: 2 }, athlete());
+    expect(mNoAddl.variantFactor['squat-pause']?.factor).toBeGreaterThan(0);
+    expect(mNoAddl.addlWtOffset['squat-pause']).toBeUndefined();
   });
 });
 
 describe('Design C: offsetAdjustRecords pre-derivation (weight-space correction)', () => {
-  it('when records are pre-adjusted via offsetAdjustRecords and derived, e1RM reflects the corrected weight', () => {
-    // This test verifies the weight-space correction path (Design C) works end-to-end.
-    // Create a simple model with an offset-fitted canonical.
+  it('corrects weights, evaluates structural scaling factors, and validates limits', () => {
     const model = fitNormalizationModel(history, { minSamples: 2 }, athlete());
 
-    // bench-chains has offset=20kg. A raw record with weight=80 should become 100 after adjustment.
-    // When derived with e1rm formula at reps=1, 100kg @ 1rep = 100 e1RM.
-    const rawRecord = rec(day(1), 'bench-chains', 80, 1, ['lift:bench', 'addl:chains']);
-    const adjusted = offsetAdjustRecords([rawRecord], model);
+    const raw = rec(day(1), 'bench-chains', 80, 1, ['lift:bench', 'addl:chains']);
+    expect(offsetAdjustRecords([raw], model)[0].weight).toBe(100);
 
-    // After adjustment, weight should be 80 + 20 = 100
-    expect(adjusted[0].weight).toBe(100);
-  });
-
-  it('composite specs consume offset-adjusted points, normalizeE1rm applies pure factor', () => {
-    const model = fitNormalizationModel(history, { minSamples: 2 }, athlete());
-
-    // If a pre-adjusted e1rm point (based on corrected weight) flows through normalizeE1rm
-    // with pure factor operation (no offset term), the result is e1rm / factor.
-    // bench-chains: factor ≈ 1 (because offset adjustment makes it match baseline at fit time),
-    // so normalized ≈ e1rm_adjusted / 1 = e1rm_adjusted.
-    const adjustedE1rm = 100;
     const factor = model.variantFactor['bench-chains'].factor;
-    const normalized = normalizeE1rm('bench-chains', adjustedE1rm, model);
+    expect(normalizeE1rm('bench-chains', 100, model)).toBeCloseTo(100 / factor, 5);
 
-    expect(normalized).toBeCloseTo(adjustedE1rm / factor, 5);
-  });
-
-  it('projectToVariant clamping works for pure factor operation', () => {
-    const model = fitNormalizationModel(history, { minSamples: 2 }, athlete());
-    // With pure factor (no offset term), projectToVariant(5, 'bench-chains', model) = max(0, 5 * factor)
-    // Since factor ≈ 1, result ≈ 5, not clamped to 0 (unlike Task 10b where offset subtraction would clamp it).
-    const result = projectToVariant(5, 'bench-chains', model)!;
-    expect(result).toBeCloseTo(5 * model.variantFactor['bench-chains'].factor, 5);
-    expect(result).toBeGreaterThan(0);
+    const projected = projectToVariant(5, 'bench-chains', model)!;
+    expect(projected).toBeCloseTo(5 * factor, 5);
+    expect(projected).toBeGreaterThan(0);
   });
 });

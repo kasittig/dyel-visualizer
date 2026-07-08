@@ -372,32 +372,31 @@ const SCHWARTZ_MALONE_PERCENTILE = {
 };
 
 const calc = (bw: number, total: number, coeff: number[]) => {
-  const d = coeff.reduce((sum, c, i) => sum + c * Math.pow(bw, i), 0);
-  return Math.round(((total * 500) / d) * 100) / 100;
+  return (
+    Math.round(
+      ((total * 500) /
+        coeff.reduce((sum, c, i) => {
+          return sum + c * Math.pow(bw, i);
+        }, 0)) *
+        100
+    ) / 100
+  );
 };
 
-function convertUnits(value: number, inputUnit: 'lbs' | 'kg', outputUnit: 'lbs' | 'kg'): number {
-  if (inputUnit === outputUnit) {
-    return value;
-  } else if (inputUnit === 'lbs') {
-    return value * 0.45359237;
-  } else {
-    return value * 2.20462262185;
-  }
-}
+const convertUnits = (v: number, from: 'lbs' | 'kg', to: 'lbs' | 'kg') => {
+  return from === to ? v : from === 'lbs' ? v * 0.45359237 : v * 2.20462262185;
+};
 
 function calculatePercentileRank(
   score: number,
   { mean, std }: { mean: number; std: number }
 ): number {
-  const z = (score - mean) / std;
+  const z = (score - mean) / std,
+    absZ = Math.abs(z),
+    t = 1 / (1 + 0.2316419 * absZ);
   const a = [0.31938153, -0.356563782, 1.781477937, -1.821255978, 1.330274429];
-  const p = 0.2316419;
-  const absZ = Math.abs(z);
-  const t = 1 / (1 + p * absZ);
   const pdf = Math.exp(-0.5 * absZ * absZ) / Math.sqrt(2 * Math.PI);
-  const poly = t * (a[0] + t * (a[1] + t * (a[2] + t * (a[3] + t * a[4]))));
-  const q = pdf * poly;
+  const q = pdf * t * (a[0] + t * (a[1] + t * (a[2] + t * (a[3] + t * a[4]))));
   return Math.min(99, Math.max(1, Math.round((z >= 0 ? 1 - q : q) * 100)));
 }
 
@@ -442,30 +441,26 @@ export function computeStrengthScores(
   unit: 'lbs' | 'kg' = 'lbs'
 ): LiftMetrics {
   const sex = isFemale ? 'F' : 'M';
-
-  // Wilks and DOTS expect kg
-  const bwKg = convertUnits(bodyweight, unit, 'kg');
-  const totalKg = convertUnits(total, unit, 'kg');
+  const bwKg = convertUnits(bodyweight, unit, 'kg'),
+    totalKg = convertUnits(total, unit, 'kg');
+  const bwLbs = convertUnits(bodyweight, unit, 'lbs'),
+    totalLbs = convertUnits(total, unit, 'lbs');
 
   const wilksScore = calc(bwKg, totalKg, WILKS[sex]);
   const dotsScore =
     bwKg < DOTS[sex].min || bwKg > DOTS[sex].max ? 0 : calc(bwKg, totalKg, DOTS[sex].c);
-
-  // Schwartz-Malone expects lbs
-  const bwLbs = convertUnits(bodyweight, unit, 'lbs');
-  const totalLbs = convertUnits(total, unit, 'lbs');
-  const schwartzmaloneLookup = sex === 'F' ? SCHWARTZ_MALONE_FEMALE : SCHWARTZ_MALONE_MALE;
-  const schwartzmaloneScore = calculateSchwartzMalone(bwLbs, totalLbs, schwartzmaloneLookup);
+  const smScore = calculateSchwartzMalone(
+    bwLbs,
+    totalLbs,
+    sex === 'F' ? SCHWARTZ_MALONE_FEMALE : SCHWARTZ_MALONE_MALE
+  );
 
   return {
     wilks: wilksScore,
     wilksPercentile: calculatePercentileRank(wilksScore, WILKS_PERCENTILE[sex]),
     dots: dotsScore,
     dotsPercentile: calculatePercentileRank(dotsScore, DOTS_PERCENTILE[sex]),
-    schwartzmalone: schwartzmaloneScore,
-    schwartzmalonePercentile: calculatePercentileRank(
-      schwartzmaloneScore,
-      SCHWARTZ_MALONE_PERCENTILE[sex]
-    ),
+    schwartzmalone: smScore,
+    schwartzmalonePercentile: calculatePercentileRank(smScore, SCHWARTZ_MALONE_PERCENTILE[sex]),
   };
 }

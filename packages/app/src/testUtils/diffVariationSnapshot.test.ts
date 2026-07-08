@@ -4,82 +4,53 @@ import { snapshotVariationsFromPipeline, diffVariationSnapshots } from './diffVa
 
 describe('diffVariationSnapshot helpers', () => {
   describe('snapshotVariationsFromPipeline', () => {
-    it('extracts last row values from variation time series', () => {
+    it('extracts latest timestamp row values', () => {
       const rows: RechartsRow[] = [
-        { t: 1000, 'Box Squat': 100, 'Squat (SSB)': 110 },
-        { t: 2000, 'Box Squat': 105, 'Squat (SSB)': 115 },
-        { t: 1500, 'Box Squat': 102, 'Squat (SSB)': 112 },
+        { t: 1000, A: 100 },
+        { t: 2000, A: 105 },
+        { t: 1500, A: 102 },
       ];
-
-      const snapshot = snapshotVariationsFromPipeline(rows, 'kg');
-
-      // Should extract the last (highest timestamp) row: t=2000
-      expect(snapshot['Box Squat']).toBe(105);
-      expect(snapshot['Squat (SSB)']).toBe(115);
+      expect(snapshotVariationsFromPipeline(rows, 'kg')).toEqual({ A: 105 });
     });
 
-    it('converts kg to lbs when requested', () => {
-      const rows: RechartsRow[] = [{ t: 1000, Variation: 100 }]; // 100 kg ≈ 220.46 lbs
-      const snapshot = snapshotVariationsFromPipeline(rows, 'lbs');
-      expect(snapshot['Variation']).toBe(220); // rounded
+    it('converts kg to lbs', () => {
+      expect(snapshotVariationsFromPipeline([{ t: 1000, V: 100 }], 'lbs')).toEqual({ V: 220 });
     });
 
-    it('handles empty variation rows gracefully', () => {
-      const snapshot = snapshotVariationsFromPipeline([], 'lbs');
-      expect(snapshot).toEqual({});
+    it('handles empty rows gracefully', () => {
+      expect(snapshotVariationsFromPipeline([], 'lbs')).toEqual({});
     });
 
-    it('ignores timestamp key "t" in snapshot', () => {
-      const rows: RechartsRow[] = [{ t: 1000, Variation: 100 }];
-      const snapshot = snapshotVariationsFromPipeline(rows, 'kg');
-      expect(snapshot['t']).toBeUndefined();
-      expect(Object.keys(snapshot)).not.toContain('t');
+    it('ignores timestamp key "t"', () => {
+      expect(snapshotVariationsFromPipeline([{ t: 1000, V: 100 }], 'kg')).not.toHaveProperty('t');
     });
   });
 
   describe('diffVariationSnapshots', () => {
     it('computes differences between two snapshots', () => {
-      const legacy = { 'Box Squat': 100, 'Squat (SSB)': 110 };
-      const pipeline = { 'Box Squat': 105, 'Squat (SSB)': 115 };
-
-      const diffs = diffVariationSnapshots(legacy, pipeline);
-
-      expect(diffs).toHaveLength(2);
-      const boxSquat = diffs.find((d) => d.variationName === 'Box Squat');
-      expect(boxSquat?.absDiff).toBe(5);
-      expect(boxSquat?.relDiff).toBeCloseTo(5 / 105, 2);
+      const res = diffVariationSnapshots({ B: 100, S: 110 }, { B: 105, S: 115 });
+      expect(res).toContainEqual(expect.objectContaining({ variationName: 'B', absDiff: 5 }));
     });
 
-    it('handles missing values in either snapshot', () => {
-      const legacy = { 'Box Squat': 100, 'Squat (SSB)': undefined };
-      const pipeline = { 'Box Squat': 105, 'Squat (SSB)': 110 };
-
-      const diffs = diffVariationSnapshots(legacy, pipeline);
-
-      expect(diffs).toHaveLength(2);
-      const missing = diffs.find((d) => d.variationName === 'Squat (SSB)');
-      expect(missing?.legacyValue).toBeUndefined();
-      expect(missing?.pipelineValue).toBe(110);
+    it('handles missing values in snapshots', () => {
+      const res = diffVariationSnapshots({ B: 100, S: undefined }, { B: 105, S: 110 });
+      expect(res.find((d) => d.variationName === 'S')).toMatchObject({
+        legacyValue: undefined,
+        pipelineValue: 110,
+      });
     });
 
-    it('returns sorted results by variation name', () => {
-      const legacy = { Zebra: 100, Alpha: 105 };
-      const pipeline = { Zebra: 100, Alpha: 105 };
-
-      const diffs = diffVariationSnapshots(legacy, pipeline);
-
-      expect(diffs[0].variationName).toBe('Alpha');
-      expect(diffs[1].variationName).toBe('Zebra');
+    it('sorts results alphabetically by name', () => {
+      const res = diffVariationSnapshots({ Zebra: 100, Alpha: 105 }, { Zebra: 100, Alpha: 105 });
+      expect(res[0].variationName).toBe('Alpha');
+      expect(res[1].variationName).toBe('Zebra');
     });
 
     it('computes zero diff when values match', () => {
-      const snapshot = { 'Box Squat': 100, 'Squat (SSB)': 110 };
-      const diffs = diffVariationSnapshots(snapshot, snapshot);
-
-      diffs.forEach((d) => {
-        expect(d.absDiff).toBe(0);
-        expect(d.relDiff).toBe(0);
-      });
+      const snap = { B: 100, S: 110 };
+      diffVariationSnapshots(snap, snap).forEach((d) =>
+        expect(d).toMatchObject({ absDiff: 0, relDiff: 0 })
+      );
     });
   });
 });

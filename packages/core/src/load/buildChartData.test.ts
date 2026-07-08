@@ -20,6 +20,11 @@ function ex(
     stance: opts.stance ?? 'competition',
     equipment: opts.equipment ?? null,
     addlWts: opts.addlWts ?? [],
+    averageIndex: null,
+    expectedBaseline: null,
+    status: null,
+    diagnostic: null,
+    effects: [],
   };
 }
 
@@ -38,20 +43,22 @@ function pair(
       weight: opts.weight ?? e1rm,
       e1rm,
       unit: 'lbs',
+      rpe: null,
     },
   ];
 }
 
 const noMaps = new Map<string, ConjugateExercise>();
+const noVolume = new Map<string, number>();
 
 describe('buildChartData', () => {
   it('returns empty array for empty input', () => {
-    expect(buildChartData([], noMaps, noMaps, emptyStats)).toEqual([]);
+    expect(buildChartData([], noMaps, noMaps, emptyStats, noVolume)).toEqual([]);
   });
 
   it('uses raw session e1RM (rounded) when no target/baseline is set', () => {
     const rows = [pair(ex('Squat', 'squat'), '2024-01-01', 300.4)];
-    const result = buildChartData(rows, noMaps, noMaps, emptyStats);
+    const result = buildChartData(rows, noMaps, noMaps, emptyStats, noVolume);
     expect(result).toEqual([{ date: '2024-01-01', squat: 300 }]);
   });
 
@@ -60,7 +67,7 @@ describe('buildChartData', () => {
       pair(ex('Squat', 'squat'), '2024-01-01', 300),
       pair(ex('Curl', 'accessory'), '2024-01-01', 50),
     ];
-    const result = buildChartData(rows, noMaps, noMaps, emptyStats);
+    const result = buildChartData(rows, noMaps, noMaps, emptyStats, noVolume);
     expect(result[0]).toEqual({ date: '2024-01-01', squat: 300 });
     expect('accessory' in result[0]).toBe(false);
   });
@@ -71,7 +78,7 @@ describe('buildChartData', () => {
       pair(ex('Squat', 'squat'), '2024-01-01', 310),
       pair(ex('Squat', 'squat'), '2024-01-01', 290),
     ];
-    const result = buildChartData(rows, noMaps, noMaps, emptyStats);
+    const result = buildChartData(rows, noMaps, noMaps, emptyStats, noVolume);
     expect(result[0].squat).toBe(310);
   });
 
@@ -81,7 +88,7 @@ describe('buildChartData', () => {
       pair(ex('Squat', 'squat'), '2024-01-01', 300),
       pair(ex('Squat', 'squat'), '2024-02-01', 310),
     ];
-    const result = buildChartData(rows, noMaps, noMaps, emptyStats);
+    const result = buildChartData(rows, noMaps, noMaps, emptyStats, noVolume);
     expect(result.map((p) => p.date)).toEqual(['2024-01-01', '2024-02-01', '2024-03-01']);
   });
 
@@ -91,7 +98,7 @@ describe('buildChartData', () => {
       pair(ex('Bench', 'bench'), '2024-01-02', 50),
       pair(ex('Deadlift', 'deadlift'), '2024-01-03', 25),
     ];
-    const result = buildChartData(rows, noMaps, noMaps, emptyStats);
+    const result = buildChartData(rows, noMaps, noMaps, emptyStats, noVolume);
 
     const [d1, d2, d3] = result;
     expect(d1).toEqual({ date: '2024-01-01', squat: 100 });
@@ -119,7 +126,7 @@ describe('buildChartData', () => {
 
     // SSB raw e1RM 270 → normalized to the straight-bar squat: 270 / 0.9 = 300.
     const rows = [pair(ssb, '2024-01-01', 270, { weight: 270, reps: 1 })];
-    const result = buildChartData(rows, baselineExByType, targetExByType, stats);
+    const result = buildChartData(rows, baselineExByType, targetExByType, stats, noVolume);
     expect(result[0].squat).toBe(300);
   });
 
@@ -131,7 +138,7 @@ describe('buildChartData', () => {
     const targetExByType = new Map([['squat', squat]]);
 
     const rows = [pair(front, '2024-01-01', 250)];
-    const result = buildChartData(rows, baselineExByType, targetExByType, emptyStats);
+    const result = buildChartData(rows, baselineExByType, targetExByType, emptyStats, noVolume);
     expect(result).toEqual([]);
   });
 });

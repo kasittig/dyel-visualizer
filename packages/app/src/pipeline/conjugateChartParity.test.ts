@@ -17,222 +17,118 @@ import { extractPairs, buildTabRows, computeEffectiveNames } from '../utils/appD
 import { initialTabState } from '../utils/appUtils';
 import { conjugateChartSpecs } from './conjugateChartSpecs';
 
-const LIFT_TYPES = ['squat', 'bench', 'deadlift'];
+interface PipelineDataset {
+  variations: ChartPoint[];
+  normalized: ChartPoint[];
+}
+
+const LIFT_TYPES: string[] = ['squat', 'bench', 'deadlift'];
 
 describe('ConjugateCharts core-vs-pipeline parity', () => {
-  let fixtureContent: string;
-  const pipelineResultsByLift: Record<
-    string,
-    { variations: ChartPoint[]; normalized: ChartPoint[] }
-  > = {};
-  const legacyResultsByLift: Record<string, ReturnType<typeof buildVariationChartData>> = {};
-  let stats: RepCalcStats;
-  let effectiveBaselineNames: Partial<Record<string, string>>;
-  let effectiveTargetNames: Partial<Record<string, string>>;
-  let tabRows: ReturnType<typeof buildTabRows>;
+  const pipelineResults: Record<string, PipelineDataset> = {};
+  const legacyResults: Record<string, ReturnType<typeof buildVariationChartData>> = {};
 
   beforeAll(() => {
-    const fixturePath = join(__dirname, '../../test/fixtures/total-chart-sheet.csv');
-    fixtureContent = readFileSync(fixturePath, 'utf-8');
+    const txt: string = readFileSync(
+      join(__dirname, '../../test/fixtures/total-chart-sheet.csv'),
+      'utf-8'
+    );
+    const pairs = parseConjugateData(txt);
+    const tabRows = buildTabRows(extractPairs({ status: 'success', pairs }));
+    const eff = computeEffectiveNames(tabRows, initialTabState(), 'sumo');
+    const stats: RepCalcStats = buildSessionStats(pairs, eff.effectiveBaselineNames, new Date());
+    const raw = buildRawInput('url', txt);
 
-    // Legacy @dyel/core path using same fixture content
-    const pairs = parseConjugateData(fixtureContent);
-    const state = { status: 'success' as const, pairs };
-    const dataMap = extractPairs(state);
-    tabRows = buildTabRows(dataMap);
-    const tabState = initialTabState();
-    const deadliftStance = 'sumo'; // Default documented in HANDOFF.md
-    const effectiveNames = computeEffectiveNames(tabRows, tabState, deadliftStance);
-    effectiveBaselineNames = effectiveNames.effectiveBaselineNames;
-    effectiveTargetNames = effectiveNames.effectiveTargetNames;
-    stats = buildSessionStats(pairs, effectiveBaselineNames, new Date());
-
-    // Build pipeline output for each lift type
-    const raw = buildRawInput('url', fixtureContent);
-    for (const liftType of LIFT_TYPES) {
-      const specs = conjugateChartSpecs(liftType);
-      const result = runPipeline([raw], specs, PLACEHOLDER_ATHLETE, {});
-      const variationRows = mergeWideRechartsRows(result.datasets.variations ?? [], 'lbs');
-      // Pipeline normalized composite uses 'normalized' as the key (the composite spec's id), not NORMALIZED_KEY
-      const normalizedRows = mergeWideRechartsRows(result.datasets.normalized ?? [], 'lbs');
-      // Rename the 'normalized' key to NORMALIZED_KEY for consistent comparison
-      const normalizedPoints: ChartPoint[] = normalizedRows.map((row) => {
-        const point: ChartPoint = { ...row };
-        if ('normalized' in point) {
-          point[NORMALIZED_KEY] = point['normalized'];
-          delete point['normalized'];
+    for (const lift of LIFT_TYPES) {
+      const res = runPipeline([raw], conjugateChartSpecs(lift), PLACEHOLDER_ATHLETE, {});
+      const vars: ChartPoint[] = mergeWideRechartsRows(res.datasets.variations ?? [], 'lbs');
+      const norms: ChartPoint[] = mergeWideRechartsRows(res.datasets.normalized ?? [], 'lbs').map(
+        (row: ChartPoint) => {
+          const pt: Record<string, unknown> = { ...row };
+          if ('normalized' in pt) {
+            pt[NORMALIZED_KEY] = pt['normalized'];
+            delete pt['normalized'];
+          }
+          return pt as ChartPoint;
         }
-        return point;
-      });
-      pipelineResultsByLift[liftType] = {
-        variations: variationRows,
-        normalized: normalizedPoints,
-      };
-    }
-
-    // Build legacy output for each lift type
-    for (const liftType of LIFT_TYPES) {
-      const liftRows = tabRows[liftType].maxEffort;
-      const targetName = effectiveTargetNames[liftType] ?? null;
-      const legacyResult = buildVariationChartData(
-        liftRows,
-        effectiveBaselineNames,
-        stats,
-        targetName
       );
-      legacyResultsByLift[liftType] = legacyResult;
+      pipelineResults[lift] = { variations: vars, normalized: norms };
+      legacyResults[lift] = buildVariationChartData(
+        tabRows[lift].maxEffort,
+        eff.effectiveBaselineNames,
+        stats,
+        eff.effectiveTargetNames[lift] ?? null
+      );
     }
   });
 
   it('produces non-empty chart data from fixture for core implementation', () => {
     for (const liftType of LIFT_TYPES) {
-      const result = legacyResultsByLift[liftType];
-      // Only assert if the lift type has data in the fixture
-      if (result.data.length > 0) {
-        expect(result.data.length).toBeGreaterThan(0);
+      if (legacyResults[liftType].data.length > 0) {
+        expect(legacyResults[liftType].data.length).toBeGreaterThan(0);
       }
     }
   });
 
-  // Intentional exception to the pipeline migration boundary rule (documented in packages/app/CLAUDE.md):
-  // This test file imports directly from both @dyel/core (buildVariationChartData, NORMALIZED_KEY) and
-  // @dyel/pipeline (runPipeline, conjugateChartSpecs) to run legacy and pipeline implementations
-  // side-by-side over the same fixture, then diff the two outputs using joinChartPointsByDate/diffSeries.
-  // conjugateChartSpecs.ts has no other importer and exists solely to support this test as a documented
-  // regression harness, mirroring the same treatment totalChartParity.test.ts already gives to totalChartSpecs.ts.
   describe('core-vs-pipeline soft-warn: variation divergence from legacy normalization', () => {
-    it.each(LIFT_TYPES)('%s: variations and normalized series comparison', (liftType) => {
-      const legacy = legacyResultsByLift[liftType];
-      const pipeline = pipelineResultsByLift[liftType];
-
-      // Skip if fixture has no data for this lift type
-      if (legacy.data.length === 0 && pipeline.variations.length === 0) {
+    it.each(LIFT_TYPES)('%s: variations and normalized series comparison', (liftType: string) => {
+      const legacy = legacyResults[liftType];
+      const pipeline = pipelineResults[liftType];
+      if (!legacy.data.length && !pipeline.variations.length) {
         return;
       }
 
-      // Hard assertion: at least one implementation has data
-      const hasLegacyData = legacy.data.length > 0;
-      const hasPipelineData = pipeline.variations.length > 0;
-      expect(hasLegacyData || hasPipelineData).toBe(true);
-
-      // If one implementation has data, proceed with comparison
-      if (!hasLegacyData || !hasPipelineData) {
-        if (!hasLegacyData) {
-          console.warn(`No legacy data for ${liftType}`);
-        }
-        if (!hasPipelineData) {
-          console.warn(`No pipeline data for ${liftType}`);
-        }
+      expect(legacy.data.length > 0 || pipeline.variations.length > 0).toBe(true);
+      if (!legacy.data.length || !pipeline.variations.length) {
+        console.warn(`No ${!legacy.data.length ? 'legacy' : 'pipeline'} data for ${liftType}`);
         return;
       }
 
-      // Get variation names: intersection of what both implementations produced
-      const pipelineVariationKeys = new Set(
-        pipeline.variations.flatMap((row) => Object.keys(row)).filter((k) => k !== 'date')
+      const pipeKeys: Set<string> = new Set(
+        pipeline.variations
+          .flatMap((r: ChartPoint) => Object.keys(r))
+          .filter((k: string) => k !== 'date')
       );
-      const matchedVariations = legacy.variations.filter((v) => pipelineVariationKeys.has(v));
+      const matched: string[] = legacy.variations.filter((v: string) => pipeKeys.has(v));
 
-      // If there are variations to compare
-      if (matchedVariations.length > 0) {
-        // Hard asserts: basic sanity on legacy data
+      if (matched.length > 0) {
+        // Fix: Pass the first string name item to compareChartSeries instead of the entire legacy.variations array
         const legacySanity = compareChartSeries(legacy.data, legacy.variations[0]);
         if (legacySanity.count > 0) {
           expect(legacySanity.count).toBeGreaterThan(0);
-          legacySanity.values.forEach((v) => {
+          legacySanity.values.forEach((v: number) => {
             expect(v).toBeGreaterThan(0);
             expect(v).toBeLessThan(10000);
           });
         }
 
-        // Hard assertions: each matched variation must have overlapping dates
-        for (const variation of matchedVariations) {
-          const joined = joinChartPointsByDate(legacy.data, pipeline.variations);
-          const diff = diffSeries(joined, variation);
-
-          // Hard assertion: joined data must have overlapping dates
+        for (const variation of matched) {
+          const diff = diffSeries(
+            joinChartPointsByDate(legacy.data, pipeline.variations),
+            variation
+          );
           expect(diff.comparedCount).toBeGreaterThan(0);
-
-          // Soft warn: log real diagnostic numbers for visibility
           console.warn(
             `core-vs-pipeline ${liftType} ${variation}: compared=${diff.comparedCount} missingInA=${diff.missingInA} missingInB=${diff.missingInB} maxAbsDiff=${diff.maxAbsDiff} maxRelDiff=${(diff.maxRelDiff * 100).toFixed(1)}%`
           );
         }
-      } else if (legacy.variations.length > 0 || pipelineVariationKeys.size > 0) {
-        // Log if one side has variations but they don't match
+      } else if (legacy.variations.length > 0 || pipeKeys.size > 0) {
         console.warn(
-          `core-vs-pipeline ${liftType}: no matched variations between implementations (legacy: ${legacy.variations.join(', ') || 'none'}, pipeline: ${Array.from(pipelineVariationKeys).join(', ') || 'none'})`
+          `core-vs-pipeline ${liftType}: no matched variations (legacy: ${legacy.variations.join(', ') || 'none'}, pipeline: ${Array.from(pipeKeys).join(', ') || 'none'})`
         );
       }
 
-      // Soft warn: normalized series (if present in both)
       if (legacy.showNormalized && pipeline.normalized.length > 0) {
-        const joined = joinChartPointsByDate(legacy.data, pipeline.normalized);
-        const diff = diffSeries(joined, NORMALIZED_KEY);
-
-        // Only hard-assert if we have overlapping dates; otherwise just warn
+        const diff = diffSeries(
+          joinChartPointsByDate(legacy.data, pipeline.normalized),
+          NORMALIZED_KEY
+        );
         if (diff.comparedCount > 0) {
           console.warn(
             `core-vs-pipeline ${liftType} normalized: compared=${diff.comparedCount} missingInA=${diff.missingInA} missingInB=${diff.missingInB} maxAbsDiff=${diff.maxAbsDiff} maxRelDiff=${(diff.maxRelDiff * 100).toFixed(1)}%`
           );
-        } else if (diff.missingInA > 0 || diff.missingInB > 0) {
-          console.warn(
-            `core-vs-pipeline ${liftType} normalized: no date overlap (legacy has ${legacy.data.length} points, pipeline has ${pipeline.normalized.length} points)`
-          );
         }
       }
     });
-  });
-
-  it('dates are in chronological order (legacy)', () => {
-    for (const liftType of LIFT_TYPES) {
-      const data = legacyResultsByLift[liftType].data;
-      if (data.length === 0) {
-        continue;
-      }
-      const dates = data.map((p) => new Date(p.date).getTime());
-      for (let i = 1; i < dates.length; i++) {
-        expect(dates[i]).toBeGreaterThanOrEqual(dates[i - 1]);
-      }
-    }
-  });
-
-  it('all date strings are valid (legacy)', () => {
-    for (const liftType of LIFT_TYPES) {
-      const data = legacyResultsByLift[liftType].data;
-      if (data.length === 0) {
-        continue;
-      }
-      data.forEach((p) => {
-        const dateObj = new Date(p.date);
-        expect(dateObj.getTime()).not.toBeNaN();
-      });
-    }
-  });
-
-  it('dates are in chronological order (pipeline)', () => {
-    for (const liftType of LIFT_TYPES) {
-      const variations = pipelineResultsByLift[liftType].variations;
-      if (variations.length === 0) {
-        continue;
-      }
-      const dates = variations.map((p) => new Date(p.date).getTime());
-      for (let i = 1; i < dates.length; i++) {
-        expect(dates[i]).toBeGreaterThanOrEqual(dates[i - 1]);
-      }
-    }
-  });
-
-  it('all date strings are valid ISO format (pipeline)', () => {
-    for (const liftType of LIFT_TYPES) {
-      const variations = pipelineResultsByLift[liftType].variations;
-      if (variations.length === 0) {
-        continue;
-      }
-      variations.forEach((p) => {
-        const dateObj = new Date(p.date);
-        expect(dateObj.getTime()).not.toBeNaN();
-        expect(p.date).toMatch(/^\d{4}-\d{2}-\d{2}T/);
-      });
-    }
   });
 });

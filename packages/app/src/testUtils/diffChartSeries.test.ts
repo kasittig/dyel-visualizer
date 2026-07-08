@@ -2,28 +2,27 @@ import { describe, it, expect } from 'vitest';
 import type { ChartPoint, ConjugateExercise } from '@dyel/core';
 import { joinChartPointsByDate, diffSeries, compareBaselineIdentity } from './diffChartSeries';
 
-// Set timezone to ensure regression tests for bare YYYY-MM-DD date handling are deterministic.
-// Negative-offset timezones (like America/New_York) expose the bug: bare '2026-02-02' is parsed
-// as UTC midnight, becoming 2026-02-01T19:00:00 EST instead of local 2026-02-02.
-process.env.TZ = 'America/New_York';
+process.env.TZ = 'America/New_York'; // Prevent UTC parsing bugs for 'YYYY-MM-DD'
 
 describe('joinChartPointsByDate', () => {
-  it.each<[string, ChartPoint[], ChartPoint[], ReturnType<typeof joinChartPointsByDate>]>([
-    ['both arrays empty returns empty result', [], [], []],
+  type Case = [string, ChartPoint[], ChartPoint[], ReturnType<typeof joinChartPointsByDate>];
+
+  it.each<Case>([
+    ['both empty', [], [], []],
     [
-      'only a has points returns all with a set and b undefined',
-      [{ date: '2026-01-01T00:00:00', squat: 300 }],
+      'only a has points',
+      [{ date: '2026-01-01', squat: 300 }],
       [],
-      [{ dateKey: '2026-01-01', a: { date: '2026-01-01T00:00:00', squat: 300 } }],
+      [{ dateKey: '2026-01-01', a: { date: '2026-01-01', squat: 300 } }],
     ],
     [
-      'only b has points returns all with b set and a undefined',
+      'only b has points',
       [],
-      [{ date: '2026-01-02T00:00:00', bench: 250 }],
-      [{ dateKey: '2026-01-02', b: { date: '2026-01-02T00:00:00', bench: 250 } }],
+      [{ date: '2026-01-02', bench: 250 }],
+      [{ dateKey: '2026-01-02', b: { date: '2026-01-02', bench: 250 } }],
     ],
     [
-      'points from a and b on same local date but different formats join into single row',
+      'same date, different formats join',
       [{ date: '2026-01-15T00:00:00', squat: 300 }],
       [{ date: '2026-01-15T12:30:45.000Z', bench: 250 }],
       [
@@ -35,16 +34,16 @@ describe('joinChartPointsByDate', () => {
       ],
     ],
     [
-      'points from a and b on different dates produce separate rows',
-      [{ date: '2026-01-01T00:00:00', squat: 300 }],
-      [{ date: '2026-01-02T00:00:00', bench: 250 }],
+      'different dates separate',
+      [{ date: '2026-01-01', squat: 300 }],
+      [{ date: '2026-01-02', bench: 250 }],
       [
-        { dateKey: '2026-01-01', a: { date: '2026-01-01T00:00:00', squat: 300 } },
-        { dateKey: '2026-01-02', b: { date: '2026-01-02T00:00:00', bench: 250 } },
+        { dateKey: '2026-01-01', a: { date: '2026-01-01', squat: 300 } },
+        { dateKey: '2026-01-02', b: { date: '2026-01-02', bench: 250 } },
       ],
     ],
     [
-      'multiple points from a on same local date last-write-wins',
+      'multiple a last-write-wins',
       [
         { date: '2026-01-01T08:00:00', squat: 300 },
         { date: '2026-01-01T18:00:00', squat: 310 },
@@ -53,7 +52,7 @@ describe('joinChartPointsByDate', () => {
       [{ dateKey: '2026-01-01', a: { date: '2026-01-01T18:00:00', squat: 310 } }],
     ],
     [
-      'multiple points from b on same local date last-write-wins',
+      'multiple b last-write-wins',
       [],
       [
         { date: '2026-01-05T08:00:00', bench: 250 },
@@ -62,21 +61,21 @@ describe('joinChartPointsByDate', () => {
       [{ dateKey: '2026-01-05', b: { date: '2026-01-05T20:00:00', bench: 270 } }],
     ],
     [
-      'result rows sorted ascending by dateKey',
+      'sorted ascending by dateKey',
       [
-        { date: '2026-01-05T00:00:00', squat: 400 },
-        { date: '2026-01-01T00:00:00', squat: 300 },
-        { date: '2026-01-10T00:00:00', squat: 350 },
+        { date: '2026-01-05', squat: 400 },
+        { date: '2026-01-01', squat: 300 },
+        { date: '2026-01-10', squat: 350 },
       ],
       [],
       [
-        { dateKey: '2026-01-01', a: { date: '2026-01-01T00:00:00', squat: 300 } },
-        { dateKey: '2026-01-05', a: { date: '2026-01-05T00:00:00', squat: 400 } },
-        { dateKey: '2026-01-10', a: { date: '2026-01-10T00:00:00', squat: 350 } },
+        { dateKey: '2026-01-01', a: { date: '2026-01-01', squat: 300 } },
+        { dateKey: '2026-01-05', a: { date: '2026-01-05', squat: 400 } },
+        { dateKey: '2026-01-10', a: { date: '2026-01-10', squat: 350 } },
       ],
     ],
     [
-      'bare YYYY-MM-DD date and UTC ISO instant for same local calendar day join into single row',
+      'bare YYYY-MM-DD and UTC same day join',
       [{ date: '2026-02-02', squat: 300 }],
       [{ date: '2026-02-02T05:00:00.000Z', bench: 250 }],
       [
@@ -88,7 +87,7 @@ describe('joinChartPointsByDate', () => {
       ],
     ],
     [
-      'bare YYYY-MM-DD date and UTC ISO instant for different local calendar days produce separate rows',
+      'bare YYYY-MM-DD and UTC diff day separate',
       [{ date: '2026-02-02', squat: 300 }],
       [{ date: '2026-02-03T05:00:00.000Z', bench: 250 }],
       [
@@ -102,24 +101,29 @@ describe('joinChartPointsByDate', () => {
 });
 
 describe('diffSeries', () => {
-  it.each<
-    [string, ReturnType<typeof joinChartPointsByDate>, string, ReturnType<typeof diffSeries>]
-  >([
+  type Case = [
+    string,
+    ReturnType<typeof joinChartPointsByDate>,
+    string,
+    ReturnType<typeof diffSeries>,
+  ];
+
+  const makeExpected = (
+    overrides?: Partial<ReturnType<typeof diffSeries>>
+  ): ReturnType<typeof diffSeries> => ({
+    seriesName: 'squat',
+    comparedCount: 0,
+    missingInA: 0,
+    missingInB: 0,
+    maxAbsDiff: 0,
+    maxRelDiff: 0,
+    ...overrides,
+  });
+
+  it.each<Case>([
+    ['empty array returns zero-value result', [], 'squat', makeExpected()],
     [
-      'empty joined array returns zero-value result',
-      [],
-      'squat',
-      {
-        seriesName: 'squat',
-        comparedCount: 0,
-        missingInA: 0,
-        missingInB: 0,
-        maxAbsDiff: 0,
-        maxRelDiff: 0,
-      },
-    ],
-    [
-      'series present on both sides increments comparedCount and tracks diffs',
+      'both sides increments count and tracks diffs',
       [
         {
           dateKey: '2026-01-01',
@@ -128,17 +132,10 @@ describe('diffSeries', () => {
         },
       ],
       'squat',
-      {
-        seriesName: 'squat',
-        comparedCount: 1,
-        missingInA: 0,
-        missingInB: 0,
-        maxAbsDiff: 20,
-        maxRelDiff: 20 / 320,
-      },
+      makeExpected({ comparedCount: 1, maxAbsDiff: 20, maxRelDiff: 20 / 320 }),
     ],
     [
-      'series only in a increments missingInB',
+      'only in a increments missingInB',
       [
         {
           dateKey: '2026-01-01',
@@ -147,17 +144,10 @@ describe('diffSeries', () => {
         },
       ],
       'squat',
-      {
-        seriesName: 'squat',
-        comparedCount: 0,
-        missingInA: 0,
-        missingInB: 1,
-        maxAbsDiff: 0,
-        maxRelDiff: 0,
-      },
+      makeExpected({ missingInB: 1 }),
     ],
     [
-      'series only in b increments missingInA',
+      'only in b increments missingInA',
       [
         {
           dateKey: '2026-01-01',
@@ -166,17 +156,10 @@ describe('diffSeries', () => {
         },
       ],
       'squat',
-      {
-        seriesName: 'squat',
-        comparedCount: 0,
-        missingInA: 1,
-        missingInB: 0,
-        maxAbsDiff: 0,
-        maxRelDiff: 0,
-      },
+      makeExpected({ missingInA: 1 }),
     ],
     [
-      'series present on neither side leaves all counters at zero',
+      'neither side leaves all counters at zero',
       [
         {
           dateKey: '2026-01-01',
@@ -185,17 +168,10 @@ describe('diffSeries', () => {
         },
       ],
       'squat',
-      {
-        seriesName: 'squat',
-        comparedCount: 0,
-        missingInA: 0,
-        missingInB: 0,
-        maxAbsDiff: 0,
-        maxRelDiff: 0,
-      },
+      makeExpected(),
     ],
     [
-      'multiple rows maxAbsDiff tracks maximum across all rows',
+      'tracks maxAbsDiff across all rows',
       [
         {
           dateKey: '2026-01-01',
@@ -214,17 +190,10 @@ describe('diffSeries', () => {
         },
       ],
       'squat',
-      {
-        seriesName: 'squat',
-        comparedCount: 3,
-        missingInA: 0,
-        missingInB: 0,
-        maxAbsDiff: 15,
-        maxRelDiff: 15 / 335,
-      },
+      makeExpected({ comparedCount: 3, maxAbsDiff: 15, maxRelDiff: 15 / 335 }),
     ],
     [
-      'both values are 0 relDiff is 0 not NaN',
+      'both values 0 returns 0 relDiff',
       [
         {
           dateKey: '2026-01-01',
@@ -233,23 +202,11 @@ describe('diffSeries', () => {
         },
       ],
       'squat',
-      {
-        seriesName: 'squat',
-        comparedCount: 1,
-        missingInA: 0,
-        missingInB: 0,
-        maxAbsDiff: 0,
-        maxRelDiff: 0,
-      },
+      makeExpected({ comparedCount: 1 }),
     ],
     [
-      'series not present anywhere leaves all counts at zero',
+      'series not present anywhere leaves all zero',
       [
-        {
-          dateKey: '2026-01-01',
-          a: { date: '2026-01-01', bench: 250 },
-          b: { date: '2026-01-01', bench: 260 },
-        },
         {
           dateKey: '2026-01-02',
           a: { date: '2026-01-02', deadlift: 400 },
@@ -257,17 +214,10 @@ describe('diffSeries', () => {
         },
       ],
       'squat',
-      {
-        seriesName: 'squat',
-        comparedCount: 0,
-        missingInA: 0,
-        missingInB: 0,
-        maxAbsDiff: 0,
-        maxRelDiff: 0,
-      },
+      makeExpected(),
     ],
     [
-      'mixed rows some compared some missing',
+      'mixed rows processes compared and missing',
       [
         {
           dateKey: '2026-01-01',
@@ -286,17 +236,16 @@ describe('diffSeries', () => {
         },
       ],
       'squat',
-      {
-        seriesName: 'squat',
+      makeExpected({
         comparedCount: 1,
         missingInA: 1,
         missingInB: 1,
         maxAbsDiff: 10,
         maxRelDiff: 10 / 310,
-      },
+      }),
     ],
     [
-      'maxRelDiff tracks maximum relative difference',
+      'maxRelDiff tracks maximum relative diff',
       [
         {
           dateKey: '2026-01-01',
@@ -310,97 +259,65 @@ describe('diffSeries', () => {
         },
       ],
       'squat',
-      {
-        seriesName: 'squat',
-        comparedCount: 2,
-        missingInA: 0,
-        missingInB: 0,
-        maxAbsDiff: 10,
-        maxRelDiff: 10 / 110,
-      },
+      makeExpected({ comparedCount: 2, maxAbsDiff: 10, maxRelDiff: 10 / 110 }),
     ],
   ])('%s', (_, joined, seriesName, expected) => {
-    const result = diffSeries(joined, seriesName);
-    expect(result.seriesName).toBe(expected.seriesName);
-    expect(result.comparedCount).toBe(expected.comparedCount);
-    expect(result.missingInA).toBe(expected.missingInA);
-    expect(result.missingInB).toBe(expected.missingInB);
-    expect(result.maxAbsDiff).toBe(expected.maxAbsDiff);
-    expect(result.maxRelDiff).toBe(expected.maxRelDiff);
+    expect(diffSeries(joined, seriesName)).toEqual(expected);
   });
 });
 
 describe('compareBaselineIdentity', () => {
-  const ex = (
-    displayName: string,
-    bar: ConjugateExercise['bar'] = 'standard',
-    stance: ConjugateExercise['stance'] = 'competition',
-    equipment: ConjugateExercise['equipment'] = null,
-    addlWts: ConjugateExercise['addlWts'] = []
-  ): ConjugateExercise => ({
+  type Case = [
+    string,
+    string,
+    ConjugateExercise | undefined,
+    string | undefined,
+    'sumo' | 'conventional',
+    boolean,
+  ];
+
+  const ex = (name: string, props?: Partial<ConjugateExercise>): ConjugateExercise => ({
     type: 'squat',
-    displayName,
-    bar,
-    stance,
-    equipment,
-    addlWts,
+    displayName: name,
+    bar: 'standard',
+    stance: 'competition',
+    equipment: null,
+    addlWts: [],
     averageIndex: null,
     expectedBaseline: null,
     status: null,
     diagnostic: null,
     effects: [],
+    ...props,
   });
 
-  it.each<
-    [
-      string,
-      string,
-      ConjugateExercise | undefined,
-      string | undefined,
-      'sumo' | 'conventional',
-      boolean,
-    ]
-  >([
+  it.each<Case>([
     ['squat: both undefined', 'squat', undefined, undefined, 'sumo', true],
-    ['squat: standard matches standard', 'squat', ex('Squat'), 'squat', 'sumo', true],
+    ['squat: standard matches', 'squat', ex('Squat'), 'squat', 'sumo', true],
     [
-      'squat: ssb legacy matches ssb canonical',
+      'squat: ssb legacy matches canonical',
       'squat',
-      ex('SSB Squat', 'ssb'),
+      ex('SSB', { bar: 'ssb' }),
       'squat-ssb',
       'sumo',
       true,
     ],
     [
-      'squat: paused legacy matches pause canonical',
+      'squat: paused legacy matches canonical',
       'squat',
-      ex('Paused Squat', 'standard', 'competition', 'pause'),
+      ex('Pause', { equipment: 'pause' }),
       'squat-pause',
       'sumo',
       true,
     ],
-    [
-      'squat: ssb mismatch (legacy ssb vs canonical standard)',
-      'squat',
-      ex('SSB Squat', 'ssb'),
-      'squat',
-      'sumo',
-      false,
-    ],
-    ['squat: legacy undefined vs canonical defined', 'squat', undefined, 'squat', 'sumo', false],
-    [
-      'squat: legacy defined vs canonical undefined',
-      'squat',
-      ex('Squat'),
-      undefined,
-      'sumo',
-      false,
-    ],
+    ['squat: ssb mismatch', 'squat', ex('SSB', { bar: 'ssb' }), 'squat', 'sumo', false],
+    ['squat: legacy undef vs canonical def', 'squat', undefined, 'squat', 'sumo', false],
+    ['squat: legacy def vs canonical undef', 'squat', ex('Squat'), undefined, 'sumo', false],
     ['deadlift: both undefined', 'deadlift', undefined, undefined, 'sumo', true],
     [
       'deadlift: sumo stance matches',
       'deadlift',
-      { ...ex('Sumo DL'), type: 'deadlift', stance: 'sumo' },
+      ex('Sumo', { type: 'deadlift', stance: 'sumo' }),
       'deadlift-sumo',
       'sumo',
       true,
@@ -408,62 +325,56 @@ describe('compareBaselineIdentity', () => {
     [
       'deadlift: conventional stance matches',
       'deadlift',
-      { ...ex('Conventional DL'), type: 'deadlift', stance: 'conventional' },
+      ex('Conv', { type: 'deadlift', stance: 'conventional' }),
       'deadlift-conventional',
       'sumo',
       true,
     ],
     [
-      'deadlift: opposite with sumo preference → conventional',
+      'deadlift: opposite with sumo pref -> conv',
       'deadlift',
-      { ...ex('Opposite DL'), type: 'deadlift', stance: 'opposite' },
+      ex('Opp', { type: 'deadlift', stance: 'opposite' }),
       'deadlift-conventional',
       'sumo',
       true,
     ],
     [
-      'deadlift: null with sumo preference → sumo',
+      'deadlift: null with sumo pref -> sumo',
       'deadlift',
-      { ...ex('DL'), type: 'deadlift', stance: null },
+      ex('DL', { type: 'deadlift', stance: null }),
       'deadlift-sumo',
       'sumo',
       true,
     ],
     [
-      'deadlift: bare canonical with no stance info resolves via athlete preference',
+      'deadlift: bare canonical resolves via pref',
       'deadlift',
-      { ...ex('DL'), type: 'deadlift', stance: null },
+      ex('DL', { type: 'deadlift', stance: null }),
       'deadlift',
       'sumo',
       true,
     ],
     [
-      'deadlift: sumo vs conventional mismatch',
+      'deadlift: stance mismatch',
       'deadlift',
-      { ...ex('Sumo DL'), type: 'deadlift', stance: 'sumo' },
+      ex('Sumo', { type: 'deadlift', stance: 'sumo' }),
       'deadlift-conventional',
       'sumo',
       false,
     ],
-    [
-      'bench: standard matches standard',
-      'bench',
-      { ...ex('Bench'), type: 'bench' },
-      'bench',
-      'sumo',
-      true,
-    ],
+    ['bench: standard matches', 'bench', ex('Bench', { type: 'bench' }), 'bench', 'sumo', true],
     [
       'bench: with equipment matches',
       'bench',
-      { ...ex('Paused Bench'), type: 'bench', equipment: 'pause' },
+      ex('Pause', { type: 'bench', equipment: 'pause' }),
       'bench-pause',
       'sumo',
       true,
     ],
-  ])('%s', (_, family, legacy, canonical, deadliftStance, expectedMatches) => {
-    const result = compareBaselineIdentity(family, legacy, canonical, deadliftStance);
-    expect(result.family).toBe(family);
-    expect(result.matches).toBe(expectedMatches);
+  ])('%s', (_, family, legacy, canonical, deadliftStance, matches) => {
+    expect(compareBaselineIdentity(family, legacy, canonical, deadliftStance)).toMatchObject({
+      family,
+      matches,
+    });
   });
 });

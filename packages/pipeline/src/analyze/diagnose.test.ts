@@ -34,7 +34,7 @@ const basePt = pt('bench', 100, day(20), ['lift:bench']);
 
 describe('diagnose', () => {
   it('assesses baseline itself as optimal', () => {
-    const report = diagnose([basePt], model, map, opts);
+    const report = diagnose([basePt], model, map, opts, undefined);
     expect(report.variants[0]).toMatchObject({
       canonical: 'bench',
       ratio: 1,
@@ -52,7 +52,8 @@ describe('diagnose', () => {
       [basePt, pt('bench-chains', v, day(20), ['lift:bench'])],
       model,
       map,
-      opts
+      opts,
+      undefined
     );
     const variant = report.variants.find((x) => x.canonical === 'bench-chains')!;
     expect(variant.status).toBe(status);
@@ -68,7 +69,8 @@ describe('diagnose', () => {
       ],
       model,
       map,
-      opts
+      opts,
+      undefined
     );
 
     expect(report.variants.map((v) => v.canonical)).not.toContain('bench-chains');
@@ -86,7 +88,8 @@ describe('diagnose', () => {
         ],
         model,
         map,
-        opts
+        opts,
+        undefined
       );
 
       expect(report.weaknesses).toEqual([
@@ -100,7 +103,8 @@ describe('diagnose', () => {
         [basePt, pt('bench-chains', 90, day(20), ['lift:bench'])],
         model,
         map,
-        opts
+        opts,
+        undefined
       );
       expect(report.weaknesses).toEqual([]);
     });

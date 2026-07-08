@@ -3,131 +3,103 @@ import { ParseError, resolveUnit } from './parser';
 import type { SetRecord, Unit } from '../types';
 import Papa from 'papaparse';
 
-function convertToKg(weight: number, unit: Unit): number {
-  return unit === 'lbs' ? weight * 0.453592 : weight;
-}
+const convertToKg = (w: number, u: Unit) => {
+  return u === 'lbs' ? w * 0.453592 : w;
+};
+const parseFloat_ = (v: string) => {
+  const n = parseFloat(v);
+  return isNaN(n) ? null : n;
+};
 
 function parseDate(dateStr: string): number {
-  const date = new Date(dateStr);
-  if (isNaN(date.getTime())) {
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) {
     throw new Error(`Invalid date: ${dateStr}`);
   }
-  return date.setHours(0, 0, 0, 0);
+  return d.setHours(0, 0, 0, 0);
 }
 
-function parseFloat_(value: string): number | null {
-  const num = parseFloat(value);
-  return isNaN(num) ? null : num;
-}
-
-function extractUnitFromHeader(header: string): Unit | undefined {
-  const match = header.match(/\((kg|lbs)\)$/);
-  return match ? (match[1] as Unit) : undefined;
-}
-
-function extractUnitFromCell(value: string): { weight: number; unit: Unit } | null {
-  const match = value.match(/^([\d.]+)(kg|lbs)$/);
-  if (match) {
-    const weight = parseFloat_(match[1]);
-    const unit = match[2] as Unit;
-    return weight !== null ? { weight, unit } : null;
-  }
-  return null;
+function extractUnitFromCell(v: string): { weight: number; unit: Unit } | null {
+  const m = v.match(/^([\d.]+)(kg|lbs)$/);
+  const w = m ? parseFloat_(m[1]) : null;
+  return m && w !== null ? { weight: w, unit: m[2] as Unit } : null;
 }
 
 export const csvParser: Parser = {
   id: 'csv',
-  canParse: (input: RawInput): boolean => input.name.endsWith('.csv'),
+  canParse: (input: RawInput) => {
+    return input.name.endsWith('.csv');
+  },
 
   parse(input: RawInput, ctx: ParseContext): SetRecord[] {
-    // PapaParse handles cross-platform line breaks and quotes automatically
     const { data, meta } = Papa.parse<Record<string, string>>(input.content, {
       header: true,
-      skipEmptyLines: 'greedy', // Automatically strips completely blank rows
+      skipEmptyLines: 'greedy',
     });
-
-    const headers = meta.fields || [];
-    const headerMap = new Map(headers.map((h) => [h.toLowerCase(), h]));
-    const matchHeader = (field: string) =>
-      [...headerMap.entries()].find(([k]) => k.startsWith(field.toLowerCase()))?.[1];
-
-    // 1. Structural Check
-    const required = ['Date', 'Exercise', 'Reps', 'Weight'];
-    for (const field of required) {
-      if (!matchHeader(field)) {
-        throw new ParseError(`Missing required column: ${field}`, 1, headers.join(','));
-      }
-    }
-
-    // 2. Extract Context Unit from the actual casing of the Weight header
-    const realWeightHeader = matchHeader('Weight')!;
-    const effectiveCtx = {
-      ...ctx,
-      datasetUnit: extractUnitFromHeader(realWeightHeader) ?? ctx.datasetUnit,
+    const hMap = new Map(
+        (meta.fields || []).map((h) => {
+          return [h.toLowerCase(), h];
+        })
+      ),
+      rHeader = hMap.get('unit') || '',
+      rRpe = hMap.get('rpe') || '',
+      rSets = hMap.get('sets') || '';
+    const findH = (f: string) => {
+      return [...hMap.entries()].find(([k]) => {
+        return k.startsWith(f.toLowerCase());
+      })?.[1];
     };
 
-    // 3. Process Rows
-    const hasUnitColumn = headerMap.has('unit');
-    const realUnitHeader = headerMap.get('unit') || '';
-    const realRpeHeader = headerMap.get('rpe') || '';
-    const realSetsHeader = matchHeader('Sets') || '';
+    ['Date', 'Exercise', 'Reps', 'Weight'].forEach((f) => {
+      if (!findH(f)) {
+        throw new ParseError(`Missing required column: ${f}`, 1, (meta.fields || []).join(','));
+      }
+    });
+
+    const rWeight = findH('Weight')!,
+      effCtx = {
+        ...ctx,
+        datasetUnit: (rWeight.match(/\((kg|lbs)\)$/)?.[1] as Unit) ?? ctx.datasetUnit,
+      };
 
     return data.map((row, idx) => {
-      const lineNum = idx + 2; // +1 for 0-index, +1 for header row
-      const rawLineStr = Object.values(row).join(',');
-
-      // Destructure using lowercase keys resolved against the actual row object
-      const dateStr = row[headerMap.get('date')!];
-      const exercise = row[headerMap.get('exercise')!];
-      const repsStr = row[headerMap.get('reps')!];
-      const weightStr = row[realWeightHeader];
-
-      if (!dateStr || !exercise || !repsStr || !weightStr) {
-        throw new ParseError('Missing required field in row', lineNum, rawLineStr);
+      const lineNum = idx + 2,
+        rawStr = Object.values(row).join(','),
+        dateStr = row[hMap.get('date')!],
+        ex = row[hMap.get('exercise')!],
+        repsStr = row[hMap.get('reps')!],
+        wStr = row[rWeight];
+      if (!dateStr || !ex || !repsStr || !wStr) {
+        throw new ParseError('Missing required field in row', lineNum, rawStr);
       }
 
       const reps = parseInt(repsStr);
-      if (reps === null) {
-        throw new ParseError(`Invalid reps: ${repsStr}`, lineNum, rawLineStr);
-      }
+      let weight: number | null, rUnit: Unit | undefined;
+      const cell = extractUnitFromCell(wStr);
 
-      let weight: number | null;
-      let recordUnit: Unit | undefined;
-
-      const cellUnit = extractUnitFromCell(weightStr);
-      if (cellUnit) {
-        ({ weight, unit: recordUnit } = cellUnit);
+      if (cell) {
+        weight = cell.weight;
+        rUnit = cell.unit;
       } else {
-        weight = parseFloat_(weightStr);
+        weight = parseFloat_(wStr);
         if (weight === null) {
-          throw new ParseError(`Invalid weight: ${weightStr}`, lineNum, rawLineStr);
+          throw new ParseError(`Invalid weight: ${wStr}`, lineNum, rawStr);
         }
-
-        if (hasUnitColumn) {
-          const unitStr = row[realUnitHeader];
-          if (unitStr === 'kg' || unitStr === 'lbs') {
-            recordUnit = unitStr;
-          }
+        if (hMap.has('unit') && (row[rHeader] === 'kg' || row[rHeader] === 'lbs')) {
+          rUnit = row[rHeader] as Unit;
         }
       }
 
-      const finalUnit = resolveUnit(recordUnit, effectiveCtx);
-      const rpeStr = row[realRpeHeader];
-      const rpeVal = rpeStr ? parseFloat_(rpeStr) : null;
-      const setsStr = row[realSetsHeader];
-      const setsVal = setsStr ? parseFloat_(setsStr) : null;
-
+      const fUnit = resolveUnit(rUnit, effCtx),
+        rpe = row[rRpe] ? parseFloat_(row[rRpe]) : null,
+        sets = row[rSets] ? parseFloat_(row[rSets]) : null;
       return {
         date: parseDate(dateStr),
-        exercise,
-        weight: convertToKg(weight, finalUnit),
+        exercise: ex,
+        weight: convertToKg(weight, fUnit),
         reps,
-        rpe: rpeVal ?? undefined,
-        meta: {
-          rawUnit: finalUnit,
-          rawWeight: weightStr,
-          ...(setsVal !== null && { sets: String(setsVal) }),
-        },
+        rpe: rpe ?? undefined,
+        meta: { rawUnit: fUnit, rawWeight: wStr, ...(sets !== null && { sets: String(sets) }) },
       };
     });
   },

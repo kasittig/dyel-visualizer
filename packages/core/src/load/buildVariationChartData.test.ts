@@ -27,6 +27,11 @@ function pair(
       stance: 'competition',
       addlWts: [],
       equipment: null,
+      averageIndex: null,
+      expectedBaseline: null,
+      status: null,
+      diagnostic: null,
+      effects: [],
     },
     {
       date: new Date(date + 'T00:00:00'),
@@ -35,6 +40,7 @@ function pair(
       weight: opts.weight ?? e1rm,
       e1rm,
       unit: 'lbs',
+      rpe: null,
     },
   ];
 }
@@ -70,6 +76,7 @@ describe('buildVariationChartData', () => {
       sets: 1,
       reps: 1,
       weight: 310,
+      rpe: null,
     });
   });
 

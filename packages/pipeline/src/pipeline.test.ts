@@ -9,7 +9,7 @@ const loadFixture = (name: string) => ({
   content: fs.readFileSync(path.join(__dirname, '../test/fixtures', name), 'utf-8'),
 });
 
-const FIXTURE_NAMES = [
+const FIXTURE_NAMES: string[] = [
   'csv-header-unit-lbs.csv',
   'csv-unit-column-mixed.csv',
   'csv-cell-suffix-unit.csv',
@@ -22,6 +22,11 @@ const FIXTURE_NAMES = [
   'freeform-malformed-line.txt',
 ];
 
+const comps = [
+  { label: 'squat', include: { any: ['lift:squat'] } },
+  { label: 'bench', include: { any: ['lift:bench'] } },
+  { label: 'deadlift', include: { any: ['lift:deadlift'] } },
+];
 const specs: DatasetSpec[] = [
   {
     id: 'e1rm-per-bench-variant',
@@ -36,11 +41,7 @@ const specs: DatasetSpec[] = [
     derive: 'e1rm',
     normalize: true,
     combine: 'sum',
-    components: [
-      { label: 'squat', include: { any: ['lift:squat'] } },
-      { label: 'bench', include: { any: ['lift:bench'] } },
-      { label: 'deadlift', include: { any: ['lift:deadlift'] } },
-    ],
+    components: comps,
   },
   {
     id: 'wilks-total',
@@ -49,28 +50,23 @@ const specs: DatasetSpec[] = [
     normalize: true,
     combine: 'sum',
     post: 'wilks',
-    components: [
-      { label: 'squat', include: { any: ['lift:squat'] } },
-      { label: 'bench', include: { any: ['lift:bench'] } },
-      { label: 'deadlift', include: { any: ['lift:deadlift'] } },
-    ],
+    components: comps,
   },
 ];
 
 const athlete = { sex: 'M' as const, bodyweight: 90, deadliftStance: 'conventional' as const };
 
 describe('runPipeline (end-to-end)', () => {
-  const raw = FIXTURE_NAMES.map(loadFixture);
-  const result = runPipeline(raw, specs, athlete, {});
+  const raw = FIXTURE_NAMES.map(loadFixture),
+    result = runPipeline(raw, specs, athlete, {});
 
-  it('runs successfully with a properly shaped output structure', () => {
-    // Verifies all specs generated datasets containing valid time rows
+  it('runs successfully with valid output structure', () => {
     specs.forEach((s) => {
       expect(result.datasets[s.id]).toBeInstanceOf(Array);
-      result.datasets[s.id].forEach((row) => expect(row.t).toBeTypeOf('number'));
+      result.datasets[s.id].forEach((row: Record<string, unknown>) => {
+        expect(row.t).toBeTypeOf('number');
+      });
     });
-
-    // Holistic structural shape affirmation using toMatchObject
     expect(result).toMatchObject({
       parseErrors: [{ name: 'ParseError' }],
       diagnostics: {
@@ -84,16 +80,17 @@ describe('runPipeline (end-to-end)', () => {
   });
 
   it('surfaces unmapped raw exercises', () => {
-    const fresh = runPipeline(
-      [...raw, { name: 'unmapped.txt', content: '2026-01-15 Curls 50x10 @8\n' }],
-      specs,
-      athlete,
-      {}
-    );
-    expect(fresh.unknownExercises).toContain('Curls');
+    expect(
+      runPipeline(
+        [...raw, { name: 'unmapped.txt', content: '2026-01-15 Curls 50x10 @8\n' }],
+        specs,
+        athlete,
+        {}
+      ).unknownExercises
+    ).toContain('Curls');
   });
 
-  it('re-runs the integration code from scratch without memoization', () => {
+  it('re-runs integration from scratch without memoization', () => {
     const again = runPipeline(raw, specs, athlete, {});
     expect(again.datasets).toEqual(result.datasets);
     expect(again).not.toBe(result);
@@ -101,80 +98,67 @@ describe('runPipeline (end-to-end)', () => {
 
   describe('e1rm-max-effort deriver spec variant', () => {
     it('excludes speed-work-only days that e1rm would still include', () => {
-      // 2026-01-10 has only speed-work sets (2+ sets, no RPE) for bench.
-      const speedWorkOnlyContent =
-        'Date,Exercise,Reps,Weight (lbs),Sets\n2026-01-10,Bench,3,85,9\n';
-
-      const maxEffortSpecs: DatasetSpec[] = [
+      const s: DatasetSpec[] = [
         {
-          id: 'e1rm-max-effort-bench',
+          id: 'me-bench',
           kind: 'series',
           include: { any: ['lift:bench'] },
           derive: 'e1rm-max-effort',
         },
         { id: 'e1rm-bench', kind: 'series', include: { any: ['lift:bench'] }, derive: 'e1rm' },
       ];
-
-      const result = runPipeline(
-        [{ name: 'speed-work-only.csv', content: speedWorkOnlyContent }],
-        maxEffortSpecs,
+      const res = runPipeline(
+        [
+          {
+            name: 'sw.csv',
+            content: 'Date,Exercise,Reps,Weight (lbs),Sets\n2026-01-10,Bench,3,85,9\n',
+          },
+        ],
+        s,
         athlete,
         {}
       );
-
-      // e1rm falls back to the speed-work sets and produces a row for that date.
-      expect(result.datasets['e1rm-bench'].length).toBeGreaterThan(0);
-      // e1rm-max-effort excludes the day entirely since there are no max-effort sets.
-      expect(result.datasets['e1rm-max-effort-bench']).toEqual([]);
+      expect(res.datasets['e1rm-bench'].length).toBeGreaterThan(0);
+      expect(res.datasets['me-bench']).toEqual([]);
     });
 
-    it('respects a composite spec derive field instead of defaulting to e1rm points', () => {
-      const speedWorkOnlyContent =
-        'Date,Exercise,Reps,Weight (lbs),Sets\n' +
-        '2026-01-10,Squat,3,200,9\n2026-01-10,Bench,3,85,9\n2026-01-10,Deadlift,3,250,9\n' +
-        '2026-01-15,Squat,5,200,\n2026-01-15,Bench,5,150,\n2026-01-15,Deadlift,5,250,\n';
-
-      const compositeSpecs: DatasetSpec[] = [
+    it('respects a composite spec derive field', () => {
+      const csv = [
+        'Date,Exercise,Reps,Weight (lbs),Sets',
+        '2026-01-10,Squat,3,200,9',
+        '2026-01-10,Bench,3,85,9',
+        '2026-01-10,Deadlift,3,250,9',
+        '2026-01-15,Squat,5,200,',
+        '2026-01-15,Bench,5,150,',
+        '2026-01-15,Deadlift,5,250,',
+      ].join('\n');
+      const s: DatasetSpec[] = [
         {
-          id: 'estimated-total-max-effort',
+          id: 'total-me',
           kind: 'composite',
           derive: 'e1rm-max-effort',
           normalize: true,
           combine: 'sum',
-          components: [
-            { label: 'squat', include: { any: ['lift:squat'] } },
-            { label: 'bench', include: { any: ['lift:bench'] } },
-            { label: 'deadlift', include: { any: ['lift:deadlift'] } },
-          ],
+          components: comps,
         },
       ];
-
-      const result = runPipeline(
-        [{ name: 'composite-max-effort.csv', content: speedWorkOnlyContent }],
-        compositeSpecs,
-        athlete,
-        {}
-      );
-
-      // Only 2026-01-15 has max-effort sets for all three lifts, so only that date
-      // should be able to produce a composite row (speed-work-only 01-10 is excluded).
-      const rows = result.datasets['estimated-total-max-effort'];
+      const rows = runPipeline([{ name: 'comp.csv', content: csv }], s, athlete, {}).datasets[
+        'total-me'
+      ];
       expect(rows.length).toBeGreaterThan(0);
-      expect(rows.every((r) => r.t !== new Date('2026-01-10').getTime())).toBe(true);
+      expect(
+        rows.every((r: Record<string, unknown>) => {
+          return Number(r.t) !== new Date('2026-01-10').getTime();
+        })
+      ).toBe(true);
     });
   });
 
   describe('groupBy: label spec variant', () => {
-    it('produces one series per distinct raw logged string, not per canonical', () => {
-      // Create two variants that would normally share a canonical:
-      // "Bench (CG)" and "Bench (close grip)" both parse to the same canonical "bench-close"
-      const multiVariantContent =
-        '2026-01-10 Bench (CG) 185x5\n' +
-        '2026-01-10 Bench (close grip) 180x6\n' +
-        '2026-01-15 Bench (CG) 190x4\n' +
-        '2026-01-15 Bench (close grip) 185x5\n';
-
-      const labelSpecs: DatasetSpec[] = [
+    it('produces one series per distinct raw logged string', () => {
+      const txt =
+        '2026-01-10 Bench (CG) 185x5\n2026-01-10 Bench (close grip) 180x6\n2026-01-15 Bench (CG) 190x4\n2026-01-15 Bench (close grip) 185x5\n';
+      const s: DatasetSpec[] = [
         {
           id: 'by-label',
           kind: 'series',
@@ -182,99 +166,61 @@ describe('runPipeline (end-to-end)', () => {
           derive: 'e1rm',
           groupBy: 'label',
         },
-        { id: 'by-canonical', kind: 'series', include: { any: ['lift:bench'] }, derive: 'e1rm' },
+        { id: 'by-canon', kind: 'series', include: { any: ['lift:bench'] }, derive: 'e1rm' },
       ];
+      const res = runPipeline([{ name: 'var.txt', content: txt }], s, athlete, {});
+      const lblKeys = Object.keys(res.datasets['by-label'][0] || {}).filter((k) => {
+        return k !== 't';
+      });
+      const canKeys = Object.keys(res.datasets['by-canon'][0] || {}).filter((k) => {
+        return k !== 't';
+      });
 
-      const result = runPipeline(
-        [{ name: 'multi-variant.txt', content: multiVariantContent }],
-        labelSpecs,
-        athlete,
-        {}
-      );
-
-      const byLabel = result.datasets['by-label'];
-      const byCanonical = result.datasets['by-canonical'];
-
-      // Both should have data
-      expect(byLabel.length).toBeGreaterThan(0);
-      expect(byCanonical.length).toBeGreaterThan(0);
-
-      // Extract series keys (column names excluding 't')
-      const labelSeriesKeys = new Set(Object.keys(byLabel[0] || {}).filter((k) => k !== 't'));
-      const canonicalSeriesKeys = new Set(
-        Object.keys(byCanonical[0] || {}).filter((k) => k !== 't')
-      );
-
-      // The label-based grouping should show both raw strings as distinct series
-      // (or at minimum, have a different set of keys than canonical grouping when variants exist)
-      // If both variants share a canonical, byCanonical will collapse them to one series key,
-      // while byLabel will show both raw strings as separate columns
-      expect(labelSeriesKeys.size).toBeGreaterThanOrEqual(1);
-
-      // At a minimum, verify that label-based grouping actually uses rawExercise strings
-      // by checking that at least one series key looks like a raw exercise name, not a canonical slug
-      const hasRawExerciseName = Array.from(labelSeriesKeys).some((key) => key.includes('('));
-      expect(hasRawExerciseName).toBe(true);
-
-      // Both variants share canonical "bench-close", so canonical grouping collapses them to
-      // a single series key, while label grouping preserves both raw strings as distinct keys.
-      expect(canonicalSeriesKeys.size).toBeLessThan(labelSeriesKeys.size);
+      expect(res.datasets['by-label'].length).toBeGreaterThan(0);
+      expect(res.datasets['by-canon'].length).toBeGreaterThan(0);
+      expect(
+        lblKeys.some((k) => {
+          return k.includes('(');
+        })
+      ).toBe(true);
+      expect(canKeys.length).toBeLessThan(lblKeys.length);
     });
   });
 
   describe('Design C: composite spec with addlWt (chains) and reps > 1', () => {
-    it('uses weight-space-corrected e1RM values from offsetAdjustRecords (pre-derivation)', () => {
-      // Design C: composite specs consume pre-offset-adjusted records, so their e1RM derivations
-      // are based on corrected weights. This test uses reps > 1 to prove weight-space correction
-      // differs from e1RM-space (Epley's formula is nonlinear).
-      const designCContent =
-        'Date,Exercise,Reps,Weight (lbs),RPE\n' +
-        '2026-01-10,Squat,5,405,\n' +
-        '2026-01-10,Bench,5,315,\n' +
-        '2026-01-10,Bench (chains),3,245,\n' +
-        '2026-01-10,Deadlift,5,495,\n' +
-        '2026-01-15,Squat,3,440,\n' +
-        '2026-01-15,Bench,3,335,\n' +
-        '2026-01-15,Bench (chains),2,270,\n' +
-        '2026-01-15,Deadlift,3,540,\n';
-
-      const compositeSpec: DatasetSpec[] = [
+    it('uses weight-space-corrected e1RM values from offsetAdjustRecords', () => {
+      const csv = [
+        'Date,Exercise,Reps,Weight (lbs),RPE',
+        '2026-01-10,Squat,5,405,',
+        '2026-01-10,Bench,5,315,',
+        '2026-01-10,Bench (chains),3,245,',
+        '2026-01-10,Deadlift,5,495,',
+        '2026-01-15,Squat,3,440,',
+        '2026-01-15,Bench,3,335,',
+        '2026-01-15,Bench (chains),2,270,',
+        '2026-01-15,Deadlift,3,540,',
+      ].join('\n');
+      const s: DatasetSpec[] = [
         {
-          id: 'estimated-total',
+          id: 'est-total',
           kind: 'composite',
           derive: 'e1rm',
           normalize: true,
           combine: 'sum',
-          components: [
-            { label: 'squat', include: { any: ['lift:squat'] } },
-            { label: 'bench', include: { any: ['lift:bench'] } },
-            { label: 'deadlift', include: { any: ['lift:deadlift'] } },
-          ],
+          components: comps,
         },
       ];
 
-      const result = runPipeline(
-        [{ name: 'design-c-test.csv', content: designCContent }],
-        compositeSpec,
-        athlete,
-        {}
-      );
+      const res = runPipeline([{ name: 'test.csv', content: csv }], s, athlete, {});
+      const rows = res.datasets['est-total'];
 
-      // Verify the composite ran and produced output rows
-      const compositeRows = result.datasets['estimated-total'];
-      expect(compositeRows.length).toBeGreaterThan(0);
-
-      // Verify the model has fitted an offset for bench-chains
-      // (The raw data: bench-chains @ reps=3, weight=245; bench @ reps=5, weight=315.
-      // With offset fitting, bench-chains should have a positive offset, making it
-      // closer to baseline. With composite spec using pre-adjusted points, the
-      // normalized total should be stable across bench variants.)
-      expect(result.model.addlWtOffset['bench-chains']).toBeDefined();
-      expect(result.model.addlWtOffset['bench-chains'].offsetKg).toBeGreaterThan(0);
-
-      // All composite rows should have a positive estimated total
-      compositeRows.forEach((row) => {
-        expect(row['estimated-total']).toBeGreaterThan(0);
+      expect(rows.length).toBeGreaterThan(0);
+      expect(res.model.addlWtOffset['bench-chains']).toMatchObject({
+        offsetKg: expect.any(Number),
+      });
+      expect(res.model.addlWtOffset['bench-chains'].offsetKg).toBeGreaterThan(0);
+      rows.forEach((r: Record<string, unknown>) => {
+        expect(Number(r['est-total'])).toBeGreaterThan(0);
       });
     });
   });
