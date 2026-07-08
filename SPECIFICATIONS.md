@@ -383,14 +383,62 @@ packages/pipeline && npm test -w packages/app`) green — pipeline 12 files/195 
       (Target: none this task — root-cause only. Test:
       `npm test -w packages/app -- conjugateChartParity`, unchanged 8/8 passing; no
       production code touched)
-- [ ] Task 10 (not started, new): Fix Finding #6 — wire `addlWtOffset` into
-      `fitNormalizationModel`'s per-variant fit and `normalizeE1rm`'s apply step, mirroring
-      legacy's two-sided correction (`applyAddlWtOffset` before `fitVariantFactor`;
-      offset-adjusted e1RM before dividing by factor in `normalizeToBaseE1RM`). Needs
-      explicit user sign-off on the design before implementation, per this project's
-      established precedent for Findings #1/#3 (both required sign-off first). Candidate
-      designs are outlined in `migration/ConjugateCharts.md`'s Finding #6 section — not
-      chosen yet.
+- [x] Task 10 (sign-off obtained 2026-07-07): Fix Finding #6. **Design B chosen and
+      refined** (user sign-off): fit-time offset-adjust weights before fitting
+      `variantFactor` for addlWt canonicals (mirrors `sessionIndex.ts`'s
+      `applyAddlWtOffset`-before-`fitVariantFactor`); apply-time wire `addlWtOffset`
+      directly into `normalizeE1rm`/`projectToVariant` in e1RM-space (not weight-space —
+      discovered legacy's `repCalculator.ts` `findBestE1RM` already does this exact
+      e1RM-space approximation at the same aggregated-per-canonical abstraction level
+      pipeline operates at, documented in-code as "approximation valid because offset and
+      e1RM share the same weight unit"). No `normalizeE1rm`/`projectToVariant` signature
+      change needed — smaller blast radius than the original literal weight-space mirror.
+      Broken into subtasks below.
+  - [x] Task 10a: Fix fit-time — in `fitNormalizationModel`, for each addlWt-tagged
+        canonical, fit `addlWtOffset` first, then offset-adjust that canonical's records
+        (`weight += offsetKg`) before feeding them into the `variantFactor` `fitMetric`
+        call, mirroring `sessionIndex.ts`'s `applyAddlWtOffset`-before-`fitVariantFactor`
+        sequencing. Non-addlWt canonicals unaffected. (Target:
+        `packages/pipeline/src/derive/normalize.ts`. Test:
+        `npm test -w packages/pipeline -- normalize`)
+  - [x] Task 10b: Fix apply-time — `normalizeE1rm(canonical, e1rmKg, model)` adds
+        `model.addlWtOffset[canonical]?.offsetKg` to `e1rmKg` before dividing by
+        `factor` when the canonical has a fitted offset; `projectToVariant(baseE1rmKg,
+    targetCan, model)` subtracts the target's `offsetKg` after multiplying by
+        `factor` (exact mirror of `findBestE1RM`'s `e1rm = compE1RM * vf.factor; e1rm -=
+    off.offset`). No signature change. (Target:
+        `packages/pipeline/src/derive/normalize.ts`. Test:
+        `npm test -w packages/pipeline -- normalize`)
+  - [x] Task 10c: Update `normalize.test.ts` — recompute the existing `bench-chains`
+        factor expectation (`0.809090909`, line ~80) now that fit-time offset-adjusts
+        weight first; add `it.each` coverage for fit-time (addlWt canonical factor
+        differs from a naive unadjusted fit) and apply-time (`normalizeE1rm`/
+        `projectToVariant` round-trip correctness for addlWt canonicals, confirming
+        non-addlWt canonicals are byte-identical to pre-fix behavior). (Target:
+        `packages/pipeline/src/derive/normalize.test.ts`. Test:
+        `npm test -w packages/pipeline -- normalize`)
+  - [x] Task 10d: Full build/test pass — `npm run build -w packages/pipeline` (per
+        `CLAUDE.md`, must rebuild before app consumes it), `npm run build -w packages/app`,
+        `npm test -w packages/pipeline`, confirm zero regressions outside `normalize.test.ts`.
+        (Test: `npm run build -w packages/pipeline && npm run build -w packages/app && npm
+    test -w packages/pipeline`)
+  - [x] Task 10e: Re-run `conjugateChartParity.test.ts`, record real before/after
+        `normalized`-composite `maxRelDiff` numbers for bench (was 9.8%)/deadlift (was
+        5.1%)/squat (was 0%, must stay 0%) — confirm narrowing/closing, no regression on
+        squat. Also re-run `totalChartParity.test.ts` per user's explicit ask: confirm no
+        regression, and directly check whether `TotalChart`'s fixture data includes any
+        addlWt-carrying canonicals (Open TODO #5 from `HANDOFF.md`) — if yes, record
+        whether new divergence appears; if no, document that the latent gap remains
+        unexercised there. (Test: `npm test -w packages/app -- conjugateChartParity
+    totalChartParity`)
+  - [x] Task 10f: Update docs — `migration/ConjugateCharts.md` (new "Finding #6 fixed"
+        section with real before/after numbers and the `findBestE1RM` e1RM-space
+        discovery), `SPECIFICATIONS.md` (mark 10a–10g complete, Status section). (Target:
+        `migration/ConjugateCharts.md`, `SPECIFICATIONS.md`. Test: none — doc-only)
+  - [x] Task 10g (QA): Independent full-suite re-verification via `qa-reviewer` (not
+        self-reported) — `npm run build -w packages/pipeline && npm run build -w
+    packages/app && npm test -w packages/pipeline && npm test -w packages/app`, all
+        green, plus the two parity tests' real output re-confirmed.
 
 ## Verification
 
@@ -428,6 +476,30 @@ exercise, unlike legacy's two-sided correction — confirmed to exactly track th
 divergence magnitude via addlWt-variant proportion (squat 0/6 → 0%, deadlift 3/6 → 5.1%,
 bench 5/16 → 9.8%). Not fixed — new Task 10 (needs explicit sign-off on fix design, same
 precedent as Findings #1/#3) tracks the actual implementation. No regressions: no production
-code touched this session, root-cause only. Next: get sign-off + implement Task 10, then
-Task 8 (component swap), or pick a different Phase 4 blocker
-(`VariationRadarChart`/`DiagnosticsPanel`).
+code touched this session, root-cause only.
+
+**Task 10 complete (2026-07-07, fifth follow-up)**: User signed off on Design B (full
+two-sided mirror). Implementation discovered a refinement mid-flight that avoided an API
+break: `normalizeE1rm`/`projectToVariant` mirror legacy's `findBestE1RM` (e1RM-space
+offset application, a documented legacy approximation), not `normalizeToBaseE1RM`
+(weight-space, which pipeline has no raw-session-level call site to mirror at). Fit-time
+now offset-adjusts weights before fitting `variantFactor` for addlWt canonicals
+(`packages/pipeline/src/derive/normalize.ts`), mirroring `sessionIndex.ts` exactly.
+Real numbers (`npm test -w packages/app -- conjugateChartParity`, independently
+re-verified via `qa-reviewer`): squat 0.0% (unchanged), bench 9.8%→7.0%, deadlift
+5.1%→0.4%. Narrowed substantially, not fully closed — expected, since Design B mirrors
+legacy's own documented e1RM-space approximation, not an exact correction. Per explicit
+user request, also verified `TotalChart` (Open TODO #5): empirically confirmed via a
+`git stash` before/after bisection that `TotalChart`'s bench/deadlift numbers were
+previously identical to `ConjugateCharts`' pre-fix numbers (9.8%/5.1%, same shared fixture
+and unfiltered `lift:*` composite queries) and improved the same way post-fix (bench
+7.0%, deadlift 2.7%, total 1.8%) — confirms the fix is correctly pipeline-level-scoped,
+benefiting both consumers with zero `TotalChart`-specific code changes. Caught and
+corrected one inaccurate automated-QA claim (that TotalChart's fixture had zero addlWt
+canonicals) via direct fixture inspection and the stash-bisection numbers — full writeup
+in `migration/ConjugateCharts.md`'s "Finding #6 fixed" section. No regressions: full
+suite green (`npm run build -w packages/pipeline && npm run build -w packages/app && npm
+test -w packages/pipeline && npm test -w packages/app`) — pipeline 12 files/203 tests (up
+from 195, 8 new tests), app 19 files/200 tests (unchanged). Component swap-over
+(`ConjugateCharts.tsx`/`useConjugateChartData.ts` still on `@dyel/core`) remains the next
+step for whoever picks up Phase 4 next — out of scope for Task 10, which was fix-only.

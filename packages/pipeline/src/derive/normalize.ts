@@ -157,16 +157,28 @@ export function fitNormalizationModel(
         continue;
       }
 
-      const f = fitMetric(grid, r, (p, rec) => calcE1RM(rec.weight, rec.reps, rec.rpe) / p);
-      if (f && f.n >= opts.minSamples && f.v !== 0) {
-        variantFactor[c] = { factor: f.v, n: f.n };
-      }
+      // Task 10a: For addlWt canonicals, fit offset first, then offset-adjust weights before fitting variantFactor
+      const hasAddlWt = getTag(r[0]?.tags || new Set(), 'addl:');
+      let offsetKg: number | null = null;
 
-      if (getTag(r[0]?.tags || new Set(), 'addl:')) {
+      if (hasAddlWt) {
         const o = fitMetric(grid, r, (p, rec) => invertE1RM(p, rec.reps) - rec.weight);
         if (o && o.n >= opts.minSamples) {
           addlWtOffset[c] = { offsetKg: o.v, n: o.n };
+          offsetKg = o.v;
         }
+      }
+
+      // Fit variantFactor on offset-adjusted records if offset was fit, otherwise on raw records
+      const recordsToFit =
+        offsetKg !== null ? r.map((rec) => ({ ...rec, weight: rec.weight + offsetKg })) : r;
+      const f = fitMetric(
+        grid,
+        recordsToFit,
+        (p, rec) => calcE1RM(rec.weight, rec.reps, rec.rpe) / p
+      );
+      if (f && f.n >= opts.minSamples && f.v !== 0) {
+        variantFactor[c] = { factor: f.v, n: f.n };
       }
     }
   }
@@ -179,7 +191,12 @@ const getFactor = (can: string, model: NormalizationModel) =>
 
 export const normalizeE1rm = (can: string, e1rmKg: number, model: NormalizationModel) => {
   const f = getFactor(can, model);
-  return f ? e1rmKg / f : null;
+  if (!f) {
+    return null;
+  }
+  // Task 10b: For addlWt canonicals, add offset to e1rmKg before dividing by factor
+  const offset = model.addlWtOffset[can]?.offsetKg ?? 0;
+  return (e1rmKg + offset) / f;
 };
 
 export const projectToVariant = (
@@ -188,5 +205,10 @@ export const projectToVariant = (
   model: NormalizationModel
 ) => {
   const f = getFactor(targetCan, model);
-  return f ? baseE1rmKg * f : null;
+  if (!f) {
+    return null;
+  }
+  // Task 10b: For addlWt canonicals, subtract offset after multiplying by factor (inverse of normalizeE1rm)
+  const offset = model.addlWtOffset[targetCan]?.offsetKg ?? 0;
+  return Math.max(0, baseE1rmKg * f - offset);
 };

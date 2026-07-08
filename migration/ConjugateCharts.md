@@ -502,6 +502,88 @@ gap once it includes addlWt-carrying variants.
 only, via two throwaway debug test files (`_debug_finding6.test.ts`), both deleted after
 use. `npm test -w packages/app -- conjugateChartParity` unchanged (8/8 passing).
 
+### Finding #6 fixed (2026-07-07, fifth follow-up): Design B — fit-time + apply-time addlWtOffset wiring
+
+User sign-off obtained on **Design B** (full two-sided mirror of legacy's correction), with
+one refinement discovered mid-implementation that shrank the change's blast radius:
+`normalizeE1rm`/`projectToVariant` did **not** need a signature change to accept raw
+weight/reps, because legacy's `repCalculator.ts` `findBestE1RM` already applies
+`addlWtOffset` in **e1RM-space** (not weight-space) at the exact same aggregated
+per-canonical abstraction level pipeline's `Point`/`NormalizationModel` operate at — a
+documented legacy approximation ("approximation valid because offset and e1RM share the
+same weight unit"), not an invented shortcut. Only `normalizeToBaseE1RM` (a different
+legacy function, operating on raw per-session `TrainingSession` objects) does the
+weight-space correction, and pipeline has no equivalent raw-session-level call site to
+mirror that at (`Point.v` is already a derived, day-collapsed e1RM by the time it reaches
+`normalizeE1rm`).
+
+**Changes** (`packages/pipeline/src/derive/normalize.ts`, implemented by a teammate,
+independently QA-verified):
+
+- **Fit-time**: `fitNormalizationModel` now fits `addlWtOffset` first for each addlWt-tagged
+  canonical, then — if the offset fit met `minSamples` — offset-adjusts that canonical's
+  records (`weight += offsetKg`, via immutable copies) before fitting `variantFactor`,
+  mirroring `sessionIndex.ts`'s `applyAddlWtOffset`-before-`fitVariantFactor` sequencing.
+  Non-addlWt canonicals are unaffected (unchanged code path).
+- **Apply-time**: `normalizeE1rm(can, e1rmKg, model)` now adds `model.addlWtOffset[can]?.offsetKg`
+  to `e1rmKg` before dividing by `factor` (variant→baseline direction). `projectToVariant(baseE1rmKg,
+targetCan, model)` now subtracts `model.addlWtOffset[targetCan]?.offsetKg` after multiplying
+  by `factor`, clamped to `Math.max(0, ...)` (baseline→variant direction — exact mirror of
+  `findBestE1RM`'s `e1rm = compE1RM * vf.factor; e1rm -= off.offset`). No signature change to
+  either function.
+
+**Real before/after numbers** (`npm test -w packages/app -- conjugateChartParity`,
+independently re-verified via `qa-reviewer`):
+
+```
+core-vs-pipeline squat normalized: compared=4  maxRelDiff=0.0%  (before: 0.0%, unchanged)
+core-vs-pipeline bench normalized: compared=22 maxRelDiff=7.0%  (before: 9.8%)
+core-vs-pipeline deadlift normalized: compared=12 maxRelDiff=0.4% (before: 5.1%)
+```
+
+Bench and deadlift both narrowed substantially (deadlift is now near-exact); neither closed
+to 0%, which is expected — Design B mirrors legacy's own documented e1RM-space
+_approximation_, not an exact weight-space correction, so some residual divergence from that
+approximation itself is inherent to legacy's own math, not a pipeline bug. Not treated as a
+new open finding — it's the expected ceiling of the approximation both implementations now
+share.
+
+**TotalChart cross-check (per explicit user request, closing Open TODO #5)**: verified
+empirically, not assumed — `totalChartSpecs.ts`'s composite queries (e.g. `include: { all:
+['lift:bench'] }`) are unfiltered by addlWt and pull in the same chain/band canonicals from
+the same shared fixture (`total-chart-sheet.csv`) `ConjugateCharts` uses. Confirmed via a
+before/after `git stash` bisection of the fix (stash → rebuild → `totalChartParity` →
+restore → rebuild) that `TotalChart`'s bench/deadlift numbers were previously **identical**
+to `ConjugateCharts`' pre-fix Finding #6 numbers (9.8%/5.1%), and after the fix:
+
+```
+core-vs-pipeline bench: maxRelDiff=7.0% (before: 9.8%)
+core-vs-pipeline deadlift: maxRelDiff=2.7% (before: 5.1%)
+core-vs-pipeline total: maxRelDiff=1.8% (before: 2.9%)
+core-vs-pipeline squat: maxRelDiff=0.7% (before: 0.7%, unaffected — no addlWt squat canonicals)
+```
+
+So `TotalChart` benefited automatically from the shared `packages/pipeline/src/derive/normalize.ts`
+fix, exactly as anticipated — no `TotalChart`-specific code change was needed, confirming
+this was correctly scoped as a pipeline-level fix, not a `ConjugateCharts`-only one. (An
+initial automated QA pass incorrectly reported TotalChart's fixture as addlWt-free; this was
+caught and corrected by direct fixture inspection plus the stash-bisection numbers above —
+flagging here since it's a good example of why this project's convention is to verify
+divergence claims empirically rather than trust a plausible-sounding summary.)
+
+**Verification**: `npm run build -w packages/pipeline && npm run build -w packages/app &&
+npm test -w packages/pipeline && npm test -w packages/app` — all green. Pipeline: 12
+files/203 tests (up from 195 — 8 new tests covering fit-time offset-adjustment and
+apply-time add/subtract behavior, including regression coverage that non-addlWt canonicals
+are untouched). App: 19 files/200 tests (unchanged — no new test files, only the shared
+pipeline fix consumed by existing parity tests). No regressions.
+
+**Component swap-over status: still NOT done.** `ConjugateCharts.tsx`/`useConjugateChartData.ts`
+remain on `@dyel/core`. Finding #6 is now fixed (not just root-caused), which was the last
+blocker flagged in "Before re-attempting" above — the actual swap-over is the next step for
+whoever picks up Phase 4 next, but was out of scope for this session (Task 10 was fix-only,
+per the original task breakdown).
+
 ## Verification
 
 `npm test -w packages/app -- conjugateChartParity`

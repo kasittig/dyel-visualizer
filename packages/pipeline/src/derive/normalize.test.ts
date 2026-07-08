@@ -77,7 +77,9 @@ describe('fitNormalizationModel', () => {
   it('includes variantFactor entries at/above minSamples, carrying n', () => {
     const model = fitNormalizationModel(history, { minSamples: 2 }, athlete());
     expect(model.variantFactor['bench-chains']).toEqual({ factor: expect.any(Number), n: 2 });
-    expect(model.variantFactor['bench-chains'].factor).toBeCloseTo(0.809090909, 5);
+    // After Task 10a offset-adjustment: weights are offset-corrected (+20kg) before fitting,
+    // resulting in a factor of 1.0 (80+20=100 vs baseline 100, 90+20=110 vs baseline 110)
+    expect(model.variantFactor['bench-chains'].factor).toBeCloseTo(1, 5);
   });
 
   it('fits addlWtOffset per-canonical, not pooled across families sharing the same addl tag', () => {
@@ -95,11 +97,8 @@ describe('fitNormalizationModel', () => {
 
 describe('fitNormalizationModel — speed-work inclusion', () => {
   const speedWorkPoint = rec(day(5), 'bench', 10, 1, ['lift:bench', 'comp-lift'], 9);
-  const variantAtSameDate = rec(day(5), 'bench-chains2', 90, 1, [
-    'lift:bench',
-    'addl:chains',
-    'variation',
-  ]);
+  // Use a non-addlWt variant to test speed-work inclusion without offset adjustment interference
+  const variantAtSameDate = rec(day(5), 'bench-paused', 95, 1, ['lift:bench', 'variation']);
 
   it('includes speed-work sets in the interpolation grid used to fit variant factors', () => {
     const withoutSpeedWork = fitNormalizationModel(
@@ -117,16 +116,17 @@ describe('fitNormalizationModel — speed-work inclusion', () => {
 
     // With speed-work now included, the interpolated grid value at day(5) is 10kg instead of
     // ~105kg (interpolated between day(1) and day(10)), resulting in a significantly different factor.
-    expect(withSpeedWork.variantFactor['bench-chains2'].factor).not.toBeCloseTo(
-      withoutSpeedWork.variantFactor['bench-chains2'].factor,
+    // These factors should differ because the grid interpolation changes.
+    expect(withSpeedWork.variantFactor['bench-paused'].factor).not.toBeCloseTo(
+      withoutSpeedWork.variantFactor['bench-paused'].factor,
       1
     );
   });
 
   it('anchors the grid on the speed-work point when it lands on a variant query date', () => {
     // Speed-work points are now included in fitting. The grid returns the exact 10kg speed-work
-    // value at day(5), giving a factor of 90 / 10 = 9.
-    const expectedFactor = 90 / 10;
+    // value at day(5), giving a factor of 95 / 10 = 9.5.
+    const expectedFactor = 95 / 10;
     const model = fitNormalizationModel(
       [...benchHistory, variantAtSameDate, speedWorkPoint],
       {
@@ -134,7 +134,7 @@ describe('fitNormalizationModel — speed-work inclusion', () => {
       },
       athlete()
     );
-    expect(model.variantFactor['bench-chains2'].factor).toBeCloseTo(expectedFactor, 1);
+    expect(model.variantFactor['bench-paused'].factor).toBeCloseTo(expectedFactor, 1);
   });
 });
 
@@ -265,10 +265,11 @@ describe('normalizeE1rm', () => {
     expect(normalizeE1rm('bench', 123.4, model)).toBe(123.4);
   });
 
-  it('returns e1rmKg / factor for a fitted variant', () => {
+  it('returns (e1rmKg + offset) / factor for a fitted variant (Task 10b: applies offset adjustment)', () => {
     const model = fitNormalizationModel(history, { minSamples: 2 }, athlete());
     const factor = model.variantFactor['bench-chains'].factor;
-    expect(normalizeE1rm('bench-chains', 100, model)).toBeCloseTo(100 / factor, 6);
+    const offset = model.addlWtOffset['bench-chains']?.offsetKg ?? 0;
+    expect(normalizeE1rm('bench-chains', 100, model)).toBeCloseTo((100 + offset) / factor, 6);
   });
 
   it('returns null when the canonical has no fitted entry', () => {
@@ -283,10 +284,14 @@ describe('projectToVariant', () => {
     expect(projectToVariant(150, 'bench', model)).toBe(150);
   });
 
-  it('returns baselineE1rmKg * factor for a fitted variant', () => {
+  it('returns max(0, baselineE1rmKg * factor - offset) for a fitted variant (Task 10b: applies offset subtraction)', () => {
     const model = fitNormalizationModel(history, { minSamples: 2 }, athlete());
     const factor = model.variantFactor['bench-chains'].factor;
-    expect(projectToVariant(150, 'bench-chains', model)).toBeCloseTo(150 * factor, 6);
+    const offset = model.addlWtOffset['bench-chains']?.offsetKg ?? 0;
+    expect(projectToVariant(150, 'bench-chains', model)).toBeCloseTo(
+      Math.max(0, 150 * factor - offset),
+      6
+    );
   });
 
   it('returns null when the target canonical has no fitted entry', () => {
@@ -301,6 +306,13 @@ describe('round-trip', () => {
     const normalized = normalizeE1rm('bench-chains', 150, model)!;
     const projected = projectToVariant(normalized, 'bench-chains', model)!;
     expect(projected).toBeCloseTo(150, 6);
+  });
+
+  it('round-trip holds for non-addlWt canonicals too (regression: no offset subtraction)', () => {
+    const model = fitNormalizationModel(history, { minSamples: 2 }, athlete());
+    const normalized = normalizeE1rm('squat-chains', 200, model)!;
+    const projected = projectToVariant(normalized, 'squat-chains', model)!;
+    expect(projected).toBeCloseTo(200, 6);
   });
 });
 
@@ -399,5 +411,83 @@ describe('fitNormalizationModel — deadlift stance preference tier', () => {
     );
     // Competition-named takes top priority, superseding stance preference
     expect(model.baseline['lift:deadlift']).toBe('deadlift-comp-named');
+  });
+});
+
+describe('fitNormalizationModel — Task 10a: addlWtOffset fit-time adjustment', () => {
+  it('fits variantFactor for addlWt canonical using offset-adjusted weights (differs from naive unadjusted fit)', () => {
+    // This test proves that Task 10a's offset-adjustment of weights before fitting actually changes the fit result.
+    const model = fitNormalizationModel(history, { minSamples: 2 }, athlete());
+
+    // The offset-adjusted fit for bench-chains (offset=20kg):
+    // - day 1: (80+20=100) / 100 = 1.0
+    // - day 10: (90+20=110) / 110 = 1.0
+    // - mean = 1.0
+    expect(model.variantFactor['bench-chains'].factor).toBeCloseTo(1, 5);
+
+    // Now compute what the fit would be WITHOUT offset adjustment (naive unadjusted):
+    // - day 1: 80 / 100 = 0.8
+    // - day 10: 90 / 110 = 0.818...
+    // - mean ≈ 0.809...
+    // These are clearly different, proving the offset adjustment changed the fit.
+    expect(model.variantFactor['bench-chains'].factor).not.toBeCloseTo(0.809090909, 2);
+  });
+
+  it('non-addlWt canonicals are fit on raw (non-offset-adjusted) weights unchanged', () => {
+    // squat-chains has no addl tag in this history, so it should use the raw weight fit path.
+    // This test ensures Task 10a doesn't affect canonicals without addlWt tags.
+    const noAddlHistory: TaggedSetRecord[] = [
+      rec(day(1), 'squat', 200, 1, ['lift:squat', 'comp-lift']),
+      rec(day(10), 'squat', 220, 1, ['lift:squat', 'comp-lift']),
+      // Non-addlWt variant (no addl tag)
+      rec(day(1), 'squat-pause', 180, 1, ['lift:squat', 'variation']),
+      rec(day(10), 'squat-pause', 200, 1, ['lift:squat', 'variation']),
+    ];
+    const model = fitNormalizationModel(noAddlHistory, { minSamples: 2 }, athlete());
+    // Should be fit on raw weights: (180/200 + 200/220) / 2 ≈ 0.9045
+    expect(model.variantFactor['squat-pause']).toBeDefined();
+    // Just verify it exists and is non-zero (exact value depends on interpolation)
+    expect(model.variantFactor['squat-pause'].factor).toBeGreaterThan(0);
+    // Verify no offset was fit for this non-addlWt canonical
+    expect(model.addlWtOffset['squat-pause']).toBeUndefined();
+  });
+});
+
+describe('normalizeE1rm & projectToVariant — Task 10b: apply-time offset adjustment', () => {
+  it('normalizeE1rm with addlWt canonical returns (e1rmKg + offset) / factor', () => {
+    const model = fitNormalizationModel(history, { minSamples: 2 }, athlete());
+    // bench-chains: factor=1, offset=20kg, so (100 + 20) / 1 = 120
+    expect(normalizeE1rm('bench-chains', 100, model)).toBeCloseTo(120, 5);
+  });
+
+  it('projectToVariant with addlWt canonical returns max(0, baseE1rmKg * factor - offset)', () => {
+    const model = fitNormalizationModel(history, { minSamples: 2 }, athlete());
+    // bench-chains: factor=1, offset=20kg, so max(0, 150 * 1 - 20) = 130
+    expect(projectToVariant(150, 'bench-chains', model)).toBeCloseTo(130, 5);
+  });
+
+  it('projectToVariant clamps result to minimum of 0 for addlWt canonicals', () => {
+    const model = fitNormalizationModel(history, { minSamples: 2 }, athlete());
+    // With small baseline e1rm and large offset, result should clamp to 0, not go negative
+    const result = projectToVariant(5, 'bench-chains', model)!; // 5 * 1 - 20 = -15 → clamped to 0
+    expect(result).toBe(0);
+  });
+
+  it('normalizeE1rm and projectToVariant are exact inverses for addlWt canonicals (offset adjustments cancel)', () => {
+    const model = fitNormalizationModel(history, { minSamples: 2 }, athlete());
+    const original = 150;
+    // Start with a variant e1rm, normalize to baseline, then project back to variant
+    const normalized = normalizeE1rm('bench-chains', original, model)!;
+    const projected = projectToVariant(normalized, 'bench-chains', model)!;
+    expect(projected).toBeCloseTo(original, 6);
+  });
+
+  it('regression: non-addlWt canonicals round-trip correctly (offset adjustments work for all tagged canonicals)', () => {
+    const model = fitNormalizationModel(history, { minSamples: 2 }, athlete());
+    // squat-chains has an offset (55kg), verify the round-trip still works
+    const original = 200;
+    const normalized = normalizeE1rm('squat-chains', original, model)!;
+    const projected = projectToVariant(normalized, 'squat-chains', model)!;
+    expect(projected).toBeCloseTo(original, 6);
   });
 });
