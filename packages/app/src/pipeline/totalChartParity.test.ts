@@ -50,11 +50,12 @@ describe('TotalChart core-vs-pipeline parity', () => {
       ? { from: undefined, to: undefined }
       : { from: new Date(last.getFullYear(), last.getMonth() - 3, last.getDate()), to: last };
 
-    const filteredSigma = filterByDateRange(
-      [...tabRows.squat.maxEffort, ...tabRows.bench.maxEffort, ...tabRows.deadlift.maxEffort],
-      dRange.from,
-      dRange.to
-    );
+    const allSigmaPairs = [
+      ...tabRows.squat.maxEffort,
+      ...tabRows.bench.maxEffort,
+      ...tabRows.deadlift.maxEffort,
+    ];
+    const filteredSigma = filterByDateRange(allSigmaPairs, dRange.from, dRange.to);
     const ui =
       dRange.from && dRange.to
         ? { dateRange: [dRange.from.getTime(), dRange.to.getTime()] as [number, number] }
@@ -70,7 +71,7 @@ describe('TotalChart core-vs-pipeline parity', () => {
     pipelineModel = res.model;
 
     const comp = computeBaselineTargetExercises(
-      filteredSigma,
+      allSigmaPairs,
       eff.effectiveBaselineNames,
       eff.effectiveTargetNames
     );
@@ -87,7 +88,7 @@ describe('TotalChart core-vs-pipeline parity', () => {
         filteredSigma,
         baselineExByType,
         comp.targetExByType,
-        buildSessionStats(filteredSigma, eff.effectiveBaselineNames, new Date()),
+        buildSessionStats(allSigmaPairs, eff.effectiveBaselineNames, new Date()),
         volume
       ),
       pipelineOutput

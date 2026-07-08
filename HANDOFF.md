@@ -1,261 +1,105 @@
-# HANDOFF — Task list drafted for ConjugateCharts/VariationRadarChart pipeline swap
+# HANDOFF — legacy fit-window alignment + root-cause investigation
 
-## Context (latest session, 2026-07-08b — TASK_LIST.md execution)
-
-Per explicit direction, executed `TASK_LIST.md`'s Phases A–C as **wire-verify-revert dry
-runs**, not committed swaps: fully wire each component onto `@dyel/pipeline`, run full
-regression (tests + builds), confirm parity, then revert only the live call-site changes
-before committing — so no user-facing behavior actually changes in this pass, while
-proving each swap is mechanically ready. Net-new supporting infra (net-additive, no prior
-behavior to preserve) stays committed.
-
-## Progress Overview (this session)
-
-- **Phase A** (`ConjugateCharts`/`useConjugateChartData`): wired onto `runPipeline` +
-  `conjugateChartSpecs`, verified (`conjugateChartParity` 4/4, full suite 199/199, build
-  green; divergence matched already-documented Finding #6 numbers: squat 0.0%, bench
-  7.0%, deadlift 0.4%), then reverted both files — confirmed clean via `git status`.
-- **Phase B** (`lastSessionDetail.ts`, net-new/committed): added a pipeline-native
-  last-session-detail builder (`{ date, sets, reps, weight, rpe }` per variation label)
-  from `TaggedSetRecord[]`, with a colocated unit test (9 cases) and wiring into
-  `variationRadarChartParity.test.ts` as a soft-warn comparison. Surfaced and fixed two
-  real issues along the way: a kg→lbs unit-conversion bug (builder returned pipeline-
-  native kg with no display-unit conversion) and a test-harness scope-mismatch bug (diff
-  was comparing against legacy's _global_ last-session map instead of the lift-scoped
-  one, producing noisy false-"missing" warnings). Full suite green (17/17 new/touched
-  tests).
-- **Phase C** (`VariationRadarChart`/`LiftTabPanel`): promoted
-  `snapshotVariationsFromPipeline`'s reduction logic to a standalone, committed runtime
-  util (`packages/app/src/utils/variationSnapshot.ts`, unit-tested), then wired the
-  component + its caller onto pipeline-derived props (the promoted snapshot + Phase B's
-  last-session map), verified end-to-end (full suite 205/205, both builds green;
-  divergence matched already-documented numbers), then reverted the two call-site files
-  — confirmed clean via `git status`.
-- **Phase D** (docs): updated `migration/ConjugateCharts.md`, `migration/VariationRadarChart.md`,
-  `APP_COMPONENTS.md`, and `MIGRATION_PLAN.md` to record the dry-run verification results
-  without claiming either component as actually swapped — all four still call `@dyel/core`
-  at runtime; the exact-match parity gate is still not met for either.
-- **Data-safety note**: one subagent's session included a `git stash` that briefly hid
-  pre-existing uncommitted changes unrelated to this task (a `MIN_SAMPLES` pipeline
-  change and its dependent test edits). Confirmed with the user that this stashed state
-  reflected an intentional prior revert, not accidental data loss — no recovery action
-  taken, but the stash (`stash@{0}`, "WIP on migration-phase-1: 9b1fd3e Defer component
-  swap-over...") is still sitting in the stash list and should be reviewed/dropped
-  explicitly by whoever picks this up next, rather than left indefinitely.
-
-## Decisions Made & Rationale (this session)
-
-- **Wire-verify-revert over either extreme** (full commit vs. no-touch prep) — lets the
-  team prove each swap is mechanically safe (real tests, real build, real numbers) without
-  taking on the risk of shipping a user-facing change while the project's own exact-match
-  parity gate (`APP_COMPONENTS.md`) still isn't satisfied for either component.
-- **Net-new infra always kept, call-site changes always reverted** — `lastSessionDetail.ts`
-  and `variationSnapshot.ts` have no prior behavior to regress, so keeping them costs
-  nothing and makes the eventual real swap smaller; the four call-site files (`ConjugateCharts.tsx`,
-  `useConjugateChartData.ts`, `VariationRadarChart.tsx`, `LiftTabPanel.tsx`) are reverted
-  every time because that's exactly the user-facing behavior surface the "no behavior
-  change this pass" instruction was protecting.
-- **Fixed the two bugs Phase B surfaced immediately rather than deferring them** — both
-  (unit conversion, test-harness scope) were cheap, concrete, and would otherwise poison
-  any future attempt to read signal from `variationRadarChartParity.test.ts`.
-
-## Open TODOs (carried forward + new)
-
-0. **Decide on `stash@{0}`** — review and either restore-then-recommit or explicitly drop;
-   don't leave it sitting indefinitely (see Data-safety note above).
-1. **Close the shared `ConjugateCharts`/`VariationRadarChart` normalization divergence to
-   an exact match** — this is the sole remaining blocker for both components' real
-   swap-over now that Phase B closed `VariationRadarChart`'s tooltip-data gap. Currently
-   squat 0.0% / bench 7.0% / deadlift 0.4% on the `normalized` composite (Design B's
-   documented approximation ceiling, per `ConjugateCharts.md` Finding #6) — soft-warned,
-   not hard-asserted.
-2. **Once (1) closes**: perform the real (committed, not dry-run) swap-over of
-   `ConjugateCharts`/`useConjugateChartData` first, then `VariationRadarChart`/
-   `LiftTabPanel`, reusing the exact wiring already proven in this session's dry runs.
-3. File a GitHub tracking issue for squat's 0.7% divergence (`TotalChart`/`SigmaTab`
-   context, carried over from prior session, still not filed — see Open TODO #1 below).
-
-## Files Touched (this session)
-
-- `packages/app/src/pipeline/lastSessionDetail.ts` (new, committed)
-- `packages/app/src/pipeline/lastSessionDetail.test.ts` (new, committed)
-- `packages/app/src/pipeline/variationRadarChartParity.test.ts` (modified, committed —
-  wired in `lastSessionDetail`, fixed unit-conversion and scope-mismatch comparison bugs)
-- `packages/app/src/utils/variationSnapshot.ts` (new, committed)
-- `packages/app/src/utils/variationSnapshot.test.ts` (new, committed)
-- `packages/app/src/testUtils/diffVariationSnapshot.ts` (modified, committed — delegates
-  to the promoted runtime util)
-- `TASK_LIST.md` (updated with prep/wire-verify-revert framing)
-- `migration/ConjugateCharts.md`, `migration/VariationRadarChart.md`, `APP_COMPONENTS.md`,
-  `MIGRATION_PLAN.md` (docs, this Phase D pass)
-- `HANDOFF.md` (this section)
-- No changes to `ConjugateCharts.tsx`, `useConjugateChartData.ts`,
-  `VariationRadarChart.tsx`, or `LiftTabPanel.tsx` — all four were wired during
-  verification and reverted before this commit.
-
-## Suggested Next Skills (this session)
-
-- Pick up Open TODO #1 above (close the shared normalization divergence to exact match) —
-  this is the critical-path item blocking both real swap-overs.
-- Once closed, re-run this session's exact wiring (already proven in the dry runs) as a
-  real, committed swap for `ConjugateCharts` then `VariationRadarChart`/`LiftTabPanel`.
-- Review/drop `stash@{0}` (Open TODO #0) before it's forgotten.
-
----
-
-## Context (this session)
-
-User asked how difficult it would be to swap `packages/app/src/components/charts/`
-onto `@dyel/pipeline`'s `ChartPoint` struct. Scoping found `TotalChart`,
-`DateLineChart`, `SessionBarChart` already migrated; `SigmaChart`/`BaseRadarChart`
-are pipeline-fed or fully generic. `VariationRadarChart.tsx` is the one real holdout
-(still calls `@dyel/core`'s `normalizeToBaseE1RM`), matching `MIGRATION_PLAN.md`
-item #3 / issue [#460](https://github.com/kasittig/dyel-visualizer/issues/460), which
-is hard-blocked on `ConjugateCharts` (item #2 / issue
-[#459](https://github.com/kasittig/dyel-visualizer/issues/459)) landing first, plus a
-last-session tooltip-detail sourcing gap. A full task list was written to
-`TASK_LIST.md` (Phases A–D) to execute both swaps in dependency order. **No code was
-changed this session — planning/docs only.**
-
-## Context (prior sessions)
+## Context
 
 `migration-phase-1` implements `MIGRATION_PLAN.md`'s pipeline-native migration of
-`packages/app` components off `@dyel/core` onto `@dyel/pipeline`. This file is now the sole
-task-tracking reference (`SPECIFICATIONS.md` has been retired/deleted — its remaining-work
-items are folded into "Open TODOs" below). The prior session (previous `HANDOFF.md`) closed
-bench's flat 7.0% divergence via board/block/deficit canonical splitting (`dd01c17`).
-
-This session was a documentation-correctness pass, not a code change: the standing docs
-described core-vs-pipeline soft-warn divergence tiers as a "known, accepted divergence" —
-i.e. a permanent policy of tolerating mismatch. The user corrected this: the actual goal is
-full bit-for-bit legacy parity; soft-warn is only a temporary tracking mechanism while a
-series's divergence is being root-caused. The docs also had two factual issues: GitHub issue
-#451 was referenced as if still open (it's actually closed, merged via PR #454), and
-`HANDOFF.md`'s Open TODO #2 speculated that pushPull's residual "may have been board-related"
-and "likely includes bench" rather than stating the confirmed structural fact.
+`packages/app` off `@dyel/core` onto `@dyel/pipeline`. This session executed
+`LEGACY_MIGRATION.md`'s task list (aligning legacy's normalization-model fit window with
+pipeline's) and then investigated why the resulting parity numbers didn't improve as
+expected. See `LEGACY_MIGRATION.md` for full task-by-task detail and `GAPS_REMAINING.md`
+for the broader per-component migration gap inventory (both still current, not
+superseded by this session).
 
 ## Progress Overview
 
-- **Corrected the soft-warn policy framing** across 5 living docs — reworded from "known,
-  accepted divergence" (permanent tolerance) to "temporary tracking pending root-cause fix,
-  promoted to hard-assert once resolved":
-  - `packages/app/CLAUDE.md` — "Core-vs-pipeline parity testing" step 3 and the "Handling
-    known divergence" paragraph.
-  - `packages/app/src/testUtils/CLAUDE.md` — parity-harness pattern step 5 and live-diff-harness
-    usage pattern point 4.
-  - `migration/TotalChart.md` — Context section.
-  - `HANDOFF.md` (this file, replacing the prior version) and `SPECIFICATIONS.md`'s "Currently
-    open items" section.
-- **Corrected #451's status**: confirmed via `gh issue view 451` that it's closed
-  (`state: CLOSED`), merged via PR #454 ("Migrate TotalChart/ConjugateCharts to @dyel/pipeline
-  with parity testing"), which fixed the chain-count/band-tension canonical-collapsing bug —
-  a sibling bug to the board/block/deficit fix landed separately in `dd01c17`. Both are now
-  cited in the docs as _landed precedents_ of the root-cause-then-promote-to-hard-assert
-  pattern, not open items.
-- **Confirmed pushPull's composite relationship as fact, not speculation**: verified from
-  source that pushPull is mechanically `bench + deadlift` in both implementations —
-  `packages/app/src/pipeline/totalChartSpecs.ts:16` (`composite('pushPull', ['bench',
-'deadlift'])`) and legacy `packages/core/src/load/buildChartData.ts:63` (`point.pushPull =
-Math.round(last.bench + last.deadlift)`). This means **squat's 0.7% divergence is the one
-  standalone, truly independent unexplained gap** (it didn't move across addlWtOffset Design
-  B/C, the board/block/deficit fix, or the #451/PR #454 chains/bands fix); pushPull's 0.3%
-  residual is just the downstream sum of bench's and deadlift's own residuals and is expected
-  to close automatically once those fully close.
-- **Caught and reverted scope creep from the `feature-implementer` agent**: the agent's
-  otherwise-correct edit also added an unrelated note about test-count drift from a separate
-  commit (`c180add`) into `HANDOFF.md`, `SPECIFICATIONS.md`, and `FIX_BOARD_COUNT.md` — not
-  part of the requested task. Caught via independent `qa-reviewer` verification (which flagged
-  a 6th modified file where only 5 were expected), then manually reverted: `FIX_BOARD_COUNT.md`
-  restored via `git checkout`, and the extra notes stripped from `HANDOFF.md`/`SPECIFICATIONS.md`
-  while keeping the correctly-scoped wording fixes. Also caught and fixed one leftover hedge
-  (`HANDOFF.md`'s "Suggested Next Skills" bullet) that the agent's pass had missed.
-- **Final verification**: `git status --short` confirms exactly 5 files modified
-  (`packages/app/CLAUDE.md`, `packages/app/src/testUtils/CLAUDE.md`, `migration/TotalChart.md`,
-  `HANDOFF.md`, `SPECIFICATIONS.md`); `git diff -- '*.ts'` is empty (no code/test changes);
-  sanity greps for the old stale phrasing return no matches.
+- **Landed `LEGACY_MIGRATION.md` Tasks 1-7**: three call sites (`App.tsx`'s
+  `sigmaStats`/`baselineExByType`/`targetExByType`, `LiftTabPanel.tsx`'s per-lift-tab
+  stats, and both `totalChartParity.test.ts`/`sigmaTabParity.test.ts` harnesses) now fit
+  the normalization model on full unfiltered pair history instead of date-range-filtered
+  pairs, matching `@dyel/pipeline`'s documented behavior. Rendered/summed values still
+  use the date-filtered set everywhere — only fit inputs changed. Full suite (205/205)
+  and build green throughout.
+- **Task 6 grep surfaced one additional in-scope call site** (`LiftTabPanel.tsx`, not in
+  the original blast-radius list) — found, confirmed in-scope, and fixed same session.
+- **Investigated why `maxRelDiff` didn't improve** (Task 7's numbers moved the wrong
+  direction: squat 16.2%→18.1%, total 16.3%→16.9%, worse). Two experiments:
+  1. Reversed the fix direction as a disposable test (scoped pipeline's fit to
+     `ui.dateRange` instead of widening legacy) — made things _worse_ in that direction
+     too (squat 21.9%, total 18.2%), ruling out fit-window mismatch as the primary driver
+     of the 16-25% baseline gap. Reverted cleanly, no trace left.
+  2. Diffed the actual fitted models (legacy `buildSessionStats` vs pipeline
+     `fitNormalizationModel`) directly. **Found the real cause**: legacy's
+     `splitByEffort` (`packages/app/src/utils/appDataUtils.ts`) excludes volume/speed-work
+     sessions (`sets === 1 || rpe !== null` gate) before ever reaching the fit; pipeline's
+     `fitNormalizationModel` has no equivalent exclusion and fits on the entire tagged
+     history. Concretely: squat's `Box Squat` variant fits on `sampleCount=2` (legacy) vs
+     `n=3` (pipeline) for the same fixture, producing a ~22% factor gap on its own. This
+     also degrades single-sample variants because the _baseline_ grid itself differs the
+     same way. This is exactly the "speed-work filtering" cause already named (but never
+     quantified) in `packages/app/CLAUDE.md`'s divergence writeup.
 
 ## Decisions Made & Rationale
 
-- **Soft-warn reframed as interim, not permanent** — matches the user's explicit correction
-  that the project's goal is full bit-for-bit parity, not accepted tolerance of legacy/pipeline
-  mismatch. Every soft-warn series should be traceable to an open root-cause investigation (or
-  a filed issue) and eventually promoted to hard-assert, mirroring how bench/pushPull/total
-  were promoted after `dd01c17`.
-- **Historical narrative sections left untouched** — `HANDOFF.md`'s and `SPECIFICATIONS.md`'s
-  point-in-time task logs, before/after tables, and root-cause writeups describe what was true
-  when written and were deliberately not rewritten; only the living "Open TODOs"/"Currently
-  open items" trackers were corrected, to avoid falsifying the historical record.
-- **Reverted scope creep rather than keeping "extra but accurate" content** — even though the
-  agent's `c180add` test-count note was likely factually correct, it was unrequested and
-  outside the approved plan's file list. Team-lead discipline: keep changes scoped to what was
-  reviewed and approved; a stray but true fact doesn't justify expanding scope without a
-  separate, explicit task.
+- **Matched legacy to pipeline's full-unfiltered-history fit window, not the reverse** —
+  pipeline is the target end-state per `MIGRATION_PLAN.md`; this was still correct to land
+  even though it didn't close the larger gap, since it removes one real (if secondary)
+  source of divergence and keeps legacy consistent with pipeline's documented, intentional
+  fit-window behavior.
+- **Did not attempt to fix the volume/speed-work filtering asymmetry this session** — it's
+  a modeling/design gap (pipeline has no concept of a "volume session" or exclusion filter
+  at all), not a mechanical patch. Treated the same way `GAPS_REMAINING.md` §5
+  (`DiagnosticsPanel`) treats comparable gaps: propose a pipeline-side change and get
+  explicit sign-off before implementing, rather than guessing at a design during this pass.
+- **Did not update `GAPS_REMAINING.md`'s §0c/0d/0e checkboxes or `packages/app/CLAUDE.md`'s
+  stale divergence numbers** — the root-cause story materially changed this session (from
+  "fit-window mismatch" to "volume/speed-work filtering asymmetry"), so those need a full
+  re-scoping pass, not a number swap. Per the project's own "verify before documenting done"
+  convention.
 
 ## Open TODOs
 
-0. **Execute `TASK_LIST.md`** (this session's output) — Phase A (swap `ConjugateCharts`
-   onto `@dyel/pipeline`, issue #459), Phase B (source last-session tooltip detail from
-   the pipeline), Phase C (swap `VariationRadarChart.tsx` itself, issue #460), Phase D
-   (docs cleanup). See that file for full task breakdown, targets, and test commands.
-1. **File a GitHub tracking issue for squat's 0.7% divergence** — now documented as the one
-   standalone, unexplained parity gap with no tracking issue filed. Natural next step given
-   the corrected "soft-warn is interim, not accepted" policy. Confirmed unrelated to
-   equipment-magnitude collapsing (`dd01c17`), addlWt correction (Design C), or the
-   chain-count/band-tension fix (`#451`/`PR #454`), all of which had measurable effects on
-   other series but left squat unchanged throughout. Not investigated further.
-2. ~~**Task 10 (final closeout QA) for the bench/board fix**~~ — **executed 2026-07-08**, not
-   just nominal: this TODO was stale. Re-ran fresh via `qa-reviewer` against the current
-   working tree (including the uncommitted `MIN_SAMPLES=1→3` fix): both builds green, pipeline
-   12 files/124 tests, app 19 files/187 tests, all passing. Parity numbers
-   (`totalChartParity`/`sigmaTabParity`) match the documented post-fix state exactly — squat
-   16.2% (unaffected), bench 14.7%, deadlift 8.4% (confirms the deadlift regression fix
-   holds), pushPull 10.5%, total 9.5%. No regressions, no discrepancies.
-3. **ConjugateCharts Task 8**: swap `ConjugateCharts.tsx`/`useConjugateChartData.ts` onto
-   `@dyel/pipeline`, using `conjugateChartSpecs()` (with `groupBy: 'label'`) and the now-fixed
-   normalization model — still not started, still on `@dyel/core` at runtime. Per-variation
-   soft-warns should stay **not** promoted to hard-assert (n=1-5 samples, too sparse). (Target:
-   `packages/app/src/components/pages/ConjugateCharts.tsx` (or wherever it now lives),
-   `packages/app/src/hooks/useConjugateChartData.ts`. Test: `npm test -w packages/app --
-conjugateChartParity` plus full `npm test -w packages/app`) Tracked:
-   [#459](https://github.com/kasittig/dyel-visualizer/issues/459).
-4. Once ConjugateCharts is swapped (or deferred further), `MIGRATION_PLAN.md` Phase 4's other
-   two blockers still need the same treatment: `VariationRadarChart`
-   ([#460](https://github.com/kasittig/dyel-visualizer/issues/460)) and `DiagnosticsPanel`
-   ([#461](https://github.com/kasittig/dyel-visualizer/issues/461)).
-5. **Narrower baseline-pooling scope for deadlift's residual divergence** — a prior attempt to
-   pool every non-addlWt canonical across the whole lift family (mirroring legacy's
-   `buildStraightByFamily`) improved deadlift (8.4%→6.5%) and total (9.5%→7.7%) but regressed
-   squat (0.7%→2.3%), bench (14.7%→21.5%), and pushPull (10.5%→11.3%) — reverted 2026-07-08
-   (`normalize.ts`/`normalize.test.ts` restored to pre-change state, verified 0-line diff vs.
-   `HEAD`). Hypothesis (not yet investigated): pooling the _entire_ family introduces
-   noisier interpolation anchors for series with mechanically heterogeneous sibling variants
-   (bench, squat, pushPull) vs. deadlift's more similar stance siblings. A narrower pooling
-   scope (e.g. limited to mechanically-similar siblings rather than the full family) might
-   capture deadlift's gain without the other regressions. Not attempted this session. (Target:
-   `packages/pipeline/src/derive/normalize.ts`. Test: `npm test -w packages/app --
-totalChartParity`)
-6. **PushPull's residual** — currently ~10.5% (post `MIN_SAMPLES=1→3` fix). Confirmed (not
-   speculated) to be downstream of bench and deadlift's own residuals via
-   `composite('pushPull', ['bench', 'deadlift'])` in `totalChartSpecs.ts` (same in both legacy
-   and pipeline implementations). Expected to close automatically once bench and deadlift
-   fully close rather than requiring separate root-cause investigation.
+1. **Decide how to close the volume/speed-work filtering gap in `@dyel/pipeline`** — this
+   is now the best-evidenced explanation for the persistent 16-25% `maxRelDiff` on
+   squat/bench/deadlift/total (`totalChartParity.test.ts`/`sigmaTabParity.test.ts`).
+   Needs a design decision (new tag + filter on `TaggedSetRecord`, or pre-filtering
+   records before `fitNormalizationModel` the way `ui.dateRange` scopes rendered points
+   today) and explicit sign-off before implementation — see `LEGACY_MIGRATION.md`'s
+   "Follow-up" section for full detail on the mechanism and the specific fixture rows
+   that demonstrate it. (Target: `packages/pipeline/src/derive/normalize.ts` or
+   `packages/pipeline/src/pipeline.ts`. Test: `npm test -w packages/app --
+totalChartParity sigmaTabParity`, watch `maxRelDiff` drop.)
+2. **Re-scope `GAPS_REMAINING.md` §0c/0d/0e** once (1) has a direction — those sections'
+   "fit-window mismatch, high confidence" framing is now known to be incomplete/wrong as
+   the dominant cause and should be corrected or superseded, not left as-is.
+3. **Everything else in `GAPS_REMAINING.md`** is still current and untouched this session:
+   `DiagnosticsPanel` (§5, largest remaining item, needs 3 separate design sign-offs),
+   `ConjugateCharts`/`VariationRadarChart` swap-overs (§3/§4, blocked on §0/§5-adjacent
+   work), `RepCalculator`/`StrengthScoreCalculator` (§2, smallest remaining lift),
+   `LiftTabPanel` full swap (§6), `ValidatorPage` scope question (§7), `TotalChart`
+   type-only cleanup (§1). See that file directly for task-by-task detail — not
+   re-summarized here to avoid drift between two copies of the same list.
+4. File a GitHub tracking issue for the volume/speed-work filtering gap (Open TODO #1
+   above) once a design direction is picked — no issue filed yet.
 
 ## Files Touched
 
-- `TASK_LIST.md` (new — Phases A–D task breakdown for the ConjugateCharts/
-  VariationRadarChart pipeline swap)
-- `HANDOFF.md` (this file — new Context subsection + Open TODO #0 added, pointing to
-  `TASK_LIST.md`)
-- `packages/app/CLAUDE.md` (parity-policy wording, prior session)
-- `packages/app/src/testUtils/CLAUDE.md` (parity-policy wording, prior session)
-- `migration/TotalChart.md` (Context section wording, prior session)
-- `SPECIFICATIONS.md` (deleted, prior session — remaining-work items folded into this
-  file's Open TODOs)
+- `LEGACY_MIGRATION.md` (task checkboxes updated, root-cause investigation findings
+  appended — this is now the most detailed record of this session's work)
+- `packages/app/src/App.tsx` (Tasks 1-2: `sigmaStats`/`baselineExByType`/`targetExByType`
+  now fit on unfiltered `sigmaPairs`, not `filteredSigmaPairs`)
+- `packages/app/src/components/pages/LiftTabPanel.tsx` (Task 6 follow-up:
+  `useLastSessionStats` now takes unfiltered `rows`, not `filteredRows`)
+- `packages/app/src/pipeline/totalChartParity.test.ts`,
+  `packages/app/src/pipeline/sigmaTabParity.test.ts` (Tasks 3-5: `beforeAll` now fits
+  `computeBaselineTargetExercises`/`buildSessionStats` on a hoisted unfiltered
+  `allSigmaPairs` local; `buildChartData`'s own rendered-pairs argument untouched)
+- No changes to `packages/pipeline/src/pipeline.ts` — the disposable fit-window-reversal
+  experiment was fully reverted, confirmed via `git diff` showing zero lines.
 
 ## Suggested Next Skills
 
-- Start executing `TASK_LIST.md` Phase A (Task 1: swap `useConjugateChartData.ts` onto
-  `runPipeline` + `conjugateChartSpecs`) — delegate to `feature-implementer`, then
-  `qa-reviewer` for Task 2.
-- File a new GitHub issue for squat's 0.7% divergence (Open TODO #1) before starting any new
-  investigation work on it — independent of the task list above, can happen any time.
+- Start with Open TODO #1 (design the volume/speed-work filtering fix for
+  `@dyel/pipeline`) — this is the actual critical path now, superseding the fit-window
+  framing `GAPS_REMAINING.md` currently leads with.
+- Once a direction is picked, delegate implementation to `feature-implementer` and
+  verification to `qa-reviewer`, same pattern as this session.

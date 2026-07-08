@@ -39,7 +39,7 @@ export function LiftTabPanel({
     () => filterByDateRange(rows, dateRange.from, dateRange.to),
     [rows, dateRange]
   );
-  const stats = useLastSessionStats(filteredRows, effectiveBaselineNames);
+  const stats = useLastSessionStats(rows, effectiveBaselineNames);
 
   function handleVariationClick(variation: string | null) {
     setSelectedVariation((v) => (variation === null || v === variation ? null : variation));

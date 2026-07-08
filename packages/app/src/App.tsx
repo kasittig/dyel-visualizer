@@ -224,9 +224,9 @@ export function App() {
     [sigmaPairs, dateRange]
   );
 
-  const sigmaStats = useLastSessionStats(filteredSigmaPairs, effectiveBaselineNames);
+  const sigmaStats = useLastSessionStats(sigmaPairs, effectiveBaselineNames);
   const { baselineExByType, targetExByType } = useBaselineTargetExercises(
-    filteredSigmaPairs,
+    sigmaPairs,
     effectiveBaselineNames,
     effectiveTargetNames
   );
