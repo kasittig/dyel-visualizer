@@ -1,120 +1,103 @@
-# HANDOFF — Bench's flat 7.0% divergence fixed (board/block/deficit equipment-magnitude canonical collapsing)
+# HANDOFF — Corrected parity-policy docs (soft-warn is interim, not accepted; #451 closed; pushPull/bench composite confirmed)
 
 ## Context
 
 `migration-phase-1` implements `MIGRATION_PLAN.md`'s pipeline-native migration of
 `packages/app` components off `@dyel/core` onto `@dyel/pipeline`. Full task tracking lives in
-`SPECIFICATIONS.md`; this session's plan also has a standalone copy in `FIX_BOARD_COUNT.md`.
+`SPECIFICATIONS.md`. The prior session (previous `HANDOFF.md`) closed bench's flat 7.0%
+divergence via board/block/deficit canonical splitting (`dd01c17`).
 
-This session picked up the prior handoff's Open TODO #1: bench's flat 7.0% divergence between
-legacy (`@dyel/core`) and pipeline (`@dyel/pipeline`) `TotalChart`/`ConjugateCharts` output,
-left unexplained after Design C (previous session) measurably helped deadlift but not bench.
+This session was a documentation-correctness pass, not a code change: the standing docs
+described core-vs-pipeline soft-warn divergence tiers as a "known, accepted divergence" —
+i.e. a permanent policy of tolerating mismatch. The user corrected this: the actual goal is
+full bit-for-bit legacy parity; soft-warn is only a temporary tracking mechanism while a
+series's divergence is being root-caused. The docs also had two factual issues: GitHub issue
+#451 was referenced as if still open (it's actually closed, merged via PR #454), and
+`HANDOFF.md`'s Open TODO #2 speculated that pushPull's residual "may have been board-related"
+and "likely includes bench" rather than stating the confirmed structural fact.
 
 ## Progress Overview
 
-- **Root-caused via direct code trace + fixture correlation**: `EQUIPMENT_DETECTORS`'s `board`
-  entry (`packages/pipeline/src/tag/detect/detectors.ts`) matches any string containing
-  `"board"` and discards the numeric count, so `Bench (1 board)` and `Bench (2 board)` both
-  resolved to canonical `bench-board`. `fitNormalizationModel` then fit one blended
-  `variantFactor` across both board counts, whereas legacy's `buildSessionStats` groups by
-  exact `displayName` string and fits them independently. Confirmed via a throwaway debug
-  harness (deleted, working tree clean): the three worst-diverging dates in the fixture exactly
-  match the three board-press session dates.
-- **Audited for similar bugs (Task 1) before scoping the fix**: all 9 `EQUIPMENT_DETECTORS`
-  entries checked against real fixture data. Found `block` and `deficit` share the identical
-  bug pattern (currently latent — fixture happens to log only uniform heights per modifier, so
-  no active divergence, but any future mixed-height session would trigger the same blending
-  bug). `box`/`incline`/`decline`/`pause`/`floor`/`rack` had no numeric variants in fixture
-  data — excluded from scope. **Decision: generalized the fix to board + block + deficit**
-  rather than board-only, since it's the same mechanism at negligible extra cost.
-- **Implemented a structural canonical fix**, fully contained to the `tag/detect/` layer (no
-  `derive/`/`pipeline.ts` changes needed):
-  1. Added `equipmentMagnitude: string | null` to `ParsedExercise`
-     (`packages/pipeline/src/tag/detect/conjugate-types.ts`).
-  2. Implemented magnitude parsing in `parseExercise.ts`: digit or `"double"` before `"board"`;
-     digit (optionally with a `"` inch mark) before `"block"`/`"blocks"` or `"deficit"`;
-     defaults to `"1"` when absent.
-  3. Wired `equipmentMagnitude` into `buildCanonical`
-     (`packages/pipeline/src/tag/detect/canonical.ts`) — appends `-${magnitude}` only when
-     non-default, mirroring the existing chains/addlWts omit-default convention. Confirmed
-     `buildTagsAndEffects` stays keyed by equipment kind only (unaffected by design).
-  4. Extended `canonical.test.ts`'s existing magnitude `it.each` matrix with 9 new rows
-     (pipeline test count 207 → 216).
-  5. Documented the convention in `packages/pipeline/src/tag/CLAUDE.md`.
-- **Caught a suspicious self-report early, per established project precedent**: an implementer
-  agent claimed "538 tests/35 files" after Task 2 (a type-only field addition) — the exact same
-  false figure a different implementer fabricated in a prior session (real baseline was 207
-  tests/12 files). Independently re-verified via `qa-reviewer`: actual state was 207
-  tests/12 files (pipeline), 200 tests/19 files (app), matching the true pre-change baseline —
-  the claim was false, flagged, and every subsequent task in this session was independently
-  QA-verified before proceeding.
-- **Real before/after numbers** (`totalChartParity.test.ts` + `conjugateChartParity.test.ts`,
-  independently re-verified via `qa-reviewer`):
-  | Series | Before | After |
-  |---|---|---|
-  | squat | 0.7% | 0.7% (unchanged — no equipment-magnitude variants) |
-  | bench | 7.0% | **0.7%** (**~10x improvement — confirms root cause**) |
-  | deadlift | 0.6% | 0.6% (unchanged — fixture's block/deficit heights are uniform; latent bug closed, not observable on this fixture) |
-  | pushPull | 2.5% | **0.3%** (**~8x improvement — downstream ripple from bench's fix**) |
-  | total | 1.8% | **0.2%** (**~9x improvement — downstream ripple from bench's fix**) |
-
-  `conjugateChartParity.test.ts` normalized composites: bench 7.0%→**0.7%** (same
-  improvement), squat/deadlift unchanged. All hard-assert tests stayed green throughout — no
-  tolerances were loosened; these are genuine measured improvements on the existing soft-warn
-  series.
-
-- **No regressions**: full suite green — pipeline 12 files/216 tests, app 19 files/200 tests,
-  both builds clean, independently re-verified via `qa-reviewer` at every task boundary (not
-  just at the end).
+- **Corrected the soft-warn policy framing** across 5 living docs — reworded from "known,
+  accepted divergence" (permanent tolerance) to "temporary tracking pending root-cause fix,
+  promoted to hard-assert once resolved":
+  - `packages/app/CLAUDE.md` — "Core-vs-pipeline parity testing" step 3 and the "Handling
+    known divergence" paragraph.
+  - `packages/app/src/testUtils/CLAUDE.md` — parity-harness pattern step 5 and live-diff-harness
+    usage pattern point 4.
+  - `migration/TotalChart.md` — Context section.
+  - `HANDOFF.md` (this file, replacing the prior version) and `SPECIFICATIONS.md`'s "Currently
+    open items" section.
+- **Corrected #451's status**: confirmed via `gh issue view 451` that it's closed
+  (`state: CLOSED`), merged via PR #454 ("Migrate TotalChart/ConjugateCharts to @dyel/pipeline
+  with parity testing"), which fixed the chain-count/band-tension canonical-collapsing bug —
+  a sibling bug to the board/block/deficit fix landed separately in `dd01c17`. Both are now
+  cited in the docs as _landed precedents_ of the root-cause-then-promote-to-hard-assert
+  pattern, not open items.
+- **Confirmed pushPull's composite relationship as fact, not speculation**: verified from
+  source that pushPull is mechanically `bench + deadlift` in both implementations —
+  `packages/app/src/pipeline/totalChartSpecs.ts:16` (`composite('pushPull', ['bench',
+'deadlift'])`) and legacy `packages/core/src/load/buildChartData.ts:63` (`point.pushPull =
+Math.round(last.bench + last.deadlift)`). This means **squat's 0.7% divergence is the one
+  standalone, truly independent unexplained gap** (it didn't move across addlWtOffset Design
+  B/C, the board/block/deficit fix, or the #451/PR #454 chains/bands fix); pushPull's 0.3%
+  residual is just the downstream sum of bench's and deadlift's own residuals and is expected
+  to close automatically once those fully close.
+- **Caught and reverted scope creep from the `feature-implementer` agent**: the agent's
+  otherwise-correct edit also added an unrelated note about test-count drift from a separate
+  commit (`c180add`) into `HANDOFF.md`, `SPECIFICATIONS.md`, and `FIX_BOARD_COUNT.md` — not
+  part of the requested task. Caught via independent `qa-reviewer` verification (which flagged
+  a 6th modified file where only 5 were expected), then manually reverted: `FIX_BOARD_COUNT.md`
+  restored via `git checkout`, and the extra notes stripped from `HANDOFF.md`/`SPECIFICATIONS.md`
+  while keeping the correctly-scoped wording fixes. Also caught and fixed one leftover hedge
+  (`HANDOFF.md`'s "Suggested Next Skills" bullet) that the agent's pass had missed.
+- **Final verification**: `git status --short` confirms exactly 5 files modified
+  (`packages/app/CLAUDE.md`, `packages/app/src/testUtils/CLAUDE.md`, `migration/TotalChart.md`,
+  `HANDOFF.md`, `SPECIFICATIONS.md`); `git diff -- '*.ts'` is empty (no code/test changes);
+  sanity greps for the old stale phrasing return no matches.
 
 ## Decisions Made & Rationale
 
-- **Generalized scope to board + block + deficit** (not board-only) after Task 1's audit —
-  same bug mechanism, same code location, negligible extra implementation cost, closes two
-  latent bugs alongside the one actively causing bench's divergence.
-- **Structural canonical fix chosen over mirroring `groupBy: 'label'` into the `variantFactor`
-  fit step** — the alternative would be more invasive to `NormalizationModel`'s canonical-keyed
-  shape and would need explicit design sign-off the way Designs B/C did. The chosen approach
-  needed no `derive/`/`pipeline.ts` changes at all, minimizing blast radius.
-- **Independently QA-verified every single task** (not just a final pass) — this session
-  caught one false self-report early (Task 2's "538/35" claim) by cross-checking against a
-  known project precedent; every subsequent task was verified in the same way before the next
-  was delegated, rather than batching verification at the end.
+- **Soft-warn reframed as interim, not permanent** — matches the user's explicit correction
+  that the project's goal is full bit-for-bit parity, not accepted tolerance of legacy/pipeline
+  mismatch. Every soft-warn series should be traceable to an open root-cause investigation (or
+  a filed issue) and eventually promoted to hard-assert, mirroring how bench/pushPull/total
+  were promoted after `dd01c17`.
+- **Historical narrative sections left untouched** — `HANDOFF.md`'s and `SPECIFICATIONS.md`'s
+  point-in-time task logs, before/after tables, and root-cause writeups describe what was true
+  when written and were deliberately not rewritten; only the living "Open TODOs"/"Currently
+  open items" trackers were corrected, to avoid falsifying the historical record.
+- **Reverted scope creep rather than keeping "extra but accurate" content** — even though the
+  agent's `c180add` test-count note was likely factually correct, it was unrequested and
+  outside the approved plan's file list. Team-lead discipline: keep changes scoped to what was
+  reviewed and approved; a stray but true fact doesn't justify expanding scope without a
+  separate, explicit task.
 
 ## Open TODOs
 
-1. **Task 10 (final closeout QA)**: an independent full-suite re-verification pass is still
-   queued as the last task in this fix's plan, even though every individual task was already
-   independently verified as it landed. Purely a formality at this point but not yet run.
-2. **Root-cause squat's 0.7% divergence** and **pushPull's residual — now much smaller at
-   0.3%/`missingInB=6`** — both pre-existing, unrelated to addlWt or equipment-magnitude, not
-   yet investigated. PushPull's improvement (2.5%→0.3%) alongside bench's fix suggests some of
-   its divergence may have been board-related too (pushPull likely includes bench in its
-   composite) — worth checking before assuming it's a wholly separate issue.
-3. **ConjugateCharts Task 8**: actually swap `ConjugateCharts.tsx`/`useConjugateChartData.ts`
-   onto `@dyel/pipeline` — still not started, still on `@dyel/core` at runtime. Per-variation
+1. **File a GitHub tracking issue for squat's 0.7% divergence** — now documented as the one
+   standalone, unexplained parity gap with no tracking issue filed. Natural next step given
+   the corrected "soft-warn is interim, not accepted" policy.
+2. **Task 10 (final closeout QA) for the bench/board fix** — still nominally queued per the
+   prior session's plan (every individual task was independently verified as it landed; this
+   is a formality re-run, not yet executed).
+3. **ConjugateCharts Task 8**: swap `ConjugateCharts.tsx`/`useConjugateChartData.ts` onto
+   `@dyel/pipeline` — still not started, still on `@dyel/core` at runtime. Per-variation
    soft-warns remain not promoted to hard-assert (n=1-5 samples, too sparse).
 4. Once ConjugateCharts is swapped (or deferred further), `MIGRATION_PLAN.md` Phase 4's other
    two blockers (`VariationRadarChart`, `DiagnosticsPanel`) still need the same treatment.
 
 ## Files Touched
 
-- `packages/pipeline/src/tag/detect/conjugate-types.ts` (`equipmentMagnitude` field added to
-  `ParsedExercise`)
-- `packages/pipeline/src/tag/detect/parseExercise.ts` (magnitude parsing for board/block/
-  deficit)
-- `packages/pipeline/src/tag/detect/canonical.ts` (`buildCanonical` appends magnitude suffix
-  when non-default)
-- `packages/pipeline/src/tag/detect/canonical.test.ts` (9 new `it.each` rows)
-- `packages/pipeline/src/tag/CLAUDE.md` (new "Magnitude conventions" subsection)
-- `SPECIFICATIONS.md` (this fix's task list fully checked off except Task 10, real numbers
-  recorded)
-- `FIX_BOARD_COUNT.md` (standalone copy updated to match)
-- `HANDOFF.md` (this file)
+- `packages/app/CLAUDE.md` (parity-policy wording)
+- `packages/app/src/testUtils/CLAUDE.md` (parity-policy wording)
+- `migration/TotalChart.md` (Context section wording)
+- `HANDOFF.md` (this file — Open TODOs corrected, then fully rewritten for this handoff)
+- `SPECIFICATIONS.md` ("Currently open items" section — squat/pushPull items added)
 
 ## Suggested Next Skills
 
-- Run Task 10 (final independent full-suite QA pass) to formally close out this fix.
-- If resuming further work, start with Open TODO #2 — pushPull's improvement alongside bench's
-  suggests a possible shared cause worth checking before treating it as separate from squat's
-  0.7%.
+- File a new GitHub issue for squat's 0.7% divergence (Open TODO #1) before starting any new
+  investigation work on it.
+- If picking up implementation work next, ConjugateCharts Task 8 (Open TODO #3) is the largest
+  remaining piece of `MIGRATION_PLAN.md` Phase 4.

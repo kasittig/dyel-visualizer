@@ -10,8 +10,12 @@ this is the tracking doc for `TotalChart`'s own migration + parity test.
 `packages/app/src/pipeline/totalChartParity.test.ts` — it diffs legacy's `buildChartData`
 (`@dyel/core`) against pipeline's `runPipeline` output over the real
 `test/fixtures/total-chart-sheet.csv` fixture, with hard assertions for squat/bench/total
-and a documented soft-warn tier for known divergence (see GitHub issue #451 and the
-soft-warn comment block in the test file).
+and a soft-warn tier that tracks outstanding divergence against a full bit-for-bit parity goal.
+GitHub issue #451 (chain-count/band-tension canonical collapsing) was closed/merged (PR #454),
+a landed precedent of the root-cause-then-promote-to-hard-assert pattern; the board/block/deficit
+equipment-magnitude fix in commit `dd01c17` followed the same approach. The remaining unexplained
+gaps (squat's 0.7% divergence and pushPull's 0.3% residual) do not yet have tracking issues
+filed — filing them is a natural follow-up to flag these as open items for future root-cause.
 
 One leftover boundary item: `TotalChart.tsx` still has a type-only import of `ChartPoint`
 from `@dyel/core`. Not a runtime call, but worth closing out so the component has zero

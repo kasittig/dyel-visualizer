@@ -91,7 +91,7 @@ started — next step for whoever picks up Phase 4.
       using `conjugateChartSpecs()` (with `groupBy: 'label'`) + the now-fixed normalization
       model. (Target: `packages/app/src/components/pages/ConjugateCharts.tsx` (or wherever it
       now lives), `packages/app/src/hooks/useConjugateChartData.ts`. Test: `npm test -w
-  packages/app -- conjugateChartParity` plus full `npm test -w packages/app`)
+packages/app -- conjugateChartParity` plus full `npm test -w packages/app`)
 
 ---
 
@@ -160,7 +160,7 @@ risks the same date/day-grouping mismatch this work is trying to close.
 - [x] Task 3: Implemented steps 1–5 above. (Target: `packages/pipeline/src/derive/normalize.ts`,
       `packages/pipeline/src/pipeline.ts`, `packages/pipeline/src/index.ts`,
       `packages/pipeline/src/derive/CLAUDE.md`. Test: `npm test -w packages/pipeline --
-  normalize`)
+normalize`)
 - [x] Task 4: Update test coverage: - `normalize.test.ts`: rewrite the two `normalizeE1rm`/`projectToVariant` offset-formula
       tests to pure `e1rmKg / factor` / `baseE1rmKg * factor`; retire/rename the Task 10b
       "apply-time offset adjustment" describe block; add new `describe('offsetAdjustRecords')`
@@ -243,8 +243,18 @@ packages/pipeline && npm test -w packages/app` — all green as of last full run
 ## Currently open items
 
 1. **ConjugateCharts Task 8** — component swap-over onto `@dyel/pipeline`, not started.
-2. **Bench's flat 7.0% divergence** — ✅ FIXED and fully verified (2026-07-07), see below.
-   10/10 tasks complete, including final closeout QA.
+2. **Bench's flat 7.0% divergence** — resolved; kept here only as a pointer to the section
+   below (all 10 tasks including final closeout QA are complete, see
+   "Fixing bench's flat 7.0% divergence" for detail).
+3. **Squat's 0.7% divergence** — root cause unknown, no tracking issue filed yet. The one
+   standalone unexplained gap remaining; unrelated to equipment-magnitude collapsing
+   (`dd01c17`), addlWt correction (`Design C`), or the chain-count/band-tension fix
+   (`#451`/`PR #454`), which all had measurable effects on other series.
+4. **PushPull's 0.3% residual** — confirmed (not speculated) to be downstream of bench and
+   deadlift's own residuals via `composite('pushPull', ['bench', 'deadlift'])` in
+   `totalChartSpecs.ts` (same in both legacy and pipeline implementations). Expected to close
+   automatically once bench and deadlift fully close rather than requiring separate
+   root-cause investigation.
 
 ---
 
@@ -429,7 +439,7 @@ every individual task's independent verification as it landed earlier in this se
       `npm test -w packages/app`)
 - [x] Task 8: Full build/test pass, both packages — clean, single combined run.
       (Test: `npm run build -w packages/pipeline && npm run build -w packages/app && npm
-    test -w packages/pipeline && npm test -w packages/app`)
+  test -w packages/pipeline && npm test -w packages/app`)
 - [x] Task 9: Docs — this section updated to reflect completion with real numbers;
       `FIX_BOARD_COUNT.md` and `HANDOFF.md` updated to match. (Target: `SPECIFICATIONS.md`,
       `FIX_BOARD_COUNT.md`, `HANDOFF.md`)
