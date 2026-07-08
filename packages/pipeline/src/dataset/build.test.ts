@@ -210,4 +210,29 @@ describe('buildDataset — CompositeSpec', () => {
       { t: day(10), 'estimated-total': 310 },
     ]);
   });
+
+  it('design C: composite branch does not double-correct when receiving pre-adjusted points (pure factor normalization)', () => {
+    // Design C: composite specs receive pre-offset-adjusted points from pipeline.ts.
+    // buildDataset's composite branch applies pure factor normalization (no offset term),
+    // so the pre-adjusted e1rm points flow through unchanged (aside from factor division).
+    const m = model({
+      baseline: { 'lift:squat': 'squat', 'lift:bench': 'bench' },
+      variantFactor: { 'bench-chains': { factor: 1.0, n: 2 } },
+      // offset is present in model, but should NOT be applied by normalizeE1rm anymore
+      addlWtOffset: { 'bench-chains': { offsetKg: 20, n: 2 } },
+    });
+
+    // These points are already pre-adjusted (weight-corrected) from pipeline.ts
+    const points = [
+      pt('squat', 200, day(1), ['lift:squat']),
+      pt('bench', 100, day(1), ['lift:bench']),
+      // bench-chains point is already offset-adjusted (e.g., derived from 80+20=100kg weight)
+      pt('bench-chains', 100, day(1), ['lift:bench', 'addl:chains']),
+    ];
+
+    const result = buildDataset(points, spec(lifts), noUi, m, athlete);
+    // With pre-adjusted points + pure factor (factor=1.0 for bench-chains), normalized = 100/1 = 100
+    // composite = max(200, 100) per bench = 100, total = 200 + 100 = 300
+    expect(result).toEqual([{ t: day(1), 'estimated-total': 300 }]);
+  });
 });

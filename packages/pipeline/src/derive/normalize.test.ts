@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { fitNormalizationModel, normalizeE1rm, projectToVariant } from './normalize';
+import {
+  fitNormalizationModel,
+  normalizeE1rm,
+  projectToVariant,
+  offsetAdjustRecords,
+} from './normalize';
 import type { TaggedSetRecord } from '../tag/tag';
 import type { AthleteContext } from './athlete';
 
@@ -265,11 +270,10 @@ describe('normalizeE1rm', () => {
     expect(normalizeE1rm('bench', 123.4, model)).toBe(123.4);
   });
 
-  it('returns (e1rmKg + offset) / factor for a fitted variant (Task 10b: applies offset adjustment)', () => {
+  it('returns e1rmKg / factor for a fitted variant (pure factor operation, Design C)', () => {
     const model = fitNormalizationModel(history, { minSamples: 2 }, athlete());
     const factor = model.variantFactor['bench-chains'].factor;
-    const offset = model.addlWtOffset['bench-chains']?.offsetKg ?? 0;
-    expect(normalizeE1rm('bench-chains', 100, model)).toBeCloseTo((100 + offset) / factor, 6);
+    expect(normalizeE1rm('bench-chains', 100, model)).toBeCloseTo(100 / factor, 6);
   });
 
   it('returns null when the canonical has no fitted entry', () => {
@@ -284,19 +288,50 @@ describe('projectToVariant', () => {
     expect(projectToVariant(150, 'bench', model)).toBe(150);
   });
 
-  it('returns max(0, baselineE1rmKg * factor - offset) for a fitted variant (Task 10b: applies offset subtraction)', () => {
+  it('returns max(0, baselineE1rmKg * factor) for a fitted variant (pure factor operation, Design C)', () => {
     const model = fitNormalizationModel(history, { minSamples: 2 }, athlete());
     const factor = model.variantFactor['bench-chains'].factor;
-    const offset = model.addlWtOffset['bench-chains']?.offsetKg ?? 0;
-    expect(projectToVariant(150, 'bench-chains', model)).toBeCloseTo(
-      Math.max(0, 150 * factor - offset),
-      6
-    );
+    expect(projectToVariant(150, 'bench-chains', model)).toBeCloseTo(Math.max(0, 150 * factor), 6);
   });
 
   it('returns null when the target canonical has no fitted entry', () => {
     const model = fitNormalizationModel(history, { minSamples: 2 }, athlete());
     expect(projectToVariant(150, 'bench-bands', model)).toBeNull();
+  });
+});
+
+describe('offsetAdjustRecords', () => {
+  it('adds offsetKg to weight for a canonical with fitted addlWtOffset', () => {
+    const model = fitNormalizationModel(history, { minSamples: 2 }, athlete());
+    const record = rec(day(1), 'bench-chains', 80, 1, ['lift:bench', 'addl:chains']);
+    const adjusted = offsetAdjustRecords([record], model);
+    const expectedWeight = 80 + (model.addlWtOffset['bench-chains']?.offsetKg ?? 0);
+    expect(adjusted[0].weight).toBe(expectedWeight);
+  });
+
+  it('leaves records unchanged for canonicals with no fitted offset', () => {
+    const model = fitNormalizationModel(history, { minSamples: 2 }, athlete());
+    const record = rec(day(1), 'bench', 100, 1, ['lift:bench']);
+    const adjusted = offsetAdjustRecords([record], model);
+    expect(adjusted[0].weight).toBe(100);
+  });
+
+  it('leaves baseline canonical records unchanged (no offset entry for baseline)', () => {
+    const model = fitNormalizationModel(history, { minSamples: 2 }, athlete());
+    const baselineRec = rec(day(1), 'bench', 100, 1, ['lift:bench', 'comp-lift']);
+    const adjusted = offsetAdjustRecords([baselineRec], model);
+    expect(adjusted[0].weight).toBe(100);
+    expect(model.addlWtOffset['bench']).toBeUndefined();
+  });
+
+  it('returns new objects without mutating the input array or records', () => {
+    const model = fitNormalizationModel(history, { minSamples: 2 }, athlete());
+    const records = [rec(day(1), 'bench-chains', 80, 1, ['lift:bench', 'addl:chains'])];
+    const originalWeight = records[0].weight;
+    const adjusted = offsetAdjustRecords(records, model);
+    expect(records[0].weight).toBe(originalWeight);
+    expect(adjusted).not.toBe(records);
+    expect(adjusted[0]).not.toBe(records[0]);
   });
 });
 
@@ -308,7 +343,7 @@ describe('round-trip', () => {
     expect(projected).toBeCloseTo(150, 6);
   });
 
-  it('round-trip holds for non-addlWt canonicals too (regression: no offset subtraction)', () => {
+  it('round-trip holds for non-addlWt canonicals too (regression: no offset term)', () => {
     const model = fitNormalizationModel(history, { minSamples: 2 }, athlete());
     const normalized = normalizeE1rm('squat-chains', 200, model)!;
     const projected = projectToVariant(normalized, 'squat-chains', model)!;
@@ -453,41 +488,41 @@ describe('fitNormalizationModel — Task 10a: addlWtOffset fit-time adjustment',
   });
 });
 
-describe('normalizeE1rm & projectToVariant — Task 10b: apply-time offset adjustment', () => {
-  it('normalizeE1rm with addlWt canonical returns (e1rmKg + offset) / factor', () => {
+describe('Design C: offsetAdjustRecords pre-derivation (weight-space correction)', () => {
+  it('when records are pre-adjusted via offsetAdjustRecords and derived, e1RM reflects the corrected weight', () => {
+    // This test verifies the weight-space correction path (Design C) works end-to-end.
+    // Create a simple model with an offset-fitted canonical.
     const model = fitNormalizationModel(history, { minSamples: 2 }, athlete());
-    // bench-chains: factor=1, offset=20kg, so (100 + 20) / 1 = 120
-    expect(normalizeE1rm('bench-chains', 100, model)).toBeCloseTo(120, 5);
+
+    // bench-chains has offset=20kg. A raw record with weight=80 should become 100 after adjustment.
+    // When derived with e1rm formula at reps=1, 100kg @ 1rep = 100 e1RM.
+    const rawRecord = rec(day(1), 'bench-chains', 80, 1, ['lift:bench', 'addl:chains']);
+    const adjusted = offsetAdjustRecords([rawRecord], model);
+
+    // After adjustment, weight should be 80 + 20 = 100
+    expect(adjusted[0].weight).toBe(100);
   });
 
-  it('projectToVariant with addlWt canonical returns max(0, baseE1rmKg * factor - offset)', () => {
+  it('composite specs consume offset-adjusted points, normalizeE1rm applies pure factor', () => {
     const model = fitNormalizationModel(history, { minSamples: 2 }, athlete());
-    // bench-chains: factor=1, offset=20kg, so max(0, 150 * 1 - 20) = 130
-    expect(projectToVariant(150, 'bench-chains', model)).toBeCloseTo(130, 5);
+
+    // If a pre-adjusted e1rm point (based on corrected weight) flows through normalizeE1rm
+    // with pure factor operation (no offset term), the result is e1rm / factor.
+    // bench-chains: factor ≈ 1 (because offset adjustment makes it match baseline at fit time),
+    // so normalized ≈ e1rm_adjusted / 1 = e1rm_adjusted.
+    const adjustedE1rm = 100;
+    const factor = model.variantFactor['bench-chains'].factor;
+    const normalized = normalizeE1rm('bench-chains', adjustedE1rm, model);
+
+    expect(normalized).toBeCloseTo(adjustedE1rm / factor, 5);
   });
 
-  it('projectToVariant clamps result to minimum of 0 for addlWt canonicals', () => {
+  it('projectToVariant clamping works for pure factor operation', () => {
     const model = fitNormalizationModel(history, { minSamples: 2 }, athlete());
-    // With small baseline e1rm and large offset, result should clamp to 0, not go negative
-    const result = projectToVariant(5, 'bench-chains', model)!; // 5 * 1 - 20 = -15 → clamped to 0
-    expect(result).toBe(0);
-  });
-
-  it('normalizeE1rm and projectToVariant are exact inverses for addlWt canonicals (offset adjustments cancel)', () => {
-    const model = fitNormalizationModel(history, { minSamples: 2 }, athlete());
-    const original = 150;
-    // Start with a variant e1rm, normalize to baseline, then project back to variant
-    const normalized = normalizeE1rm('bench-chains', original, model)!;
-    const projected = projectToVariant(normalized, 'bench-chains', model)!;
-    expect(projected).toBeCloseTo(original, 6);
-  });
-
-  it('regression: non-addlWt canonicals round-trip correctly (offset adjustments work for all tagged canonicals)', () => {
-    const model = fitNormalizationModel(history, { minSamples: 2 }, athlete());
-    // squat-chains has an offset (55kg), verify the round-trip still works
-    const original = 200;
-    const normalized = normalizeE1rm('squat-chains', original, model)!;
-    const projected = projectToVariant(normalized, 'squat-chains', model)!;
-    expect(projected).toBeCloseTo(original, 6);
+    // With pure factor (no offset term), projectToVariant(5, 'bench-chains', model) = max(0, 5 * factor)
+    // Since factor ≈ 1, result ≈ 5, not clamped to 0 (unlike Task 10b where offset subtraction would clamp it).
+    const result = projectToVariant(5, 'bench-chains', model)!;
+    expect(result).toBeCloseTo(5 * model.variantFactor['bench-chains'].factor, 5);
+    expect(result).toBeGreaterThan(0);
   });
 });

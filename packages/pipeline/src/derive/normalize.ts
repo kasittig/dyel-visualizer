@@ -186,29 +186,45 @@ export function fitNormalizationModel(
   return { fittedAt: Date.now(), baseline, variantFactor, addlWtOffset };
 }
 
+// Design C: applies each addlWt canonical's fitted weight-space offset to its records'
+// raw `weight` field, mirroring legacy's normalizeToBaseE1RM (the actual TotalChart/
+// ConjugateCharts data path — NOT findBestE1RM's e1RM-space approximation, which Task 10b
+// tried to mirror instead). Records for canonicals with no fitted offset (including the
+// baseline canonical itself, and all non-addlWt canonicals) pass through unchanged. Used
+// both at fit time (fitNormalizationModel, to keep variantFactor fitted on offset-adjusted
+// weights) and pre-derivation (pipeline.ts, so composite-spec e1RM values are derived from
+// already-corrected raw weights).
+export function offsetAdjustRecords(
+  records: TaggedSetRecord[],
+  model: NormalizationModel
+): TaggedSetRecord[] {
+  return records.map((r) => {
+    const off = model.addlWtOffset[r.canonical]?.offsetKg;
+    return off === undefined ? r : { ...r, weight: r.weight + off };
+  });
+}
+
 const getFactor = (can: string, model: NormalizationModel) =>
   Object.values(model.baseline).includes(can) ? 1 : model.variantFactor[can]?.factor || null;
 
+// Design C supersedes Task 10b: addlWt weight-space correction now happens upstream
+// (pipeline.ts, pre-derivation, composite specs only, via offsetAdjustRecords), so this
+// is a pure factor operation again.
 export const normalizeE1rm = (can: string, e1rmKg: number, model: NormalizationModel) => {
   const f = getFactor(can, model);
-  if (!f) {
-    return null;
-  }
-  // Task 10b: For addlWt canonicals, add offset to e1rmKg before dividing by factor
-  const offset = model.addlWtOffset[can]?.offsetKg ?? 0;
-  return (e1rmKg + offset) / f;
+  return f ? e1rmKg / f : null;
 };
 
+// Design C supersedes Task 10b: addlWt weight-space correction now happens upstream,
+// so this is a pure factor operation again. Note: projectToVariant has no principled way
+// to reintroduce a target's offset post-hoc now (offset is inherently a raw-weight/per-set
+// concept) — this is a known, pre-existing approximation limitation, not a new regression.
+// Currently has zero production callers; only tests and index.ts re-export reference it.
 export const projectToVariant = (
   baseE1rmKg: number,
   targetCan: string,
   model: NormalizationModel
 ) => {
   const f = getFactor(targetCan, model);
-  if (!f) {
-    return null;
-  }
-  // Task 10b: For addlWt canonicals, subtract offset after multiplying by factor (inverse of normalizeE1rm)
-  const offset = model.addlWtOffset[targetCan]?.offsetKg ?? 0;
-  return Math.max(0, baseE1rmKg * f - offset);
+  return f ? Math.max(0, baseE1rmKg * f) : null;
 };

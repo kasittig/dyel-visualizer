@@ -9,7 +9,12 @@ export type { SeriesDeriver } from './derive/derivers';
 export { derivers } from './derive/derivers';
 export { calcE1RM, invertE1RM } from './derive/e1rm';
 export type { NormalizationModel } from './derive/normalize';
-export { fitNormalizationModel, normalizeE1rm, projectToVariant } from './derive/normalize';
+export {
+  fitNormalizationModel,
+  normalizeE1rm,
+  projectToVariant,
+  offsetAdjustRecords,
+} from './derive/normalize';
 export type { AthleteContext, LiftMetrics } from './derive/athlete';
 export { wilks, dots, computeStrengthScores } from './derive/athlete';
 export type { DiagnosticsReport, VariantAssessment, Quality } from './analyze/diagnose';

@@ -16,6 +16,7 @@ parse/; never re-multiply.
 ## normalize.ts — fit/apply split
 
     fitNormalizationModel(history, { minSamples }): NormalizationModel
+    offsetAdjustRecords(records, model): TaggedSetRecord[]
     normalizeE1rm(canonical, e1rmKg, model): number | null
     projectToVariant(baselineE1rmKg, targetCanonical, model): number | null
 
@@ -24,6 +25,15 @@ parse/; never re-multiply.
   (canonical → { factor, n }), `addlWtOffset` (canonical → { offsetKg, n }).
 - Fitting is deterministic arithmetic over tagged history — runs in-pipeline,
   produces no persisted artifact.
+- `offsetAdjustRecords` (Design C): applies weight-space offset corrections to raw
+  records' `weight` field per canonical, mirroring legacy's pre-derivation path. Used
+  by pipeline.ts before building points for composite specs, so their e1RM derivations
+  are based on already-corrected weights. Records without a fitted offset pass through
+  unchanged. Must receive a fully-fit model (not partial, mid-fit state).
+- `normalizeE1rm` and `projectToVariant`: pure factor operations (Design C supersedes
+  Task 10b's e1RM-space approximation). `projectToVariant` has no production callers;
+  known approximation limitation is that post-hoc offset application is unprincipled
+  (offset is inherently per-set/weight-space).
 - Baseline-only by design: variant→variant composes as variant→comp→variant.
   Do not add a variant→variant path.
 - `null` = unfitted (n < minSamples) → caller excludes + surfaces for review.

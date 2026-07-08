@@ -1,505 +1,249 @@
-# SPECIFICATIONS — deadliftStance athlete preference + baseline-canonical-identity parity assertion
+# SPECIFICATIONS
 
-## Context
+Tracking doc for `@dyel/pipeline` migration work, coordinated by team-lead. See
+`MIGRATION_PLAN.md` for overall ordering rationale, `APP_COMPONENTS.md` for the component
+inventory, and `HANDOFF.md`/`migration/ConjugateCharts.md` for deep-dive root-cause writeups
+referenced below.
 
-Investigating the documented TotalChart core-vs-pipeline value divergence (see
-`HANDOFF.md`, `totalChartParity.test.ts`) surfaced two related gaps, tracked here as
-Part A and Part B:
+## Completed work (summarized)
 
-1. **Deadlift comp-stance is not athlete-configurable in `@dyel/pipeline`.** Legacy
-   (`@dyel/core`) resolves competition-stance deadlift via `defaultCompExerciseName`
-   (`packages/core/src/utils/lifts/defaultSelections.ts:26-65`), which accepts a
-   caller-supplied `deadliftStance: 'sumo' | 'conventional'` as a last-resort filter.
-   `AthleteContext` in the pipeline (`packages/pipeline/src/derive/athlete.ts`) has no
-   equivalent field, and `fitNormalizationModel`'s baseline selection
-   (`derive/normalize.ts`) has no way to know an athlete's declared stance preference —
-   a plausible, untested, additional cause of the parity divergence.
-2. **The parity harness never asserts the two implementations agree on _which_ exercise
-   is the baseline/comp lift** — only on final chart values. `PipelineResult`
-   (`packages/pipeline/src/pipeline.ts`) doesn't currently expose the internally-fitted
-   `NormalizationModel` (which contains `baseline: Record<family, canonical>`), so
-   there's no way for a test to inspect pipeline's baseline choice today.
+### 1. deadliftStance athlete preference + baseline-canonical-identity parity assertion — ✅ COMPLETE
 
-Full design rationale and default-policy decisions are in
-`/Users/kasittig/.claude/plans/what-is-the-source-dapper-sonnet.md`.
+Added `AthleteContext.deadliftStance: 'sumo' | 'conventional'` (default `'sumo'`, matching
+legacy's hardcoded default) to `packages/pipeline/src/derive/athlete.ts`, wired as an explicit
+fallback tier in `fitNormalizationModel`'s deadlift baseline selection
+(`packages/pipeline/src/derive/normalize.ts`). Exposed the fitted `NormalizationModel` on
+`PipelineResult` (`packages/pipeline/src/pipeline.ts`) so `totalChartParity.test.ts` could add
+a baseline-identity assertion (legacy's resolved baseline per family vs. pipeline's
+`model.baseline`) — now a hard-assert for squat/bench/deadlift, 17/17 passing.
 
-**Default policy:** `AthleteContext.deadliftStance` defaults to `'sumo'`; sumo preference
-→ sumo is comp stance, anything else → conventional is comp stance — matches legacy's
-existing hardcoded default.
+### 2. Phase 2 — SigmaTab + VariationRadarChart — ✅ COMPLETE
 
-## Pre-flight blocker status
+`SigmaTab.tsx` fully swapped to `@dyel/pipeline` (`usePipelineTotalChartData` +
+`mergeVolumeIntoChartPoints` helper for the `volume` series sourced from `App.tsx`'s existing
+`volumeByDate` prop); zero `@dyel/core` imports remain. `sigmaTabParity.test.ts` added
+(hard-assert squat/deadlift/pushPull/total, soft-warn bench). `VariationRadarChart`'s
+pipeline-native replacement (`conjugateChartSpecs()` + `snapshotVariationsFromPipeline()`) was
+built and parity-tested (`variationRadarChartParity.test.ts`) but the component swap-over was
+**deliberately deferred** — the underlying per-variation normalization is the same one
+`ConjugateCharts` was reverted from after surfacing real divergence (see item 4 below), and the
+component needs per-session tooltip detail the pipeline snapshot doesn't carry. Docs
+(`MIGRATION_PLAN.md`, `APP_COMPONENTS.md`) updated accordingly.
 
-**Item 4 (previously flagged): `npm run build -w packages/pipeline` TS2538 in
-`src/tag/detect/canonical.ts` (`ADDL_WT_SLUGS` vs. new `ParsedAddlWt` type) —
-✅ RESOLVED / non-reproducing, no action needed.**
+### 3. Phase 3 — SessionBarChart + SigmaChart + DateLineChart — ✅ COMPLETE
 
-Verified directly: a clean `npm run build -w packages/pipeline`
-(`tsc -p tsconfig.build.json`, including after `rm -rf dist` to rule out stale cache)
-exits 0 with zero errors on `integrate-new-pipeline` @ `c3d4887`. Commit `2c72ba8`
-("Parse addl-weight magnitude to stop collapsing distinct band/chain loads") already
-updated both consumers of `ADDL_WT_SLUGS` (`canonical.ts:35`, `canonical.ts:78`) to
-index by `w.kind` (a `ConjugateAddlWt`), never by the richer `ParsedAddlWt` object —
-so the type error described never actually occurs in the current tree.
-`grep -rn "ADDL_WT_SLUGS" packages/pipeline/src` confirms no other usage sites exist.
-Fallback if this ever resurfaces (e.g. after a rebase): ensure all `ADDL_WT_SLUGS[...]`
-accesses use `.kind`, not the raw `ParsedAddlWt` object.
+Pure `@dyel/core` boundary cleanup (no aggregation logic in these three components). Added
+`formatChartDate` to `packages/app/src/utils/pipelineChartUtils.ts` (relocated from `@dyel/
+core`'s `formatDate`); all three components now import `ChartPoint` from `@dyel/pipeline` with
+zero remaining `@dyel/core` references. Three lightweight regression tests added
+(`sessionBarChartParity.test.ts`, `sigmaChartParity.test.ts`, `dateLineChartParity.test.ts`),
+reusing `sigmaTabParity.test.ts`'s already-validated pipeline-derived fixture data rather than
+reimplementing a legacy diff. **Independently re-verified via `qa-reviewer` (2026-07-07):** all
+builds clean (pipeline/core/app), full `npm test -w packages/app` — 19/19 files, 200/200 tests,
+zero regressions.
 
-Part A/B work below is clear to start; re-confirm with a build run at kickoff in case
-state has changed since this check.
+### 4. ConjugateCharts normalization divergence (Phase 4 blocker scoping) — mostly ✅, one item open
 
-## Task list
+`ConjugateCharts` was migrated to `@dyel/pipeline` once, then reverted (`46f267f`) after
+`conjugateChartParity.test.ts` surfaced real legacy-vs-pipeline divergence. This item
+root-caused and closed/narrowed six findings (full detail in `migration/ConjugateCharts.md`):
 
-### Part A — `deadliftStance` on the athlete profile
+- **#1 (speed-work filtering):** removed pipeline's `effortOnly` exclusion to match legacy's
+  unfiltered fitting — fixed.
+- **#2 (minSamples gating):** investigated, found to be a non-issue.
+- **#3 (canonical/label grouping):** added opt-in `groupBy: 'label'` on `SeriesSpec` +
+  `buildPointsByLabel` (`packages/pipeline/src/dataset/build.ts`, `pipeline.ts`), wired into
+  `conjugateChartSpecs.ts` — preserves per-exact-variant chart granularity. Largest gap, fixed.
+- **#5 (day-level effort/volume filtering asymmetry):** added `'e1rm-max-effort'` deriver
+  (`packages/pipeline/src/derive/derivers.ts`) mirroring legacy's `splitByEffort` (drops
+  "volume" days entirely rather than falling back to speed-work sets). Also fixed a pre-existing
+  test-harness bug (`pipelineVariationKeys` only read the first row's keys, not the union).
+  Result: every matched variation series across all three lift types shows
+  `missingInA=0, missingInB=0`.
+- **#4 (normalized-series "no date overlap"):** root-caused as a test-harness key-name bug
+  (`conjugateChartParity.test.ts` checked `liftType in point` instead of `'normalized' in
+point`) — not a real data divergence. Fixed; squat's `normalized` composite is now exact
+  (0% diff). Unmasked bench (9.8%) and deadlift (5.1%) real divergence → became Finding #6.
+- **#6 (addlWtOffset never wired into pipeline normalization):** root-caused —
+  `packages/pipeline/src/derive/normalize.ts`'s `fitNormalizationModel`/`normalizeE1rm` never
+  consumed `addlWtOffset` (chain/band correction), unlike legacy. **Design B** (user sign-off):
+  fit-time offset-adjusts weights before fitting `variantFactor` for addlWt canonicals
+  (mirrors `sessionIndex.ts`); apply-time mirrors legacy's `findBestE1RM` e1RM-space
+  approximation (not `normalizeToBaseE1RM`'s weight-space exact correction — no signature
+  break needed). Implemented in `normalize.ts` (`normalizeE1rm`/`projectToVariant`). Real
+  before/after `maxRelDiff`: squat 0.0% (unchanged), bench 9.8%→7.0%, deadlift 5.1%→0.4%
+  (ConjugateCharts); TotalChart independently confirmed to share the same divergence/fix via
+  `git stash` bisection: bench 7.0%, deadlift 2.7%, total 1.8%. Narrowed substantially, not
+  fully closed (Design B is a documented legacy approximation, not an exact correction) — see
+  open item below for the follow-up scoping this residual.
 
-- [x] Task 1: Add `deadliftStance: 'sumo' | 'conventional'` to `AthleteContext` (Target: `packages/pipeline/src/derive/athlete.ts`, Test: `npm test -w packages/pipeline -- athlete`)
-- [x] Task 2: In `fitNormalizationModel`, accept `athlete: AthleteContext` and, only for the deadlift family, add a stance-preference pool as an explicit fallback tier between the existing `comp`/`competitionNamed` pools and the final `entries` fallback (filter to canonicals carrying `stance:${preferredStance}`; use only if `competitionNamed`/`comp` are both empty). Update the call site in `packages/pipeline/src/pipeline.ts:76` to pass `athlete` through (Target: `packages/pipeline/src/derive/normalize.ts`, `packages/pipeline/src/pipeline.ts`; Test: `npm test -w packages/pipeline -- normalize`)
-- [x] Task 3: Update `PLACEHOLDER_ATHLETE` to include `deadliftStance: 'sumo'` (Target: `packages/app/src/utils/rawInputUtils.ts`, Test: `npm run build -w packages/app`)
-- [x] Task 4: Update inline athlete literals across pipeline's test suite (`pipeline.test.ts`, `dataset/build.test.ts`, `derive/athlete.test.ts`) to include `deadliftStance`; add `it.each` coverage in `normalize.test.ts` for sumo/conventional preference, default-unset, and confirming existing `comp-lift`/`competition`-name priority is preserved (Target: `packages/pipeline/src/pipeline.test.ts`, `packages/pipeline/src/derive/normalize.test.ts`, Test: `npm test -w packages/pipeline`)
-- [x] Task 5: Full pipeline + app build/test pass (Test: `npm run build -w packages/pipeline && npm run build -w packages/app && npm test -w packages/pipeline && npm test -w packages/app`)
+Verified throughout: `npm run build -w packages/pipeline && npm run build -w packages/app &&
+npm test -w packages/pipeline && npm test -w packages/app` green (pipeline 12 files/203 tests,
+app 19 files/200 tests), independently re-verified via `qa-reviewer` at each step.
 
-### Part B — Baseline-canonical-identity assertion in the parity harness
+**Open — Task 8:** actually swap `ConjugateCharts.tsx`/`useConjugateChartData.ts` back onto
+`@dyel/pipeline`. This entire multi-session effort narrowed/closed the normalization
+divergence but never attempted the component swap itself. Per-variation soft-warns remain
+**not** promoted to hard-assert (sample sizes n=1-5 per series, judged too sparse). Not
+started — next step for whoever picks up Phase 4.
 
-- [x] Task 6: Expose the fitted `NormalizationModel` on `PipelineResult` (new `model: NormalizationModel` field) (Target: `packages/pipeline/src/pipeline.ts`, Test: `npm test -w packages/pipeline -- pipeline`)
-- [x] Task 7: Add a small helper to resolve each lift family's baseline canonical to a human-comparable exercise name for both sides (legacy via `baselineExByType`'s `displayName`; pipeline via `model.baseline[family]`) (Target: `packages/app/src/testUtils/diffChartSeries.ts` or a new colocated helper, Test: `npm test -w packages/app -- diffChartSeries`)
-- [x] Task 8: Add an explicit assertion in `totalChartParity.test.ts` comparing legacy's resolved baseline per family against pipeline's `model.baseline` — hard-assert for squat/bench, soft-warn (`console.warn`) for deadlift until Part A is verified to reconcile it (Target: `packages/app/src/pipeline/totalChartParity.test.ts`, Test: `npm test -w packages/app -- totalChartParity`)
-- [x] Task 9: Full app test/build pass, re-run parity soft-warn diagnostics and record whether Part A narrows the documented 16–31% divergence (Test: `npm run build -w packages/app && npm test -w packages/app`)
-
-## Verification
-
-- `npm test -w packages/pipeline` and `npm test -w packages/app` both green.
-- `npm run build -w packages/pipeline` and `npm run build -w packages/app` both clean.
-- `totalChartParity.test.ts`'s new baseline-identity assertion passes for squat/bench,
-  and either passes or produces a clear soft-warn log for deadlift.
-- Manually inspect soft-warn `console.warn` output for `maxRelDiff` across all five
-  series before/after this change to confirm whether stance alignment measurably
-  narrows the divergence (informational only — no tolerance is asserted per existing
-  project convention).
-
-## Status
-
-- **Complete.** Verified directly in code (not just by re-reading this file): `AthleteContext.deadliftStance`
-  exists (`packages/pipeline/src/derive/athlete.ts`), `PLACEHOLDER_ATHLETE` sets `deadliftStance: 'sumo'`
-  (`packages/app/src/utils/rawInputUtils.ts`), `PipelineResult.model: NormalizationModel` is exposed
-  (`packages/pipeline/src/pipeline.ts`), and `totalChartParity.test.ts`'s baseline-identity `it.each` (hard-assert
-  squat/bench/deadlift) passes — 17/17 tests green (`npm test -w packages/app -- totalChartParity`). This
-  checklist just hadn't been updated to reflect it; no further action needed here.
-
----
-
-# SPECIFICATIONS — Phase 2 of MIGRATION_PLAN.md (SigmaTab + VariationRadarChart)
-
-Tracking doc for Phase 2 execution (`migration/SigmaTab.md` + `migration/VariationRadarChart.md`),
-coordinated by team-lead. See `MIGRATION_PLAN.md` for the overall ordering rationale and
-`APP_COMPONENTS.md` for the full component inventory.
-
-## Scope decisions made before delegating (read before touching either item)
-
-- **SigmaTab**: `TotalChart`/`SessionBarChart`'s squat/bench/deadlift/pushPull/total series are
-  already covered by the existing `TOTAL_CHART_SPECS` + `usePipelineTotalChartData` hook (dead
-  code today — nothing calls it; `SigmaTab.tsx` still computes its `chartData` via legacy
-  `buildChartData`). The one apparent gap (`SessionBarChart`'s `volume` / accessory-volume series)
-  is **not** a pipeline gap: `volumeByDate` is computed in `App.tsx` via `calculateVolumeCorrelation`
-  (`@dyel/core`) entirely independently of `buildChartData`, and is already passed into `SigmaTab`
-  as a prop. So the swap-over is: call `usePipelineTotalChartData` for the lift series, then merge
-  in the `volume` key from the `volumeByDate` prop — no new pipeline spec needed, and `SigmaTab.tsx`
-  itself ends up calling only `runPipeline` (via the hook), never `@dyel/core` directly, satisfying
-  the migration boundary rule. This is a **full swap-over**, not a deferred one.
-- **VariationRadarChart**: pipeline-native snapshot values are available via
-  `conjugateChartSpecs()` + `snapshotVariationsFromPipeline()` (already in
-  `testUtils/diffVariationSnapshot.ts`), but the component's tooltip needs per-variation
-  _last-session detail_ (date, sets, reps, weight, RPE) that the pipeline snapshot doesn't carry,
-  and the underlying per-variation normalization is the same one `ConjugateCharts` was **reverted**
-  from after a parity test surfaced real divergence (`46f267f`, see `HANDOFF.md`). Swapping the
-  real component now would risk silently reintroducing that same bug into a second user-facing
-  chart. Per Phase 1's established precedent for `DiagnosticsPanel`/`RepCalculator`/
-  `StrengthScoreCalculator`: **build + validate the pipeline-native replacement and its parity
-  test, but explicitly defer the component swap-over**, documenting why.
-
-## Task list
-
-- [x] Task 1: Add a `mergeVolumeIntoChartPoints(chartData, volumeByDate)` helper and rewire
-      `SigmaTab.tsx` to source squat/bench/deadlift/pushPull/total data from
-      `usePipelineTotalChartData` instead of `buildChartData`, merging in `volume` from the
-      existing `volumeByDate` prop; update `SigmaTab`'s props to `inputMode`/`url`/`pastedText`/
-      `refreshToken`/`dateRange`/`unit`/`volumeByDate` (drop `sigmaPairs`/`sigmaStats`/
-      `effectiveBaselineNames`/`effectiveTargetNames`, which were only used to feed
-      `buildChartData`); update the one caller (`App.tsx`) accordingly. (Target:
-      `packages/app/src/utils/pipelineChartUtils.ts`, `packages/app/src/components/pages/SigmaTab.tsx`,
-      `packages/app/src/App.tsx`. Test: `npm run build -w packages/app`)
-- [x] Task 2: Add `packages/app/src/pipeline/sigmaTabParity.test.ts` following
-      `totalChartParity.test.ts`'s structure (real fixture, `runPipeline` + `TOTAL_CHART_SPECS` vs.
-      legacy `buildChartData`, hard-assert squat/deadlift/pushPull/total, soft-warn bench per the
-      documented divergence, plus a check that `volume` merges identically since it's sourced from
-      the same `volumeByDate` map on both sides). (Target:
-      `packages/app/src/pipeline/sigmaTabParity.test.ts`. Test:
-      `npm test -w packages/app -- sigmaTabParity`)
-- [x] Task 3: Add `packages/app/src/pipeline/variationRadarChartParity.test.ts` reusing
-      `snapshotVariationsFromLegacy`/`snapshotVariationsFromPipeline`/`diffVariationSnapshots`
-      (`testUtils/diffVariationSnapshot.ts`) and `conjugateChartSpecs()`, `it.each` per lift
-      type/variation, over `test/fixtures/total-chart-sheet.csv`, soft-warning on divergence per
-      the same intentional-exception pattern as `conjugateChartParity.test.ts` (do **not** touch
-      `VariationRadarChart.tsx` itself — swap-over is deferred, see scope decision above). (Target:
-      `packages/app/src/pipeline/variationRadarChartParity.test.ts`. Test:
-      `npm test -w packages/app -- variationRadarChartParity`)
-- [x] Task 4: Update docs to reflect the above: `MIGRATION_PLAN.md` Phase 2 status (SigmaTab fully
-      migrated; VariationRadarChart pipeline-native replacement + parity test ready, swap deferred
-      with rationale), `APP_COMPONENTS.md` (move `SigmaTab` to "Already migrated", update
-      `VariationRadarChart`'s entry to "Ready to migrate" with the tooltip-data-gap +
-      divergence-risk rationale), `migration/VariationRadarChart.md` (mark step 2, the component
-      swap, as deferred rather than done). (Target: `MIGRATION_PLAN.md`, `APP_COMPONENTS.md`,
-      `migration/VariationRadarChart.md`. Test: none — doc-only)
-- [x] Task 5 (QA): Full verification — `npm run build -w packages/pipeline`,
-      `npm run build -w packages/core`, `npm run build -w packages/app`, `npm test -w packages/app`
-      (all files, not just the two new ones) — confirm no regressions in the existing test suite,
-      and that both new parity tests pass.
-
-## Verification
-
-`npm run build -w packages/pipeline && npm run build -w packages/core && npm run build -w packages/app && npm test -w packages/app`
-— all green, including `sigmaTabParity` and `variationRadarChartParity`.
-
-## Status
-
-Task 1 complete: `SigmaTab.tsx` now sources squat/bench/deadlift/pushPull/total via
-`usePipelineTotalChartData` + merges `volume` via new `mergeVolumeIntoChartPoints` helper; zero
-`@dyel/core` imports remain in `SigmaTab.tsx`. `App.tsx` call site updated. Verified: pipeline/core/app
-builds clean, `npm test -w packages/app` — 159 tests, 14 files, all green, no regressions.
-Next: Tasks 2 and 3 (parity tests) in parallel.
+- [ ] Task 8: Swap `ConjugateCharts.tsx`/`useConjugateChartData.ts` onto `@dyel/pipeline`,
+      using `conjugateChartSpecs()` (with `groupBy: 'label'`) + the now-fixed normalization
+      model. (Target: `packages/app/src/components/pages/ConjugateCharts.tsx` (or wherever it
+      now lives), `packages/app/src/hooks/useConjugateChartData.ts`. Test: `npm test -w
+    packages/app -- conjugateChartParity` plus full `npm test -w packages/app`)
 
 ---
 
-# SPECIFICATIONS — Phase 3 of MIGRATION_PLAN.md (SessionBarChart + SigmaChart + DateLineChart)
+## Closing the residual TotalChart divergence (post Finding #6 / Design B) — ✅ IMPLEMENTED (partial close)
 
-Tracking doc for Phase 3 execution (`migration/SessionBarChart.md` + `migration/SigmaChart.md` +
-`migration/DateLineChart.md`), coordinated by team-lead. See `MIGRATION_PLAN.md` for ordering
-rationale and `APP_COMPONENTS.md` for the full component inventory.
+Design B (above) narrowed but did not close `TotalChart`'s bench/deadlift/total divergence
+(7.0%/2.7%/1.8%, informational only, no hard tolerance asserted). Design C closed deadlift
+further; bench/total/squat/pushPull are unaffected (either already 0% or a separate
+pre-existing issue — see real numbers below).
 
-## Scope decisions made before delegating
+**Root cause confirmed (2026-07-07, via direct code reading — not a throwaway script, but
+exact source inspection of both call paths):** legacy's actual `TotalChart`/`ConjugateCharts`
+data path (`buildVariationChartData.ts`, `buildChartData.ts`) calls `normalizeToBaseE1RM`
+(`packages/core/src/utils/stats/repCalculator.ts:80-136`) **per raw session row**, correcting
+`addlWtOffset` in weight-space before `calcE1RM` ever runs. Design B instead mirrors
+`findBestE1RM` (`repCalculator.ts:41-78`), a single-point e1RM-space approximation applied
+post-hoc to an already-derived day-level e1RM value
+(`packages/pipeline/src/dataset/build.ts:73`). Confirmed the composite/normalize path is the
+only place needing correction — `SeriesSpec` output (e.g. ConjugateCharts' `variations`) uses
+legacy's raw, uncorrected `session.e1rm` and must stay untouched. Also confirmed
+`projectToVariant` has **zero production callers** anywhere in `packages/pipeline` or
+`packages/app` (only tests + re-export) — narrows blast radius.
 
-- All three components are presentation-only shells with **no independent aggregation logic** —
-  unlike `TotalChart`/`ConjugateCharts`/`SigmaTab`, their migration is a pure `@dyel/core` boundary
-  cleanup (type-only `ChartPoint` import + `formatDate` relocation), not a normalization/aggregation
-  reimplementation. Confirmed directly in code:
-  - `SessionBarChart.tsx`: imports `formatDate` + `ChartPoint` from `@dyel/core`.
-  - `SigmaChart.tsx`: imports only the `ChartPoint` type from `@dyel/core`.
-  - `DateLineChart.tsx`: imports `formatDate` + `ChartPoint` from `@dyel/core`.
-- `ChartPoint` already has a `@dyel/pipeline` export (`packages/pipeline/src/dataset/build.ts`,
-  re-exported from `packages/pipeline/src/index.ts`) — used already by `TotalChart.tsx`. No new
-  pipeline work needed, just switching the three remaining import sites.
-- `formatDate` needs relocating exactly once (shared by `SessionBarChart.tsx` and
-  `DateLineChart.tsx`) to a new `formatChartDate` helper in
-  `packages/app/src/utils/pipelineChartUtils.ts` (already the home for `ChartPoint`-adjacent
-  app-level helpers), preserving `@dyel/core`'s exact tick-formatting behavior (`str: string =>
-string`, short month/day/2-digit-year). Named distinctly from the existing (unrelated)
-  `Date => string` `formatDate` in `utils/dateUtils.ts` to avoid confusion/collision.
-- Per each migration doc, none of the three new parity tests should reimplement a legacy-vs-pipeline
-  diff — `sessionBarChartParity.test.ts` is a lightweight regression check (via
-  `compareChartSeries`) on `SigmaTab`'s already-validated pipeline-derived `ChartPoint[]`
-  (squat/bench/deadlift/volume), `sigmaChartParity.test.ts` a thinner consumer check (last-value
-  squat/bench/deadlift), and `dateLineChartParity.test.ts` a smoke/regression check across the
-  shell's real consumers (`TotalChart`'s full series set + `SigmaTab`'s Σ line). All three reuse
-  `sigmaTabParity.test.ts`'s fixture-loading pattern (`total-chart-sheet.csv` + `runPipeline` +
-  `TOTAL_CHART_SPECS`) rather than inventing new fixtures or diff helpers.
+**Design C signed off by user (2026-07-07).** Pipeline-sequencing investigation
+(`packages/pipeline/src/pipeline.ts`) confirmed no chicken-and-egg ordering problem:
+`fitNormalizationModel` already fits directly from raw `TaggedSetRecord[]`, independent of
+`buildPoints`/derivers — it only happens to run after `buildPoints` in source today, nothing
+requires that order. Sub-approach (a) — weight-space correction applied to raw records
+_before_ the `e1rm`/`e1rm-max-effort` deriver runs, for composite specs only — is
+architecturally reachable via resequencing, not a new pipeline stage. Sub-approach (b)
+(two derivation passes at apply-time) was rejected: duplicates derivation logic per render,
+risks the same date/day-grouping mismatch this work is trying to close.
 
-## Task list
+### Implementation plan (ordered)
 
-- [x] Task 1: Add `formatChartDate` to `packages/app/src/utils/pipelineChartUtils.ts` (relocated
-      from `@dyel/core`'s `formatDate`, same behavior); update `SessionBarChart.tsx` and
-      `DateLineChart.tsx` to import `ChartPoint` from `@dyel/pipeline` and use `formatChartDate` as
-      the axis tick formatter; update `SigmaChart.tsx`'s `ChartPoint` import to `@dyel/pipeline`.
-      Confirm zero `@dyel/core` imports remain in all three files. (Target:
-      `packages/app/src/utils/pipelineChartUtils.ts`,
-      `packages/app/src/components/charts/SessionBarChart.tsx`,
-      `packages/app/src/components/charts/SigmaChart.tsx`,
-      `packages/app/src/components/charts/DateLineChart.tsx`. Test:
-      `npm run build -w packages/app`)
-- [x] Task 2: Add `packages/app/src/pipeline/sessionBarChartParity.test.ts` — lightweight regression
-      test using `compareChartSeries` over `SigmaTab`'s pipeline-derived `ChartPoint[]` (squat/
-      bench/deadlift/volume), following `sigmaTabParity.test.ts`'s fixture-loading setup. (Test:
-      `npm test -w packages/app -- sessionBarChartParity`)
-- [x] Task 3: Add `packages/app/src/pipeline/sigmaChartParity.test.ts` — thin consumer test
-      asserting last-value squat/bench/deadlift via `compareChartSeries` over the same
-      pipeline-derived fixture data. (Test: `npm test -w packages/app -- sigmaChartParity`)
-- [x] Task 4: Add `packages/app/src/pipeline/dateLineChartParity.test.ts` — smoke/regression check
-      (via `compareChartSeries`) confirming `TotalChart`'s full series set and `SigmaTab`'s Σ line
-      still render identical `ChartPoint[]` shapes post-migration. (Test:
-      `npm test -w packages/app -- dateLineChartParity`)
-- [x] Task 5: Update docs: `MIGRATION_PLAN.md` (Phase 3 status section), `APP_COMPONENTS.md`
-      (move `SessionBarChart`/`SigmaChart`/`DateLineChart` from "Not yet migrated" to "Already
-      migrated"), this file's Status section. (Target: `MIGRATION_PLAN.md`, `APP_COMPONENTS.md`,
-      `SPECIFICATIONS.md`. Test: none — doc-only)
-- [ ] Task 6 (QA): Full verification — `npm run build -w packages/pipeline`,
-      `npm run build -w packages/core`, `npm run build -w packages/app`, `npm test -w packages/app`
-      (all files, not just the three new ones) — confirm no regressions and all three new parity
-      tests pass.
+1. **`packages/pipeline/src/derive/normalize.ts`**: extract the existing per-record
+   weight-space adjustment (currently inlined in `fitNormalizationModel`, Task 10a) into a new
+   exported `offsetAdjustRecords(records, model): TaggedSetRecord[]` function; reuse it inside
+   `fitNormalizationModel`'s `recordsToFit` line (single source of truth). **Revert** Task 10b's
+   offset lines in `normalizeE1rm`/`projectToVariant` back to pure factor operations
+   (`e1rmKg / f`, `baseE1rmKg * f`) — Design C supersedes Task 10b; comment explaining why.
+   Flag (don't fix) that `projectToVariant` has no principled post-hoc way to reintroduce a
+   target's offset now that it's a raw-weight/per-set concept — pre-existing approximation
+   gap, not a regression, and it has zero production callers today.
+2. **`packages/pipeline/src/pipeline.ts`**: resequence so `fitNormalizationModel` runs before/
+   alongside `pointsByDeriver` construction; compute `compositeDeriverIds` (deriver IDs used by
+   composite specs only, mirroring the existing `labelGroupByDeriverIds` pattern); build
+   `offsetAdjustedTagged = offsetAdjustRecords(tagged, model)` and a
+   `pointsByDeriverAdjusted` map from it; wire composite specs to consume the adjusted points,
+   series/label specs unchanged. Leave `e1rmPoints`, `unnormalized`, and `diagnose(...)` on raw
+   (uncorrected) points — unaffected, out of scope (`diagnose.ts` has a separate, pre-existing
+   addlWt gap, not touched here).
+3. **`packages/pipeline/src/dataset/build.ts`**: no code change — the composite branch already
+   calls `normalizeE1rm(p.series, p.v, model)`; since it now receives pre-corrected points for
+   composite specs and `normalizeE1rm` is pure-factor, this becomes correct with zero edits.
+4. **`packages/pipeline/src/index.ts`**: export `offsetAdjustRecords` (additive only).
+5. **`packages/pipeline/src/derive/CLAUDE.md`**: document `offsetAdjustRecords`; note
+   `normalizeE1rm`/`projectToVariant` are pure factor functions again, and addlWt correction
+   happens upstream in `pipeline.ts` pre-derivation, composite specs only.
 
-## Verification
+### Task list
 
-`npm run build -w packages/pipeline && npm run build -w packages/core && npm run build -w packages/app && npm test -w packages/app`
-— all green, including `sessionBarChartParity`, `sigmaChartParity`, and `dateLineChartParity`.
+- [x] Task 1: Root-cause confirmed via direct code reading (see above) — hypothesis validated,
+      not falsified.
+- [x] Task 2: Design C signed off by user (2026-07-07).
+- [x] Task 3: Implemented steps 1–5 above. (Target: `packages/pipeline/src/derive/normalize.ts`,
+      `packages/pipeline/src/pipeline.ts`, `packages/pipeline/src/index.ts`,
+      `packages/pipeline/src/derive/CLAUDE.md`. Test: `npm test -w packages/pipeline --
+    normalize`)
+- [x] Task 4: Update test coverage: - `normalize.test.ts`: rewrite the two `normalizeE1rm`/`projectToVariant` offset-formula
+      tests to pure `e1rmKg / factor` / `baseE1rmKg * factor`; retire/rename the Task 10b
+      "apply-time offset adjustment" describe block; add new `describe('offsetAdjustRecords')`
+      coverage (adds offset for addlWt canonicals, no-ops for non-addlWt and baseline
+      canonicals, doesn't mutate input). Round-trip tests should pass unmodified. - `pipeline.test.ts`: add an addlWt (chain) canonical fixture feeding a composite spec,
+      using **reps > 1** (Epley is nonlinear — reps=1/no-rpe makes weight-space and e1RM-space
+      offset application mathematically identical and would NOT prove the fix), asserting the
+      composite value matches `calcE1RM(rawWeight + offsetKg, reps, rpe) / factor`. - `dataset/build.test.ts`: add a case confirming `buildDataset` doesn't double-correct
+      when given pre-corrected points + a model with `addlWtOffset` populated. - `derivers.test.ts`: confirm no changes needed (derivers untouched); quick check that no
+      existing test assumes `TaggedSetRecord.weight` is never mutated upstream.
+      (Target: `packages/pipeline/src/derive/normalize.test.ts`,
+      `packages/pipeline/src/pipeline.test.ts`, `packages/pipeline/src/dataset/build.test.ts`.
+      Test: `npm test -w packages/pipeline`)
+- [x] Task 5: Full build/test pass — clean.
+- [x] Task 6: Re-run `totalChartParity.test.ts` + `conjugateChartParity.test.ts` — real numbers
+      below. **Important correction to this task's original framing**: squat was never at
+      0.0% on `TotalChart` (that 0.0% figure only ever applied to ConjugateCharts' squat
+      `normalized` composite, which has 0 addlWt variants by construction). An early QA pass
+      flagged squat's unchanged 0.7% as a false "regression" — **directly disproven via
+      `git stash` bisection** (see below): squat was already at 0.7% pre-Design-C, a
+      pre-existing, separately-tracked divergence unrelated to addlWt/Design C. No tolerance
+      values needed tightening — the tests use soft-warn `console.warn`, not hardcoded
+      `toBeCloseTo` thresholds.
+- [x] Task 7: Docs updated (this section).
+- [x] Task 8 (QA): Independent full-suite re-verification via `qa-reviewer` — clean, see below.
 
-## Status
+**Status: Design C implemented and verified (2026-07-07).**
 
-Tasks 1-5 complete. `formatChartDate` added to `pipelineChartUtils.ts`;
-`SessionBarChart.tsx`/`SigmaChart.tsx`/`DateLineChart.tsx` all have zero remaining
-`@dyel/core` references. Three new parity tests added (`sessionBarChartParity.test.ts`,
-`sigmaChartParity.test.ts`, `dateLineChartParity.test.ts`) — all lightweight
-sanity/regression checks per the scope decision above (no legacy diff reimplemented).
-`MIGRATION_PLAN.md`/`APP_COMPONENTS.md` updated. Verified: `npm test -w packages/app` —
-19 test files, 200 tests, all green (up from 16 files/181 tests before Phase 3), no
-regressions. Task 6 (independent QA re-verification) next.
+### Real before/after numbers (`totalChartParity.test.ts`, verified via `git stash` bisection)
+
+| Series   | Before Design C                    | After Design C          | Change                                                                      |
+| -------- | ---------------------------------- | ----------------------- | --------------------------------------------------------------------------- |
+| squat    | 0.7% (maxAbsDiff=1)                | 0.7% (maxAbsDiff=1)     | unchanged — pre-existing, unrelated to addlWt (squat has 0 addlWt variants) |
+| bench    | 7.0% (maxAbsDiff=10)               | 7.0% (maxAbsDiff=10)    | unchanged                                                                   |
+| deadlift | 2.7% (maxAbsDiff=6)                | **0.6%** (maxAbsDiff=1) | **genuine improvement**, further closes Design B's residual                 |
+| pushPull | 2.5% (maxAbsDiff=10, missingInB=6) | 2.5% (unchanged)        | unaffected                                                                  |
+| total    | 1.8% (maxAbsDiff=10)               | 1.8% (unchanged)        | unaffected                                                                  |
+
+`conjugateChartParity.test.ts` `normalized` composites: squat 0.0% (unchanged, exact),
+bench 7.0% (unchanged), deadlift 0.4% (unchanged from Design B's number — Design C's
+improvement shows on `TotalChart`'s deadlift specifically, not ConjugateCharts' deadlift,
+likely due to differing component/canonical sets between the two specs' composite
+definitions — not investigated further, out of scope).
+
+Bench staying flat at 7.0% on both harnesses despite bench having addlWt (chain) canonicals
+is a known open question — Design C measurably helped deadlift but not bench, meaning some
+other bench-specific factor (not investigated this session) also contributes to its
+divergence. Flagged for future investigation, not blocking.
+
+### Implementation notes (deviations from the original plan)
+
+- An early independent QA pass reported squat regressing 0.0%→0.7%, triggering a full
+  root-cause investigation (`senior-coder`, no shell access, static analysis only) that
+  produced a defensive rework of `pipeline.ts`'s `pointsByDeriverAdjusted` construction —
+  changed from "recompute all composite-spec points via a second full `buildPoints` pass on
+  offset-adjusted records" to "reuse the original `pointsByDeriver` points object-identically,
+  splicing in only the specific (date, canonical) points for canonicals that actually have a
+  fitted `addlWtOffset` entry." This makes the non-addlWt no-op guarantee true _by
+  construction_ rather than relying on two independent derivation passes coincidentally
+  producing identical output. **Kept this change** even after the "regression" was proven to
+  be a pre-existing non-issue (via `git stash` bisection directly against the pre-Design-C
+  tree) — it's a strictly more robust implementation with zero behavior change for
+  addlWt-bearing canonicals, verified by full pipeline test suite staying green (207/207)
+  before and after.
+- Test-count self-report accuracy: an earlier implementer claimed "538 tests / 35 files" for
+  the pipeline package post-change. Independently verified via `qa-reviewer` (twice) to
+  actually be **207 tests / 12 files** — consistent with this repo's known pre-Design-C
+  baseline (203 tests/12 files) plus 4 net new tests. The 538/35 claim was false; flagging per
+  this project's established distrust-but-verify precedent (see prior Finding #6 QA-claim
+  correction).
 
 ---
 
-# SPECIFICATIONS — ConjugateCharts normalization divergence (Phase 4 blocker scoping)
+## Verification (all completed sections)
 
-Tracking doc for the first Phase 4 blocker from `MIGRATION_PLAN.md` — `ConjugateCharts`
-was migrated to `@dyel/pipeline` once, then deliberately reverted (`46f267f`) after
-`conjugateChartParity.test.ts` surfaced real legacy-vs-pipeline normalization divergence.
-Full root-cause + outcome writeup lives in `migration/ConjugateCharts.md`'s "Scoping
-session (2026-07-07)" section — this is the task-tracking summary.
+`npm run build -w packages/pipeline && npm run build -w packages/app && npm test -w
+packages/pipeline && npm test -w packages/app` — all green as of last full run (pipeline
+12 files/207 tests, app 19 files/200 tests), independently re-verified via `qa-reviewer`.
 
-## Scope decisions made (user sign-off)
+## Currently open items
 
-- **Speed-work filtering (A):** drop pipeline's `effortOnly` exclusion in
-  `fitNormalizationModel` to match legacy's unfiltered fitting exactly (legacy has no
-  speed-work concept at all).
-- **Canonical/displayName grouping (B):** add a parallel points-by-label construction
-  path (opt-in `groupBy: 'label'` on `SeriesSpec`) rather than accept a coarser,
-  user-visible UX change — preserves today's per-exact-variant chart granularity.
-
-## Tasks
-
-- [x] Task 1: Correct stale "fully migrated" claim for `ConjugateCharts` in
-      `MIGRATION_PLAN.md`'s Phase 1 status section. (Target: `MIGRATION_PLAN.md`. Test:
-      none — doc-only)
-- [x] Task 2: Write root-cause scoping findings into `migration/ConjugateCharts.md`
-      (speed-work asymmetry, minSamples gating, canonical/label grouping mismatch,
-      normalized-series date-overlap anomaly). (Target: `migration/ConjugateCharts.md`.
-      Test: none — doc-only)
-- [x] Task 3 (A): Remove `effortOnly` speed-work filter from `fitNormalizationModel`
-      fitting; update `normalize.test.ts` to reflect inclusion instead of exclusion.
-      (Target: `packages/pipeline/src/derive/normalize.ts`. Test:
-      `npm test -w packages/pipeline -- normalize`)
-- [x] Task 4 (B): Add opt-in `groupBy: 'label'` to `SeriesSpec` + `buildPointsByLabel`
-      construction path in `runPipeline`; wire into `conjugateChartSpecs.ts`'s
-      `variations` spec. (Target: `packages/pipeline/src/dataset/build.ts`,
-      `packages/pipeline/src/pipeline.ts`, `packages/app/src/pipeline/conjugateChartSpecs.ts`.
-      Test: `npm test -w packages/app -- conjugateChartParity`)
-- [x] Task 5: Document final outcome in `migration/ConjugateCharts.md` (what was fixed,
-      real verified numbers, explicit non-promotion-to-hard-assert decision, residual
-      open items). (Target: `migration/ConjugateCharts.md`. Test: none — doc-only)
-- [x] Task 6: Root-cause the residual `missingInA` nonzero gaps on newly-matched
-      variation series (squat/deadlift). **Root-caused (2026-07-07 follow-up), confirmed
-      against ground truth and the raw fixture, NOT fixed** — new Finding #5: day-level
-      effort/volume filtering asymmetry. Legacy's `splitByEffort`
-      (`packages/app/src/utils/appDataUtils.ts`) drops entire "volume" days
-      (`sets > 1 && rpe === null`) before `buildVariationChartData` runs; pipeline's
-      `derivers.ts` `e1rm` deriver never drops a day (falls back to speed-work sets when
-      no effort sets exist), and `conjugateChartSpecs.ts` has no day-level effort filter
-      at all. Confirmed exactly against `test/fixtures/total-chart-sheet.csv`: Box Squat's
-      1 extra pipeline date (2/6/2026, pure volume) and Deadlift (opposite)'s 2 extra
-      pipeline dates (2/6, 3/6, both pure volume) match the reported `missingInA=1`/`=2`
-      exactly. Full writeup in `migration/ConjugateCharts.md`'s new "Follow-up session
-      (2026-07-07): missingInA root-caused" section. (Target: none this task — root-cause
-      only. Test: `npm test -w packages/app -- conjugateChartParity`, unchanged
-      8/8 passing, numbers re-verified via `qa-reviewer`)
-- [x] Task 6b: Closed Finding #5 by adding a day-level "max-effort" deriver
-      (`'e1rm-max-effort'` in `packages/pipeline/src/derive/derivers.ts`, implemented by a
-      teammate) mirroring legacy's `splitByEffort` — filters to max-effort sets via the
-      existing `isSpeedWork` predicate and returns `null` (day excluded, not zero-filled) when
-      a day has none, instead of `e1rm`'s fallback-to-speed-work-sets behavior. Wired into
-      **both** `conjugateChartSpecs.ts`'s `variations` series spec and its `normalized`
-      composite spec (not just `variations`), since legacy's `buildVariationChartData`
-      computes both from the same `maxEffort`-filtered rows.
-      **Also found and fixed a separate, pre-existing bug** in
-      `conjugateChartParity.test.ts` while investigating an apparent side effect: its
-      `pipelineVariationKeys` computation only read `Object.keys(pipeline.variations[0])` —
-      the first row's keys, not the union across all rows — so the "matched variation"
-      intersection check was only ever accidentally comparing one arbitrary variation per
-      lift type. Fixed to `pipeline.variations.flatMap((row) => Object.keys(row))`. With
-      both fixes in place, **every matched variation across all three lift types now shows
-      `missingInA=0, missingInB=0`** (full date-level per-variation parity; remaining
-      `maxAbsDiff`/`maxRelDiff` on a few bench/deadlift series, all ≤1.1%, is pre-existing
-      rounding-level divergence, not a new finding). Verified via
-      `npm test -w packages/app -- conjugateChartParity` (8/8 passing) and independently
-      re-confirmed via `qa-reviewer`; full real output archived in
-      `migration/ConjugateCharts.md`. All three `normalized` composites now have matching
-      legacy/pipeline point counts (squat 4/4, bench 22/22, deadlift 12/12) though the
-      "no date overlap" warning itself persists (Finding #4's date-value-alignment root
-      cause is still open, not resolved by this fix). No regressions: full suite
-      (`npm run build -w packages/pipeline && npm run build -w packages/app && npm test -w
-packages/pipeline && npm test -w packages/app`) green — pipeline 12 files/195 tests,
-      app 19 files/200 tests (unchanged from baseline, includes the one-line harness-bug
-      fix). (Target: `packages/app/src/pipeline/conjugateChartSpecs.ts`,
-      `packages/app/src/pipeline/conjugateChartParity.test.ts`. Test:
-      `npm test -w packages/app -- conjugateChartParity`)
-- [x] Task 7: Root-cause the normalized-series "no date overlap" anomaly (finding #4).
-      **Root-caused and fixed (2026-07-07, third follow-up) as a test-harness bug, NOT a
-      real data divergence** — Finding #5's day-level-asymmetry hypothesis was wrong.
-      `conjugateChartParity.test.ts`'s `beforeAll` renamed the pipeline composite's output
-      key to `NORMALIZED_KEY` via `if (liftType in point)`, but the composite's actual
-      `RechartsRow` key is `spec.id` (the literal string `'normalized'`, from
-      `conjugateChartSpecs.ts`'s `normalized` spec + `dataset/build.ts`'s
-      `rows.push({ t, [spec.id]: ... })`), never `liftType`. The rename never fired, so
-      `diffSeries` never found a pipeline-side value on any date, always reporting "no date
-      overlap" even when dates were fully aligned (confirmed directly via a standalone debug
-      script: squat's pipeline and legacy `normalized` dates were byte-identical all along).
-      Fixed to `if ('normalized' in point)`. One file touched:
-      `packages/app/src/pipeline/conjugateChartParity.test.ts` (5-line change, comments +
-      condition). Verified (`npm test -w packages/app -- conjugateChartParity`, 8/8 passing,
-      independently re-confirmed via `qa-reviewer`): squat's `normalized` composite is now
-      exact parity (`compared=4 missingInA=0 missingInB=0 maxAbsDiff=0`), but unmasking the
-      real comparison revealed bench (9.8% maxRelDiff) and deadlift (5.1% maxRelDiff) DO have
-      genuine value divergence on the `normalized` composite — always present in the data,
-      just never measurable before this fix. Flagged as new Finding #6, not yet root-caused
-      (see `migration/ConjugateCharts.md`). No regressions: full suite green — pipeline 12
-      files/195 tests, app 19 files/200 tests, unchanged from baseline. (Target:
-      `packages/app/src/pipeline/conjugateChartParity.test.ts`. Test:
-      `npm test -w packages/app -- conjugateChartParity`)
-- [ ] Task 8 (not started): Actually swap `ConjugateCharts.tsx`/`useConjugateChartData.ts`
-      back onto `@dyel/pipeline` — this entire session narrowed the divergence but did
-      NOT attempt the component swap itself. Should not be attempted before Task 9 (new
-      Finding #6, bench/deadlift normalized-composite value divergence) is at least
-      assessed, per this doc's "Before re-attempting" note.
-- [x] Task 9: Root-cause Finding #6 — why bench/deadlift `normalized` composites show
-      real 5-10% value divergence from legacy while squat is exact. **Root-caused
-      (2026-07-07, fourth follow-up).** Two initial hypotheses (canonical-vs-label
-      grouping mismatch; baseline-identity mismatch) were tested empirically via
-      throwaway debug scripts against the real fixture and both **falsified** — canonical
-      and label are ~1:1 for all three lift types (bench has exactly one 2-label
-      canonical), and legacy/pipeline baseline choice agrees exactly for all three lift
-      types. **Real cause**: `packages/pipeline/src/derive/normalize.ts`'s
-      `fitNormalizationModel`/`normalizeE1rm` never wires `addlWtOffset` (chain/band
-      weight correction) into either the per-variant-factor fit or the per-point
-      normalize-apply step, for any exercise — unlike legacy's
-      `buildSessionStats`/`normalizeToBaseE1RM`, which corrects for it on both sides.
-      `model.addlWtOffset` is computed but never consumed — dead data. Confirmed this
-      exactly explains the per-lift divergence magnitude: squat has 0 addlWt variants (0%
-      divergence), deadlift has 3/6 non-baseline addlWt variants (5.1%), bench has 5/16
-      (9.8%). Full writeup in `migration/ConjugateCharts.md`'s new "Finding #6
-      root-caused" section. Not fixed — architecture decision needing sign-off, same as
-      Findings #1/#3, and scoped to `packages/pipeline` itself (not `ConjugateCharts`-only).
-      (Target: none this task — root-cause only. Test:
-      `npm test -w packages/app -- conjugateChartParity`, unchanged 8/8 passing; no
-      production code touched)
-- [x] Task 10 (sign-off obtained 2026-07-07): Fix Finding #6. **Design B chosen and
-      refined** (user sign-off): fit-time offset-adjust weights before fitting
-      `variantFactor` for addlWt canonicals (mirrors `sessionIndex.ts`'s
-      `applyAddlWtOffset`-before-`fitVariantFactor`); apply-time wire `addlWtOffset`
-      directly into `normalizeE1rm`/`projectToVariant` in e1RM-space (not weight-space —
-      discovered legacy's `repCalculator.ts` `findBestE1RM` already does this exact
-      e1RM-space approximation at the same aggregated-per-canonical abstraction level
-      pipeline operates at, documented in-code as "approximation valid because offset and
-      e1RM share the same weight unit"). No `normalizeE1rm`/`projectToVariant` signature
-      change needed — smaller blast radius than the original literal weight-space mirror.
-      Broken into subtasks below.
-  - [x] Task 10a: Fix fit-time — in `fitNormalizationModel`, for each addlWt-tagged
-        canonical, fit `addlWtOffset` first, then offset-adjust that canonical's records
-        (`weight += offsetKg`) before feeding them into the `variantFactor` `fitMetric`
-        call, mirroring `sessionIndex.ts`'s `applyAddlWtOffset`-before-`fitVariantFactor`
-        sequencing. Non-addlWt canonicals unaffected. (Target:
-        `packages/pipeline/src/derive/normalize.ts`. Test:
-        `npm test -w packages/pipeline -- normalize`)
-  - [x] Task 10b: Fix apply-time — `normalizeE1rm(canonical, e1rmKg, model)` adds
-        `model.addlWtOffset[canonical]?.offsetKg` to `e1rmKg` before dividing by
-        `factor` when the canonical has a fitted offset; `projectToVariant(baseE1rmKg,
-    targetCan, model)` subtracts the target's `offsetKg` after multiplying by
-        `factor` (exact mirror of `findBestE1RM`'s `e1rm = compE1RM * vf.factor; e1rm -=
-    off.offset`). No signature change. (Target:
-        `packages/pipeline/src/derive/normalize.ts`. Test:
-        `npm test -w packages/pipeline -- normalize`)
-  - [x] Task 10c: Update `normalize.test.ts` — recompute the existing `bench-chains`
-        factor expectation (`0.809090909`, line ~80) now that fit-time offset-adjusts
-        weight first; add `it.each` coverage for fit-time (addlWt canonical factor
-        differs from a naive unadjusted fit) and apply-time (`normalizeE1rm`/
-        `projectToVariant` round-trip correctness for addlWt canonicals, confirming
-        non-addlWt canonicals are byte-identical to pre-fix behavior). (Target:
-        `packages/pipeline/src/derive/normalize.test.ts`. Test:
-        `npm test -w packages/pipeline -- normalize`)
-  - [x] Task 10d: Full build/test pass — `npm run build -w packages/pipeline` (per
-        `CLAUDE.md`, must rebuild before app consumes it), `npm run build -w packages/app`,
-        `npm test -w packages/pipeline`, confirm zero regressions outside `normalize.test.ts`.
-        (Test: `npm run build -w packages/pipeline && npm run build -w packages/app && npm
-    test -w packages/pipeline`)
-  - [x] Task 10e: Re-run `conjugateChartParity.test.ts`, record real before/after
-        `normalized`-composite `maxRelDiff` numbers for bench (was 9.8%)/deadlift (was
-        5.1%)/squat (was 0%, must stay 0%) — confirm narrowing/closing, no regression on
-        squat. Also re-run `totalChartParity.test.ts` per user's explicit ask: confirm no
-        regression, and directly check whether `TotalChart`'s fixture data includes any
-        addlWt-carrying canonicals (Open TODO #5 from `HANDOFF.md`) — if yes, record
-        whether new divergence appears; if no, document that the latent gap remains
-        unexercised there. (Test: `npm test -w packages/app -- conjugateChartParity
-    totalChartParity`)
-  - [x] Task 10f: Update docs — `migration/ConjugateCharts.md` (new "Finding #6 fixed"
-        section with real before/after numbers and the `findBestE1RM` e1RM-space
-        discovery), `SPECIFICATIONS.md` (mark 10a–10g complete, Status section). (Target:
-        `migration/ConjugateCharts.md`, `SPECIFICATIONS.md`. Test: none — doc-only)
-  - [x] Task 10g (QA): Independent full-suite re-verification via `qa-reviewer` (not
-        self-reported) — `npm run build -w packages/pipeline && npm run build -w
-    packages/app && npm test -w packages/pipeline && npm test -w packages/app`, all
-        green, plus the two parity tests' real output re-confirmed.
-
-## Verification
-
-`npm run build -w packages/pipeline && npm run build -w packages/app && npm test -w packages/pipeline && npm test -w packages/app`
-— all green (pipeline: 12 files/188 tests; app: 19 files/200 tests), independently
-re-verified via `qa-reviewer` (not self-reported) at each step.
-
-## Status
-
-Tasks 1-7 complete. Findings #1 (speed-work asymmetry), #3 (canonical/label grouping, the
-largest gap), #5 (day-level effort/volume filtering asymmetry), and now #4 (normalized-series
-"no date overlap" anomaly) are all resolved. #2 (minSamples) was found to be a non-issue on
-re-investigation. Finding #4 turned out to be a test-harness key-name bug (comparing against
-the wrong `RechartsRow` key), not a real data-alignment problem — squat's `normalized`
-composite is exact (0% diff) once the harness compares the right key. Unmasking the real
-comparison surfaced a genuinely new item, Finding #6: bench (9.8% maxRelDiff) and deadlift
-(5.1% maxRelDiff) `normalized` composites show real value divergence, not yet root-caused.
-Verified real numbers (`npm test -w packages/app -- conjugateChartParity`, 8/8 passing,
-independently re-confirmed via `qa-reviewer`): **every matched per-variation series across
-all three lift types now shows `missingInA=0, missingInB=0`** (unchanged from prior session);
-`normalized` composites now show real compared/diff numbers instead of a false "no overlap"
-(squat exact, bench/deadlift newly-measurable divergence). No regressions: full suite green —
-pipeline 12 files/195 tests, app 19 files/200 tests (unchanged from baseline, includes this
-session's 5-line harness fix). Parity harness's per-variation soft-warns remain **not**
-promoted to hard-assert — sample sizes remain n=1-5 per series, still judged too sparse to
-call proven parity by this project's established precedent. `ConjugateCharts.tsx` and
-`useConjugateChartData.ts` remain unswapped, still on `@dyel/core` — the Phase 4 blocker is
-narrowed further, not closed.
-
-**Task 9 complete (2026-07-07, fourth follow-up)**: Finding #6 is root-caused. Two initial
-hypotheses (canonical/label grouping; baseline-identity mismatch) were empirically tested
-against the real fixture and falsified. Real cause: pipeline's `normalize.ts` never wires
-`addlWtOffset` into the `variantFactor` fit or the `normalizeE1rm` apply step for any
-exercise, unlike legacy's two-sided correction — confirmed to exactly track the per-lift
-divergence magnitude via addlWt-variant proportion (squat 0/6 → 0%, deadlift 3/6 → 5.1%,
-bench 5/16 → 9.8%). Not fixed — new Task 10 (needs explicit sign-off on fix design, same
-precedent as Findings #1/#3) tracks the actual implementation. No regressions: no production
-code touched this session, root-cause only.
-
-**Task 10 complete (2026-07-07, fifth follow-up)**: User signed off on Design B (full
-two-sided mirror). Implementation discovered a refinement mid-flight that avoided an API
-break: `normalizeE1rm`/`projectToVariant` mirror legacy's `findBestE1RM` (e1RM-space
-offset application, a documented legacy approximation), not `normalizeToBaseE1RM`
-(weight-space, which pipeline has no raw-session-level call site to mirror at). Fit-time
-now offset-adjusts weights before fitting `variantFactor` for addlWt canonicals
-(`packages/pipeline/src/derive/normalize.ts`), mirroring `sessionIndex.ts` exactly.
-Real numbers (`npm test -w packages/app -- conjugateChartParity`, independently
-re-verified via `qa-reviewer`): squat 0.0% (unchanged), bench 9.8%→7.0%, deadlift
-5.1%→0.4%. Narrowed substantially, not fully closed — expected, since Design B mirrors
-legacy's own documented e1RM-space approximation, not an exact correction. Per explicit
-user request, also verified `TotalChart` (Open TODO #5): empirically confirmed via a
-`git stash` before/after bisection that `TotalChart`'s bench/deadlift numbers were
-previously identical to `ConjugateCharts`' pre-fix numbers (9.8%/5.1%, same shared fixture
-and unfiltered `lift:*` composite queries) and improved the same way post-fix (bench
-7.0%, deadlift 2.7%, total 1.8%) — confirms the fix is correctly pipeline-level-scoped,
-benefiting both consumers with zero `TotalChart`-specific code changes. Caught and
-corrected one inaccurate automated-QA claim (that TotalChart's fixture had zero addlWt
-canonicals) via direct fixture inspection and the stash-bisection numbers — full writeup
-in `migration/ConjugateCharts.md`'s "Finding #6 fixed" section. No regressions: full
-suite green (`npm run build -w packages/pipeline && npm run build -w packages/app && npm
-test -w packages/pipeline && npm test -w packages/app`) — pipeline 12 files/203 tests (up
-from 195, 8 new tests), app 19 files/200 tests (unchanged). Component swap-over
-(`ConjugateCharts.tsx`/`useConjugateChartData.ts` still on `@dyel/core`) remains the next
-step for whoever picks up Phase 4 next — out of scope for Task 10, which was fix-only.
+1. **ConjugateCharts Task 8** — component swap-over onto `@dyel/pipeline`, not started.
+2. **Bench's flat 7.0% divergence** (both `TotalChart` and `ConjugateCharts`) — Design C
+   closed deadlift's residual but not bench's, despite bench having addlWt (chain)
+   canonicals too. Not yet investigated. Lowest priority of the two open items — informational
+   only, no hard tolerance asserted anywhere in the parity harnesses.

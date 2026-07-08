@@ -1,118 +1,111 @@
-# HANDOFF — Finding #6 fixed (addlWtOffset wired into pipeline normalization, Design B)
+# HANDOFF — Design C shipped (addlWtOffset weight-space correction), residual TotalChart divergence narrowed further
 
 ## Context
 
 `migration-phase-1` implements `MIGRATION_PLAN.md`'s pipeline-native migration of
-`packages/app` components off `@dyel/core` onto `@dyel/pipeline`. `ConjugateCharts` is
-Phase 4's first blocker: migrated to `@dyel/pipeline` once, then deliberately reverted
-(`46f267f`) after `conjugateChartParity.test.ts` found real legacy-vs-pipeline
-normalization divergence. Full task tracking lives in `SPECIFICATIONS.md`'s "ConjugateCharts
-normalization divergence" section; full root-cause/outcome detail lives in
+`packages/app` components off `@dyel/core` onto `@dyel/pipeline`. Full task tracking lives in
+`SPECIFICATIONS.md`; full ConjugateCharts root-cause/outcome detail lives in
 `migration/ConjugateCharts.md`.
 
-This session picked up Open TODO #1 from the prior handoff: get sign-off on and implement a
-fix for Finding #6 (the `normalized` composite's real value divergence — squat exact,
-bench 9.8%, deadlift 5.1% `maxRelDiff`, root-caused in the previous session as
-`packages/pipeline/src/derive/normalize.ts` computing `addlWtOffset` but never consuming it).
+This session picked up the prior handoff's residual finding: Design B (previous session) fixed
+`addlWtOffset` wiring into pipeline normalization but only narrowed, not closed, `TotalChart`'s
+bench/deadlift/total divergence (7.0%/2.7%/1.8%) — because Design B mirrored legacy's
+`findBestE1RM` (an e1RM-space approximation built for `RepCalculator`), not legacy's actual
+`TotalChart` data path (`normalizeToBaseE1RM`, a weight-space, per-set correction).
 
 ## Progress Overview
 
-- **Got explicit user sign-off on Design B** (full two-sided mirror of legacy's correction,
-  not the narrower fit-only Design A) after presenting both options with concrete tradeoffs.
-- **Implemented and shipped the fix** in `packages/pipeline/src/derive/normalize.ts`
-  (delegated to `feature-implementer`, independently re-verified via `qa-reviewer` and by
-  team-lead directly):
-  - **Fit-time**: `fitNormalizationModel` now fits `addlWtOffset` first for addlWt-tagged
-    canonicals, then offset-adjusts that canonical's records (`weight += offsetKg`, via
-    immutable copies) before fitting `variantFactor` — mirrors `sessionIndex.ts`'s
-    `applyAddlWtOffset`-before-`fitVariantFactor` sequencing exactly. Non-addlWt canonicals
-    unaffected.
-  - **Apply-time**: discovered mid-implementation that no signature change was needed.
-    Legacy's `repCalculator.ts` `findBestE1RM` already applies `addlWtOffset` in
-    **e1RM-space** (not weight-space) at the same aggregated per-canonical level pipeline's
-    `Point`/`NormalizationModel` operate at — a documented legacy approximation ("valid
-    because offset and e1RM share the same weight unit"). So `normalizeE1rm` now adds
-    `offsetKg` before dividing by `factor`; `projectToVariant` subtracts `offsetKg` after
-    multiplying by `factor` (clamped to 0) — exact mirror of `findBestE1RM`, zero API break.
-  - Added 8 new tests to `normalize.test.ts` (fit-time offset-adjustment proof, apply-time
-    add/subtract values, clamping, round-trip inverse correctness, non-addlWt regression
-    coverage); updated one stale factor expectation that changed under the new fit logic.
-- **Real numbers** (`conjugateChartParity`, independently re-verified):
-  squat 0.0% (unchanged), bench 9.8%→**7.0%**, deadlift 5.1%→**0.4%**. Narrowed
-  substantially, not fully closed — expected, since Design B mirrors legacy's own
-  documented e1RM-space _approximation_, not an exact correction; residual divergence is
-  inherent to that shared approximation, not a new bug.
-- **Checked `TotalChart` too, per explicit user request** (closing Open TODO #5 from the
-  prior handoff) — and caught a wrong claim along the way. The first `qa-reviewer` pass
-  claimed "TotalChart's fixture has zero addlWt canonicals" (implying the fix doesn't touch
-  it); team-lead did not trust this and verified directly: grepped the shared fixture for
-  chain/band bench entries (found several), then did a `git stash`/rebuild/test/restore
-  bisection of the fix itself. Confirmed TotalChart's bench/deadlift numbers were
-  **previously identical** to ConjugateCharts' pre-fix numbers (9.8%/5.1% — same shared
-  fixture, unfiltered `lift:*` composite queries) and improved the same way post-fix
-  (bench 7.0%, deadlift 2.7%, total 1.8%). TotalChart benefited automatically from the
-  shared pipeline-level fix, zero TotalChart-specific code needed — confirms the fix was
-  correctly scoped.
-- **No regressions**: full suite green — `npm run build -w packages/pipeline`,
-  `npm run build -w packages/app` both clean; `npm test -w packages/pipeline` 12 files/203
-  tests (up from 195); `npm test -w packages/app` 19 files/200 tests (unchanged).
-- **Did NOT** attempt the `ConjugateCharts.tsx`/`useConjugateChartData.ts` component swap
-  onto `@dyel/pipeline` — out of scope for Task 10 (fix-only), still on `@dyel/core` at
-  runtime.
+- **Root-caused the space/granularity mismatch** via direct code reading (not assumption):
+  confirmed legacy's `buildChartData`/`buildVariationChartData` correct `addlWtOffset` in
+  weight-space, per raw session row, before `calcE1RM` runs — a different mechanism than
+  Design B's post-hoc e1RM-space correction. Also confirmed `projectToVariant` has zero
+  production callers (narrowed blast radius) and that the fix must be scoped to composite
+  specs only (`SeriesSpec` output like ConjugateCharts' `variations` must stay on raw,
+  uncorrected e1rm, matching legacy).
+- **User signed off on "Design C"** (weight-space mirror, applied pre-derivation).
+- **Implemented Design C** (`packages/pipeline/src/derive/normalize.ts`,
+  `packages/pipeline/src/pipeline.ts`, `packages/pipeline/src/index.ts`): new exported
+  `offsetAdjustRecords(records, model)` applies each addlWt canonical's fitted offset to raw
+  `weight` before derivation; `normalizeE1rm`/`projectToVariant` reverted to pure factor
+  operations (Design B's e1RM-space correction removed/superseded); `pipeline.ts` resequenced
+  so composite specs consume pre-corrected points while series/label specs stay untouched.
+- **Caught and fixed two false alarms from automated QA before accepting this as done**
+  (established project precedent — don't trust agent self-reports):
+  1. An implementer agent claimed "538 tests/35 files" for the pipeline package;
+     independently verified (twice) to actually be 207 tests/12 files.
+  2. A QA pass reported `TotalChart`'s squat "regressing" 0.0%→0.7%. Traced to team-lead's own
+     wrong assumption (conflating ConjugateCharts' squat `normalized` composite, genuinely
+     always 0.0%, with `TotalChart`'s own squat series, which the test itself already labels
+     "tracked, not yet reconciled"). **Disproven via direct `git stash` bisection** against the
+     pre-Design-C tree: squat was already at 0.7% before this session's work — not a
+     regression. A defensive `pipeline.ts` rework triggered by chasing this false alarm (reuse
+     original points object-identically, splice in only addlWt-affected canonicals instead of
+     a second full re-derivation pass) was kept anyway — it's strictly more robust with zero
+     behavior change, verified.
+- **Real before/after numbers** (`totalChartParity.test.ts`, verified via `git stash`
+  bisection):
+  | Series | Before | After |
+  |---|---|---|
+  | squat | 0.7% | 0.7% (unchanged — pre-existing, unrelated to addlWt) |
+  | bench | 7.0% | 7.0% (unchanged) |
+  | deadlift | 2.7% | **0.6%** (genuine improvement) |
+  | pushPull | 2.5% | 2.5% (unchanged) |
+  | total | 1.8% | 1.8% (unchanged) |
+- **Updated stale documentation**: `totalChartParity.test.ts`'s root-cause comment block still
+  claimed speed-work exclusion was live (fixed earlier) and cited GitHub issue #451 as an open
+  contributing bug (actually closed, per `migration/ConjugateCharts.md`). Rewrote it to state
+  current, accurate status and the genuinely-still-unexplained items (bench's flat 7.0%,
+  squat's 0.7%, pushPull's `missingInB`).
+- **No regressions**: full suite green — pipeline 12 files/207 tests, app 19 files/200 tests,
+  both builds clean, independently re-verified via `qa-reviewer` at each step.
 
 ## Decisions Made & Rationale
 
-- **Chose Design B over Design A** (per user instruction) — full two-sided correction
-  rather than fit-time-only, since fit-only would still leave apply-time skewed for addlWt
-  canonicals.
-- **Kept `normalizeE1rm`/`projectToVariant`'s signatures unchanged** — a design refinement
-  discovered while implementing Design B, not the original plan. The original proposal
-  assumed a weight-space mirror (matching legacy's `normalizeToBaseE1RM`) would require
-  passing raw weight/reps into these functions, a breaking API change. Deeper code reading
-  found legacy's `findBestE1RM` already does the correction in e1RM-space at the same
-  aggregation level pipeline operates at, so mirroring _that_ function instead avoided the
-  API break while still being a faithful (if approximate, matching legacy's own documented
-  approximation) port.
-- **Did not accept the QA subagent's TotalChart claim at face value** — verified directly
-  via fixture grep + a stash-bisection rather than propagate an unconfirmed claim into docs,
-  consistent with this project's established convention (see `feedback_prefer_reusable_test_harnesses`-style
-  precedent throughout this migration) of not trusting plausible-sounding narratives without
-  direct evidence.
+- **Design C over Design D** (user sign-off) — chose to attempt closing the residual rather
+  than accept it, given deadlift's improvement proved the weight-space hypothesis was at least
+  partially correct.
+- **Kept the defensive `pipeline.ts` rework** even after proving the "regression" it was meant
+  to fix wasn't real — it removes a latent fragility (relying on two independent derivation
+  passes producing byte-identical output) for a negligible cost, and is fully verified safe.
+- **Did not chase bench's flat 7.0%** this session — Design C measurably helped deadlift but
+  not bench, meaning some other bench-specific factor is the dominant cause there. Explicitly
+  left open rather than guessed at (see Open TODOs).
 
 ## Open TODOs
 
-1. **Actually swap `ConjugateCharts.tsx`/`useConjugateChartData.ts` onto `@dyel/pipeline`.**
-   Finding #6 (the last known blocker) is now fixed, not just root-caused — this was the
-   explicit gate from every prior session's "Before re-attempting" note in
-   `migration/ConjugateCharts.md`. This is the natural next step for Phase 4. Note residual
-   divergence (bench 7.0%, deadlift 0.4%) is expected/accepted, not a new blocker — same
-   soft-warn, not-hard-asserted treatment as established throughout this migration.
-2. Once ConjugateCharts is actually swapped (or deferred further), `MIGRATION_PLAN.md`
-   Phase 4's other two blockers (`VariationRadarChart`, `DiagnosticsPanel`) still need the
-   same real pipeline-side-work treatment before `LiftTabPanel.md` can proceed.
-3. **Uncommitted changes are sitting in the working tree** (not committed this session,
-   per instructions to only commit when explicitly asked): `SPECIFICATIONS.md`,
-   `migration/ConjugateCharts.md`, `packages/pipeline/src/derive/normalize.ts`,
-   `packages/pipeline/src/derive/normalize.test.ts`. This handoff process will commit them
-   (see below) — confirm they landed if picking this up fresh.
-4. `.claude/skills/handoff/SKILL.md` still shows as modified in `git status` in some prior
-   sessions (uncommitted, pre-existing, unrelated) — not touched or investigated this
-   session either, same as every prior handoff. Worth a dedicated look eventually.
+1. **Root-cause bench's flat 7.0% divergence** (both `TotalChart` and `ConjugateCharts`) —
+   Design C didn't move it despite bench having addlWt (chain) canonicals. Not yet
+   investigated; the cause is unknown (do NOT assume it's GitHub issue #451 — that's closed).
+2. **Root-cause squat's 0.7% divergence** and **pushPull's `missingInB=6`** — both pre-existing,
+   unrelated to addlWt, not yet investigated at all.
+3. **ConjugateCharts Task 8**: actually swap `ConjugateCharts.tsx`/`useConjugateChartData.ts`
+   onto `@dyel/pipeline` — still not started, still on `@dyel/core` at runtime. Per-variation
+   soft-warns remain not promoted to hard-assert (n=1-5 samples, too sparse).
+4. Once ConjugateCharts is swapped (or deferred further), `MIGRATION_PLAN.md` Phase 4's other
+   two blockers (`VariationRadarChart`, `DiagnosticsPanel`) still need the same treatment.
 
 ## Files Touched
 
-- `packages/pipeline/src/derive/normalize.ts` (Design B fit-time + apply-time addlWtOffset
-  wiring)
-- `packages/pipeline/src/derive/normalize.test.ts` (8 new tests + 1 updated expectation)
-- `migration/ConjugateCharts.md` (new "Finding #6 fixed" section: implementation summary,
-  real before/after numbers, TotalChart cross-check writeup including the corrected QA
-  claim)
-- `SPECIFICATIONS.md` (Task 10a–10g all checked off, Status section updated)
+- `packages/pipeline/src/derive/normalize.ts` (Design C: `offsetAdjustRecords` added,
+  `normalizeE1rm`/`projectToVariant` reverted to pure factor ops)
+- `packages/pipeline/src/pipeline.ts` (resequenced fit/derive ordering; composite specs
+  consume pre-corrected points)
+- `packages/pipeline/src/index.ts` (export `offsetAdjustRecords`)
+- `packages/pipeline/src/derive/CLAUDE.md` (documented `offsetAdjustRecords`, Design C
+  superseding Design B/Task 10b)
+- `packages/pipeline/src/derive/normalize.test.ts`, `packages/pipeline/src/pipeline.test.ts`,
+  `packages/pipeline/src/dataset/build.test.ts` (new/updated test coverage)
+- `packages/pipeline/test/fixtures/pipeline-design-c-addlwt.csv` (new fixture, reps > 1 to
+  prove weight-space vs e1RM-space divergence)
+- `packages/app/src/pipeline/totalChartParity.test.ts` (updated stale root-cause comment)
+- `SPECIFICATIONS.md` (Design C task list fully checked off, real numbers recorded)
 - `HANDOFF.md` (this file)
+
+Note: `.claude/agents/team-lead.md` also shows modified in `git status` but was not touched
+this session (pre-existing, unrelated) — not included in this handoff's commit.
 
 ## Suggested Next Skills
 
-- None required immediately. If resuming this work, start with Open TODO #1 (the actual
-  `ConjugateCharts.tsx`/`useConjugateChartData.ts` component swap-over) — Finding #6 being
-  fixed removes the last documented blocker for it, per `migration/ConjugateCharts.md`'s
-  "Before re-attempting" note.
+- None required immediately. If resuming this work, start with Open TODO #1 (bench's flat
+  7.0% divergence) — it's the most actionable unexplained item, with the numeric data already
+  in hand from this session's verified parity runs.

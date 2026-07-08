@@ -117,17 +117,32 @@ describe('TotalChart core-vs-pipeline parity', () => {
   });
 
   // Legacy (@dyel/core) and pipeline (@dyel/pipeline) independently reimplement e1RM variant-factor
-  // normalization with materially different fitting behavior: pipeline's fitNormalizationModel
-  // (packages/pipeline/src/derive/normalize.ts) excludes "speed work" sets (high-rep/no-RPE days)
-  // from the fit entirely, while legacy's fitVariantFactor (packages/core/src/utils/math/e1rm.ts)
-  // does not; the two also differ in minimum-sample gating behavior and (independently) in
-  // canonical/name-grouping granularity. A related, more specific bug — chain-count and
-  // band-tension modifiers (e.g. "light rev. bands" vs "mini rev. bands") collapsing into a
-  // single pipeline canonical and corrupting the affected variant fits — is tracked separately
-  // as GitHub issue #451; that fix will narrow but not eliminate the broader divergence described
-  // above. Until pipeline's normalization-fitting behavior is deliberately reconciled with (or
-  // intentionally diverged from, with sign-off) legacy's, this test documents real per-series
-  // divergence rather than asserting a fabricated tolerance band.
+  // normalization. Several previously-suspected causes of divergence have since been
+  // investigated/fixed (see migration/ConjugateCharts.md for full root-cause history) and no
+  // longer apply here — do not re-add them without re-verifying against current code first:
+  //   - Speed-work exclusion asymmetry: FIXED. Pipeline's fitNormalizationModel
+  //     (packages/pipeline/src/derive/normalize.ts) no longer excludes speed-work sets from
+  //     fitting (the `effortOnly` filter was removed) — both sides now fit on unfiltered records.
+  //   - Minimum-sample gating: DOWNGRADED, not a live issue. Production `runPipeline` calls use
+  //     MIN_SAMPLES = 1, equivalent to legacy's own `factors.length > 0` gate — both sides agree
+  //     at n=1.
+  //   - GitHub issue #451 (chain-count/band-tension modifiers collapsing into a single pipeline
+  //     canonical): CLOSED, confirmed no longer live directly against current
+  //     packages/pipeline/src/tag/detect/parseExercise.ts and canonical.ts.
+  //   - addlWt (chain/band) offset space mismatch: FIXED ("Design C", packages/pipeline/src/
+  //     derive/normalize.ts's offsetAdjustRecords + packages/pipeline/src/pipeline.ts) — closed
+  //     deadlift's residual (2.7%→0.6% maxRelDiff) but did NOT move bench, which stays flat at
+  //     ~7.0% — meaning offset-space wasn't bench's dominant contributor.
+  // Still-open, NOT yet root-caused for this TotalChart harness specifically (some are analogous
+  // ConjugateCharts findings that may or may not transfer — not confirmed here):
+  //   - bench's flat ~7.0% divergence despite the Design C fix — unexplained.
+  //   - squat's ~0.7% divergence — unexplained, pre-existing, unrelated to addlWt (squat has 0
+  //     addlWt variants).
+  //   - pushPull's missingInB (pipeline has fewer dates than legacy for this composite) — a
+  //     data-coverage gap, a different failure mode than the value-drift seen on other series.
+  // Until these are individually root-caused and reconciled (or intentionally accepted, with
+  // sign-off), this test documents real per-series divergence rather than asserting a fabricated
+  // tolerance band.
   it.each(TOTAL_CHART_IDS)(
     'core-vs-pipeline soft-warn: %s divergence from legacy normalization (tracked, not yet reconciled)',
     (series) => {

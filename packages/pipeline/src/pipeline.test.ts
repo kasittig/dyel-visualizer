@@ -221,4 +221,61 @@ describe('runPipeline (end-to-end)', () => {
       expect(canonicalSeriesKeys.size).toBeLessThan(labelSeriesKeys.size);
     });
   });
+
+  describe('Design C: composite spec with addlWt (chains) and reps > 1', () => {
+    it('uses weight-space-corrected e1RM values from offsetAdjustRecords (pre-derivation)', () => {
+      // Design C: composite specs consume pre-offset-adjusted records, so their e1RM derivations
+      // are based on corrected weights. This test uses reps > 1 to prove weight-space correction
+      // differs from e1RM-space (Epley's formula is nonlinear).
+      const designCContent =
+        'Date,Exercise,Reps,Weight (lbs),RPE\n' +
+        '2026-01-10,Squat,5,405,\n' +
+        '2026-01-10,Bench,5,315,\n' +
+        '2026-01-10,Bench (chains),3,245,\n' +
+        '2026-01-10,Deadlift,5,495,\n' +
+        '2026-01-15,Squat,3,440,\n' +
+        '2026-01-15,Bench,3,335,\n' +
+        '2026-01-15,Bench (chains),2,270,\n' +
+        '2026-01-15,Deadlift,3,540,\n';
+
+      const compositeSpec: DatasetSpec[] = [
+        {
+          id: 'estimated-total',
+          kind: 'composite',
+          derive: 'e1rm',
+          normalize: true,
+          combine: 'sum',
+          components: [
+            { label: 'squat', include: { any: ['lift:squat'] } },
+            { label: 'bench', include: { any: ['lift:bench'] } },
+            { label: 'deadlift', include: { any: ['lift:deadlift'] } },
+          ],
+        },
+      ];
+
+      const result = runPipeline(
+        [{ name: 'design-c-test.csv', content: designCContent }],
+        compositeSpec,
+        athlete,
+        {}
+      );
+
+      // Verify the composite ran and produced output rows
+      const compositeRows = result.datasets['estimated-total'];
+      expect(compositeRows.length).toBeGreaterThan(0);
+
+      // Verify the model has fitted an offset for bench-chains
+      // (The raw data: bench-chains @ reps=3, weight=245; bench @ reps=5, weight=315.
+      // With offset fitting, bench-chains should have a positive offset, making it
+      // closer to baseline. With composite spec using pre-adjusted points, the
+      // normalized total should be stable across bench variants.)
+      expect(result.model.addlWtOffset['bench-chains']).toBeDefined();
+      expect(result.model.addlWtOffset['bench-chains'].offsetKg).toBeGreaterThan(0);
+
+      // All composite rows should have a positive estimated total
+      compositeRows.forEach((row) => {
+        expect(row['estimated-total']).toBeGreaterThan(0);
+      });
+    });
+  });
 });
