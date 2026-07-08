@@ -5,8 +5,12 @@ allowed-tools: Write
 ---
 
 Write a handoff summary of the current conversation so a fresh agent session can seamlessly continue the work.
+Make your summary as concise as possible. Summarize historical information. Do not include information that won't be
+needed to complete future steps.
 
 Follow these steps exactly:
+
+First, ensure that SPECIFICATIONS.md is up to date. Then,
 
 1. Create a `handoff.md` file inside the root of the current working directory.
 2. Structure the file with these markdown sections:
