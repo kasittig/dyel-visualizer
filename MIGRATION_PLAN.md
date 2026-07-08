@@ -5,6 +5,8 @@ See `APP_COMPONENTS.md` for the full component inventory and `HANDOFF.md` for ta
 session history. Phases 0–3 and Phase 1 items #1 (`TotalChart`) and #6 (`SigmaTab`) are
 **complete** and omitted here — see `HANDOFF.md`'s history if you need that context.
 
+**Architectural constraint:** All remaining component migrations below must use the new shared-context infrastructure introduced in Phase 1 — `PipelineProvider`, `usePipelineModel()`, and `usePipelineDatasets()` from `packages/app/src/context/PipelineContext.tsx` and `packages/app/src/hooks/pipeline/usePipelineDatasets.ts` — rather than adding per-component `runPipeline()` calls. This centralized approach is now the established pattern for all component migrations.
+
 ## Remaining items, in dependency order
 
 1. **`migration/DiagnosticsPanel.md`** — pipeline-native replacement not yet ready. A
