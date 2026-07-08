@@ -212,7 +212,8 @@ effortSets.length ? effortSets : sets`) — so a day that legacy would classify 
 ### Finding #5 fix: `e1rm-max-effort` deriver implemented (2026-07-07, second follow-up)
 
 A teammate implemented the day-level "max-effort" concept flagged as needing sign-off in
-Finding #5 and Task 6b (`SPECIFICATIONS.md`): a new `'e1rm-max-effort'` deriver id in
+Finding #5 and Task 6b (tracked in `HANDOFF.md`, formerly `SPECIFICATIONS.md`): a new
+`'e1rm-max-effort'` deriver id in
 `packages/pipeline/src/derive/derivers.ts`. Unlike `e1rm` (which falls back to computing
 an e1RM from speed-work sets when a day has none of its own max-effort sets), `e1rm-max-effort`
 filters to max-effort sets (single-set entries, or any set with an explicit RPE) via the
@@ -583,6 +584,28 @@ remain on `@dyel/core`. Finding #6 is now fixed (not just root-caused), which wa
 blocker flagged in "Before re-attempting" above — the actual swap-over is the next step for
 whoever picks up Phase 4 next, but was out of scope for this session (Task 10 was fix-only,
 per the original task breakdown).
+
+## Wire-verify-revert dry run (2026-07-08)
+
+Per explicit direction, this session fully wired `useConjugateChartData.ts`/
+`ConjugateCharts.tsx` onto `runPipeline` + `conjugateChartSpecs(liftType)` (removing the
+`buildVariationChartData`/`LINE_COLORS`/`RepCalcStats` `@dyel/core` imports) as a live
+verification exercise, not a committed swap — the same numbers documented above (Finding
+#6 fixed: squat 0.0%, bench 7.0%, deadlift 0.4% `normalized`-composite divergence;
+per-variation series `missingInA=0`/`missingInB=0` across the board) were reconfirmed
+against a real end-to-end wiring, not just the standalone `conjugateChartSpecs` harness.
+`npm test -w packages/app -- conjugateChartParity` (4/4) and the full suite (`npm test -w
+packages/app`, 199/199) passed with the swap live, and `npm run build -w packages/app`
+succeeded.
+
+**Both files were reverted to their pre-dry-run `@dyel/core`-calling state immediately
+after verification** (confirmed via `git status --porcelain` showing no diff) — this was
+a verification-only pass, not a component swap-over. The migration gate at the top of
+`APP_COMPONENTS.md` (exact match required, not soft-warn) is still not met: bench's 7.0%
+and deadlift's 0.4% `normalized`-composite divergence remain soft-warned, not hard-
+asserted, per the same n=1-5 sample-size rationale as prior sessions. The actual
+swap-over is still not done; this dry run only re-confirms it would be low-risk once the
+gate is met.
 
 ## Verification
 

@@ -1,6 +1,7 @@
 import type { RechartsRow } from '@dyel/pipeline';
 import type { ConjugateExercise, SessionStats } from '@dyel/core';
 import { normalizeToBaseE1RM } from '@dyel/core';
+import { snapshotVariationsFromPipeline as snapshotFromPipeline } from '../utils/variationSnapshot';
 
 const KG_TO_LBS = 2.20462262185;
 const getConverter = (unit: 'lbs' | 'kg') =>
@@ -18,21 +19,15 @@ export interface VariationSnapshotDiff {
   relDiff: number;
 }
 
+/**
+ * Delegates to the runtime util in utils/variationSnapshot.ts to avoid duplication.
+ * Test-only re-export for backwards compatibility.
+ */
 export function snapshotVariationsFromPipeline(
   variationRows: RechartsRow[],
   unit: 'lbs' | 'kg' = 'lbs'
 ): VariationSnapshot {
-  if (!variationRows.length) {
-    return {};
-  }
-  const conv = getConverter(unit);
-  const lastRow = variationRows.reduce((a, b) => ((b.t as number) > (a.t as number) ? b : a));
-
-  return Object.fromEntries(
-    Object.entries(lastRow)
-      .filter(([k, v]) => k !== 't' && typeof v === 'number')
-      .map(([k, v]) => [k, Math.round(conv(v as number))])
-  );
+  return snapshotFromPipeline(variationRows, unit);
 }
 
 export function snapshotVariationsFromLegacy(

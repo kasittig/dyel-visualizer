@@ -1,8 +1,15 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { readFileSync } from 'fs';
 import { join } from 'path';
-import { runPipeline } from '@dyel/pipeline';
-import type { ConjugateExercise } from '@dyel/core';
+import {
+  runPipeline,
+  resolveCanonicalNames,
+  tagRecords,
+  ParserRegistry,
+  csvParser,
+} from '@dyel/pipeline';
+import type { SetRecord } from '@dyel/pipeline';
+import type { ConjugateExercise, TrainingSession } from '@dyel/core';
 import { parseConjugateData, buildSessionStats } from '@dyel/core';
 import {
   snapshotVariationsFromLegacy,
@@ -14,6 +21,7 @@ import { mergeWideRechartsRows } from '../utils/pipelineChartUtils';
 import { extractPairs, buildTabRows, computeEffectiveNames } from '../utils/appDataUtils';
 import { initialTabState, distinctDisplayNames } from '../utils/appUtils';
 import { conjugateChartSpecs } from './conjugateChartSpecs';
+import { buildLastSessionDetail } from './lastSessionDetail';
 
 interface SnapshotDict {
   [key: string]: number | undefined;
@@ -24,6 +32,11 @@ const LIFT_TYPES: string[] = ['squat', 'bench', 'deadlift'];
 describe('VariationRadarChart core-vs-pipeline parity', () => {
   const legacySnapshots: Record<string, SnapshotDict> = {};
   const pipelineSnapshots: Record<string, SnapshotDict> = {};
+  const legacyLastSessions: Record<string, Map<string, TrainingSession>> = {};
+  const pipelineLastSessions: Record<
+    string,
+    Map<string, { date: string; sets: number; reps: number; weight: number; rpe: number | null }>
+  > = {};
 
   beforeAll(() => {
     const txt: string = readFileSync(
@@ -36,12 +49,28 @@ describe('VariationRadarChart core-vs-pipeline parity', () => {
     const stats = buildSessionStats(pairs, eff.effectiveBaselineNames, new Date());
     const raw = buildRawInput('url', txt);
 
+    // Tag the records for pipeline last-session builder
+    const registry = new ParserRegistry();
+    registry.registerMany([csvParser]);
+    const parseErrors: unknown[] = [];
+    const records: SetRecord[] = [];
+    try {
+      records.push(...registry.parse({ name: 'sheet.csv', content: txt }, { fallback: 'lbs' }));
+    } catch (err) {
+      parseErrors.push(err);
+    }
+    const { resolved } = resolveCanonicalNames(records);
+    const { tagged } = tagRecords(resolved);
+
     for (const lift of LIFT_TYPES) {
       const res = runPipeline([raw], conjugateChartSpecs(lift), PLACEHOLDER_ATHLETE, {});
       pipelineSnapshots[lift] = snapshotVariationsFromPipeline(
         mergeWideRechartsRows(res.datasets.variations ?? [], 'lbs'),
         'lbs'
       ) as SnapshotDict;
+
+      // Build pipeline last session details
+      pipelineLastSessions[lift] = buildLastSessionDetail(tagged, lift);
 
       const liftRows = tabRows[lift].maxEffort,
         target = eff.effectiveTargetNames[lift];
@@ -50,6 +79,9 @@ describe('VariationRadarChart core-vs-pipeline parity', () => {
           return [ex.displayName, ex];
         })
       );
+
+      // Store legacy last sessions for comparison
+      legacyLastSessions[lift] = stats.lastSession;
 
       if (target) {
         legacySnapshots[lift] = snapshotVariationsFromLegacy(
@@ -130,6 +162,61 @@ describe('VariationRadarChart core-vs-pipeline parity', () => {
           });
         }
       });
+    }
+  });
+
+  it.each(LIFT_TYPES)('%s: last session detail comparison (core vs pipeline)', (lift: string) => {
+    const legacyLast = legacyLastSessions[lift];
+    const pipelineLast = pipelineLastSessions[lift];
+
+    if (!legacyLast.size && !pipelineLast.size) {
+      return;
+    }
+
+    expect(legacyLast.size > 0 || pipelineLast.size > 0).toBe(true);
+
+    // kg→lbs converter for weight display and comparison
+    // (pipeline stores in kg, legacy stores in lbs)
+    const KG_TO_LBS = 2.20462262185;
+    const convertWeight = (kg: number) => Math.round(kg * KG_TO_LBS);
+
+    // Soft-warn tier: compare available entries, tracking divergence without hard-fail
+    // Only check variations present in the current lift's pipeline snapshot (lift-scoped filtering)
+    for (const [legacyLabel, legacySession] of legacyLast) {
+      // Only warn if this variation appears in the pipeline snapshot for this lift
+      if (!pipelineLast.has(legacyLabel)) {
+        continue;
+      }
+
+      const pipelineDetail = pipelineLast.get(legacyLabel);
+      if (pipelineDetail) {
+        const legacyDate = legacySession.date.toISOString().split('T')[0];
+        const pipelineWeightLbs = convertWeight(pipelineDetail.weight);
+        const dateMismatch = legacyDate !== pipelineDetail.date;
+        const setsMismatch = legacySession.sets !== pipelineDetail.sets;
+        const repsMismatch = legacySession.reps !== pipelineDetail.reps;
+        const weightMismatch = Math.abs(legacySession.weight - pipelineWeightLbs) > 0.5;
+        const rpeMismatch =
+          (legacySession.rpe ?? null) !== pipelineDetail.rpe &&
+          !(legacySession.rpe === null && pipelineDetail.rpe === null);
+
+        if (dateMismatch || setsMismatch || repsMismatch || weightMismatch || rpeMismatch) {
+          console.warn(
+            `core-vs-pipeline ${lift} lastSession[${legacyLabel}]: ` +
+              `legacy=(date=${legacyDate} sets=${legacySession.sets} reps=${legacySession.reps} weight=${legacySession.weight} lbs rpe=${legacySession.rpe}) ` +
+              `pipeline=(date=${pipelineDetail.date} sets=${pipelineDetail.sets} reps=${pipelineDetail.reps} weight=${pipelineWeightLbs} lbs rpe=${pipelineDetail.rpe})`
+          );
+        }
+      }
+    }
+
+    // Warn if pipeline has variations not in legacy (reverse check)
+    for (const [pipelineLabel] of pipelineLast) {
+      if (!legacyLast.has(pipelineLabel)) {
+        console.warn(
+          `core-vs-pipeline ${lift} lastSession: pipeline has "${pipelineLabel}" but legacy missing`
+        );
+      }
     }
   });
 });

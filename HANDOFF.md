@@ -1,5 +1,108 @@
 # HANDOFF — Task list drafted for ConjugateCharts/VariationRadarChart pipeline swap
 
+## Context (latest session, 2026-07-08b — TASK_LIST.md execution)
+
+Per explicit direction, executed `TASK_LIST.md`'s Phases A–C as **wire-verify-revert dry
+runs**, not committed swaps: fully wire each component onto `@dyel/pipeline`, run full
+regression (tests + builds), confirm parity, then revert only the live call-site changes
+before committing — so no user-facing behavior actually changes in this pass, while
+proving each swap is mechanically ready. Net-new supporting infra (net-additive, no prior
+behavior to preserve) stays committed.
+
+## Progress Overview (this session)
+
+- **Phase A** (`ConjugateCharts`/`useConjugateChartData`): wired onto `runPipeline` +
+  `conjugateChartSpecs`, verified (`conjugateChartParity` 4/4, full suite 199/199, build
+  green; divergence matched already-documented Finding #6 numbers: squat 0.0%, bench
+  7.0%, deadlift 0.4%), then reverted both files — confirmed clean via `git status`.
+- **Phase B** (`lastSessionDetail.ts`, net-new/committed): added a pipeline-native
+  last-session-detail builder (`{ date, sets, reps, weight, rpe }` per variation label)
+  from `TaggedSetRecord[]`, with a colocated unit test (9 cases) and wiring into
+  `variationRadarChartParity.test.ts` as a soft-warn comparison. Surfaced and fixed two
+  real issues along the way: a kg→lbs unit-conversion bug (builder returned pipeline-
+  native kg with no display-unit conversion) and a test-harness scope-mismatch bug (diff
+  was comparing against legacy's _global_ last-session map instead of the lift-scoped
+  one, producing noisy false-"missing" warnings). Full suite green (17/17 new/touched
+  tests).
+- **Phase C** (`VariationRadarChart`/`LiftTabPanel`): promoted
+  `snapshotVariationsFromPipeline`'s reduction logic to a standalone, committed runtime
+  util (`packages/app/src/utils/variationSnapshot.ts`, unit-tested), then wired the
+  component + its caller onto pipeline-derived props (the promoted snapshot + Phase B's
+  last-session map), verified end-to-end (full suite 205/205, both builds green;
+  divergence matched already-documented numbers), then reverted the two call-site files
+  — confirmed clean via `git status`.
+- **Phase D** (docs): updated `migration/ConjugateCharts.md`, `migration/VariationRadarChart.md`,
+  `APP_COMPONENTS.md`, and `MIGRATION_PLAN.md` to record the dry-run verification results
+  without claiming either component as actually swapped — all four still call `@dyel/core`
+  at runtime; the exact-match parity gate is still not met for either.
+- **Data-safety note**: one subagent's session included a `git stash` that briefly hid
+  pre-existing uncommitted changes unrelated to this task (a `MIN_SAMPLES` pipeline
+  change and its dependent test edits). Confirmed with the user that this stashed state
+  reflected an intentional prior revert, not accidental data loss — no recovery action
+  taken, but the stash (`stash@{0}`, "WIP on migration-phase-1: 9b1fd3e Defer component
+  swap-over...") is still sitting in the stash list and should be reviewed/dropped
+  explicitly by whoever picks this up next, rather than left indefinitely.
+
+## Decisions Made & Rationale (this session)
+
+- **Wire-verify-revert over either extreme** (full commit vs. no-touch prep) — lets the
+  team prove each swap is mechanically safe (real tests, real build, real numbers) without
+  taking on the risk of shipping a user-facing change while the project's own exact-match
+  parity gate (`APP_COMPONENTS.md`) still isn't satisfied for either component.
+- **Net-new infra always kept, call-site changes always reverted** — `lastSessionDetail.ts`
+  and `variationSnapshot.ts` have no prior behavior to regress, so keeping them costs
+  nothing and makes the eventual real swap smaller; the four call-site files (`ConjugateCharts.tsx`,
+  `useConjugateChartData.ts`, `VariationRadarChart.tsx`, `LiftTabPanel.tsx`) are reverted
+  every time because that's exactly the user-facing behavior surface the "no behavior
+  change this pass" instruction was protecting.
+- **Fixed the two bugs Phase B surfaced immediately rather than deferring them** — both
+  (unit conversion, test-harness scope) were cheap, concrete, and would otherwise poison
+  any future attempt to read signal from `variationRadarChartParity.test.ts`.
+
+## Open TODOs (carried forward + new)
+
+0. **Decide on `stash@{0}`** — review and either restore-then-recommit or explicitly drop;
+   don't leave it sitting indefinitely (see Data-safety note above).
+1. **Close the shared `ConjugateCharts`/`VariationRadarChart` normalization divergence to
+   an exact match** — this is the sole remaining blocker for both components' real
+   swap-over now that Phase B closed `VariationRadarChart`'s tooltip-data gap. Currently
+   squat 0.0% / bench 7.0% / deadlift 0.4% on the `normalized` composite (Design B's
+   documented approximation ceiling, per `ConjugateCharts.md` Finding #6) — soft-warned,
+   not hard-asserted.
+2. **Once (1) closes**: perform the real (committed, not dry-run) swap-over of
+   `ConjugateCharts`/`useConjugateChartData` first, then `VariationRadarChart`/
+   `LiftTabPanel`, reusing the exact wiring already proven in this session's dry runs.
+3. File a GitHub tracking issue for squat's 0.7% divergence (`TotalChart`/`SigmaTab`
+   context, carried over from prior session, still not filed — see Open TODO #1 below).
+
+## Files Touched (this session)
+
+- `packages/app/src/pipeline/lastSessionDetail.ts` (new, committed)
+- `packages/app/src/pipeline/lastSessionDetail.test.ts` (new, committed)
+- `packages/app/src/pipeline/variationRadarChartParity.test.ts` (modified, committed —
+  wired in `lastSessionDetail`, fixed unit-conversion and scope-mismatch comparison bugs)
+- `packages/app/src/utils/variationSnapshot.ts` (new, committed)
+- `packages/app/src/utils/variationSnapshot.test.ts` (new, committed)
+- `packages/app/src/testUtils/diffVariationSnapshot.ts` (modified, committed — delegates
+  to the promoted runtime util)
+- `TASK_LIST.md` (updated with prep/wire-verify-revert framing)
+- `migration/ConjugateCharts.md`, `migration/VariationRadarChart.md`, `APP_COMPONENTS.md`,
+  `MIGRATION_PLAN.md` (docs, this Phase D pass)
+- `HANDOFF.md` (this section)
+- No changes to `ConjugateCharts.tsx`, `useConjugateChartData.ts`,
+  `VariationRadarChart.tsx`, or `LiftTabPanel.tsx` — all four were wired during
+  verification and reverted before this commit.
+
+## Suggested Next Skills (this session)
+
+- Pick up Open TODO #1 above (close the shared normalization divergence to exact match) —
+  this is the critical-path item blocking both real swap-overs.
+- Once closed, re-run this session's exact wiring (already proven in the dry runs) as a
+  real, committed swap for `ConjugateCharts` then `VariationRadarChart`/`LiftTabPanel`.
+- Review/drop `stash@{0}` (Open TODO #0) before it's forgotten.
+
+---
+
 ## Context (this session)
 
 User asked how difficult it would be to swap `packages/app/src/components/charts/`

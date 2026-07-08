@@ -1,5 +1,20 @@
 # TASK_LIST — Swap remaining chart components onto `@dyel/pipeline`'s `ChartPoint`
 
+## IMPORTANT — wire it all up, verify, then revert the live flip before committing
+
+Per explicit direction (2026-07-08): **fully implement the swap** — actually wire
+`ConjugateCharts.tsx`/`useConjugateChartData.ts` and `VariationRadarChart.tsx`/
+`LiftTabPanel.tsx` onto `@dyel/pipeline`, run it through full regression + manual smoke
+QA, and confirm parity holds. Once verified, **revert only the live-wiring diff** in
+those four files back to their current `@dyel/core`-calling state before committing, so
+committed user-facing behavior is unchanged from today. All net-new supporting
+infrastructure — `conjugateChartSpecs.ts` (already exists), the new
+`lastSessionDetail.ts` builder, the promoted runtime snapshot util, and all
+parity/unit tests — stays in the commit and stays passing; only the four call-site
+files get reverted to their pre-swap imports/logic. Confirm with the user before
+reverting if the diff-to-revert is ambiguous. Tasks below are annotated
+`[WIRE + VERIFY, THEN REVERT CALL SITE]` vs `[KEEP — net-new infra, do not revert]`.
+
 ## Context
 
 Scoping pass (2026-07-08) confirmed most of `packages/app/src/components/charts/` is
@@ -30,61 +45,79 @@ Task 6 below — those are separate `MIGRATION_PLAN.md` items, out of scope for 
 
 ## Task list
 
-### Phase A — Swap `ConjugateCharts` onto `@dyel/pipeline` (unblocks Phase C)
+### Phase A — Swap `ConjugateCharts` onto `@dyel/pipeline`, verify, then revert the flip
 
-- [ ] Task 1: Swap `useConjugateChartData.ts` to call `runPipeline` +
-      `conjugateChartSpecs(liftType)` (already validated in
+- [ ] Task 1 [WIRE + VERIFY, THEN REVERT CALL SITE]: Swap `useConjugateChartData.ts` to
+      call `runPipeline` + `conjugateChartSpecs(liftType)` (already validated in
       `packages/app/src/pipeline/conjugateChartSpecs.ts`) instead of `@dyel/core`'s
       `buildVariationChartData`; remove the direct `LINE_COLORS`/`RepCalcStats`
-      `@dyel/core` imports from `ConjugateCharts.tsx`. (Target:
+      `@dyel/core` imports from `ConjugateCharts.tsx`. Verify against
+      `conjugateChartParity.test.ts` and a manual smoke check, then **revert
+      `useConjugateChartData.ts` and `ConjugateCharts.tsx` back to their current
+      `@dyel/core`-calling state** before committing — only the verification step is
+      the point of this task, not a committed behavior change. (Target:
       `packages/app/src/hooks/conjugate/useConjugateChartData.ts`,
       `packages/app/src/components/conjugate/ConjugateCharts.tsx`. Test: `npm test -w
-    packages/app -- conjugateChartParity`)
-- [ ] Task 2: QA full regression + manual smoke check (dev server, all three lift tabs'
-      variation chart) before calling Phase A done. (Target: n/a. Test: `npm run build -w
-    packages/app && npm test -w packages/app`)
+  packages/app -- conjugateChartParity`)
+- [ ] Task 2 [WIRE + VERIFY, THEN REVERT CALL SITE]: While Task 1's swap is live, run full
+      regression + manual smoke check (dev server, all three lift tabs' variation chart)
+      to confirm parity before reverting Task 1's call-site changes. (Target: n/a. Test:
+      `npm run build -w packages/app && npm test -w packages/app`)
 
-### Phase B — Source last-session tooltip detail from the pipeline (2nd prerequisite for Phase C)
+### Phase B — Source last-session tooltip detail from the pipeline (2nd prerequisite for Phase C) [KEEP — net-new infra, do not revert]
 
 - [ ] Task 3: Add a pipeline-native "last session detail" builder producing, per
       variation label, `{ date, sets, reps, weight, rpe }` — mirroring
       `SessionStats.lastSession` — sourced from `SetRecord.meta.sets`/`reps`/`weight`/
-      `rpe`/`date` on the tagged records `conjugateChartSpecs` already consumes. (Target:
-      new file, e.g. `packages/app/src/pipeline/lastSessionDetail.ts`. Test: new colocated
-      unit test, e.g. `lastSessionDetail.test.ts`)
+      `rpe`/`date` on the tagged records `conjugateChartSpecs` already consumes. This is
+      net-new infra with no existing call site to revert. (Target: new file, e.g.
+      `packages/app/src/pipeline/lastSessionDetail.ts`. Test: new colocated unit test,
+      e.g. `lastSessionDetail.test.ts`)
 - [ ] Task 4: Wire Task 3's builder into `variationRadarChartParity.test.ts` and confirm
       no divergence against legacy `SessionStats.lastSession` on the real fixture
-      (soft-warn tier, same pattern as the rest of this harness). (Target:
+      (soft-warn tier, same pattern as the rest of this harness). This is a test-file-only
+      change and stays committed. (Target:
       `packages/app/src/pipeline/variationRadarChartParity.test.ts`. Test: `npm test -w
-    packages/app -- variationRadarChartParity`)
+  packages/app -- variationRadarChartParity`)
 
-### Phase C — Swap `VariationRadarChart.tsx` itself (#460)
+### Phase C — Swap `VariationRadarChart.tsx` itself (#460), verify, then revert the flip
 
-- [ ] Task 5: Swap `VariationRadarChart.tsx`'s props from `rows: ConjugateDataPair[]` /
-      `stats: SessionStats` to pipeline-derived data — the `RechartsRow[]`/`ChartPoint[]`
-      snapshot from `conjugateChartSpecs` (reducing via the same logic as
-      `snapshotVariationsFromPipeline`, promoted from `testUtils/` to a runtime util) plus
-      Task 3's last-session-detail map. Remove the `normalizeToBaseE1RM`/`@dyel/core`
-      call entirely. (Target: `packages/app/src/components/charts/VariationRadarChart.tsx`.
-      Test: `npm test -w packages/app -- variationRadarChartParity && npm run build -w
-    packages/app`)
-- [ ] Task 6: Update the caller, `LiftTabPanel.tsx`, to pass the new pipeline-derived
-      props instead of `rows`/`stats`. (Target:
-      `packages/app/src/components/pages/LiftTabPanel.tsx`. Test: `npm test -w
-    packages/app`)
-- [ ] Task 7: Full regression QA — both builds, both test suites, plus a manual dev-server
-      smoke test of the variation radar + its tooltip content (date/sets/reps/weight/RPE
-      still rendering correctly) across all three lift tabs. (Target: n/a. Test: `npm run
-    build -w packages/pipeline && npm run build -w packages/app && npm test -w
-    packages/pipeline && npm test -w packages/app`)
+- [ ] Task 5 [WIRE + VERIFY, THEN REVERT CALL SITE for the component; KEEP the promoted
+      util]: Promote `snapshotVariationsFromPipeline`'s reduction logic from `testUtils/`
+      to a standalone, unit-tested runtime util (new module — this part stays committed),
+      then swap `VariationRadarChart.tsx`'s props from `rows: ConjugateDataPair[]` /
+      `stats: SessionStats` to pipeline-derived data (the promoted util's snapshot +
+      Task 3's last-session-detail map), removing the `normalizeToBaseE1RM`/`@dyel/core`
+      call. Verify against `variationRadarChartParity.test.ts` + a build, then **revert
+      only `VariationRadarChart.tsx`'s props/logic** back to its current `@dyel/core`
+      state before committing. (Target: new runtime util file, e.g.
+      `packages/app/src/utils/variationSnapshot.ts` (kept), plus
+      `packages/app/src/components/charts/VariationRadarChart.tsx` (reverted after
+      verification). Test: `npm test -w packages/app -- variationRadarChartParity && npm
+  run build -w packages/app`)
+- [ ] Task 6 [WIRE + VERIFY, THEN REVERT CALL SITE]: While Task 5's swap is live, update
+      the caller, `LiftTabPanel.tsx`, to pass the new pipeline-derived props instead of
+      `rows`/`stats`, to verify the full wiring end-to-end. Revert this alongside Task 5.
+      (Target: `packages/app/src/components/pages/LiftTabPanel.tsx`. Test: `npm test -w
+  packages/app`)
+- [ ] Task 7 [WIRE + VERIFY, THEN REVERT CALL SITE]: Full regression QA — both builds,
+      both test suites, plus a manual dev-server smoke test of the variation radar + its
+      tooltip content (date/sets/reps/weight/RPE still rendering correctly) across all
+      three lift tabs — while Task 5/6's swap is live, before reverting. (Target: n/a.
+      Test: `npm run build -w packages/pipeline && npm run build -w packages/app && npm
+  test -w packages/pipeline && npm test -w packages/app`)
 
 ### Phase D — Docs cleanup
 
 - [ ] Task 8: Update `MIGRATION_PLAN.md`, `migration/ConjugateCharts.md`,
-      `migration/VariationRadarChart.md`, and `APP_COMPONENTS.md` to mark both components
-      swapped; update `HANDOFF.md`. Do not close GitHub issues #459/#460 directly — they
-      close automatically when the PR(s) referencing "closes #459"/"closes #460" merge.
-      (Target: `MIGRATION_PLAN.md`, `migration/ConjugateCharts.md`,
+      `migration/VariationRadarChart.md`, and `APP_COMPONENTS.md` to reflect verified,
+      swap-ready status (parity confirmed via full wire-and-revert dry run) rather than
+      claiming the components are actually swapped in committed code — since the live
+      wiring is reverted before commit per the note above. Update `HANDOFF.md`
+      accordingly. Do not close GitHub issues #459/#460 directly — they close
+      automatically when the PR(s) referencing "closes #459"/"closes #460" merge, which
+      won't happen until the flip is actually committed in a future pass. (Target:
+      `MIGRATION_PLAN.md`, `migration/ConjugateCharts.md`,
       `migration/VariationRadarChart.md`, `APP_COMPONENTS.md`, `HANDOFF.md`. Test: n/a,
       docs only)
 
@@ -94,10 +127,21 @@ Task 6 below — those are separate `MIGRATION_PLAN.md` items, out of scope for 
       both its callers (`SigmaChart`, and post-Phase-C `VariationRadarChart`) are
       pipeline-fed. Cosmetic type-safety improvement only. (Target:
       `packages/app/src/components/charts/BaseRadarChart.tsx`. Test: `npm run build -w
-    packages/app`)
+  packages/app`)
 
 ## Sequencing
 
 Phase A must land before Phase C (hard dependency, per `MIGRATION_PLAN.md`). Phase B has
 no dependency on Phase A and can run in parallel with it. Phase C depends on both A and B.
 Phase D is last. Task 9 can happen any time after Phase C.
+
+**Current pass scope:** all of Tasks 1–8 execute now, including the actual wiring, for
+verification purposes — but Tasks 1, 2, 5, 6, 7 touch call sites
+(`ConjugateCharts.tsx`/`useConjugateChartData.ts`/`VariationRadarChart.tsx`/
+`LiftTabPanel.tsx`) that must be **reverted to their current `@dyel/core`-calling state
+before the final commit**, so no user-facing behavior actually changes in this pass.
+Tasks 3, 4, and the promoted-util half of Task 5 are net-new infra with no prior
+behavior to preserve, so they stay committed as-is. Before committing: diff each
+call-site file against its pre-pass version and confirm it matches (revert if not), then
+run the full test suite one more time to confirm the reverted state is exactly today's
+passing baseline plus new infra files.

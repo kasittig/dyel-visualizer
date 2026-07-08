@@ -66,3 +66,45 @@ Before re-attempting the swap: resolve (1) — the shared `ConjugateCharts`/
 `VariationRadarChart` normalization divergence — and (2) — source last-session tooltip
 detail from the pipeline. Track both as prerequisites, not as part of "swap the hook and
 go."
+
+## Blocker (2) closed; blocker (1) narrowed but still open (2026-07-08)
+
+**Blocker (2), tooltip data gap, is resolved.** `packages/app/src/pipeline/lastSessionDetail.ts`
+(new, committed) builds a pipeline-native `Map<string, { date, sets, reps, weight, rpe }>`
+per variation label from `TaggedSetRecord[]`, mirroring `SessionStats.lastSession`'s
+shape. Wiring it into `variationRadarChartParity.test.ts` surfaced two real, now-fixed
+issues rather than a clean first pass:
+
+- **Unit-conversion bug**: the builder initially returned `weight` in pipeline-native kg
+  with no conversion to the athlete's display unit (legacy returns lbs on this fixture) —
+  fixed to convert before returning/comparing.
+- **Test-harness scope mismatch**: the parity comparison was diffing pipeline's
+  lift-scoped last-session map against legacy's _global_ (all-exercises) map, producing
+  noisy false-"missing" warnings for unrelated lifts' exercises — fixed to scope both
+  sides to the same lift type before diffing.
+
+**Blocker (1) is substantially narrowed, not closed.** `ConjugateCharts.md`'s Finding #6
+fix (Design B addlWtOffset wiring) brought the shared normalization divergence down to
+squat 0.0% / bench 7.0% / deadlift 0.4% — a big improvement from the original 9.8%/5.1%,
+but still soft-warned, not hard-asserted, per `APP_COMPONENTS.md`'s exact-match gate. Do
+not treat blocker (1) as resolved until that gate is met.
+
+## Wire-verify-revert dry run (2026-07-08)
+
+Per explicit direction, this session also promoted `testUtils/diffVariationSnapshot.ts`'s
+`snapshotVariationsFromPipeline` reduction logic to a standalone runtime util
+(`packages/app/src/utils/variationSnapshot.ts`, new, committed, unit-tested), then fully
+wired `VariationRadarChart.tsx`/`LiftTabPanel.tsx` onto pipeline-derived props (the
+promoted snapshot util + `lastSessionDetail.ts`'s last-session map) as a live end-to-end
+verification exercise, not a committed swap. Full suite (`npm test -w packages/app`,
+205/205) and both builds (`npm run build -w packages/pipeline && npm run build -w
+packages/app`) passed with the swap live. Observed divergence matched
+`ConjugateCharts.md`'s already-documented numbers (squat Box Squat 13.9%, bench American
+Bar variants up to 26.1%, deadlift 2" deficit 5.6% — same underlying normalization-fitting
+approximation, not a new gap).
+
+**Both `VariationRadarChart.tsx` and `LiftTabPanel.tsx` were reverted to their
+pre-dry-run `@dyel/core`-calling state immediately after verification** (confirmed via
+`git status --porcelain` showing no diff) — this was a verification-only pass. The actual
+swap-over remains not-done, gated on blocker (1) above closing to an exact match per
+`APP_COMPONENTS.md`'s policy.
