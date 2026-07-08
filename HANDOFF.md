@@ -1,11 +1,26 @@
-# HANDOFF — Corrected parity-policy docs (soft-warn is interim, not accepted; #451 closed; pushPull/bench composite confirmed)
+# HANDOFF — Task list drafted for ConjugateCharts/VariationRadarChart pipeline swap
 
-## Context
+## Context (this session)
+
+User asked how difficult it would be to swap `packages/app/src/components/charts/`
+onto `@dyel/pipeline`'s `ChartPoint` struct. Scoping found `TotalChart`,
+`DateLineChart`, `SessionBarChart` already migrated; `SigmaChart`/`BaseRadarChart`
+are pipeline-fed or fully generic. `VariationRadarChart.tsx` is the one real holdout
+(still calls `@dyel/core`'s `normalizeToBaseE1RM`), matching `MIGRATION_PLAN.md`
+item #3 / issue [#460](https://github.com/kasittig/dyel-visualizer/issues/460), which
+is hard-blocked on `ConjugateCharts` (item #2 / issue
+[#459](https://github.com/kasittig/dyel-visualizer/issues/459)) landing first, plus a
+last-session tooltip-detail sourcing gap. A full task list was written to
+`TASK_LIST.md` (Phases A–D) to execute both swaps in dependency order. **No code was
+changed this session — planning/docs only.**
+
+## Context (prior sessions)
 
 `migration-phase-1` implements `MIGRATION_PLAN.md`'s pipeline-native migration of
-`packages/app` components off `@dyel/core` onto `@dyel/pipeline`. Full task tracking lives in
-`SPECIFICATIONS.md`. The prior session (previous `HANDOFF.md`) closed bench's flat 7.0%
-divergence via board/block/deficit canonical splitting (`dd01c17`).
+`packages/app` components off `@dyel/core` onto `@dyel/pipeline`. This file is now the sole
+task-tracking reference (`SPECIFICATIONS.md` has been retired/deleted — its remaining-work
+items are folded into "Open TODOs" below). The prior session (previous `HANDOFF.md`) closed
+bench's flat 7.0% divergence via board/block/deficit canonical splitting (`dd01c17`).
 
 This session was a documentation-correctness pass, not a code change: the standing docs
 described core-vs-pipeline soft-warn divergence tiers as a "known, accepted divergence" —
@@ -75,29 +90,69 @@ Math.round(last.bench + last.deadlift)`). This means **squat's 0.7% divergence i
 
 ## Open TODOs
 
+0. **Execute `TASK_LIST.md`** (this session's output) — Phase A (swap `ConjugateCharts`
+   onto `@dyel/pipeline`, issue #459), Phase B (source last-session tooltip detail from
+   the pipeline), Phase C (swap `VariationRadarChart.tsx` itself, issue #460), Phase D
+   (docs cleanup). See that file for full task breakdown, targets, and test commands.
 1. **File a GitHub tracking issue for squat's 0.7% divergence** — now documented as the one
    standalone, unexplained parity gap with no tracking issue filed. Natural next step given
-   the corrected "soft-warn is interim, not accepted" policy.
-2. **Task 10 (final closeout QA) for the bench/board fix** — still nominally queued per the
-   prior session's plan (every individual task was independently verified as it landed; this
-   is a formality re-run, not yet executed).
+   the corrected "soft-warn is interim, not accepted" policy. Confirmed unrelated to
+   equipment-magnitude collapsing (`dd01c17`), addlWt correction (Design C), or the
+   chain-count/band-tension fix (`#451`/`PR #454`), all of which had measurable effects on
+   other series but left squat unchanged throughout. Not investigated further.
+2. ~~**Task 10 (final closeout QA) for the bench/board fix**~~ — **executed 2026-07-08**, not
+   just nominal: this TODO was stale. Re-ran fresh via `qa-reviewer` against the current
+   working tree (including the uncommitted `MIN_SAMPLES=1→3` fix): both builds green, pipeline
+   12 files/124 tests, app 19 files/187 tests, all passing. Parity numbers
+   (`totalChartParity`/`sigmaTabParity`) match the documented post-fix state exactly — squat
+   16.2% (unaffected), bench 14.7%, deadlift 8.4% (confirms the deadlift regression fix
+   holds), pushPull 10.5%, total 9.5%. No regressions, no discrepancies.
 3. **ConjugateCharts Task 8**: swap `ConjugateCharts.tsx`/`useConjugateChartData.ts` onto
-   `@dyel/pipeline` — still not started, still on `@dyel/core` at runtime. Per-variation
-   soft-warns remain not promoted to hard-assert (n=1-5 samples, too sparse).
+   `@dyel/pipeline`, using `conjugateChartSpecs()` (with `groupBy: 'label'`) and the now-fixed
+   normalization model — still not started, still on `@dyel/core` at runtime. Per-variation
+   soft-warns should stay **not** promoted to hard-assert (n=1-5 samples, too sparse). (Target:
+   `packages/app/src/components/pages/ConjugateCharts.tsx` (or wherever it now lives),
+   `packages/app/src/hooks/useConjugateChartData.ts`. Test: `npm test -w packages/app --
+conjugateChartParity` plus full `npm test -w packages/app`) Tracked:
+   [#459](https://github.com/kasittig/dyel-visualizer/issues/459).
 4. Once ConjugateCharts is swapped (or deferred further), `MIGRATION_PLAN.md` Phase 4's other
-   two blockers (`VariationRadarChart`, `DiagnosticsPanel`) still need the same treatment.
+   two blockers still need the same treatment: `VariationRadarChart`
+   ([#460](https://github.com/kasittig/dyel-visualizer/issues/460)) and `DiagnosticsPanel`
+   ([#461](https://github.com/kasittig/dyel-visualizer/issues/461)).
+5. **Narrower baseline-pooling scope for deadlift's residual divergence** — a prior attempt to
+   pool every non-addlWt canonical across the whole lift family (mirroring legacy's
+   `buildStraightByFamily`) improved deadlift (8.4%→6.5%) and total (9.5%→7.7%) but regressed
+   squat (0.7%→2.3%), bench (14.7%→21.5%), and pushPull (10.5%→11.3%) — reverted 2026-07-08
+   (`normalize.ts`/`normalize.test.ts` restored to pre-change state, verified 0-line diff vs.
+   `HEAD`). Hypothesis (not yet investigated): pooling the _entire_ family introduces
+   noisier interpolation anchors for series with mechanically heterogeneous sibling variants
+   (bench, squat, pushPull) vs. deadlift's more similar stance siblings. A narrower pooling
+   scope (e.g. limited to mechanically-similar siblings rather than the full family) might
+   capture deadlift's gain without the other regressions. Not attempted this session. (Target:
+   `packages/pipeline/src/derive/normalize.ts`. Test: `npm test -w packages/app --
+totalChartParity`)
+6. **PushPull's residual** — currently ~10.5% (post `MIN_SAMPLES=1→3` fix). Confirmed (not
+   speculated) to be downstream of bench and deadlift's own residuals via
+   `composite('pushPull', ['bench', 'deadlift'])` in `totalChartSpecs.ts` (same in both legacy
+   and pipeline implementations). Expected to close automatically once bench and deadlift
+   fully close rather than requiring separate root-cause investigation.
 
 ## Files Touched
 
-- `packages/app/CLAUDE.md` (parity-policy wording)
-- `packages/app/src/testUtils/CLAUDE.md` (parity-policy wording)
-- `migration/TotalChart.md` (Context section wording)
-- `HANDOFF.md` (this file — Open TODOs corrected, then fully rewritten for this handoff)
-- `SPECIFICATIONS.md` ("Currently open items" section — squat/pushPull items added)
+- `TASK_LIST.md` (new — Phases A–D task breakdown for the ConjugateCharts/
+  VariationRadarChart pipeline swap)
+- `HANDOFF.md` (this file — new Context subsection + Open TODO #0 added, pointing to
+  `TASK_LIST.md`)
+- `packages/app/CLAUDE.md` (parity-policy wording, prior session)
+- `packages/app/src/testUtils/CLAUDE.md` (parity-policy wording, prior session)
+- `migration/TotalChart.md` (Context section wording, prior session)
+- `SPECIFICATIONS.md` (deleted, prior session — remaining-work items folded into this
+  file's Open TODOs)
 
 ## Suggested Next Skills
 
+- Start executing `TASK_LIST.md` Phase A (Task 1: swap `useConjugateChartData.ts` onto
+  `runPipeline` + `conjugateChartSpecs`) — delegate to `feature-implementer`, then
+  `qa-reviewer` for Task 2.
 - File a new GitHub issue for squat's 0.7% divergence (Open TODO #1) before starting any new
-  investigation work on it.
-- If picking up implementation work next, ConjugateCharts Task 8 (Open TODO #3) is the largest
-  remaining piece of `MIGRATION_PLAN.md` Phase 4.
+  investigation work on it — independent of the task list above, can happen any time.
