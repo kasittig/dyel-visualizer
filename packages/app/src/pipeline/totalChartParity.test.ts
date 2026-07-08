@@ -9,6 +9,7 @@ import {
   buildSessionStats,
   calculateVolumeCorrelation,
   buildChartData,
+  filterByDateRange,
 } from '@dyel/core';
 import { buildRawInput, PLACEHOLDER_ATHLETE } from '../utils/rawInputUtils';
 import { mergeRechartsRowsToChartPoints } from '../utils/pipelineChartUtils';
@@ -45,7 +46,9 @@ describe('TotalChart core-vs-pipeline parity', () => {
     pipelineOutput = mergeRechartsRowsToChartPoints(result.datasets, TOTAL_CHART_IDS, 'lbs');
     pipelineModel = result.model;
 
-    // Legacy @dyel/core path using same fixture content
+    // Legacy @dyel/core path using the same fixture content and the same app-level
+    // filtering that main used before handing data to TotalChart:
+    // App.tsx -> tabRows.*.maxEffort -> filteredSigmaPairs -> buildChartData.
     const pairs = parseConjugateData(fixtureContent);
     const state = { status: 'success' as const, pairs };
     const dataMap = extractPairs(state);
@@ -57,16 +60,55 @@ describe('TotalChart core-vs-pipeline parity', () => {
       tabState,
       deadliftStance
     );
+    const allPairs = [
+      ...tabRows.squat.maxEffort,
+      ...tabRows.bench.maxEffort,
+      ...tabRows.deadlift.maxEffort,
+      ...tabRows.accessory.maxEffort,
+    ];
+    const lastSessionDate = allPairs.reduce<Date | null>(
+      (last, [, session]) => (!last || session.date > last ? session.date : last),
+      null
+    );
+    const dateRange =
+      lastSessionDate === null
+        ? { from: undefined, to: undefined }
+        : {
+            from: new Date(
+              lastSessionDate.getFullYear(),
+              lastSessionDate.getMonth() - 3,
+              lastSessionDate.getDate()
+            ),
+            to: lastSessionDate,
+          };
+    const sigmaPairs = [
+      ...tabRows.squat.maxEffort,
+      ...tabRows.bench.maxEffort,
+      ...tabRows.deadlift.maxEffort,
+    ];
+    const filteredSigmaPairs = filterByDateRange(sigmaPairs, dateRange.from, dateRange.to);
+    const volumePairs = [
+      ...tabRows.squat.volume,
+      ...tabRows.bench.volume,
+      ...tabRows.deadlift.volume,
+      ...tabRows.accessory.volume,
+    ];
     const computed = computeBaselineTargetExercises(
-      pairs,
+      filteredSigmaPairs,
       effectiveBaselineNames,
       effectiveTargetNames
     );
     baselineExByType = computed.baselineExByType;
     const { targetExByType } = computed;
-    const stats = buildSessionStats(pairs, effectiveBaselineNames, new Date());
-    const volume = calculateVolumeCorrelation(pairs);
-    legacyOutput = buildChartData(pairs, baselineExByType, targetExByType, stats, volume);
+    const stats = buildSessionStats(filteredSigmaPairs, effectiveBaselineNames, new Date());
+    const volume = calculateVolumeCorrelation(volumePairs);
+    legacyOutput = buildChartData(
+      filteredSigmaPairs,
+      baselineExByType,
+      targetExByType,
+      stats,
+      volume
+    );
 
     joined = joinChartPointsByDate(legacyOutput, pipelineOutput);
   });
@@ -133,13 +175,17 @@ describe('TotalChart core-vs-pipeline parity', () => {
   //     derive/normalize.ts's offsetAdjustRecords + packages/pipeline/src/pipeline.ts) — closed
   //     deadlift's residual (2.7%→0.6% maxRelDiff) but did NOT move bench, which stays flat at
   //     ~7.0% — meaning offset-space wasn't bench's dominant contributor.
-  // Still-open, NOT yet root-caused for this TotalChart harness specifically (some are analogous
-  // ConjugateCharts findings that may or may not transfer — not confirmed here):
+  // Still-open, NOT yet root-caused/fixed for this TotalChart harness specifically (some are
+  // analogous ConjugateCharts findings that may or may not transfer — not confirmed here):
+  //   - Pipeline TotalChart currently consumes raw input through TOTAL_CHART_SPECS derive:'e1rm',
+  //     while legacy main filtered to tabRows.*.maxEffort before calling buildChartData. This
+  //     means pipeline can include volume/repetition-effort sessions that legacy never handed to
+  //     TotalChart (for example 4/24/2026 Deadlift (2" block), 5x5 @ 165 with blank RPE).
   //   - bench's flat ~7.0% divergence despite the Design C fix — unexplained.
   //   - squat's ~0.7% divergence — unexplained, pre-existing, unrelated to addlWt (squat has 0
   //     addlWt variants).
-  //   - pushPull's missingInB (pipeline has fewer dates than legacy for this composite) — a
-  //     data-coverage gap, a different failure mode than the value-drift seen on other series.
+  //   - composite coverage gaps (pushPull/total) — a different failure mode than the value-drift
+  //     seen on other series.
   // Until these are individually root-caused and reconciled (or intentionally accepted, with
   // sign-off), this test documents real per-series divergence rather than asserting a fabricated
   // tolerance band.
