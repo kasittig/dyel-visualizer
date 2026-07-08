@@ -10,7 +10,7 @@ const coefficientsData = JSON.parse(fs.readFileSync(coefficientsPath, 'utf-8'));
 
 export default defineConfig({
   test: {
-    environment: 'node',
+    environment: 'jsdom',
   },
   define: {
     __MODIFIER__EFFECTS__: JSON.stringify(modifierEffectsData),
