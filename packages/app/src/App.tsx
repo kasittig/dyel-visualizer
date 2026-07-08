@@ -1,8 +1,10 @@
 import { useState, useMemo, useEffect } from 'react';
 import type { DateRange } from 'react-day-picker';
+import type { AthleteContext } from '@dyel/pipeline';
 import clsx from 'clsx';
 import { useConjugateData } from './hooks/conjugate/useConjugateData';
 import type { ConjugateDataState } from './hooks/conjugate/useConjugateData';
+import { PipelineProvider } from './context/PipelineContext';
 import { RepCalculator } from './components/shared/RepCalculator';
 import { StrengthScoreCalculator } from './components/shared/StrengthScoreCalculator';
 import { SigmaTab } from './components/pages/SigmaTab';
@@ -67,6 +69,16 @@ export function App() {
     'dyel:deadliftStance',
     'sumo'
   );
+
+  const athlete: AthleteContext = useMemo(
+    () => ({
+      sex: 'M',
+      bodyweight: 80,
+      deadliftStance,
+    }),
+    [deadliftStance]
+  );
+
   const [dateRange, setDateRange] = useState<DateRange>({ from: undefined, to: undefined });
   const [cachedSheetData, setCachedSheetData] = useLocalStorageState<CachedSheetData | null>(
     'dyel:sheetDataCache',
@@ -282,91 +294,95 @@ export function App() {
         onTextChange={handleTextChange}
       />
 
-      <div className={styles.content}>
-        {inputMode === 'url' && url.length === 0 && <GettingStarted mode="url" />}
-        {inputMode === 'text' && pastedText.length === 0 && <GettingStarted mode="text" />}
-        {state.status === 'loading' && <p>Loading…</p>}
-        {state.status === 'error' && (
-          <p className={styles.errorMsg}>
-            {state.message}
-            {inputMode === 'url' && (
-              <>
-                {' '}
-                <a href="?page=validator" className={styles.accentLink}>
-                  Check your spreadsheet format
-                </a>
-              </>
-            )}
-          </p>
-        )}
-        {state.status === 'success' && (
-          <>
-            <div className={styles.tabNav}>
-              {[
-                { id: 'sigma' as const, label: 'Σ' },
-                ...tabs,
-                { id: 'calculator' as const, label: 'Calculator' },
-              ].map(({ id, label }) => (
-                <button
-                  key={id}
-                  onClick={() => setActiveTab(id)}
-                  className={clsx(styles.tab, effectiveActiveTab === id && styles.tabActive)}
-                >
-                  {label}
-                </button>
-              ))}
-              <div className={styles.tabSpacer} />
-              <div className={styles.datePickerWrap}>
-                <DateRangePicker
-                  value={dateRange}
-                  onChange={setDateRange}
-                  sessionDates={allSessionDates}
+      <PipelineProvider
+        inputMode={inputMode}
+        url={url}
+        pastedText={pastedText}
+        refreshToken={refreshToken}
+        athlete={athlete}
+      >
+        <div className={styles.content}>
+          {inputMode === 'url' && url.length === 0 && <GettingStarted mode="url" />}
+          {inputMode === 'text' && pastedText.length === 0 && <GettingStarted mode="text" />}
+          {state.status === 'loading' && <p>Loading…</p>}
+          {state.status === 'error' && (
+            <p className={styles.errorMsg}>
+              {state.message}
+              {inputMode === 'url' && (
+                <>
+                  {' '}
+                  <a href="?page=validator" className={styles.accentLink}>
+                    Check your spreadsheet format
+                  </a>
+                </>
+              )}
+            </p>
+          )}
+          {state.status === 'success' && (
+            <>
+              <div className={styles.tabNav}>
+                {[
+                  { id: 'sigma' as const, label: 'Σ' },
+                  ...tabs,
+                  { id: 'calculator' as const, label: 'Calculator' },
+                ].map(({ id, label }) => (
+                  <button
+                    key={id}
+                    onClick={() => setActiveTab(id)}
+                    className={clsx(styles.tab, effectiveActiveTab === id && styles.tabActive)}
+                  >
+                    {label}
+                  </button>
+                ))}
+                <div className={styles.tabSpacer} />
+                <div className={styles.datePickerWrap}>
+                  <DateRangePicker
+                    value={dateRange}
+                    onChange={setDateRange}
+                    sessionDates={allSessionDates}
+                  />
+                </div>
+              </div>
+              {effectiveActiveTab === 'calculator' ? (
+                <div className={styles.calculatorRow}>
+                  <div>
+                    <RepCalculator tabRows={tabRows} baselineNames={effectiveBaselineNames} />
+                  </div>
+                  <div>
+                    <StrengthScoreCalculator competitionTotal={competitionTotal} unit={dataUnit} />
+                  </div>
+                </div>
+              ) : effectiveActiveTab === 'sigma' ? (
+                <SigmaTab
+                  dateRange={dateRange}
+                  onDateRangeChange={setDateRange}
+                  unit={dataUnit}
+                  volumeByDate={volumeByDate}
                 />
-              </div>
-            </div>
-            {effectiveActiveTab === 'calculator' ? (
-              <div className={styles.calculatorRow}>
-                <div>
-                  <RepCalculator tabRows={tabRows} baselineNames={effectiveBaselineNames} />
-                </div>
-                <div>
-                  <StrengthScoreCalculator competitionTotal={competitionTotal} unit={dataUnit} />
-                </div>
-              </div>
-            ) : effectiveActiveTab === 'sigma' ? (
-              <SigmaTab
-                inputMode={inputMode}
-                url={url}
-                pastedText={pastedText}
-                refreshToken={refreshToken}
-                dateRange={dateRange}
-                onDateRangeChange={setDateRange}
-                unit={dataUnit}
-                volumeByDate={volumeByDate}
-              />
-            ) : liftTab !== null ? (
-              <LiftTabPanel
-                key={shownResetToken}
-                rows={tabRows[liftTab].maxEffort}
-                effectiveBaselineNames={effectiveBaselineNames}
-                liftType={liftTab}
-                targetName={effectiveTargetNames[liftTab]!}
-                baselineName={effectiveBaselineNames[liftTab]}
-                onTargetChange={(name) =>
-                  setTabState((prev) => ({
-                    ...prev,
-                    [liftTab]: { ...prev[liftTab], targetName: name ?? undefined },
-                  }))
-                }
-                deadliftStance={deadliftStance}
-                onDeadliftStanceChange={setDeadliftStance}
-                dateRange={dateRange}
-                onDateRangeChange={setDateRange}
-              />
-            ) : null}
-          </>
-        )}
-      </div>
+              ) : liftTab !== null ? (
+                <LiftTabPanel
+                  key={shownResetToken}
+                  rows={tabRows[liftTab].maxEffort}
+                  effectiveBaselineNames={effectiveBaselineNames}
+                  liftType={liftTab}
+                  targetName={effectiveTargetNames[liftTab]!}
+                  baselineName={effectiveBaselineNames[liftTab]}
+                  onTargetChange={(name) =>
+                    setTabState((prev) => ({
+                      ...prev,
+                      [liftTab]: { ...prev[liftTab], targetName: name ?? undefined },
+                    }))
+                  }
+                  deadliftStance={deadliftStance}
+                  onDeadliftStanceChange={setDeadliftStance}
+                  dateRange={dateRange}
+                  onDateRangeChange={setDateRange}
+                />
+              ) : null}
+            </>
+          )}
+        </div>
+      </PipelineProvider>
     </main>
   );
 }

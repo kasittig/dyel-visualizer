@@ -1,10 +1,4 @@
-import { useState, useEffect } from 'react';
-import { runPipeline } from '@dyel/pipeline';
-import type { RenderParams } from '@dyel/pipeline';
-import type { InputMode } from '../../utils/appUtils';
-import { extractSheetRef } from '../../utils/appUtils';
-import { sheetCsvUrl, fetchSheetCsv } from '../../utils/sheetFetch';
-import { buildRawInput, PLACEHOLDER_ATHLETE } from '../../utils/rawInputUtils';
+import { usePipelineModel } from '../../context/PipelineContext';
 
 export interface DiagnosticVariant {
   canonical: string;
@@ -22,65 +16,32 @@ export interface DiagnosticResult {
   hasDeadlift: boolean;
 }
 
-export function usePipelineDiagnostics(
-  inputMode: InputMode,
-  url: string,
-  pastedText: string,
-  refreshToken: number,
-  deadliftStance: 'sumo' | 'conventional'
-): DiagnosticResult {
-  const [data, setData] = useState<DiagnosticResult>({ variants: [], hasDeadlift: false });
+/**
+ * Hook to retrieve diagnostics from the pipeline model.
+ * Consumes the pipeline context and extracts variant diagnostics.
+ *
+ * @returns DiagnosticResult with variants and hasDeadlift flag
+ */
+export function usePipelineDiagnostics(): DiagnosticResult {
+  const { model } = usePipelineModel();
 
-  useEffect(() => {
-    const ui: RenderParams = {};
-    const athlete = { ...PLACEHOLDER_ATHLETE, deadliftStance };
+  if (!model) {
+    return { variants: [], hasDeadlift: false };
+  }
 
-    if (inputMode === 'text') {
-      if (!pastedText.trim()) {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setData({ variants: [], hasDeadlift: false });
-        return;
-      }
-      try {
-        const raw = buildRawInput('text', pastedText);
-        const result = runPipeline([raw], [], athlete, ui);
-        const hasDeadlift = result.diagnostics.variants.some((v) => v.lift === 'deadlift');
-        setData({
-          variants: result.diagnostics.variants,
-          hasDeadlift,
-        });
-      } catch {
-        setData({ variants: [], hasDeadlift: false });
-      }
-      return;
-    }
+  // Extract only the fields required by DiagnosticVariant
+  const variants: DiagnosticVariant[] = model.diagnostics.variants.map((v) => ({
+    canonical: v.canonical,
+    lift: v.lift,
+    effects: v.effects,
+    status: v.status,
+    ratio: v.ratio,
+    actualE1rmKg: v.actualE1rmKg,
+    expectedE1rmKg: v.expectedE1rmKg,
+    staleDays: v.staleDays,
+  }));
 
-    const sheetRef = extractSheetRef(url.trim());
-    if (!sheetRef) {
-      setData({ variants: [], hasDeadlift: false });
-      return;
-    }
+  const hasDeadlift = variants.some((v) => v.lift.includes('deadlift'));
 
-    const controller = new AbortController();
-    fetchSheetCsv(sheetCsvUrl(sheetRef, '0'), controller.signal)
-      .then((csv) => {
-        const raw = buildRawInput('url', csv);
-        const result = runPipeline([raw], [], athlete, ui);
-        const hasDeadlift = result.diagnostics.variants.some((v) => v.lift === 'deadlift');
-        setData({
-          variants: result.diagnostics.variants,
-          hasDeadlift,
-        });
-      })
-      .catch((err: unknown) => {
-        if (err instanceof Error && err.name === 'AbortError') {
-          return;
-        }
-        setData({ variants: [], hasDeadlift: false });
-      });
-
-    return () => controller.abort();
-  }, [inputMode, url, pastedText, refreshToken, deadliftStance]);
-
-  return data;
+  return { variants, hasDeadlift };
 }

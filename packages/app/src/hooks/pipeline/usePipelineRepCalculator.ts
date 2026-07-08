@@ -1,10 +1,5 @@
-import { useState, useEffect } from 'react';
-import { runPipeline } from '@dyel/pipeline';
 import type { NormalizationModel } from '@dyel/pipeline';
-import type { InputMode } from '../../utils/appUtils';
-import { extractSheetRef } from '../../utils/appUtils';
-import { sheetCsvUrl, fetchSheetCsv } from '../../utils/sheetFetch';
-import { buildRawInput, PLACEHOLDER_ATHLETE } from '../../utils/rawInputUtils';
+import { usePipelineModel } from '../../context/PipelineContext';
 
 const DEFAULT_MODEL: NormalizationModel = {
   fittedAt: Date.now(),
@@ -13,53 +8,23 @@ const DEFAULT_MODEL: NormalizationModel = {
   addlWtOffset: {},
 };
 
-export function usePipelineRepCalculator(
-  inputMode: InputMode,
-  url: string,
-  pastedText: string,
-  refreshToken: number
-): NormalizationModel {
-  const [model, setModel] = useState<NormalizationModel>(DEFAULT_MODEL);
+/**
+ * Hook that provides the NormalizationModel from the shared pipeline infrastructure.
+ *
+ * This hook consumes the pipeline model via usePipelineModel(), which orchestrates
+ * input resolution and pipeline execution. Input resolution and fetch orchestration
+ * are delegated to PipelineProvider, not handled locally.
+ *
+ * @returns The NormalizationModel from the pipeline, or DEFAULT_MODEL if unavailable
+ */
+export function usePipelineRepCalculator(): NormalizationModel {
+  const { status, model: pipelineModel } = usePipelineModel();
 
-  useEffect(() => {
-    if (inputMode === 'text') {
-      if (!pastedText.trim()) {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setModel(DEFAULT_MODEL);
-        return;
-      }
-      try {
-        const raw = buildRawInput('text', pastedText);
-        const result = runPipeline([raw], [], PLACEHOLDER_ATHLETE, {});
-        setModel(result.model);
-      } catch {
-        setModel(DEFAULT_MODEL);
-      }
-      return;
-    }
+  // If the pipeline is loading or errored, return default model
+  if (status !== 'success' || !pipelineModel) {
+    return DEFAULT_MODEL;
+  }
 
-    const sheetRef = extractSheetRef(url.trim());
-    if (!sheetRef) {
-      setModel(DEFAULT_MODEL);
-      return;
-    }
-
-    const controller = new AbortController();
-    fetchSheetCsv(sheetCsvUrl(sheetRef, '0'), controller.signal)
-      .then((csv) => {
-        const raw = buildRawInput('url', csv);
-        const result = runPipeline([raw], [], PLACEHOLDER_ATHLETE, {});
-        setModel(result.model);
-      })
-      .catch((err: unknown) => {
-        if (err instanceof Error && err.name === 'AbortError') {
-          return;
-        }
-        setModel(DEFAULT_MODEL);
-      });
-
-    return () => controller.abort();
-  }, [inputMode, url, pastedText, refreshToken]);
-
-  return model;
+  // Extract the NormalizationModel from PipelineModel
+  return pipelineModel.model;
 }
