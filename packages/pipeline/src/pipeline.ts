@@ -28,6 +28,18 @@ export interface PipelineResult {
   model: NormalizationModel;
 }
 
+export interface PipelineModel {
+  model: NormalizationModel;
+  diagnostics: DiagnosticsReport;
+  unknownExercises: string[];
+  unnormalized: string[];
+  parseErrors: ParseError[];
+  pointsByDeriver: Map<string, Point[]>;
+  pointsByLabelByDeriver: Map<string, Point[]>;
+  pointsByDeriverAdjusted: Map<string, Point[]>;
+  athlete: AthleteContext;
+}
+
 function buildPoints(tagged: TaggedSetRecord[], deriverId: string): Point[] {
   const d = derivers[deriverId];
   return [
@@ -63,12 +75,7 @@ function buildPointsByLabel(tagged: TaggedSetRecord[], deriverId: string): Point
   });
 }
 
-export function runPipeline(
-  raw: RawInput[],
-  specs: DatasetSpec[],
-  athlete: AthleteContext,
-  ui: RenderParams
-): PipelineResult {
+export function runPipelineModel(raw: RawInput[], athlete: AthleteContext): PipelineModel {
   const registry = new ParserRegistry();
   registry.registerMany([csvParser, freeformParser]);
   const parseErrors: ParseError[] = [],
@@ -94,47 +101,25 @@ export function runPipeline(
   });
   const model = fitNormalizationModel(fitInput, { minSamples: MIN_SAMPLES }, athlete);
 
-  const deriverIds = new Set<string>([
-    'e1rm',
-    ...specs.map((s) => {
-      return s.derive;
-    }),
-  ]);
+  // Build points for ALL registered deriver ids
+  const allDeriverIds = Object.keys(derivers);
   const pointsByDeriver = new Map(
-    [...deriverIds].map((id) => {
+    allDeriverIds.map((id) => {
       return [id, buildPoints(tagged, id)];
     })
   );
   const e1rmPoints = pointsByDeriver.get('e1rm')!;
 
-  const labelGroupByDeriverIds = new Set<string>(
-    specs
-      .filter((s) => {
-        return s.kind === 'series' && s.groupBy === 'label';
-      })
-      .map((s) => {
-        return s.kind === 'series' ? s.derive : 'e1rm';
-      })
-  );
   const pointsByLabelByDeriver = new Map(
-    [...labelGroupByDeriverIds].map((id) => {
+    allDeriverIds.map((id) => {
       return [id, buildPointsByLabel(tagged, id)];
     })
   );
 
-  const compositeDeriverIds = new Set<string>(
-    specs
-      .filter((s) => {
-        return s.kind === 'composite';
-      })
-      .map((s) => {
-        return s.derive;
-      })
-  );
   const addlWtCanonicals = new Set(Object.keys(model.addlWtOffset));
   const pointsByDeriverAdjusted = new Map(
-    [...compositeDeriverIds].map((id) => {
-      const original = pointsByDeriver.get(id) ?? buildPoints(tagged, id);
+    allDeriverIds.map((id) => {
+      const original = pointsByDeriver.get(id)!;
       if (addlWtCanonicals.size === 0) {
         return [id, original];
       }
@@ -206,17 +191,51 @@ export function runPipeline(
     baselineRangeByCanonical
   );
 
-  const datasets = Object.fromEntries(
+  return {
+    model,
+    diagnostics,
+    unknownExercises,
+    unnormalized,
+    parseErrors,
+    pointsByDeriver,
+    pointsByLabelByDeriver,
+    pointsByDeriverAdjusted,
+    athlete,
+  };
+}
+
+export function buildDatasetsFromModel(
+  pipelineModel: PipelineModel,
+  specs: DatasetSpec[],
+  ui: RenderParams
+): Record<string, RechartsRow[]> {
+  return Object.fromEntries(
     specs.map((s) => {
       const pts =
         s.kind === 'composite'
-          ? pointsByDeriverAdjusted.get(s.derive)!
+          ? pipelineModel.pointsByDeriverAdjusted.get(s.derive)!
           : s.kind === 'series' && s.groupBy === 'label'
-            ? pointsByLabelByDeriver.get(s.derive)!
-            : pointsByDeriver.get(s.derive)!;
-      return [s.id, buildDataset(pts, s, ui, model, athlete)];
+            ? pipelineModel.pointsByLabelByDeriver.get(s.derive)!
+            : pipelineModel.pointsByDeriver.get(s.derive)!;
+      return [s.id, buildDataset(pts, s, ui, pipelineModel.model, pipelineModel.athlete)];
     })
   );
+}
 
-  return { datasets, diagnostics, unknownExercises, unnormalized, parseErrors, model };
+export function runPipeline(
+  raw: RawInput[],
+  specs: DatasetSpec[],
+  athlete: AthleteContext,
+  ui: RenderParams
+): PipelineResult {
+  const pipelineModel = runPipelineModel(raw, athlete);
+  const datasets = buildDatasetsFromModel(pipelineModel, specs, ui);
+  return {
+    datasets,
+    diagnostics: pipelineModel.diagnostics,
+    unknownExercises: pipelineModel.unknownExercises,
+    unnormalized: pipelineModel.unnormalized,
+    parseErrors: pipelineModel.parseErrors,
+    model: pipelineModel.model,
+  };
 }

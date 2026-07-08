@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import * as fs from 'fs';
 import * as path from 'path';
-import { runPipeline } from './pipeline';
+import { runPipeline, runPipelineModel, buildDatasetsFromModel } from './pipeline';
 import type { DatasetSpec } from './dataset/build';
 
 const loadFixture = (name: string) => ({
@@ -221,6 +221,62 @@ describe('runPipeline (end-to-end)', () => {
       expect(res.model.addlWtOffset['bench-chains'].offsetKg).toBeGreaterThan(0);
       rows.forEach((r: Record<string, unknown>) => {
         expect(Number(r['est-total'])).toBeGreaterThan(0);
+      });
+    });
+  });
+
+  describe('parity: runPipeline vs runPipelineModel + buildDatasetsFromModel', () => {
+    it('produces identical output through both paths', () => {
+      const raw = FIXTURE_NAMES.map(loadFixture);
+      const testSpecs: DatasetSpec[] = [
+        {
+          id: 'e1rm-per-bench-variant',
+          kind: 'series',
+          include: { any: ['lift:bench'] },
+          derive: 'e1rm',
+        },
+        { id: 'tonnage-per-lift', kind: 'series', include: {}, derive: 'tonnage' },
+        {
+          id: 'estimated-total',
+          kind: 'composite',
+          derive: 'e1rm',
+          normalize: true,
+          combine: 'sum',
+          components: comps,
+        },
+      ];
+      const testAthlete = {
+        sex: 'M' as const,
+        bodyweight: 90,
+        deadliftStance: 'conventional' as const,
+      };
+      const ui = {};
+
+      // Old path: runPipeline
+      const oldResult = runPipeline(raw, testSpecs, testAthlete, ui);
+
+      // New path: runPipelineModel + buildDatasetsFromModel
+      const model = runPipelineModel(raw, testAthlete);
+      const datasets = buildDatasetsFromModel(model, testSpecs, ui);
+      const newResult = {
+        datasets,
+        diagnostics: model.diagnostics,
+        unknownExercises: model.unknownExercises,
+        unnormalized: model.unnormalized,
+        parseErrors: model.parseErrors,
+        model: model.model,
+      };
+
+      // Verify identical output (ignoring fittedAt timestamp which differs on each run)
+      expect(newResult.datasets).toEqual(oldResult.datasets);
+      expect(newResult.diagnostics).toEqual(oldResult.diagnostics);
+      expect(newResult.unknownExercises).toEqual(oldResult.unknownExercises);
+      expect(newResult.unnormalized).toEqual(oldResult.unnormalized);
+      expect(newResult.parseErrors).toEqual(oldResult.parseErrors);
+      expect(newResult.model).toMatchObject({
+        baseline: oldResult.model.baseline,
+        variantFactor: oldResult.model.variantFactor,
+        addlWtOffset: oldResult.model.addlWtOffset,
       });
     });
   });

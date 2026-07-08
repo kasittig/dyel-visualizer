@@ -28,6 +28,6 @@ export type {
   ChartPoint,
 } from './dataset/build';
 export { buildDataset } from './dataset/build';
-export type { PipelineResult } from './pipeline';
-export { runPipeline } from './pipeline';
+export type { PipelineResult, PipelineModel } from './pipeline';
+export { runPipeline, runPipelineModel, buildDatasetsFromModel } from './pipeline';
 export { LINE_COLORS } from './utils/colors';
