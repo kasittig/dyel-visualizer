@@ -41,7 +41,11 @@ export function buildCanonical(ex: ParsedExercise, rawName: string): string {
     parts.push(ex.stance);
   }
   if (ex.equipment) {
-    parts.push(ex.equipment);
+    const equipmentPart: string =
+      ex.equipmentMagnitude && ex.equipmentMagnitude !== '1'
+        ? `${ex.equipment}-${ex.equipmentMagnitude}`
+        : ex.equipment;
+    parts.push(equipmentPart);
   }
   parts.push(
     ...ex.addlWts.map(

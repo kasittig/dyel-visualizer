@@ -9,6 +9,15 @@ describe('buildCanonical with magnitude-qualified modifiers', () => {
     ['double chains bench', 'Bench (2 chains)', 'bench-chains-2'],
     ['heavy bands squat', 'Squat (heavy bands)', 'squat-bands-heavy'],
     ['unspecified bands squat', 'Squat (bands)', 'squat-bands-unspecified'],
+    ['1 board bench', 'Bench (1 board)', 'bench-board'],
+    ['2 board bench', 'Bench (2 board)', 'bench-board-2'],
+    ['double board bench', 'Bench (double board)', 'bench-board-2'],
+    ['1 block deadlift', 'Deadlift (1 block)', 'deadlift-blocks'],
+    ['2 block deadlift', 'Deadlift (2 blocks)', 'deadlift-blocks-2'],
+    ['2" block deadlift', 'Deadlift (2" blocks)', 'deadlift-blocks-2'],
+    ['1 deficit deadlift', 'Deadlift (1 deficit)', 'deadlift-deficit'],
+    ['2 deficit deadlift', 'Deadlift (2 deficit)', 'deadlift-deficit-2'],
+    ['2" deficit deadlift', 'Deadlift (2" deficit)', 'deadlift-deficit-2'],
   ])('builds distinct canonicals for %s', (_, exercise, expectedCanonical) => {
     const parsed = parseExercise(exercise);
     expect(buildCanonical(parsed, exercise)).toBe(expectedCanonical);

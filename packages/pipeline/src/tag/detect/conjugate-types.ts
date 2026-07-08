@@ -51,5 +51,7 @@ export interface ParsedExercise {
   bar: ConjugateBar | null;
   stance: ConjugateStance | null;
   equipment: ConjugateEquipment | null;
+  /** numeric magnitude for equipment modifiers like board/block/deficit count/height, mirroring addlWts magnitude convention; null when not applicable or equipment has no magnitude */
+  equipmentMagnitude: string | null;
   addlWts: ParsedAddlWt[];
 }

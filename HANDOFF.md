@@ -1,83 +1,96 @@
-# HANDOFF — Design C shipped (addlWtOffset weight-space correction), residual TotalChart divergence narrowed further
+# HANDOFF — Bench's flat 7.0% divergence fixed (board/block/deficit equipment-magnitude canonical collapsing)
 
 ## Context
 
 `migration-phase-1` implements `MIGRATION_PLAN.md`'s pipeline-native migration of
 `packages/app` components off `@dyel/core` onto `@dyel/pipeline`. Full task tracking lives in
-`SPECIFICATIONS.md`; full ConjugateCharts root-cause/outcome detail lives in
-`migration/ConjugateCharts.md`.
+`SPECIFICATIONS.md`; this session's plan also has a standalone copy in `FIX_BOARD_COUNT.md`.
 
-This session picked up the prior handoff's residual finding: Design B (previous session) fixed
-`addlWtOffset` wiring into pipeline normalization but only narrowed, not closed, `TotalChart`'s
-bench/deadlift/total divergence (7.0%/2.7%/1.8%) — because Design B mirrored legacy's
-`findBestE1RM` (an e1RM-space approximation built for `RepCalculator`), not legacy's actual
-`TotalChart` data path (`normalizeToBaseE1RM`, a weight-space, per-set correction).
+This session picked up the prior handoff's Open TODO #1: bench's flat 7.0% divergence between
+legacy (`@dyel/core`) and pipeline (`@dyel/pipeline`) `TotalChart`/`ConjugateCharts` output,
+left unexplained after Design C (previous session) measurably helped deadlift but not bench.
 
 ## Progress Overview
 
-- **Root-caused the space/granularity mismatch** via direct code reading (not assumption):
-  confirmed legacy's `buildChartData`/`buildVariationChartData` correct `addlWtOffset` in
-  weight-space, per raw session row, before `calcE1RM` runs — a different mechanism than
-  Design B's post-hoc e1RM-space correction. Also confirmed `projectToVariant` has zero
-  production callers (narrowed blast radius) and that the fix must be scoped to composite
-  specs only (`SeriesSpec` output like ConjugateCharts' `variations` must stay on raw,
-  uncorrected e1rm, matching legacy).
-- **User signed off on "Design C"** (weight-space mirror, applied pre-derivation).
-- **Implemented Design C** (`packages/pipeline/src/derive/normalize.ts`,
-  `packages/pipeline/src/pipeline.ts`, `packages/pipeline/src/index.ts`): new exported
-  `offsetAdjustRecords(records, model)` applies each addlWt canonical's fitted offset to raw
-  `weight` before derivation; `normalizeE1rm`/`projectToVariant` reverted to pure factor
-  operations (Design B's e1RM-space correction removed/superseded); `pipeline.ts` resequenced
-  so composite specs consume pre-corrected points while series/label specs stay untouched.
-- **Caught and fixed two false alarms from automated QA before accepting this as done**
-  (established project precedent — don't trust agent self-reports):
-  1. An implementer agent claimed "538 tests/35 files" for the pipeline package;
-     independently verified (twice) to actually be 207 tests/12 files.
-  2. A QA pass reported `TotalChart`'s squat "regressing" 0.0%→0.7%. Traced to team-lead's own
-     wrong assumption (conflating ConjugateCharts' squat `normalized` composite, genuinely
-     always 0.0%, with `TotalChart`'s own squat series, which the test itself already labels
-     "tracked, not yet reconciled"). **Disproven via direct `git stash` bisection** against the
-     pre-Design-C tree: squat was already at 0.7% before this session's work — not a
-     regression. A defensive `pipeline.ts` rework triggered by chasing this false alarm (reuse
-     original points object-identically, splice in only addlWt-affected canonicals instead of
-     a second full re-derivation pass) was kept anyway — it's strictly more robust with zero
-     behavior change, verified.
-- **Real before/after numbers** (`totalChartParity.test.ts`, verified via `git stash`
-  bisection):
+- **Root-caused via direct code trace + fixture correlation**: `EQUIPMENT_DETECTORS`'s `board`
+  entry (`packages/pipeline/src/tag/detect/detectors.ts`) matches any string containing
+  `"board"` and discards the numeric count, so `Bench (1 board)` and `Bench (2 board)` both
+  resolved to canonical `bench-board`. `fitNormalizationModel` then fit one blended
+  `variantFactor` across both board counts, whereas legacy's `buildSessionStats` groups by
+  exact `displayName` string and fits them independently. Confirmed via a throwaway debug
+  harness (deleted, working tree clean): the three worst-diverging dates in the fixture exactly
+  match the three board-press session dates.
+- **Audited for similar bugs (Task 1) before scoping the fix**: all 9 `EQUIPMENT_DETECTORS`
+  entries checked against real fixture data. Found `block` and `deficit` share the identical
+  bug pattern (currently latent — fixture happens to log only uniform heights per modifier, so
+  no active divergence, but any future mixed-height session would trigger the same blending
+  bug). `box`/`incline`/`decline`/`pause`/`floor`/`rack` had no numeric variants in fixture
+  data — excluded from scope. **Decision: generalized the fix to board + block + deficit**
+  rather than board-only, since it's the same mechanism at negligible extra cost.
+- **Implemented a structural canonical fix**, fully contained to the `tag/detect/` layer (no
+  `derive/`/`pipeline.ts` changes needed):
+  1. Added `equipmentMagnitude: string | null` to `ParsedExercise`
+     (`packages/pipeline/src/tag/detect/conjugate-types.ts`).
+  2. Implemented magnitude parsing in `parseExercise.ts`: digit or `"double"` before `"board"`;
+     digit (optionally with a `"` inch mark) before `"block"`/`"blocks"` or `"deficit"`;
+     defaults to `"1"` when absent.
+  3. Wired `equipmentMagnitude` into `buildCanonical`
+     (`packages/pipeline/src/tag/detect/canonical.ts`) — appends `-${magnitude}` only when
+     non-default, mirroring the existing chains/addlWts omit-default convention. Confirmed
+     `buildTagsAndEffects` stays keyed by equipment kind only (unaffected by design).
+  4. Extended `canonical.test.ts`'s existing magnitude `it.each` matrix with 9 new rows
+     (pipeline test count 207 → 216).
+  5. Documented the convention in `packages/pipeline/src/tag/CLAUDE.md`.
+- **Caught a suspicious self-report early, per established project precedent**: an implementer
+  agent claimed "538 tests/35 files" after Task 2 (a type-only field addition) — the exact same
+  false figure a different implementer fabricated in a prior session (real baseline was 207
+  tests/12 files). Independently re-verified via `qa-reviewer`: actual state was 207
+  tests/12 files (pipeline), 200 tests/19 files (app), matching the true pre-change baseline —
+  the claim was false, flagged, and every subsequent task in this session was independently
+  QA-verified before proceeding.
+- **Real before/after numbers** (`totalChartParity.test.ts` + `conjugateChartParity.test.ts`,
+  independently re-verified via `qa-reviewer`):
   | Series | Before | After |
   |---|---|---|
-  | squat | 0.7% | 0.7% (unchanged — pre-existing, unrelated to addlWt) |
-  | bench | 7.0% | 7.0% (unchanged) |
-  | deadlift | 2.7% | **0.6%** (genuine improvement) |
-  | pushPull | 2.5% | 2.5% (unchanged) |
-  | total | 1.8% | 1.8% (unchanged) |
-- **Updated stale documentation**: `totalChartParity.test.ts`'s root-cause comment block still
-  claimed speed-work exclusion was live (fixed earlier) and cited GitHub issue #451 as an open
-  contributing bug (actually closed, per `migration/ConjugateCharts.md`). Rewrote it to state
-  current, accurate status and the genuinely-still-unexplained items (bench's flat 7.0%,
-  squat's 0.7%, pushPull's `missingInB`).
-- **No regressions**: full suite green — pipeline 12 files/207 tests, app 19 files/200 tests,
-  both builds clean, independently re-verified via `qa-reviewer` at each step.
+  | squat | 0.7% | 0.7% (unchanged — no equipment-magnitude variants) |
+  | bench | 7.0% | **0.7%** (**~10x improvement — confirms root cause**) |
+  | deadlift | 0.6% | 0.6% (unchanged — fixture's block/deficit heights are uniform; latent bug closed, not observable on this fixture) |
+  | pushPull | 2.5% | **0.3%** (**~8x improvement — downstream ripple from bench's fix**) |
+  | total | 1.8% | **0.2%** (**~9x improvement — downstream ripple from bench's fix**) |
+
+  `conjugateChartParity.test.ts` normalized composites: bench 7.0%→**0.7%** (same
+  improvement), squat/deadlift unchanged. All hard-assert tests stayed green throughout — no
+  tolerances were loosened; these are genuine measured improvements on the existing soft-warn
+  series.
+
+- **No regressions**: full suite green — pipeline 12 files/216 tests, app 19 files/200 tests,
+  both builds clean, independently re-verified via `qa-reviewer` at every task boundary (not
+  just at the end).
 
 ## Decisions Made & Rationale
 
-- **Design C over Design D** (user sign-off) — chose to attempt closing the residual rather
-  than accept it, given deadlift's improvement proved the weight-space hypothesis was at least
-  partially correct.
-- **Kept the defensive `pipeline.ts` rework** even after proving the "regression" it was meant
-  to fix wasn't real — it removes a latent fragility (relying on two independent derivation
-  passes producing byte-identical output) for a negligible cost, and is fully verified safe.
-- **Did not chase bench's flat 7.0%** this session — Design C measurably helped deadlift but
-  not bench, meaning some other bench-specific factor is the dominant cause there. Explicitly
-  left open rather than guessed at (see Open TODOs).
+- **Generalized scope to board + block + deficit** (not board-only) after Task 1's audit —
+  same bug mechanism, same code location, negligible extra implementation cost, closes two
+  latent bugs alongside the one actively causing bench's divergence.
+- **Structural canonical fix chosen over mirroring `groupBy: 'label'` into the `variantFactor`
+  fit step** — the alternative would be more invasive to `NormalizationModel`'s canonical-keyed
+  shape and would need explicit design sign-off the way Designs B/C did. The chosen approach
+  needed no `derive/`/`pipeline.ts` changes at all, minimizing blast radius.
+- **Independently QA-verified every single task** (not just a final pass) — this session
+  caught one false self-report early (Task 2's "538/35" claim) by cross-checking against a
+  known project precedent; every subsequent task was verified in the same way before the next
+  was delegated, rather than batching verification at the end.
 
 ## Open TODOs
 
-1. **Root-cause bench's flat 7.0% divergence** (both `TotalChart` and `ConjugateCharts`) —
-   Design C didn't move it despite bench having addlWt (chain) canonicals. Not yet
-   investigated; the cause is unknown (do NOT assume it's GitHub issue #451 — that's closed).
-2. **Root-cause squat's 0.7% divergence** and **pushPull's `missingInB=6`** — both pre-existing,
-   unrelated to addlWt, not yet investigated at all.
+1. **Task 10 (final closeout QA)**: an independent full-suite re-verification pass is still
+   queued as the last task in this fix's plan, even though every individual task was already
+   independently verified as it landed. Purely a formality at this point but not yet run.
+2. **Root-cause squat's 0.7% divergence** and **pushPull's residual — now much smaller at
+   0.3%/`missingInB=6`** — both pre-existing, unrelated to addlWt or equipment-magnitude, not
+   yet investigated. PushPull's improvement (2.5%→0.3%) alongside bench's fix suggests some of
+   its divergence may have been board-related too (pushPull likely includes bench in its
+   composite) — worth checking before assuming it's a wholly separate issue.
 3. **ConjugateCharts Task 8**: actually swap `ConjugateCharts.tsx`/`useConjugateChartData.ts`
    onto `@dyel/pipeline` — still not started, still on `@dyel/core` at runtime. Per-variation
    soft-warns remain not promoted to hard-assert (n=1-5 samples, too sparse).
@@ -86,26 +99,22 @@ bench/deadlift/total divergence (7.0%/2.7%/1.8%) — because Design B mirrored l
 
 ## Files Touched
 
-- `packages/pipeline/src/derive/normalize.ts` (Design C: `offsetAdjustRecords` added,
-  `normalizeE1rm`/`projectToVariant` reverted to pure factor ops)
-- `packages/pipeline/src/pipeline.ts` (resequenced fit/derive ordering; composite specs
-  consume pre-corrected points)
-- `packages/pipeline/src/index.ts` (export `offsetAdjustRecords`)
-- `packages/pipeline/src/derive/CLAUDE.md` (documented `offsetAdjustRecords`, Design C
-  superseding Design B/Task 10b)
-- `packages/pipeline/src/derive/normalize.test.ts`, `packages/pipeline/src/pipeline.test.ts`,
-  `packages/pipeline/src/dataset/build.test.ts` (new/updated test coverage)
-- `packages/pipeline/test/fixtures/pipeline-design-c-addlwt.csv` (new fixture, reps > 1 to
-  prove weight-space vs e1RM-space divergence)
-- `packages/app/src/pipeline/totalChartParity.test.ts` (updated stale root-cause comment)
-- `SPECIFICATIONS.md` (Design C task list fully checked off, real numbers recorded)
+- `packages/pipeline/src/tag/detect/conjugate-types.ts` (`equipmentMagnitude` field added to
+  `ParsedExercise`)
+- `packages/pipeline/src/tag/detect/parseExercise.ts` (magnitude parsing for board/block/
+  deficit)
+- `packages/pipeline/src/tag/detect/canonical.ts` (`buildCanonical` appends magnitude suffix
+  when non-default)
+- `packages/pipeline/src/tag/detect/canonical.test.ts` (9 new `it.each` rows)
+- `packages/pipeline/src/tag/CLAUDE.md` (new "Magnitude conventions" subsection)
+- `SPECIFICATIONS.md` (this fix's task list fully checked off except Task 10, real numbers
+  recorded)
+- `FIX_BOARD_COUNT.md` (standalone copy updated to match)
 - `HANDOFF.md` (this file)
-
-Note: `.claude/agents/team-lead.md` also shows modified in `git status` but was not touched
-this session (pre-existing, unrelated) — not included in this handoff's commit.
 
 ## Suggested Next Skills
 
-- None required immediately. If resuming this work, start with Open TODO #1 (bench's flat
-  7.0% divergence) — it's the most actionable unexplained item, with the numeric data already
-  in hand from this session's verified parity runs.
+- Run Task 10 (final independent full-suite QA pass) to formally close out this fix.
+- If resuming further work, start with Open TODO #2 — pushPull's improvement alongside bench's
+  suggests a possible shared cause worth checking before treating it as separate from squat's
+  0.7%.

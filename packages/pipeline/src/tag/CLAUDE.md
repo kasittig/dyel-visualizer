@@ -27,6 +27,18 @@ omitting default values (`bar: standard`, `stance: competition`) and any absent 
 For accessory lifts (parser always nulls bar/stance/equipment there): a kebab-slugified
 raw name, preserving per-exercise distinctness without a dictionary.
 
+**Magnitude conventions:** When equipment or addlWts are present, they may include a magnitude
+suffix. For chains/bands (`addlWts`), magnitude is parsed as a digit or the word `"double"`
+from the raw exercise label; it defaults to `'1'` when not specified. For board/block/deficit
+equipment, magnitude is parsed as a digit (optionally followed by a `"` inch mark) from the raw
+label; it also defaults to `'1'`. The magnitude suffix is appended to the canonical as `-${magnitude}`
+only when the magnitude is **not** the default `'1'` — the default is always omitted. Examples:
+
+- `Bench (1 board)` → `bench-board` (default magnitude omitted)
+- `Bench (2 board)` → `bench-board-2` (non-default magnitude appended)
+- `Deadlift (1 block)` → `deadlift-blocks` (default magnitude omitted)
+- `Deadlift (2" blocks)` → `deadlift-blocks-2` (non-default magnitude appended)
+
 ## Tag/effects derivation
 
 `lift:${type}` always. If the exercise has zero modifiers (default bar/stance,

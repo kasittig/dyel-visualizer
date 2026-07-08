@@ -91,7 +91,7 @@ started — next step for whoever picks up Phase 4.
       using `conjugateChartSpecs()` (with `groupBy: 'label'`) + the now-fixed normalization
       model. (Target: `packages/app/src/components/pages/ConjugateCharts.tsx` (or wherever it
       now lives), `packages/app/src/hooks/useConjugateChartData.ts`. Test: `npm test -w
-    packages/app -- conjugateChartParity` plus full `npm test -w packages/app`)
+  packages/app -- conjugateChartParity` plus full `npm test -w packages/app`)
 
 ---
 
@@ -160,7 +160,7 @@ risks the same date/day-grouping mismatch this work is trying to close.
 - [x] Task 3: Implemented steps 1–5 above. (Target: `packages/pipeline/src/derive/normalize.ts`,
       `packages/pipeline/src/pipeline.ts`, `packages/pipeline/src/index.ts`,
       `packages/pipeline/src/derive/CLAUDE.md`. Test: `npm test -w packages/pipeline --
-    normalize`)
+  normalize`)
 - [x] Task 4: Update test coverage: - `normalize.test.ts`: rewrite the two `normalizeE1rm`/`projectToVariant` offset-formula
       tests to pure `e1rmKg / factor` / `baseE1rmKg * factor`; retire/rename the Task 10b
       "apply-time offset adjustment" describe block; add new `describe('offsetAdjustRecords')`
@@ -238,12 +238,208 @@ divergence. Flagged for future investigation, not blocking.
 
 `npm run build -w packages/pipeline && npm run build -w packages/app && npm test -w
 packages/pipeline && npm test -w packages/app` — all green as of last full run (pipeline
-12 files/207 tests, app 19 files/200 tests), independently re-verified via `qa-reviewer`.
+12 files/216 tests, app 19 files/200 tests), independently re-verified via `qa-reviewer`.
 
 ## Currently open items
 
 1. **ConjugateCharts Task 8** — component swap-over onto `@dyel/pipeline`, not started.
-2. **Bench's flat 7.0% divergence** (both `TotalChart` and `ConjugateCharts`) — Design C
-   closed deadlift's residual but not bench's, despite bench having addlWt (chain)
-   canonicals too. Not yet investigated. Lowest priority of the two open items — informational
-   only, no hard tolerance asserted anywhere in the parity harnesses.
+2. **Bench's flat 7.0% divergence** — ✅ FIXED and fully verified (2026-07-07), see below.
+   10/10 tasks complete, including final closeout QA.
+
+---
+
+## Fixing bench's flat 7.0% divergence — equipment-magnitude canonical collapsing — ✅ COMPLETE (10/10 tasks)
+
+### Root cause (verified via direct code trace + fixture correlation, not Design C-related)
+
+`EQUIPMENT_DETECTORS`'s `board` entry (`packages/pipeline/src/tag/detect/detectors.ts:42`)
+matches any string containing `"board"` and discards the count, so `Bench (1 board)` and
+`Bench (2 board)` both resolve to a single canonical (`bench-board`). `fitNormalizationModel`
+(`packages/pipeline/src/derive/normalize.ts`) then fits **one blended `variantFactor`** across
+both board counts for that canonical. Legacy's `buildSessionStats`
+(`packages/core/src/utils/stats/sessionIndex.ts:51,55`) groups by the exact `displayName`
+string, so `Bench (1 board)` and `Bench (2 board)` get **independent** fits
+(`sessionIndex.ts:112`) — never blended. This is unrelated to/additive with Design C: bench's
+addlWt (chain) canonicals already get their offsets fit and applied correctly.
+
+**Evidence:** a throwaway debug harness (deleted, working tree clean) diffed legacy vs.
+pipeline bench output per date on `total-chart-sheet.csv`; the three worst-diverging dates
+(7.04%, 2.33%, 1.91% — next-worst is 0.67%) are exactly the fixture's three board-press
+session dates. Corroborates `migration/ConjugateCharts.md` Finding #6's dismissed
+hypothesis-1 (board pooling) — dismissed correctly for the _aggregate_ composite gap, but it
+is the near-total explanation for bench's _residual_ post-Design-C 7.0%.
+
+### Task 1 findings (2026-07-07, via `feature-implementer` audit) — scope generalized
+
+Audited all 9 `EQUIPMENT_DETECTORS` entries (`board`, `block`, `deficit`, `box`, `incline`,
+`decline`, `pause`, `floor`, `rack`) against real exercise strings in `packages/app/test/
+fixtures/*.csv` and `packages/pipeline/test/fixtures/*.csv`. Two additional detectors share
+`board`'s exact bug pattern (substring match on `.includes(...)` that discards a numeric
+magnitude qualifier):
+
+- **`block`**: fixture has `Deadlift (2" block)` (5 occurrences across 3 dates) — all
+  currently the _same_ height, so no active divergence today, but a **latent** bug: any future
+  session logging `Deadlift (1" block)` would blend into the same canonical
+  (`deadlift-blocks`).
+- **`deficit`**: fixture has `Deadlift (2" deficit)` (4 occurrences across 3 dates, one with an
+  `opposite` stance qualifier) — same situation: identical heights today, latent risk if
+  heights ever diverge.
+- **`box`, `incline`, `decline`, `pause`, `floor`, `rack`**: no numeric/magnitude variants
+  found in either fixture set. Excluded from this fix's scope — can be revisited if/when
+  fixture data or real usage shows a need.
+
+**Scope decision: generalize the fix to `board` + `block` + `deficit`.** Same code path, same
+regex-extraction pattern, minimal incremental cost over board-only, and closes two latent bugs
+identical in shape to the one actively causing bench's divergence (block/deficit affect
+deadlift canonicals, not bench, but the same structural gap applies). `box`/`incline`/
+`decline`/`pause`/`floor`/`rack` stay out of scope — no evidence of need, avoids
+over-engineering for speculative cases.
+
+This changes Tasks 2–6 below from "board-only" to "board + block + deficit," using the same
+mechanism for all three magnitude-bearing equipment kinds. No change to Tasks 7–10.
+
+### Chosen fix design
+
+**Structural canonical fix** (preferred over mirroring `groupBy: 'label'` into the
+`variantFactor` fit step, which would be more invasive to `NormalizationModel`'s
+canonical-keyed shape per `derive/CLAUDE.md` and would need separate sign-off like Designs
+B/C did): extend board/block/deficit detection to capture the numeric magnitude and thread it
+into the canonical, mirroring the existing `addlWts` magnitude pattern (chains already parses
+digit/`"double"` → magnitude, default `"1"`, omitted from the canonical string when `"1"`; see
+`canonical.ts:49` and its `canonical.test.ts` matrix). Once canonicals split
+(`bench-board` for 1-board, `bench-board-2` for 2-board; `deadlift-blocks`/`deadlift-blocks-2`;
+`deadlift-deficit`/`deadlift-deficit-2`), `fitNormalizationModel`'s existing
+`Object.groupBy(history, r => r.canonical)` (`normalize.ts`) automatically fits them
+separately — no `derive/`/`pipeline.ts` changes needed. Fix is fully contained to the `tag/
+detect/` layer.
+
+### Implementation summary (all independently `qa-reviewer`-verified at each step)
+
+- **Task 2:** Added `equipmentMagnitude: string | null` to `ParsedExercise`
+  (`packages/pipeline/src/tag/detect/conjugate-types.ts`), with placeholder `null` wired into
+  both `parseExercise.ts` return statements to keep the build green ahead of Task 3.
+- **Task 3:** Implemented magnitude parsing in `packages/pipeline/src/tag/detect/
+parseExercise.ts`: digit or the word `"double"` before `"board"`; digit (optionally followed
+  by a `"` inch mark) before `"block"`/`"blocks"` or `"deficit"`; defaults to `'1'` when no
+  digit is present. Populates `equipmentMagnitude` only for `board`/`block`/`deficit`
+  equipment; stays `null` for all other kinds.
+- **Task 4:** Wired `equipmentMagnitude` into `buildCanonical`
+  (`packages/pipeline/src/tag/detect/canonical.ts`): appends `-${magnitude}` when present and
+  not the default `'1'`, mirroring the existing chains/addlWts omit-default convention.
+  Confirmed `buildTagsAndEffects` stays keyed by `ex.equipment` only (not magnitude) — tags/
+  effects unaffected by design. Real verified canonical strings: `Bench (1 board)` →
+  `bench-board` (unchanged), `Bench (2 board)`/`Bench (3 board)` → `bench-board-2`/
+  `bench-board-3` (new); `Deadlift (blocks)` → `deadlift-blocks` (unchanged), `Deadlift (2
+blocks)` → `deadlift-blocks-2` (new); `Deadlift (deficit)` → `deadlift-deficit` (unchanged),
+  `Deadlift (2 deficit)` → `deadlift-deficit-2` (new).
+- **Task 5:** Extended `canonical.test.ts`'s existing magnitude `it.each` matrix with 9 new
+  rows covering board/block/deficit default and non-default cases plus the `"double"` word
+  equivalence (`Bench (double board)` → `bench-board-2`) and quote-mark notation
+  (`Deadlift (2" blocks)` → `deadlift-blocks-2`). Pipeline test count: 207 → 216.
+- **Task 6:** Documented the equipment-magnitude convention in `packages/pipeline/src/tag/
+CLAUDE.md`'s "Canonical format" section (new "Magnitude conventions" subsection), parallel to
+  the existing chains/addlWts documentation, with the same before/after examples verified in
+  Task 4.
+
+### Real before/after numbers (Task 7, `totalChartParity.test.ts` + `conjugateChartParity.test.ts`)
+
+| Series   | Before (post Design C)             | After (this fix)        | Change                                                                                                                                                         |
+| -------- | ---------------------------------- | ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| squat    | 0.7% (maxAbsDiff=1)                | **0.7%** (maxAbsDiff=1) | unchanged — no equipment-magnitude variants                                                                                                                    |
+| bench    | 7.0% (maxAbsDiff=10)               | **0.7%** (maxAbsDiff=1) | **~10x improvement — confirms root cause**                                                                                                                     |
+| deadlift | 0.6% (maxAbsDiff=1)                | **0.6%** (maxAbsDiff=1) | unchanged — fixture's block/deficit heights are uniform, so the split had no numeric effect this fixture (latent bug closed structurally, not observable here) |
+| pushPull | 2.5% (maxAbsDiff=10, missingInB=6) | **0.3%** (maxAbsDiff=1) | **~8x improvement — downstream ripple from bench's fix**                                                                                                       |
+| total    | 1.8% (maxAbsDiff=10)               | **0.2%** (maxAbsDiff=1) | **~9x improvement — downstream ripple from bench's fix**                                                                                                       |
+
+`conjugateChartParity.test.ts` `normalized` composites: squat 0.0%→0.0% (unchanged, exact),
+bench 7.0%→**0.7%** (same ~10x improvement as TotalChart), deadlift 0.4%→0.4% (unchanged, same
+reasoning as above).
+
+Literal console output (`totalChartParity.test.ts`, independently re-verified via
+`qa-reviewer` at Task 7 and again at the final Task 10 closeout pass):
+
+```
+core-vs-pipeline squat: compared=13 missingInA=0 missingInB=0 maxAbsDiff=1 maxRelDiff=0.7%
+core-vs-pipeline bench: compared=22 missingInA=0 missingInB=0 maxAbsDiff=1 maxRelDiff=0.7%
+core-vs-pipeline deadlift: compared=19 missingInA=0 missingInB=0 maxAbsDiff=1 maxRelDiff=0.6%
+core-vs-pipeline pushPull: compared=40 missingInA=0 missingInB=6 maxAbsDiff=1 maxRelDiff=0.3%
+core-vs-pipeline total: compared=46 missingInA=0 missingInB=0 maxAbsDiff=1 maxRelDiff=0.2%
+```
+
+All hard-assert tests remain green throughout; no tolerance values were loosened to achieve
+these numbers — bench/pushPull/total are soft-warn (`console.warn`) series per existing
+convention, and their improvement is a genuine measured side effect, not a test change.
+
+**Deadlift stayed flat, not a concern:** the fixture's block/deficit sessions all happen to use
+the same height (2") in every logged instance, so the canonical split (`deadlift-blocks` vs
+`deadlift-blocks-2`, `deadlift-deficit` vs `deadlift-deficit-2`) has zero observable effect on
+_this_ fixture's numbers — it closes a **latent** bug (protecting against future divergence if
+mixed heights are ever logged) rather than an active one, exactly as scoped in the Task 1
+findings above.
+
+### Task 10 — final closeout QA (2026-07-07, `qa-reviewer`, independent re-run)
+
+Ran, independently and for real: `npm run build -w packages/pipeline`, `npm run build -w
+packages/app`, `npm test -w packages/pipeline`, `npm test -w packages/app`, plus the parity
+tests directly (`totalChartParity`, `conjugateChartParity`) to re-capture their console.warn
+divergence output as a final sanity check. Result: **PASS** — pipeline 12 files/216 tests
+(exact match to expected), app 19 files/200 tests (exact match), both builds clean, bench
+maxRelDiff confirmed at 0.7% (down from the historical 7.0% baseline), all other series
+matching the Task 7 numbers above exactly. No discrepancies found between this final pass and
+every individual task's independent verification as it landed earlier in this session.
+
+### Task list (ordered)
+
+- [x] Task 1: Audit `BAR_DETECTORS`/`STANCE_DETECTORS`/`EQUIPMENT_DETECTORS`
+      (`detectors.ts`) against real fixture data for other magnitude-bearing modifiers that
+      collapse the same way board does. **Result: `block` and `deficit` share the bug
+      (currently latent, no active divergence); `box`/`incline`/`decline`/`pause`/`floor`/
+      `rack` have no observed magnitude variants and stay out of scope. Scope generalized to
+      board + block + deficit** (see findings above). (Target:
+      `packages/pipeline/src/tag/detect/detectors.ts`; Test: n/a — written findings)
+- [x] Task 2: Added `equipmentMagnitude: string | null` to `ParsedExercise`
+      (Target: `packages/pipeline/src/tag/detect/conjugate-types.ts`)
+- [x] Task 3: Extended board/block/deficit detection to parse magnitude (digit or `"double"`
+      before `"board"`; digit+quote before `"block"`/`"deficit"`; default `"1"` in all cases),
+      mirroring the existing chains magnitude regex; wired into `parseExercise` so
+      non-accessory lifts populate `equipmentMagnitude` when `equipment` is `'board'`,
+      `'block'`, or `'deficit'`. (Target: `packages/pipeline/src/tag/detect/detectors.ts`,
+      `packages/pipeline/src/tag/detect/parseExercise.ts`)
+- [x] Task 4: Updated `buildCanonical` to append `equipmentMagnitude` to the canonical string
+      when present and not the default (`"1"`), matching the chains omit-default convention
+      (`bench-board` stays unchanged for 1-board; `bench-board-2` for 2-board; same pattern
+      for `deadlift-blocks`/`deadlift-deficit`). Confirmed `buildTagsAndEffects`'s
+      `equip:board`/`equip:block`/`equip:deficit` tag/effects lookups (keyed by `ex.equipment`,
+      not magnitude) are unaffected by design — no behavior change needed there.
+      (Target: `packages/pipeline/src/tag/detect/canonical.ts`)
+- [x] Task 5: Extended `canonical.test.ts`'s existing magnitude-qualified-modifier `it.each`
+      matrix with board/block/deficit cases (9 new rows; pipeline test count 207 → 216),
+      following the same pattern already used for chains/bands. (Target:
+      `packages/pipeline/src/tag/detect/canonical.test.ts`; Test:
+      `npm test -w packages/pipeline`)
+- [x] Task 6: Updated `packages/pipeline/src/tag/CLAUDE.md`'s "Canonical format" section to
+      document equipment-magnitude handling for board/block/deficit (parallel to how `addlWts`
+      magnitude is already documented there). (Target: `packages/pipeline/src/tag/CLAUDE.md`)
+- [x] Task 7: Re-ran `totalChartParity.test.ts` and `conjugateChartParity.test.ts` — real
+      numbers above. Bench improved 7.0%→0.7% (~10x), confirming root cause. Squat/deadlift
+      unchanged (deadlift's block/deficit split is a latent-bug close, not observable on this
+      fixture). PushPull/total also improved (7.0%→0.7% bench ripples into these composites).
+      (Target: `packages/app/src/pipeline/totalChartParity.test.ts`,
+      `packages/app/src/pipeline/conjugateChartParity.test.ts`; Test:
+      `npm test -w packages/app`)
+- [x] Task 8: Full build/test pass, both packages — clean, single combined run.
+      (Test: `npm run build -w packages/pipeline && npm run build -w packages/app && npm
+    test -w packages/pipeline && npm test -w packages/app`)
+- [x] Task 9: Docs — this section updated to reflect completion with real numbers;
+      `FIX_BOARD_COUNT.md` and `HANDOFF.md` updated to match. (Target: `SPECIFICATIONS.md`,
+      `FIX_BOARD_COUNT.md`, `HANDOFF.md`)
+- [x] Task 10 (QA): Independent full-suite re-verification via `qa-reviewer` — **PASS**, see
+      above. Confirmed pipeline 12 files/216 tests, app 19 files/200 tests, both builds clean,
+      bench maxRelDiff 0.7% (down from 7.0%). No discrepancies from self-reported numbers at
+      any step.
+
+**Status: ✅ COMPLETE (10/10 tasks, 2026-07-07).** Fix implemented, verified at every step
+(including a caught false self-report at Task 2, matching a known project pattern — see
+`HANDOFF.md`), and independently confirmed to measurably close bench's divergence
+(7.0%→0.7%), with bonus improvements to pushPull (2.5%→0.3%) and total (1.8%→0.2%) as a
+downstream ripple.
