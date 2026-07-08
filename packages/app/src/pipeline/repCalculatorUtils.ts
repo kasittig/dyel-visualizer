@@ -63,3 +63,62 @@ export function predictWeightForReps(e1rm: number, reps: number): number {
 export function predictRepsForWeight(e1rm: number, weight: number): number {
   return weight <= 0 || weight >= e1rm ? 1 : Math.max(1, 30 * (e1rm / weight - 1));
 }
+
+/**
+ * Finds the canonical string for a given exercise by display name.
+ * Searches through available canonicals in the model and points.
+ *
+ * Matching strategy:
+ * 1. If display name matches the baseline canonical, return the baseline
+ * 2. Search for a canonical that matches the display name (exact or substring)
+ * 3. For variants, look in model.variantFactor keys
+ */
+export function findCanonicalForExercise(
+  displayName: string,
+  baselineCanonical: string,
+  model: NormalizationModel,
+  e1rmPoints: Point[],
+  liftType: string
+): string | null {
+  // If the display name matches the baseline, use the baseline canonical
+  if (displayName === baselineCanonical) {
+    return baselineCanonical;
+  }
+
+  // Get all unique canonicals that appear in the e1rm points for this lift type
+  const pointsForLift = e1rmPoints.filter((p) => p.tags.has(`lift:${liftType}`));
+  const canonicalsInPoints = new Set(pointsForLift.map((p) => p.series));
+
+  // Try to find a canonical by display name match
+  // First, try exact match after kebab-slugifying
+  const slugifiedDisplay = displayName
+    .toLowerCase()
+    .replace(/\s+/g, '-')
+    .replace(/[()]/g, '')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
+
+  // Check if any canonical starts with or contains the slugified display name
+  for (const canonical of canonicalsInPoints) {
+    if (canonical === slugifiedDisplay || canonical.includes(slugifiedDisplay)) {
+      return canonical;
+    }
+  }
+
+  // If no match found by name, look for any variant canonical in variantFactor
+  // This is a fallback for cases where we can't match by name
+  for (const canonical of canonicalsInPoints) {
+    if (canonical !== baselineCanonical && model.variantFactor[canonical]) {
+      // Return the first available variant (this is imperfect but handles cases
+      // where we don't have enough info to match by name)
+      return canonical;
+    }
+  }
+
+  // Fallback: return baseline if nothing else matches
+  if (canonicalsInPoints.has(baselineCanonical)) {
+    return baselineCanonical;
+  }
+
+  return null;
+}

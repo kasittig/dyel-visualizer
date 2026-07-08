@@ -1,10 +1,6 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 import clsx from 'clsx';
 import {
-  findBestE1RM,
-  predictWeightForReps,
-  predictRepsForWeight,
-  buildSessionStats,
   familyKey,
   CONJUGATE_BARS,
   CONJUGATE_STANCES,
@@ -18,10 +14,16 @@ import type {
   ConjugateEquipment,
   ConjugateExercise,
   ConjugateStance,
-  E1RMEstimate,
   LiftType,
-  SessionStats,
 } from '@dyel/core';
+import { usePipelineModel } from '../../context/PipelineContext';
+import {
+  predictWeightForReps,
+  predictRepsForWeight,
+  findBestE1RMFromPipeline,
+  findCanonicalForExercise,
+} from '../../pipeline/repCalculatorUtils';
+import type { E1RMEstimate } from '../../pipeline/repCalculatorUtils';
 import type { SplitRows } from '../../utils/appDataUtils';
 import { distinctDisplayNames, LIFT_TABS } from '../../utils/appUtils';
 import styles from './RepCalculator.module.css';
@@ -63,19 +65,18 @@ export function RepCalculator({
   const [selectedEquipment, setSelectedEquipment] = useState<ConjugateEquipment | null>(null);
   const [selectedAddlWt, setSelectedAddlWt] = useState<ConjugateAddlWt | null>(null);
 
-  const { pairsByTab, statsByTab } = useMemo(() => {
-    const today = new Date();
-    const pairs = Object.fromEntries(
-      LIFT_TABS.map((tab) => [tab, tabRows[tab].maxEffort])
-    ) as Record<LiftType, ConjugateDataPair[]>;
-    const stats = Object.fromEntries(
-      LIFT_TABS.map((tab) => [tab, buildSessionStats(pairs[tab], baselineNames, today)])
-    ) as Record<LiftType, SessionStats>;
-    return { pairsByTab: pairs, statsByTab: stats };
-  }, [tabRows, baselineNames]);
+  const pairsByTab = useMemo(
+    () =>
+      Object.fromEntries(LIFT_TABS.map((tab) => [tab, tabRows[tab].maxEffort])) as Record<
+        LiftType,
+        ConjugateDataPair[]
+      >,
+    [tabRows]
+  );
+
+  const { status: pipelineStatus, model: pipelineModel } = usePipelineModel();
 
   const pairs = pairsByTab[liftType];
-  const stats = statsByTab[liftType];
 
   const unit = pairs[0]?.[1].unit ?? 'lbs';
 
@@ -161,11 +162,40 @@ export function RepCalculator({
   ]);
 
   const estimate = useMemo(() => {
-    if (!facetExercise) {
+    if (!facetExercise || pipelineStatus !== 'success' || !pipelineModel) {
       return null;
     }
-    return findBestE1RM(facetExercise, stats, baselineNames[liftType], new Date());
-  }, [facetExercise, stats, baselineNames, liftType]);
+
+    const baselineCanonical = baselineNames[liftType];
+    if (!baselineCanonical) {
+      return null;
+    }
+
+    const e1rmPoints = pipelineModel.pointsByDeriver.get('e1rm') ?? [];
+    const baselinePoints = e1rmPoints.filter((p) => p.series === baselineCanonical);
+    if (baselinePoints.length === 0) {
+      return null;
+    }
+
+    const targetCanonical = findCanonicalForExercise(
+      facetExercise.displayName,
+      baselineCanonical,
+      pipelineModel.model,
+      e1rmPoints,
+      liftType
+    );
+    if (!targetCanonical) {
+      return null;
+    }
+
+    return findBestE1RMFromPipeline(
+      targetCanonical,
+      baselineCanonical,
+      baselinePoints,
+      pipelineModel.model,
+      baselineCanonical
+    );
+  }, [facetExercise, pipelineStatus, pipelineModel, baselineNames, liftType]);
 
   // Keep a ref so the exercise-change effect always reads the current reps value
   // without reps being a dependency (which would cause circular updates when typing weight).

@@ -81,14 +81,7 @@ describe('RepCalculator parity: legacy vs pipeline', () => {
 
     it('returns null on missing inputs or variant validation failures', () => {
       expect(
-        findBestE1RMFromPipeline(
-          'competition squat',
-          'competition squat',
-          makePoints(),
-          model,
-          '',
-          new Date()
-        )
+        findBestE1RMFromPipeline('competition squat', 'competition squat', makePoints(), model, '')
       ).toBeNull();
       expect(
         findBestE1RMFromPipeline(
@@ -96,8 +89,7 @@ describe('RepCalculator parity: legacy vs pipeline', () => {
           'competition squat',
           [],
           model,
-          'Baseline Squat',
-          new Date()
+          'Baseline Squat'
         )
       ).toBeNull();
       expect(
@@ -106,8 +98,7 @@ describe('RepCalculator parity: legacy vs pipeline', () => {
           'competition squat',
           makePoints(),
           model,
-          'Competition Squat',
-          new Date()
+          'Competition Squat'
         )
       ).toBeNull();
 
@@ -121,8 +112,7 @@ describe('RepCalculator parity: legacy vs pipeline', () => {
           'competition squat',
           makePoints(),
           badFactorModel,
-          'Competition Squat',
-          new Date()
+          'Competition Squat'
         )
       ).toBeNull();
     });
@@ -138,8 +128,7 @@ describe('RepCalculator parity: legacy vs pipeline', () => {
         'competition squat',
         exactPts,
         model,
-        'Competition Squat',
-        new Date()
+        'Competition Squat'
       );
       expect(exact).toMatchObject({ e1rm: 300, method: 'exact', sourceName: 'Competition Squat' });
 
@@ -148,8 +137,7 @@ describe('RepCalculator parity: legacy vs pipeline', () => {
         'competition squat',
         makePoints(),
         model,
-        'Competition Squat',
-        new Date()
+        'Competition Squat'
       );
       expect(factored?.e1rm).toBeCloseTo(300 * 0.95, 1);
       expect(factored?.method).toBe('variantFactor');
@@ -167,8 +155,7 @@ describe('RepCalculator parity: legacy vs pipeline', () => {
         'competition squat',
         makePoints(),
         offsetModel,
-        'Competition Squat',
-        new Date()
+        'Competition Squat'
       );
       expect(offsetRes?.e1rm).toBeCloseTo(300 - 20, 1);
 
@@ -177,8 +164,7 @@ describe('RepCalculator parity: legacy vs pipeline', () => {
         'competition squat',
         makePoints(300, 1704067200000),
         model,
-        'Competition Squat',
-        new Date()
+        'Competition Squat'
       );
       expect(dated?.date.getTime()).toBe(1704067200000);
 
@@ -192,8 +178,7 @@ describe('RepCalculator parity: legacy vs pipeline', () => {
         'competition squat',
         makePoints(),
         clampModel,
-        'Competition Squat',
-        new Date()
+        'Competition Squat'
       );
       expect(clamped?.e1rm).toBe(0);
     });
