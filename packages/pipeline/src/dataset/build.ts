@@ -52,12 +52,15 @@ export function buildDataset(
   athlete: AthleteContext
 ): RechartsRow[] {
   let rows: RechartsRow[] = [];
+  const scopedPoints = ui.dateRange
+    ? points.filter((p) => p.t >= ui.dateRange![0] && p.t <= ui.dateRange![1])
+    : points;
 
   if (spec.kind === 'series') {
     const q = mergeChips(spec.include, ui.chips);
     const rowMap = new Map<number, RechartsRow>();
 
-    points.forEach((p) => {
+    scopedPoints.forEach((p) => {
       if (matches(new Set([...p.tags, p.series]), q)) {
         rowMap.set(p.t, { ...(rowMap.get(p.t) ?? { t: p.t }), [p.series]: p.v });
       }
@@ -68,7 +71,7 @@ export function buildDataset(
     const queries = spec.components.map((c) => mergeChips(c.include, ui.chips));
     const grids = queries.map((q) => {
       const grid = new Map<number, number>();
-      points.forEach((p) => {
+      scopedPoints.forEach((p) => {
         if (matches(new Set([...p.tags, p.series]), q)) {
           const val = normalizeE1rm(p.series, p.v, model);
           if (val !== null && val > (grid.get(p.t) ?? -Infinity)) {
@@ -101,8 +104,5 @@ export function buildDataset(
     }
   }
 
-  // 4. Inline filtering using the date range constraints
-  return ui.dateRange
-    ? rows.filter((r) => r.t >= ui.dateRange![0] && r.t <= ui.dateRange![1])
-    : rows;
+  return rows;
 }

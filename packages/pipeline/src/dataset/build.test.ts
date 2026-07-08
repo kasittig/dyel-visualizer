@@ -199,6 +199,19 @@ describe('buildDataset — CompositeSpec', () => {
     ]);
   });
 
+  it('does not carry forward component values from before the date range', () => {
+    const m = model({ baseline: { 'lift:squat': 'squat', 'lift:bench': 'bench' } });
+    const points = [
+      pt('squat', 200, day(1), ['lift:squat']),
+      pt('bench', 100, day(5), ['lift:bench']),
+      pt('bench', 110, day(10), ['lift:bench']),
+      pt('squat', 220, day(20), ['lift:squat']),
+    ];
+    expect(buildDataset(points, spec(lifts), { dateRange: [day(5), day(31)] }, m, athlete)).toEqual(
+      [{ t: day(20), 'estimated-total': 330 }]
+    );
+  });
+
   it('blocks row emission until every component reports metrics', () => {
     const m = model({ baseline: { 'lift:squat': 'squat', 'lift:bench': 'bench' } });
     const points = [

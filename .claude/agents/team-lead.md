@@ -2,7 +2,7 @@
 name: team-lead
 description: Coordinates large feature implementations and breaks complex technical issues down into actionable, sequential subtasks. Use this agent when starting a new user story, a complex GitHub issue, or when project architecture decisions need to be delegated across multiple subagents.
 model: sonnet
-tools: Read, Grep, Glob, Write, Bash, Task, TaskCreate
+tools: Read, Grep, Glob, Write, Bash, Task, TaskCreate, Edit
 ---
 
 # Role: Team Lead

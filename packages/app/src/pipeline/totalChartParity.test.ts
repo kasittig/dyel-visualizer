@@ -40,15 +40,6 @@ describe('TotalChart core-vs-pipeline parity', () => {
     const fixturePath = join(__dirname, '../../test/fixtures/total-chart-sheet.csv');
     fixtureContent = readFileSync(fixturePath, 'utf-8');
 
-    // Pipeline path
-    const raw = buildRawInput('url', fixtureContent);
-    const result = runPipeline([raw], TOTAL_CHART_SPECS, PLACEHOLDER_ATHLETE, {});
-    pipelineOutput = mergeRechartsRowsToChartPoints(result.datasets, TOTAL_CHART_IDS, 'lbs');
-    pipelineModel = result.model;
-
-    // Legacy @dyel/core path using the same fixture content and the same app-level
-    // filtering that main used before handing data to TotalChart:
-    // App.tsx -> tabRows.*.maxEffort -> filteredSigmaPairs -> buildChartData.
     const pairs = parseConjugateData(fixtureContent);
     const state = { status: 'success' as const, pairs };
     const dataMap = extractPairs(state);
@@ -93,6 +84,20 @@ describe('TotalChart core-vs-pipeline parity', () => {
       ...tabRows.deadlift.volume,
       ...tabRows.accessory.volume,
     ];
+
+    // Pipeline path, matching usePipelineTotalChartData's date-range RenderParams.
+    const raw = buildRawInput('url', fixtureContent);
+    const ui =
+      dateRange.from && dateRange.to
+        ? { dateRange: [dateRange.from.getTime(), dateRange.to.getTime()] as [number, number] }
+        : {};
+    const result = runPipeline([raw], TOTAL_CHART_SPECS, PLACEHOLDER_ATHLETE, ui);
+    pipelineOutput = mergeRechartsRowsToChartPoints(result.datasets, TOTAL_CHART_IDS, 'lbs');
+    pipelineModel = result.model;
+
+    // Legacy @dyel/core path using the same fixture content and the same app-level
+    // filtering that main used before handing data to TotalChart:
+    // App.tsx -> tabRows.*.maxEffort -> filteredSigmaPairs -> buildChartData.
     const computed = computeBaselineTargetExercises(
       filteredSigmaPairs,
       effectiveBaselineNames,
@@ -177,10 +182,6 @@ describe('TotalChart core-vs-pipeline parity', () => {
   //     ~7.0% — meaning offset-space wasn't bench's dominant contributor.
   // Still-open, NOT yet root-caused/fixed for this TotalChart harness specifically (some are
   // analogous ConjugateCharts findings that may or may not transfer — not confirmed here):
-  //   - Pipeline TotalChart currently consumes raw input through TOTAL_CHART_SPECS derive:'e1rm',
-  //     while legacy main filtered to tabRows.*.maxEffort before calling buildChartData. This
-  //     means pipeline can include volume/repetition-effort sessions that legacy never handed to
-  //     TotalChart (for example 4/24/2026 Deadlift (2" block), 5x5 @ 165 with blank RPE).
   //   - bench's flat ~7.0% divergence despite the Design C fix — unexplained.
   //   - squat's ~0.7% divergence — unexplained, pre-existing, unrelated to addlWt (squat has 0
   //     addlWt variants).
@@ -196,6 +197,15 @@ describe('TotalChart core-vs-pipeline parity', () => {
 
       // Hard assertion: joined data must have overlapping dates (catches date-parsing regressions)
       expect(diff.comparedCount).toBeGreaterThan(0);
+
+      // Hard assertion: legacy and pipeline must return the same set of dates (same point count)
+      // for every series except pushPull's documented composite gap. This intentionally catches
+      // raw-pipeline volume/repetition-effort rows that main's legacy TotalChart data path
+      // filtered out before buildChartData.
+      if (series !== 'pushPull') {
+        expect(diff.missingInA).toBe(0);
+        expect(diff.missingInB).toBe(0);
+      }
 
       // Soft warn: log real diagnostic numbers for visibility, not for gating
       console.warn(

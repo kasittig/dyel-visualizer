@@ -16,6 +16,7 @@ import {
   buildSessionStats,
   calculateVolumeCorrelation,
   buildChartData,
+  filterByDateRange,
 } from '@dyel/core';
 import { buildRawInput, PLACEHOLDER_ATHLETE } from '../utils/rawInputUtils';
 import {
@@ -50,18 +51,7 @@ describe('SigmaTab core-vs-pipeline parity (with volume merge)', () => {
     const fixturePath = join(__dirname, '../../test/fixtures/total-chart-sheet.csv');
     fixtureContent = readFileSync(fixturePath, 'utf-8');
 
-    // Compute volumeByDate from legacy path (same calculation used for both sides)
     const pairs = parseConjugateData(fixtureContent);
-    volumeByDate = calculateVolumeCorrelation(pairs);
-
-    // Pipeline path: runPipeline + merge lift series + merge volume
-    const raw = buildRawInput('url', fixtureContent);
-    const result = runPipeline([raw], TOTAL_CHART_SPECS, PLACEHOLDER_ATHLETE, {});
-    pipelineOutput = mergeRechartsRowsToChartPoints(result.datasets, TOTAL_CHART_IDS, 'lbs');
-    pipelineOutput = mergeVolumeIntoChartPoints(pipelineOutput, volumeByDate);
-    pipelineModel = result.model;
-
-    // Legacy @dyel/core path using same fixture content
     const state = { status: 'success' as const, pairs };
     const dataMap = extractPairs(state);
     const tabRows = buildTabRows(dataMap);
@@ -72,15 +62,68 @@ describe('SigmaTab core-vs-pipeline parity (with volume merge)', () => {
       tabState,
       deadliftStance
     );
+    const allPairs = [
+      ...tabRows.squat.maxEffort,
+      ...tabRows.bench.maxEffort,
+      ...tabRows.deadlift.maxEffort,
+      ...tabRows.accessory.maxEffort,
+    ];
+    const lastSessionDate = allPairs.reduce<Date | null>(
+      (last, [, session]) => (!last || session.date > last ? session.date : last),
+      null
+    );
+    const dateRange =
+      lastSessionDate === null
+        ? { from: undefined, to: undefined }
+        : {
+            from: new Date(
+              lastSessionDate.getFullYear(),
+              lastSessionDate.getMonth() - 3,
+              lastSessionDate.getDate()
+            ),
+            to: lastSessionDate,
+          };
+    const sigmaPairs = [
+      ...tabRows.squat.maxEffort,
+      ...tabRows.bench.maxEffort,
+      ...tabRows.deadlift.maxEffort,
+    ];
+    const filteredSigmaPairs = filterByDateRange(sigmaPairs, dateRange.from, dateRange.to);
+    const volumePairs = [
+      ...tabRows.squat.volume,
+      ...tabRows.bench.volume,
+      ...tabRows.deadlift.volume,
+      ...tabRows.accessory.volume,
+    ];
+    volumeByDate = calculateVolumeCorrelation(volumePairs);
+
+    // Pipeline path: runPipeline + merge lift series + merge volume
+    const raw = buildRawInput('url', fixtureContent);
+    const ui =
+      dateRange.from && dateRange.to
+        ? { dateRange: [dateRange.from.getTime(), dateRange.to.getTime()] as [number, number] }
+        : {};
+    const result = runPipeline([raw], TOTAL_CHART_SPECS, PLACEHOLDER_ATHLETE, ui);
+    pipelineOutput = mergeRechartsRowsToChartPoints(result.datasets, TOTAL_CHART_IDS, 'lbs');
+    pipelineOutput = mergeVolumeIntoChartPoints(pipelineOutput, volumeByDate);
+    pipelineModel = result.model;
+
+    // Legacy @dyel/core path using same fixture content and the same app-level filtering.
     const computed = computeBaselineTargetExercises(
-      pairs,
+      filteredSigmaPairs,
       effectiveBaselineNames,
       effectiveTargetNames
     );
     baselineExByType = computed.baselineExByType;
     const { targetExByType } = computed;
-    const stats = buildSessionStats(pairs, effectiveBaselineNames, new Date());
-    legacyOutput = buildChartData(pairs, baselineExByType, targetExByType, stats, volumeByDate);
+    const stats = buildSessionStats(filteredSigmaPairs, effectiveBaselineNames, new Date());
+    legacyOutput = buildChartData(
+      filteredSigmaPairs,
+      baselineExByType,
+      targetExByType,
+      stats,
+      volumeByDate
+    );
 
     joined = joinChartPointsByDate(legacyOutput, pipelineOutput);
   });

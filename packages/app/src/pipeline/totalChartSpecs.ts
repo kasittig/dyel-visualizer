@@ -4,7 +4,7 @@ const composite = (id: string, lifts: string[]): CompositeSpec => ({
   id,
   kind: 'composite',
   components: lifts.map((lift) => ({ label: lift, include: { all: [`lift:${lift}`] } })),
-  derive: 'e1rm',
+  derive: 'e1rm-max-effort',
   normalize: true,
   combine: 'sum',
 });
