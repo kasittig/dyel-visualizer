@@ -329,7 +329,7 @@ session (2026-07-07)" section — this is the task-tracking summary.
       "no date overlap" warning itself persists (Finding #4's date-value-alignment root
       cause is still open, not resolved by this fix). No regressions: full suite
       (`npm run build -w packages/pipeline && npm run build -w packages/app && npm test -w
-  packages/pipeline && npm test -w packages/app`) green — pipeline 12 files/195 tests,
+packages/pipeline && npm test -w packages/app`) green — pipeline 12 files/195 tests,
       app 19 files/200 tests (unchanged from baseline, includes the one-line harness-bug
       fix). (Target: `packages/app/src/pipeline/conjugateChartSpecs.ts`,
       `packages/app/src/pipeline/conjugateChartParity.test.ts`. Test:
@@ -362,11 +362,35 @@ session (2026-07-07)" section — this is the task-tracking summary.
       NOT attempt the component swap itself. Should not be attempted before Task 9 (new
       Finding #6, bench/deadlift normalized-composite value divergence) is at least
       assessed, per this doc's "Before re-attempting" note.
-- [ ] Task 9 (not started, new): Root-cause Finding #6 — why bench/deadlift `normalized`
-      composites show real 5-10% value divergence from legacy while squat is exact. Not
-      investigated yet; candidates include per-variant normalization-factor fitting
-      differences or canonical-vs-label grouping feeding the composite differently than the
-      per-variation series, but unconfirmed.
+- [x] Task 9: Root-cause Finding #6 — why bench/deadlift `normalized` composites show
+      real 5-10% value divergence from legacy while squat is exact. **Root-caused
+      (2026-07-07, fourth follow-up).** Two initial hypotheses (canonical-vs-label
+      grouping mismatch; baseline-identity mismatch) were tested empirically via
+      throwaway debug scripts against the real fixture and both **falsified** — canonical
+      and label are ~1:1 for all three lift types (bench has exactly one 2-label
+      canonical), and legacy/pipeline baseline choice agrees exactly for all three lift
+      types. **Real cause**: `packages/pipeline/src/derive/normalize.ts`'s
+      `fitNormalizationModel`/`normalizeE1rm` never wires `addlWtOffset` (chain/band
+      weight correction) into either the per-variant-factor fit or the per-point
+      normalize-apply step, for any exercise — unlike legacy's
+      `buildSessionStats`/`normalizeToBaseE1RM`, which corrects for it on both sides.
+      `model.addlWtOffset` is computed but never consumed — dead data. Confirmed this
+      exactly explains the per-lift divergence magnitude: squat has 0 addlWt variants (0%
+      divergence), deadlift has 3/6 non-baseline addlWt variants (5.1%), bench has 5/16
+      (9.8%). Full writeup in `migration/ConjugateCharts.md`'s new "Finding #6
+      root-caused" section. Not fixed — architecture decision needing sign-off, same as
+      Findings #1/#3, and scoped to `packages/pipeline` itself (not `ConjugateCharts`-only).
+      (Target: none this task — root-cause only. Test:
+      `npm test -w packages/app -- conjugateChartParity`, unchanged 8/8 passing; no
+      production code touched)
+- [ ] Task 10 (not started, new): Fix Finding #6 — wire `addlWtOffset` into
+      `fitNormalizationModel`'s per-variant fit and `normalizeE1rm`'s apply step, mirroring
+      legacy's two-sided correction (`applyAddlWtOffset` before `fitVariantFactor`;
+      offset-adjusted e1RM before dividing by factor in `normalizeToBaseE1RM`). Needs
+      explicit user sign-off on the design before implementation, per this project's
+      established precedent for Findings #1/#3 (both required sign-off first). Candidate
+      designs are outlined in `migration/ConjugateCharts.md`'s Finding #6 section — not
+      chosen yet.
 
 ## Verification
 
@@ -394,5 +418,16 @@ session's 5-line harness fix). Parity harness's per-variation soft-warns remain 
 promoted to hard-assert — sample sizes remain n=1-5 per series, still judged too sparse to
 call proven parity by this project's established precedent. `ConjugateCharts.tsx` and
 `useConjugateChartData.ts` remain unswapped, still on `@dyel/core` — the Phase 4 blocker is
-narrowed further, not closed. Next: Task 9 (Finding #6 root-cause), then Task 8 (component
-swap), or pick a different Phase 4 blocker (`VariationRadarChart`/`DiagnosticsPanel`).
+narrowed further, not closed.
+
+**Task 9 complete (2026-07-07, fourth follow-up)**: Finding #6 is root-caused. Two initial
+hypotheses (canonical/label grouping; baseline-identity mismatch) were empirically tested
+against the real fixture and falsified. Real cause: pipeline's `normalize.ts` never wires
+`addlWtOffset` into the `variantFactor` fit or the `normalizeE1rm` apply step for any
+exercise, unlike legacy's two-sided correction — confirmed to exactly track the per-lift
+divergence magnitude via addlWt-variant proportion (squat 0/6 → 0%, deadlift 3/6 → 5.1%,
+bench 5/16 → 9.8%). Not fixed — new Task 10 (needs explicit sign-off on fix design, same
+precedent as Findings #1/#3) tracks the actual implementation. No regressions: no production
+code touched this session, root-cause only. Next: get sign-off + implement Task 10, then
+Task 8 (component swap), or pick a different Phase 4 blocker
+(`VariationRadarChart`/`DiagnosticsPanel`).

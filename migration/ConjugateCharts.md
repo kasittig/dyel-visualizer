@@ -426,6 +426,82 @@ per-variation series) but unconfirmed — flag as the next priority, do not assu
 pre-session baseline (only a 5-line change to one existing test file, no new tests added).
 Independently re-verified via `qa-reviewer`.
 
+### Finding #6 root-caused (2026-07-07, fourth follow-up): addlWtOffset never wired into pipeline normalization
+
+Picked up Open TODO #1 from `HANDOFF.md` (root-cause Finding #6: bench 9.8%/deadlift 5.1%
+`normalized`-composite value divergence from legacy, while squat is exact).
+
+**Two hypotheses were tested empirically via throwaway debug scripts (deleted after use,
+same pattern as the Finding #4 session) before writing up a conclusion:**
+
+1. **Canonical-vs-label grouping mismatch (initial hypothesis, FALSIFIED).** `CompositeSpec`
+   has no `groupBy` field (confirmed in `packages/pipeline/src/dataset/build.ts`), so
+   Finding #3's `groupBy: 'label'` fix — deliberately scoped only to the `variations`
+   series — never reached the `normalized` composite, which always normalizes via
+   canonical-level `variantFactor`. This looked like a plausible explanation (legacy fits
+   one factor per exact display-name label; pipeline fits one per canonical). **Directly
+   disproven** by printing the real fixture's label→canonical fan-out per lift type:
+   squat (6 canonicals, all 1:1 with their label), deadlift (8 canonicals, all 1:1), and
+   bench (17 canonicals, all 1:1 **except** `bench-board` which pools `Bench (1 board)`
+   and `Bench (2 board)`, n=2). Only one canonical, in one lift type, has any label
+   fan-out at all — nowhere near enough to explain a 9.8% whole-composite divergence, and
+   it doesn't explain deadlift's 5.1% divergence at all (deadlift has zero fan-out).
+2. **Baseline-identity mismatch (second hypothesis, FALSIFIED).** Printed legacy's
+   `effectiveBaselineNames` (from `computeEffectiveNames`) against pipeline's
+   `PipelineResult.model.baseline['lift:<type>']` for all three lift types on the real
+   fixture: squat (`Squat` / `squat`), bench (`Bench (commands)` / `bench-pause` — the
+   same exercise, confirmed via the canonical→label map from hypothesis 1), deadlift
+   (`Deadlift` / `deadlift`). All three agree exactly. Baseline choice is not the cause.
+
+**Real root cause (confirmed via code + fixture evidence, not speculation):**
+**pipeline's `fitNormalizationModel`/`normalizeE1rm` (`packages/pipeline/src/derive/normalize.ts`)
+never wires `addlWtOffset` (the chain/band weight correction) into either the
+per-variant-factor FIT or the per-point normalization APPLY step — for any exercise, ever.**
+Contrast with legacy:
+
+- **Fit-time**: `packages/core/src/utils/stats/sessionIndex.ts`'s `buildSessionStats` calls
+  `applyAddlWtOffset(familySessions, data.sessions)` for every addlWt exercise _before_
+  calling `fitVariantFactor(baselineSessions, adjustedSessions)` — i.e. legacy's
+  `variantFactor` for e.g. `Bench (chain)` is fit on chain-tension-corrected weights.
+  Pipeline's `fitNormalizationModel` (`normalize.ts:160`) computes `variantFactor` via
+  `fitMetric(grid, r, (p, rec) => calcE1RM(rec.weight, ...) / p)` using `rec.weight`
+  **raw**, un-offset, for every exercise including addlWt ones. Pipeline does separately
+  compute an `addlWtOffset` model field (`normalize.ts:165-169`), but it is fit
+  independently and never feeds back into the `variantFactor` fit the way legacy's
+  `adjustedSessions` does.
+- **Apply-time**: legacy's `normalizeToBaseE1RM`
+  (`packages/core/src/utils/stats/repCalculator.ts`) explicitly adjusts a session's e1RM
+  by `addlWtOffset` before dividing by `variantFactor` whenever source or target carries
+  addlWt (both the same-family branch, lines 98-108, and the cross-family branch, lines
+  115-121). Pipeline's `normalizeE1rm`/`getFactor` (`normalize.ts:177-182`) is a bare
+  `e1rmKg / f` — `model.addlWtOffset` is never read by either function. It is computed
+  and stored on `NormalizationModel` but is currently **dead data**, not consumed by any
+  normalization path.
+
+**This lines up exactly with the observed per-lift divergence magnitude**, confirmed via
+the label→canonical fixture dump: squat has **zero** addlWt (chain/band) variants among
+its 6 canonicals → 0% divergence (nothing triggers the gap). Bench has **5 of 16**
+non-baseline canonicals carrying addlWt (`bench-floor-chains`, `bench-swiss-chains`,
+`bench-slingshot-chains`, `bench-chains`, `bench-bands-unspecified`) → largest divergence
+(9.8%). Deadlift has **3 of 6** non-baseline canonicals carrying addlWt
+(`deadlift-bands-unspecified`, `deadlift-rev-bands-light`, `deadlift-rev-bands-mini`) →
+moderate divergence (5.1%). The proportion of addlWt-carrying variants per lift type
+tracks the divergence magnitude directly.
+
+**Not fixed this session** — closing this requires deciding how pipeline should
+incorporate `addlWtOffset` into `fitNormalizationModel`'s fit step and `normalizeE1rm`'s
+apply step (mirroring legacy's two-sided correction), which is an architecture decision in
+the same class as Findings #1 and #3 (both required explicit user sign-off before
+implementation) — flagged for sign-off, not implemented speculatively. Note this is a
+**pipeline-level** fix (`packages/pipeline/src/derive/normalize.ts`), not scoped to
+`ConjugateCharts` alone — any other composite consuming addlWt-tagged canonicals (there
+are none yet, but `TotalChart`'s composite could in principle) would have the same latent
+gap once it includes addlWt-carrying variants.
+
+**No regressions**: no production code changed this session — root-cause investigation
+only, via two throwaway debug test files (`_debug_finding6.test.ts`), both deleted after
+use. `npm test -w packages/app -- conjugateChartParity` unchanged (8/8 passing).
+
 ## Verification
 
 `npm test -w packages/app -- conjugateChartParity`
