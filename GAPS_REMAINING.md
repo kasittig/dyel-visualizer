@@ -54,7 +54,7 @@ was closing.
       silently-dropped point) before any _other_ component can be swapped, since every
       other finding in this doc is now partly downstream of it. (Target:
       `packages/pipeline/src/pipeline.ts`. Test: `npm test -w packages/pipeline && npm
-  test -w packages/app`)
+test -w packages/app`)
 
   **Resolved (verified 2026-07-08):** `packages/pipeline/src/pipeline.ts` has
   `MIN_SAMPLES = 1` with no uncommitted diff — the `=3` change described above is no
@@ -69,7 +69,7 @@ was closing.
       assertions as the committed state. (Target:
       `packages/app/src/pipeline/totalChartParity.test.ts`,
       `packages/app/src/pipeline/sigmaTabParity.test.ts`. Test: same files, `npm test -w
-  packages/app`)
+packages/app`)
 
   **Resolved (verified 2026-07-08):** `totalChartParity.test.ts`'s hard-assert block
   (`missingInA === 0 && missingInB === 0`) covers all series including bench, no
@@ -135,8 +135,8 @@ leftover: `TotalChart.tsx` still has a type-only `ChartPoint` import from `@dyel
       import. Pure type-only cleanup, no behavior change expected. (Target:
       `packages/pipeline/src/index.ts` (or wherever the barrel lives),
       `packages/app/src/components/charts/TotalChart.tsx`. Test: `npm run build -w
-  packages/pipeline && npm run build -w packages/app && npm test -w packages/app --
-  totalChartParity`)
+packages/pipeline && npm run build -w packages/app && npm test -w packages/app --
+totalChartParity`)
 
 ## 2. `RepCalculator` / `StrengthScoreCalculator` — ready, smallest remaining gap
 
@@ -154,17 +154,17 @@ every other SM case).
       formula or its percentile-rank step. Fix or explicitly document as an accepted
       rounding-boundary case before treating the test as gate-passing. (Target:
       `packages/pipeline/src/derive/athlete.ts`. Test: `npm test -w packages/app --
-  strengthScoreCalculatorParity`)
+strengthScoreCalculatorParity`)
 - [ ] Task 2b: Swap `RepCalculator.tsx` to `usePipelineRepCalculator` +
       `findBestE1RMFromPipeline`, passing `inputMode`/`url`/`pastedText`/`refreshToken`
       from `App.tsx`. (Target: `packages/app/src/components/shared/RepCalculator.tsx`,
       `packages/app/src/App.tsx`. Test: `npm test -w packages/app -- repCalculatorParity
-  && npm run build -w packages/app`)
+&& npm run build -w packages/app`)
 - [ ] Task 2c: Swap `StrengthScoreCalculator.tsx`'s `calculateMetrics` call to
       `computeStrengthScores` (same signature). Do this after 2a lands so the swap isn't
       shipping a known, undocumented rounding gap. (Target:
       `packages/app/src/components/shared/StrengthScoreCalculator.tsx`. Test: `npm test
-  -w packages/app -- strengthScoreCalculatorParity && npm run build -w packages/app`)
+-w packages/app -- strengthScoreCalculatorParity && npm run build -w packages/app`)
 
 ## 3. `ConjugateCharts` — real gap remaining: normalized-composite value divergence
 
@@ -197,7 +197,7 @@ in the current doc because the doc's numbers predate the `MIN_SAMPLES` bump.
       swap. This is the actual remaining action item once 3a's numbers are clean.
       (Target: `packages/app/src/hooks/conjugate/useConjugateChartData.ts`,
       `packages/app/src/components/conjugate/ConjugateCharts.tsx`. Test: `npm test -w
-  packages/app -- conjugateChartParity`)
+packages/app -- conjugateChartParity`)
 
 ## 4. `VariationRadarChart` — two real gaps, one newly quantified this session
 
@@ -241,7 +241,7 @@ now (uncommitted: `packages/app/src/pipeline/lastSessionDetail.ts`,
       other pipeline-facing chart data already round-trips units. (Target:
       `packages/app/src/pipeline/lastSessionDetail.ts`. Test:
       `packages/app/src/pipeline/lastSessionDetail.test.ts`, `npm test -w packages/app --
-  variationRadarChartParity`)
+variationRadarChartParity`)
 - [ ] Task 4b: Fix the test-harness scope mismatch — filter
       `legacyLastSessions[lift]` down to the same `lift:${liftType}` scope (or
       equivalent legacy filter) before diffing against `pipelineLastSessions[lift]`, so
@@ -259,49 +259,88 @@ now (uncommitted: `packages/app/src/pipeline/lastSessionDetail.ts`,
       `rows`/`stats` to pipeline-derived snapshot + last-session map, plus
       `LiftTabPanel.tsx` wiring) per `TASK_LIST.md` Phase C — blocked on 4a–4d.
 
-## 5. `DiagnosticsPanel` — real, unresolved pipeline-side feature gap (largest remaining item)
+## 5. `DiagnosticsPanel` — 5a-5c implemented this session; real residual gap found, now attributed to a different root cause than originally scoped
 
-Confirmed directly via the live parity test run (`diagnosticsPanelParity.test.ts`),
-which soft-warns: `Deadlift diagnostic status: pipeline(opt=0,weak=1,over=2) vs
-legacy(opt=4,weak=1,over=3)` — a real, large classification disagreement (legacy finds
-4 optimal variants, pipeline finds 0), consistent with `DiagnosticsPanel.md`'s
-documented root cause: pipeline's flat tolerance-band classification is a fundamentally
-different model from legacy's baseline min/max range, not a relabeling. This is the
-single largest remaining gap in the whole migration set — it's a missing-capability gap,
-not a divergence-to-reconcile gap.
+**Status update (2026-07-08 session):** 5a (display-name), 5b (modifier-percentage
+baseline-range model), and 5c (range-based status classification) are **implemented**
+in `@dyel/pipeline` (uncommitted — see `HANDOFF.md`'s Files Touched for the full list).
+This closed most, but not all, of the originally-cited gap:
 
-Per `DiagnosticsPanel.md`, four separate things are missing from `@dyel/pipeline`, and
-none of them have design sign-off yet:
+- `VariantAssessment` now has `displayName`, `averageIndex`, `expectedBaseline` fields.
+- `buildTagsAndEffects` (`packages/pipeline/src/tag/detect/canonical.ts`) now returns a
+  `range: BaselineRange | null`, restored from `modifier-effects.json`'s `min`/`max`
+  fields (44/53 entries had been stripped down to `effects`-only; restored via a
+  one-off merge against `packages/core/modifierEffects.json`).
+- `diagnose()` now classifies `status` via range comparison (`averageIndex` vs
+  `[min,max]`) when a range exists, falling back to the pre-existing flat-tolerance
+  comparison otherwise.
+- **Deadlift-specific stance resolution was also ported** (`resolveDeadliftStance`,
+  mirroring `packages/core/src/utils/lifts/resolveDeadliftStance.ts`): a deadlift
+  variant with explicit `stance: 'sumo' | 'conventional' | 'opposite'` resolves to a
+  concrete stance for range/effects lookup even without an equipment/bar modifier
+  present, using the athlete's `deadliftStance` preference (threaded through
+  `tagRecords`/`runPipeline`). Deadlifts with the default `'competition'` stance
+  (no stance modifier logged) are correctly excluded from this resolution — matching
+  legacy's `resolvedStanceKey` condition exactly (`null`/`sumo`/`conventional`/
+  `opposite` only, never `'competition'`). Two implementation bugs were found and
+  fixed during this work (both while still uncommitted, so no bad state was ever
+  landed): (1) an over-broad early-return change accidentally stripped the `comp-lift`
+  tag from bare deadlift entries, breaking `normalize.ts`'s baseline-auto-detection
+  fallback for deadlift specifically; (2) the initial stance-resolution condition
+  didn't exclude `'competition'`-stance deadlifts, causing spurious stance-range
+  compounding on equipment-only deadlift variants (e.g. `"Deadlift (2\" deficit)"`
+  wrongly got `77-95%` instead of the correct equipment-only `85-95%`). Both are fixed
+  and covered by regression-guard tests in `canonical.test.ts`.
 
-1. Canonical → display-name resolution (pipeline has none at all).
-2. Modifier-percentage-baseline-range model (`averageIndex`/`expectedBaseline` — legacy
-   derives this from equipment/stance/bar modifier tables; pipeline has no equivalent).
-3. Status classification reconciliation (range-based vs flat-tolerance-band — a
-   behavioral model decision, not a bug fix).
-4. Additional-weight offset data for the table's chain/band label formatting.
+**Live signal (`diagnosticsPanelParity.test.ts`'s deadlift soft-warn), progression this
+session:**
 
-Plus a structural prop mismatch: `usePipelineDiagnostics` self-fetches
-(`inputMode`/`url`/`pastedText`/`refreshToken`) vs `DiagnosticsPanel.tsx`'s current
-pre-computed `rows`/`targetName`/`variantFactor`/`addlWtOffset` props — meaning
-`LiftTabPanel.tsx`'s prop-drilling needs rework too, not just this component.
+```
+Before this session: pipeline(opt=0,weak=1,over=2) vs legacy(opt=4,weak=1,over=3)
+After 5a-5c, before stance fix: pipeline(opt=5,weak=2,over=0) vs legacy(opt=4,weak=1,over=3)
+After stance-resolution (buggy): pipeline(opt=7,weak=0,over=0) vs legacy(opt=4,weak=1,over=3)
+After both bugs fixed (current): pipeline(opt=6,weak=1,over=0) vs legacy(opt=4,weak=1,over=3)
+```
 
-**Remaining work (each needs its own scoping/sign-off pass — this is the biggest
-standalone body of work in the whole migration, not a single task):**
+`weak` now matches legacy exactly (1=1). `opt` is closer (6 vs 4) but not exact.
+`over` remains stuck at 0 vs legacy's 3 — **and this is no longer believed to be a
+range/classification-model problem** (see new finding below).
 
-- [ ] Task 5a: Design and propose a canonical→display-name resolution mechanism for
-      `@dyel/pipeline` (new field on `TaggedSetRecord`/`VariantAssessment`, or a
-      sibling lookup function) — proposed pipeline change, needs sign-off before
-      implementation. (Target: `packages/pipeline/src/analyze/diagnose.ts` or new
-      module. Test: new unit test alongside.)
-- [ ] Task 5b: Design and propose a modifier-percentage-baseline-range model
-      equivalent to legacy's equipment/stance/bar modifier tables
-      (`packages/core/src/load/generateDiagnostics.ts`), exposed as
-      `averageIndex`/`expectedBaseline` (or pipeline-native equivalents). Needs sign-off
-      — this is a genuine modeling decision (issue #461), not wiring.
-- [ ] Task 5c: Reconcile the status-classification model (range-based vs
-      flat-tolerance) — decide which model `@dyel/pipeline` should adopt, or whether
-      both need to coexist. Needs sign-off; this alone explains the largest single
-      divergence number seen in this session's test run.
+**New finding — genuinely different root cause for the remaining `over=0` gap:**
+Direct per-variant comparison (pipeline vs legacy, same fixture) shows that even when
+BOTH sides use the identical baseline range for a variant (e.g. `"Deadlift (opposite)"`:
+both compute `90-100%`), their `averageIndex` values diverge substantially — pipeline
+`98.7` vs legacy `105.2`; for `"Deadlift (opposite, 1 chain)"` (n=1 in pipeline's fit),
+pipeline `100` (unfit, defaults to exactly 100) vs legacy `115.9`. This means the
+residual `over=0` gap is a **variant-factor model-fitting divergence** between
+`packages/pipeline/src/derive/normalize.ts`'s `fitNormalizationModel` and legacy's
+`fitVariantFactor`/`buildSessionStats` (`packages/core`) — not the range/classification
+work 5a-5c targeted, which is now believed to be correctly closed on its own terms.
+This is a materially different, likely larger investigation (model-fitting parity, not
+diagnostics-specific) and is **out of scope for this session** — flagging as a new item
+(5g) rather than continuing to treat it as an unfinished part of 5b/5c.
+
+Separately, a **variant-count mismatch** was also found: pipeline assesses 7 deadlift
+variants, legacy 8 — `"Deadlift (2\" deficit, opposite)"` (a compound
+equipment+explicit-stance variant) appears in legacy's results but has no matching
+entry in pipeline's. Not yet root-caused; flagging as 5h.
+
+Per `DiagnosticsPanel.md`'s original four items, status is now:
+
+1. ~~Canonical → display-name resolution~~ — **done** (`VariantAssessment.displayName`).
+2. ~~Modifier-percentage-baseline-range model~~ — **done** (`BaselineRange`,
+   `expectedBaseline`).
+3. ~~Status classification reconciliation~~ — **done** (range-based, with flat-tolerance
+   fallback); residual divergence is now attributed to 5g, not this.
+4. Additional-weight offset data for chain/band label formatting — **still open** (5d).
+
+**Remaining work:**
+
+- [x] Task 5a: Canonical→display-name resolution — done, `VariantAssessment.displayName`.
+- [x] Task 5b: Modifier-percentage-baseline-range model — done, `BaselineRange` +
+      `expectedBaseline`, including deadlift-specific stance resolution.
+- [x] Task 5c: Status-classification reconciliation — done, range-based comparison with
+      flat-tolerance fallback. Residual `over=0` divergence reassigned to new Task 5g.
 - [ ] Task 5d: Source additional-weight offset data for display formatting (likely a
       smaller lift once `model.addlWtOffset` — already computed per §3's Finding #6 fix
       — is exposed through `diagnose()`'s output shape).
@@ -309,13 +348,31 @@ standalone body of work in the whole migration, not a single task):**
       an adapter) to match `DiagnosticsPanel.tsx`'s current pre-computed-props shape,
       and update `LiftTabPanel.tsx`'s prop-drilling accordingly.
 - [ ] Task 5f: Swap `DiagnosticsPanel.tsx` over and promote
-      `diagnosticsPanelParity.test.ts` from soft-warn to hard-assert.
+      `diagnosticsPanelParity.test.ts` from soft-warn to hard-assert. Blocked on 5g (at
+      minimum the `over=0` gap should be understood/resolved or explicitly accepted
+      before promoting to hard-assert).
+- [ ] Task 5g (new): Root-cause the variant-factor model-fitting divergence between
+      `packages/pipeline/src/derive/normalize.ts` and legacy's
+      `fitVariantFactor`/`buildSessionStats`. Evidence: same baseline range, different
+      `averageIndex` for the same logical variant (`"Deadlift (opposite)"`: 98.7 vs
+      105.2; `"Deadlift (opposite, 1 chain)"`: 100 (n=1, unfit) vs 115.9). This is
+      likely a larger, separate investigation — possibly related to how few-sample (n=1)
+      variants are fit/defaulted, or a fitting-formula difference. (Target:
+      `packages/pipeline/src/derive/normalize.ts`. Test:
+      `npm test -w packages/app -- diagnosticsPanelParity`, plus new unit tests in
+      `normalize.test.ts` once root-caused.)
+- [ ] Task 5h (new): Root-cause why `"Deadlift (2\" deficit, opposite)"` (a compound
+      equipment+explicit-stance variant) exists in legacy's results but has no pipeline
+      counterpart — a 7-vs-8 variant-count mismatch found via direct comparison.
+      Possibly a canonical-grouping or display-name-collapsing issue. (Target: TBD,
+      likely `packages/pipeline/src/tag/tag.ts` or `pipeline.ts`. Test:
+      `npm test -w packages/app -- diagnosticsPanelParity`.)
 
-Tracked: [#461](https://github.com/kasittig/dyel-visualizer/issues/461). This is
-correctly flagged in `MIGRATION_PLAN.md` as the hardest remaining item and a hard
-dependency of `LiftTabPanel` — nothing found this session changes that assessment,
-except that the live test run now gives a concrete number (`opt=0 vs opt=4` for
-deadlift) to cite as evidence of how large the classification gap actually is.
+Tracked: [#461](https://github.com/kasittig/dyel-visualizer/issues/461). Still the
+hardest remaining item and a hard dependency of `LiftTabPanel`, but the shape of the
+remaining work has changed materially this session: the original "three modeling
+decisions need sign-off" framing is resolved; what's left (5d, 5g, 5h) is smaller in
+scope but 5g in particular may be a substantial, separate model-fitting investigation.
 
 ## 6. `LiftTabPanel` — composition root, correctly sequenced last
 
@@ -330,7 +387,7 @@ found here.
       with `AthleteContext`/pipeline equivalents, per `LiftTabPanel.md`'s existing plan.
       Add `liftTabPanelParity.test.ts`. (Target:
       `packages/app/src/components/pages/LiftTabPanel.tsx`. Test: `npm test -w
-  packages/app -- liftTabPanelParity`)
+packages/app -- liftTabPanelParity`)
 
 ## 7. `ValidatorPage` — not a data-parity gap, a scope question
 

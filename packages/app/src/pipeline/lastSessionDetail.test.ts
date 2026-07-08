@@ -19,6 +19,7 @@ const record = (
   canonical,
   tags: new Set(['lift:bench', 'comp-lift']),
   effects: [],
+  baselineRange: null,
   meta: rawExercise ? { rawExercise } : undefined,
 });
 
@@ -90,6 +91,7 @@ describe('buildLastSessionDetail', () => {
       canonical: 'squat',
       tags: new Set(['lift:squat', 'comp-lift']),
       effects: [],
+      baselineRange: null,
     };
     const bench: TaggedSetRecord = {
       date: now.getTime(),
@@ -100,6 +102,7 @@ describe('buildLastSessionDetail', () => {
       canonical: 'bench',
       tags: new Set(['lift:bench', 'comp-lift']),
       effects: [],
+      baselineRange: null,
     };
 
     const result = buildLastSessionDetail([squat, bench], 'bench');
@@ -119,6 +122,7 @@ describe('buildLastSessionDetail', () => {
         canonical: 'bench',
         tags: new Set(['lift:bench', 'comp-lift']),
         effects: [],
+        baselineRange: null,
       } as TaggedSetRecord,
     ];
 

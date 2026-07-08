@@ -11,6 +11,7 @@ const mockSet = (w: number, reps: number, sets?: number, rpe?: number): TaggedSe
   canonical: 'bench',
   tags: new Set(['lift:bench']),
   effects: [],
+  baselineRange: null,
   ...(sets !== undefined && { meta: { sets: String(sets) } }),
 });
 

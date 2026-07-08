@@ -1,15 +1,24 @@
 import type { Point } from '../types';
 import type { NormalizationModel } from '../derive/normalize';
+import type { BaselineRange } from '../tag/detect/canonical';
 
 export type Quality = string;
 
 export interface VariantAssessment {
   canonical: string;
+  displayName: string;
   lift: string;
   expectedE1rmKg: number;
   actualE1rmKg: number;
   ratio: number;
   status: 'optimal' | 'weakness' | 'overperforming';
+  /** Fitted variant-factor strength as a %, legacy's `averageIndex`. Only meaningful
+   *  (and only drives `status`) when `expectedBaseline` is non-null — see `diagnose()`. */
+  averageIndex: number;
+  /** Expected baseline %-range string (e.g. "90-95%"), legacy's `expectedBaseline`.
+   *  `null` when no modifier-derived range exists for this canonical (falls back to
+   *  the flat-tolerance `ratio` comparison for `status` in that case). */
+  expectedBaseline: string | null;
   staleDays: number;
   effects: Quality[];
 }
@@ -29,7 +38,9 @@ export function diagnose(
   model: NormalizationModel,
   effectsByCanonical: ReadonlyMap<string, string[]>,
   opts: { tolerance: number; staleDays: number },
-  now: number | undefined
+  now: number | undefined,
+  displayNameByCanonical: ReadonlyMap<string, string> = new Map(),
+  baselineRangeByCanonical: ReadonlyMap<string, BaselineRange> = new Map()
 ): DiagnosticsReport {
   now = now ?? Date.now();
 
@@ -55,9 +66,22 @@ export function diagnose(
 
     const expectedE1rmKg = factor * baseLatest.v;
     const ratio = latest.v / expectedE1rmKg;
+    const averageIndex = factor * 100;
 
-    const status: VariantAssessment['status'] =
-      Math.abs(ratio - 1) <= opts.tolerance
+    // Prefer legacy's range-based classification (fitted variant-factor strength vs. a
+    // modifier-derived expected %-range) when a range is available for this canonical;
+    // it answers "is this variant structurally over/under-performing", matching
+    // generateDiagnostics.ts. Falls back to the flat-tolerance ratio comparison
+    // (session-freshness signal) when no range data exists for the canonical (e.g. the
+    // baseline itself, or a modifier combination with no pct-bearing entry).
+    const range = baselineRangeByCanonical.get(canonical);
+    const status: VariantAssessment['status'] = range
+      ? averageIndex < range.min
+        ? 'weakness'
+        : averageIndex > range.max
+          ? 'overperforming'
+          : 'optimal'
+      : Math.abs(ratio - 1) <= opts.tolerance
         ? 'optimal'
         : ratio < 1 - opts.tolerance
           ? 'weakness'
@@ -65,10 +89,13 @@ export function diagnose(
 
     const v: VariantAssessment = {
       canonical,
+      displayName: displayNameByCanonical.get(canonical) ?? canonical,
       lift,
       expectedE1rmKg,
       ratio,
       status,
+      averageIndex,
+      expectedBaseline: range ? `${range.min}-${range.max}%` : null,
       actualE1rmKg: latest.v,
       staleDays: (now - latest.t) / DAY_MS,
       effects: effectsByCanonical.get(canonical) ?? [],

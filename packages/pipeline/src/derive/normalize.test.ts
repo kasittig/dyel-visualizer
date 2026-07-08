@@ -33,6 +33,7 @@ const rec = (
   canonical,
   tags: new Set(tags),
   effects: [],
+  baselineRange: null,
   ...((sets !== undefined || rawExercise !== undefined) && {
     meta: {
       ...(sets !== undefined && { sets: String(sets) }),

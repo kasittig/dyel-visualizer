@@ -1,12 +1,14 @@
 import type { SetRecord, TagQuery } from '../types';
 import { parseExercise } from './detect/parseExercise';
 import { buildCanonical, buildTagsAndEffects } from './detect/canonical';
+import type { BaselineRange } from './detect/canonical';
 import type { ParsedExercise } from './detect/conjugate-types';
 
 export type TaggedSetRecord = SetRecord & {
   canonical: string;
   tags: ReadonlySet<string>;
   effects: readonly string[];
+  baselineRange: BaselineRange | null;
 };
 
 function isUnknown(ex: ParsedExercise): boolean {
@@ -39,7 +41,7 @@ export function resolveCanonicalNames(records: SetRecord[]) {
   return { resolved, unknown: [...unknown] };
 }
 
-export function tagRecords(records: SetRecord[]) {
+export function tagRecords(records: SetRecord[], deadliftStance: 'sumo' | 'conventional' = 'sumo') {
   const unknown = new Set<string>();
   const tagged = records.flatMap((r) => {
     // Re-parse the ORIGINAL raw name (preserved by resolveCanonicalNames), never the
@@ -52,8 +54,8 @@ export function tagRecords(records: SetRecord[]) {
       unknown.add(rawExercise);
       return [];
     }
-    const { tags, effects } = buildTagsAndEffects(ex);
-    return [{ ...r, canonical: r.exercise, tags, effects }];
+    const { tags, effects, range } = buildTagsAndEffects(ex, deadliftStance);
+    return [{ ...r, canonical: r.exercise, tags, effects, baselineRange: range }];
   });
 
   return { tagged, unknown: [...unknown] };

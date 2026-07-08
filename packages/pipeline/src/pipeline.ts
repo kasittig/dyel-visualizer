@@ -87,7 +87,7 @@ export function runPipeline(
   }
 
   const { resolved, unknown: unkAliases } = resolveCanonicalNames(records);
-  const { tagged, unknown: unkCanonicals } = tagRecords(resolved);
+  const { tagged, unknown: unkCanonicals } = tagRecords(resolved, athlete.deadliftStance);
   const unknownExercises = [...new Set([...unkAliases, ...unkCanonicals])];
   const fitInput = tagged.filter((record) => {
     return record.sets === undefined || record.sets === 1 || record.rpe !== undefined;
@@ -178,12 +178,32 @@ export function runPipeline(
       return [r.canonical, [...r.effects]];
     })
   );
+  // Most-recent-by-date wins per canonical — a variant's logged label can drift over
+  // time (e.g. sheet-entry rewording), so the display name should track current usage.
+  const displayNameLatest = new Map<string, { date: number; name: string }>();
+  for (const r of tagged) {
+    const existing = displayNameLatest.get(r.canonical);
+    if (!existing || r.date > existing.date) {
+      displayNameLatest.set(r.canonical, {
+        date: r.date,
+        name: r.meta?.rawExercise ?? r.canonical,
+      });
+    }
+  }
+  const displayNameByCanonical = new Map(
+    [...displayNameLatest].map(([canonical, { name }]) => [canonical, name])
+  );
+  const baselineRangeByCanonical = new Map(
+    tagged.flatMap((r) => (r.baselineRange ? [[r.canonical, r.baselineRange] as const] : []))
+  );
   const diagnostics = diagnose(
     e1rmPoints,
     model,
     effectsByCanonical,
     { tolerance: DIAGNOSTICS_TOLERANCE, staleDays: DIAGNOSTICS_STALE_DAYS },
-    undefined
+    undefined,
+    displayNameByCanonical,
+    baselineRangeByCanonical
   );
 
   const datasets = Object.fromEntries(

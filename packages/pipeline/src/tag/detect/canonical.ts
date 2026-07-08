@@ -1,4 +1,4 @@
-import type { ConjugateAddlWt, ParsedExercise } from './conjugate-types';
+import type { ConjugateAddlWt, ConjugateStance, ParsedExercise } from './conjugate-types';
 import modifierEffects from './modifier-effects.json';
 
 const ADDL_WT_SLUGS: Record<ConjugateAddlWt, string> = {
@@ -6,7 +6,23 @@ const ADDL_WT_SLUGS: Record<ConjugateAddlWt, string> = {
   bands: 'bands',
   'rev. bands': 'rev-bands',
 };
-const effectsMap = modifierEffects as Record<string, { effects: string[] }>;
+
+export function resolveDeadliftStance(
+  stance: ConjugateStance | null,
+  preference: 'sumo' | 'conventional'
+): 'sumo' | 'conventional' {
+  if (stance === 'sumo' || stance === 'conventional') {
+    return stance;
+  }
+  if (stance === 'opposite') {
+    return preference === 'sumo' ? 'conventional' : 'sumo';
+  }
+  return preference;
+}
+const effectsMap = modifierEffects as Record<
+  string,
+  { effects: string[]; min?: number; max?: number }
+>;
 
 function slugify(value: string): string {
   let slug = '',
@@ -52,18 +68,34 @@ export function buildCanonical(ex: ParsedExercise, rawName: string): string {
   return parts.join('-');
 }
 
-export function buildTagsAndEffects(ex: ParsedExercise): { tags: Set<string>; effects: string[] } {
+export interface BaselineRange {
+  min: number;
+  max: number;
+}
+
+export function buildTagsAndEffects(
+  ex: ParsedExercise,
+  deadliftStance: 'sumo' | 'conventional' = 'sumo'
+): {
+  tags: Set<string>;
+  effects: string[];
+  range: BaselineRange | null;
+} {
   const tags = new Set<string>([`lift:${ex.type}`]),
     effects = new Set<string>();
   if (ex.type === 'accessory') {
-    return { tags, effects: [] };
+    return { tags, effects: [], range: null };
   }
 
   const hasBar = ex.bar && ex.bar !== 'standard',
     hasStance = ex.stance && ex.stance !== 'competition';
-  if (!hasBar && !hasStance && !ex.equipment && !ex.addlWts.length) {
+  const isBareVariant = !hasBar && !hasStance && !ex.equipment && !ex.addlWts.length;
+
+  if (isBareVariant) {
     tags.add('comp-lift');
-    return { tags, effects: [] };
+  }
+  if (isBareVariant && ex.type !== 'deadlift') {
+    return { tags, effects: [], range: null };
   }
 
   const add = (k: string) => {
@@ -71,17 +103,46 @@ export function buildTagsAndEffects(ex: ParsedExercise): { tags: Set<string>; ef
       return effects.add(e);
     });
   };
-  if (hasBar) {
-    tags.add(`bar:${ex.bar}`);
-    add(`bar:${ex.bar}:${ex.type}`);
-  }
-  if (hasStance) {
-    tags.add(`stance:${ex.stance}`);
-    add(`stance:${ex.stance}:${ex.type}`);
-  }
+  // Baseline % range combines multiplicatively across active modifiers, matching
+  // legacy's `generateDiagnostics.ts` candidate-key order (equipment, then stance,
+  // then bar) so compound-modifier rounding lands on the same numbers.
+  let range: BaselineRange | null = null;
+  const applyRange = (k: string) => {
+    const entry = effectsMap[k];
+    if (entry?.min === undefined || entry.max === undefined) {
+      return;
+    }
+    const cur = range ?? { min: 100, max: 100 };
+    range = {
+      min: Math.round((cur.min * entry.min) / 100),
+      max: Math.round((cur.max * entry.max) / 100),
+    };
+  };
   if (ex.equipment) {
     tags.add(`equip:${ex.equipment}`);
     add(`equip:${ex.equipment}:${ex.type}`);
+    applyRange(`equip:${ex.equipment}:${ex.type}`);
+  }
+  const isDeadliftExplicitStance =
+    ex.type === 'deadlift' &&
+    (ex.stance === 'sumo' || ex.stance === 'conventional' || ex.stance === 'opposite');
+
+  if (isDeadliftExplicitStance) {
+    const resolvedStance = resolveDeadliftStance(ex.stance, deadliftStance);
+    add(`stance:${resolvedStance}:deadlift`);
+    applyRange(`stance:${resolvedStance}:deadlift`);
+    if (hasStance) {
+      tags.add(`stance:${ex.stance}`);
+    }
+  } else if (hasStance) {
+    tags.add(`stance:${ex.stance}`);
+    add(`stance:${ex.stance}:${ex.type}`);
+    applyRange(`stance:${ex.stance}:${ex.type}`);
+  }
+  if (hasBar) {
+    tags.add(`bar:${ex.bar}`);
+    add(`bar:${ex.bar}:${ex.type}`);
+    applyRange(`bar:${ex.bar}:${ex.type}`);
   }
 
   for (const w of ex.addlWts) {
@@ -93,5 +154,12 @@ export function buildTagsAndEffects(ex: ParsedExercise): { tags: Set<string>; ef
       return effects.add(e);
     });
   }
-  return { tags, effects: [...effects] };
+  // addlWt-only exercises (no pct-bearing bar/stance/equipment modifier) are
+  // comparable to the straight bar once addlWt-offset-adjusted — 100-100% baseline,
+  // matching legacy's fallback. Exercises with no range-bearing modifier at all stay
+  // unassessed via range (range === null), same as legacy's `continue`.
+  if (range === null && ex.addlWts.length > 0) {
+    range = { min: 100, max: 100 };
+  }
+  return { tags, effects: [...effects], range };
 }
