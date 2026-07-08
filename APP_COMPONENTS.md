@@ -3,8 +3,8 @@
 Inventory of `packages/app/src` components/hooks that still depend on `@dyel/core`,
 per the pipeline migration boundary rule (migrated components must call only
 `runPipeline`, never `@dyel/core`). Components already fully migrated (`TotalChart`,
-`SigmaTab`, `SessionBarChart`, `SigmaChart`, `DateLineChart`) are omitted here — see
-`HANDOFF.md` for that history.
+`SigmaTab`, `SessionBarChart`, `SigmaChart`, `DateLineChart`, `RepCalculator`,
+`StrengthScoreCalculator`) are omitted here — see `HANDOFF.md` for that history.
 
 **Migration gate: the pipeline and `@dyel/core` backends must produce _exactly_ matching
 output — not just "close" or within a soft-warn tolerance — before a component is switched
@@ -15,13 +15,12 @@ parity test first, then swap the component.
 
 ## Ready to migrate (pipeline-native replacement + parity test exist, component not yet switched over)
 
-These five have a working pipeline-native implementation and a parity test already in place,
+These three have a working pipeline-native implementation and a parity test already in place,
 but the component itself still calls `@dyel/core` at runtime — swapping it over is
-intentionally deferred pending exact parity (see gate above). Two of them (`RepCalculator`,
-`StrengthScoreCalculator`) are genuinely small, low-risk swaps (swap the hook/function call,
-update the prop signature) with an already-passing (exact-match) parity test. The other three
-(`ConjugateCharts`, `DiagnosticsPanel`, `VariationRadarChart`) each carry a real, documented
+intentionally deferred pending exact parity (see gate above). Each carries a real, documented
 blocker beyond "wire up the hook" — see each entry below before attempting those.
+(`RepCalculator`/`StrengthScoreCalculator` were the two low-risk exceptions to that pattern —
+both have since been swapped over, see "Status" below.)
 
 - `components/conjugate/ConjugateCharts.tsx` — still calls
   `useConjugateChartData` (`@dyel/core`'s `buildVariationChartData`
@@ -61,24 +60,6 @@ blocker beyond "wire up the hook" — see each entry below before attempting tho
   `migration/DiagnosticsPanel.md`'s Status section for full detail. Held to the same bar as
   `VariationRadarChart` below — missing pipeline functionality is a proposed pipeline
   change, not a client-side workaround. Tracked: [#461](https://github.com/kasittig/dyel-visualizer/issues/461).
-- `components/shared/RepCalculator.tsx` — still calls `findBestE1RM` +
-  `buildSessionStats` (`@dyel/core`). Pipeline-native replacement ready: new
-  `usePipelineRepCalculator` hook (`packages/app/src/hooks/pipeline/usePipelineRepCalculator.ts`)
-  - `findBestE1RMFromPipeline` (`packages/app/src/pipeline/repCalculatorUtils.ts`,
-    mirroring legacy `findBestE1RM`'s logic over pipeline `Point[]`/
-    `NormalizationModel` data). Parity test passing at
-    `packages/app/src/pipeline/repCalculatorParity.test.ts`. To swap: replace the
-    `findBestE1RM`/`buildSessionStats` calls with the new hook + helper, and pass
-    `inputMode`/`url`/`pastedText`/`refreshToken` down from `App.tsx`.
-- `components/shared/StrengthScoreCalculator.tsx` — still calls
-  `calculateMetrics` (`@dyel/core`). Pipeline-native replacement ready: new
-  `computeStrengthScores` function added to `@dyel/pipeline`
-  (`packages/pipeline/src/derive/athlete.ts`, wrapping `wilks`/`dots` and
-  adding Schwartz-Malone + percentile-rank support, matching legacy
-  `LiftMetrics`'s output shape). Parity test passing at
-  `packages/app/src/pipeline/strengthScoreCalculatorParity.test.ts`. To swap:
-  this is a one-line change — replace the `calculateMetrics` import/call with
-  `computeStrengthScores` (same signature, no prop changes needed).
 - `components/charts/VariationRadarChart.tsx` — still calls
   `normalizeToBaseE1RM` and imports `ConjugateExercise` directly from
   `@dyel/core`. Pipeline-native replacement exists and is validated on the
@@ -138,11 +119,11 @@ not sequencing — not yet raised.
 
 ## Status
 
-`ConjugateCharts`, `DiagnosticsPanel`, `RepCalculator`, `StrengthScoreCalculator`, and
-`VariationRadarChart` each have a pipeline-native replacement and a parity test (see "Ready
-to migrate" above), but the actual component swap-over is intentionally deferred for all
-five pending an exact-match parity result (see gate at top) — the components still call
-`@dyel/core` at runtime. `ConjugateCharts` specifically was migrated once already and
+`ConjugateCharts`, `DiagnosticsPanel`, and `VariationRadarChart` each have a pipeline-native
+replacement and a parity test (see "Ready to migrate" above), but the actual component
+swap-over is intentionally deferred for all three pending an exact-match parity result (see
+gate at top) — the components still call `@dyel/core` at runtime. `ConjugateCharts`
+specifically was migrated once already and
 **reverted** after the parity test surfaced real divergence from legacy (see `HANDOFF.md`);
 any future attempt to swap it back over must close that divergence to an exact match first
 (tracked: [#459](https://github.com/kasittig/dyel-visualizer/issues/459)).
@@ -160,8 +141,9 @@ resolution, no percentage-baseline-range model, a differently-classified status 
 add'l-weight offset data — see `migration/DiagnosticsPanel.md`'s Status section), so it's
 held to the same "real blocker, not a wiring task" bar (tracked:
 [#461](https://github.com/kasittig/dyel-visualizer/issues/461)). `RepCalculator` and
-`StrengthScoreCalculator` are the two components closest to done — their parity tests
-already validate exact-match replacement logic, so swapping them over should be a small,
-well-understood change; no tracking issue needed.
+`StrengthScoreCalculator` — previously the two components closest to done — have since been
+swapped over (2026-07-08): both now consume their pipeline-native replacements at runtime
+with zero `@dyel/core` references, and their tracking docs (`migration/RepCalculator.md`,
+`migration/StrengthScoreCalculator.md`) have been deleted as fully completed.
 
 See `MIGRATION_PLAN.md` for full sequencing across the remaining items.

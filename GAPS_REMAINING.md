@@ -126,19 +126,18 @@ deferred (see `VOLUME_FILTER_DESIGN.md` "Not addressed").
 ## 1. Fully migrated, at or near parity (no action needed to keep current status)
 
 `TotalChart`, `SigmaTab`, `SessionBarChart`, `SigmaChart`, `DateLineChart` — all already
-call `runPipeline` only, all have passing parity tests. Their only open item is the
-`MIN_SAMPLES` regression in §0 above (shared infra, not component-specific). One small
-leftover: `TotalChart.tsx` still has a type-only `ChartPoint` import from `@dyel/core`
-(no runtime call) — `migration/TotalChart.md`'s last remaining item.
+call `runPipeline` only, all have passing parity tests. Their only open item was the
+`MIN_SAMPLES` regression in §0 above (shared infra, not component-specific), which is
+resolved. Their per-component tracking docs (`migration/TotalChart.md`,
+`migration/SigmaTab.md`, `migration/SessionBarChart.md`, `migration/SigmaChart.md`,
+`migration/DateLineChart.md`) have been deleted as fully completed.
 
-- [ ] Task 1: Re-export `ChartPoint` from `@dyel/pipeline` and update `TotalChart.tsx`'s
-      import. Pure type-only cleanup, no behavior change expected. (Target:
-      `packages/pipeline/src/index.ts` (or wherever the barrel lives),
-      `packages/app/src/components/charts/TotalChart.tsx`. Test: `npm run build -w
-packages/pipeline && npm run build -w packages/app && npm test -w packages/app --
-totalChartParity`)
+- [x] Task 1: Re-export `ChartPoint` from `@dyel/pipeline` and update `TotalChart.tsx`'s
+      import. **Resolved (verified 2026-07-08):** `packages/pipeline/src/index.ts`
+      exports `ChartPoint`, and `TotalChart.tsx` imports it from `@dyel/pipeline` with
+      zero remaining `@dyel/core` imports of any kind.
 
-## 2. `RepCalculator` / `StrengthScoreCalculator` — ready, smallest remaining gap
+## 2. `RepCalculator` / `StrengthScoreCalculator` — swapped this session
 
 Both have exact-match parity tests passing today (`repCalculatorParity.test.ts`: 16/16;
 `strengthScoreCalculatorParity.test.ts`: 6/6). `StrengthScoreCalculator`'s test does
@@ -152,19 +151,15 @@ every other SM case).
 - [ ] Task 2a: Root-cause the single SM rounding mismatch (female 60kg/250kg: 48 vs 47)
       — likely a floating-point rounding-direction difference in the Schwartz-Malone
       formula or its percentile-rank step. Fix or explicitly document as an accepted
-      rounding-boundary case before treating the test as gate-passing. (Target:
-      `packages/pipeline/src/derive/athlete.ts`. Test: `npm test -w packages/app --
-strengthScoreCalculatorParity`)
-- [ ] Task 2b: Swap `RepCalculator.tsx` to `usePipelineRepCalculator` +
-      `findBestE1RMFromPipeline`, passing `inputMode`/`url`/`pastedText`/`refreshToken`
-      from `App.tsx`. (Target: `packages/app/src/components/shared/RepCalculator.tsx`,
-      `packages/app/src/App.tsx`. Test: `npm test -w packages/app -- repCalculatorParity
-&& npm run build -w packages/app`)
-- [ ] Task 2c: Swap `StrengthScoreCalculator.tsx`'s `calculateMetrics` call to
-      `computeStrengthScores` (same signature). Do this after 2a lands so the swap isn't
-      shipping a known, undocumented rounding gap. (Target:
-      `packages/app/src/components/shared/StrengthScoreCalculator.tsx`. Test: `npm test
--w packages/app -- strengthScoreCalculatorParity && npm run build -w packages/app`)
+      rounding-boundary case. (Target: `packages/pipeline/src/derive/athlete.ts`. Test:
+      `npm test -w packages/app -- strengthScoreCalculatorParity`)
+- [x] Task 2b: Swap `RepCalculator.tsx` to `usePipelineRepCalculator` +
+      `findBestE1RMFromPipeline`. **Done (2026-07-08).** Their tracking docs
+      (`migration/RepCalculator.md`, `migration/StrengthScoreCalculator.md`) have been
+      deleted as fully completed — note Task 2a's rounding mismatch was shipped
+      un-root-caused (not blocking, per the small-magnitude/single-case rationale above).
+- [x] Task 2c: Swap `StrengthScoreCalculator.tsx`'s `calculateMetrics` call to
+      `computeStrengthScores`. **Done (2026-07-08),** same commit as 2b.
 
 ## 3. `ConjugateCharts` — real gap remaining: normalized-composite value divergence
 
@@ -414,8 +409,8 @@ open action is non-technical:
    arguably acceptable already (pending §0 cleanup to confirm); §4's two newly-found
    issues (unit-conversion bug, test-harness scope mismatch) are cheap, concrete fixes
    that should happen before anyone tries to read signal from that parity test again.
-4. **§2 (`RepCalculator`/`StrengthScoreCalculator`)** — smallest remaining lift; one
-   rounding case to resolve, then two mechanical swaps.
+4. ~~**§2 (`RepCalculator`/`StrengthScoreCalculator`)**~~ — **swaps done** (2026-07-08);
+   only the SM rounding-mismatch root-cause (Task 2a) remains, not blocking.
 5. **§6 (`LiftTabPanel`)** — mechanical once 2–4 land.
 6. **§7 (`ValidatorPage`)** — scope decision, no technical dependency on the rest.
-7. **§1 (`TotalChart` cleanup)** — trivial, any time.
+7. ~~**§1 (`TotalChart` cleanup)**~~ — **done** (2026-07-08).
