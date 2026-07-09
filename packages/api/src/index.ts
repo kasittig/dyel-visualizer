@@ -1,0 +1,1 @@
+export { getCompetitionTotal } from './getCompetitionTotal';

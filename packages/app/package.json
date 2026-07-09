@@ -12,6 +12,7 @@
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
+    "@dyel/api": "*",
     "@dyel/core": "*",
     "@dyel/pipeline": "*",
     "@radix-ui/react-popover": "^1.1.16",

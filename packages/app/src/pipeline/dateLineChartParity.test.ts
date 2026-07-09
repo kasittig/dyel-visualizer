@@ -10,7 +10,7 @@ import {
   mergeVolumeIntoChartPoints,
 } from '../utils/pipelineChartUtils';
 import { compareChartSeries } from '../testUtils/compareChartSeries';
-import { TOTAL_CHART_SPECS } from './totalChartSpecs';
+import { TOTAL_CHART_SPECS } from '../../../api/src/totalChartSpecs';
 
 const TOTAL_CHART_IDS: string[] = ['squat', 'bench', 'deadlift', 'pushPull', 'total'];
 

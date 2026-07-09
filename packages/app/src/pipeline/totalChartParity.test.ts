@@ -21,7 +21,7 @@ import {
 } from '../testUtils/diffChartSeries';
 import { extractPairs, buildTabRows, computeEffectiveNames } from '../utils/appDataUtils';
 import { computeBaselineTargetExercises } from '../hooks/data/useBaselineTargetExercises';
-import { TOTAL_CHART_SPECS } from './totalChartSpecs';
+import { TOTAL_CHART_SPECS } from '../../../api/src/totalChartSpecs';
 
 const TOTAL_CHART_IDS = ['squat', 'bench', 'deadlift', 'pushPull', 'total'];
 const HARD_ASSERT_SERIES = ['squat', 'deadlift', 'pushPull', 'total'];

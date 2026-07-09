@@ -12,15 +12,8 @@ import { LiftTabPanel } from './components/pages/LiftTabPanel';
 import { SheetUrlPanel } from './components/shared/SheetUrlPanel';
 import { GettingStarted } from './components/pages/GettingStarted';
 import { DateRangePicker } from './components/shared/DateRangePicker';
-import {
-  filterByDateRange,
-  buildChartData,
-  calculateVolumeCorrelation,
-  parseTextData,
-} from '@dyel/core';
+import { filterByDateRange, calculateVolumeCorrelation, parseTextData } from '@dyel/core';
 import type { DeadliftStancePreference, LiftType } from '@dyel/core';
-import { useLastSessionStats } from './hooks/data/useLastSessionStats';
-import { useBaselineTargetExercises } from './hooks/data/useBaselineTargetExercises';
 import { useLocalStorageState } from './hooks/infra/useLocalStorageState';
 import { extractSheetRef, MAIN_TABS } from './utils/appUtils';
 import type { InputMode, PageTab } from './utils/appUtils';
@@ -232,25 +225,6 @@ export function App() {
     [sigmaPairs, dateRange]
   );
 
-  const sigmaStats = useLastSessionStats(sigmaPairs, effectiveBaselineNames);
-  const { baselineExByType, targetExByType } = useBaselineTargetExercises(
-    sigmaPairs,
-    effectiveBaselineNames,
-    effectiveTargetNames
-  );
-
-  const competitionTotal = useMemo(() => {
-    const chartData = buildChartData(
-      filteredSigmaPairs,
-      baselineExByType,
-      targetExByType,
-      sigmaStats,
-      volumeByDate
-    );
-    const last = [...chartData].reverse().find((p) => p.total !== undefined);
-    return last !== undefined ? (last.total as number) : null;
-  }, [filteredSigmaPairs, baselineExByType, targetExByType, sigmaStats, volumeByDate]);
-
   const dataUnit = filteredSigmaPairs[0]?.[1].unit ?? 'lbs';
 
   function handleUrlChange(newUrl: string) {
@@ -342,7 +316,7 @@ export function App() {
                     <RepCalculator tabRows={tabRows} baselineNames={effectiveBaselineNames} />
                   </div>
                   <div>
-                    <StrengthScoreCalculator competitionTotal={competitionTotal} unit={dataUnit} />
+                    <StrengthScoreCalculator dateRange={dateRange} unit={dataUnit} />
                   </div>
                 </div>
               ) : effectiveActiveTab === 'sigma' ? (

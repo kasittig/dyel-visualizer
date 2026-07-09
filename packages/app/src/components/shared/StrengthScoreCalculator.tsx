@@ -3,6 +3,9 @@ import clsx from 'clsx';
 import { computeStrengthScores } from '@dyel/pipeline';
 import { CollapsibleSection } from './CollapsibleSection';
 import styles from './StrengthScoreCalculator.module.css';
+import { getCompetitionTotal } from '@dyel/api';
+import { usePipelineModel } from '../../context/PipelineContext.tsx';
+import type { DateRange } from 'react-day-picker';
 
 type Gender = 'male' | 'female';
 
@@ -35,15 +38,17 @@ const METRICS = [
 ];
 
 export function StrengthScoreCalculator({
-  competitionTotal,
+  dateRange: dateRange,
   unit: dataUnit,
 }: {
-  competitionTotal: number | null;
+  dateRange: DateRange;
   unit: 'lbs' | 'kg';
 }) {
   const [bodyweight, setBodyweight] = useState('');
   const [unit, setUnit] = useState<'lbs' | 'kg'>('lbs');
   const [gender, setGender] = useState<Gender>('female');
+  const model = usePipelineModel().model;
+  const competitionTotal = model !== null ? getCompetitionTotal(model, dateRange, dataUnit) : 0;
 
   const bodyweightNum = parseFloat(bodyweight);
 

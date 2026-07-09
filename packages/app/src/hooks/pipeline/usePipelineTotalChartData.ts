@@ -3,7 +3,7 @@ import type { DateRange } from 'react-day-picker';
 import type { RenderParams, ChartPoint } from '@dyel/pipeline';
 import { usePipelineModel } from '../../context/PipelineContext';
 import { usePipelineDatasets } from './usePipelineDatasets';
-import { TOTAL_CHART_SPECS } from '../../pipeline/totalChartSpecs';
+import { TOTAL_CHART_SPECS } from '../../../../api/src/totalChartSpecs';
 import { mergeRechartsRowsToChartPoints } from '../../utils/pipelineChartUtils';
 
 const TOTAL_CHART_IDS = ['squat', 'bench', 'deadlift', 'pushPull', 'total'];
