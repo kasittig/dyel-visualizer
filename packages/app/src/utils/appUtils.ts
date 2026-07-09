@@ -24,7 +24,6 @@ export const EXAMPLE_VISUALIZER_URL = `?sheet=${encodeURIComponent(EXAMPLE_CSV_U
 
 export interface TabState {
   baselineName?: string;
-  targetName?: string;
 }
 
 /** Distinct exercise display names in first-seen order. Callers `.sort()` if they need it. */

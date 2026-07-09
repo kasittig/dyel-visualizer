@@ -21,7 +21,6 @@ import {
 } from '../testUtils/diffChartSeries';
 import { extractPairs, buildTabRows, computeEffectiveNames } from '../utils/appDataUtils';
 import { computeBaselineTargetExercises } from '../hooks/data/useBaselineTargetExercises';
-import { initialTabState } from '../utils/appUtils';
 import { TOTAL_CHART_SPECS } from './totalChartSpecs';
 
 const TOTAL_CHART_IDS = ['squat', 'bench', 'deadlift', 'pushPull', 'total'];
@@ -37,7 +36,7 @@ describe('TotalChart core-vs-pipeline parity', () => {
     const txt = readFileSync(join(__dirname, '../../test/fixtures/total-chart-sheet.csv'), 'utf-8');
     const pairs = parseConjugateData(txt),
       tabRows = buildTabRows(extractPairs({ status: 'success', pairs })),
-      eff = computeEffectiveNames(tabRows, initialTabState(), 'sumo');
+      eff = computeEffectiveNames(tabRows, 'sumo');
     const last = [
       ...tabRows.squat.maxEffort,
       ...tabRows.bench.maxEffort,

@@ -7,7 +7,6 @@ import type {
 } from '@dyel/core';
 import type { ConjugateDataState } from '../hooks/conjugate/useConjugateData';
 import { LIFT_TABS } from './appUtils';
-import type { TabState } from './appUtils';
 
 export interface SplitRows {
   all: ConjugateDataPair[];
@@ -48,7 +47,6 @@ export function buildTabRows(dataMap: Partial<GroupedConjugatePairs>): Record<Li
 
 export function computeEffectiveNames(
   tabRows: Record<LiftType, SplitRows>,
-  tabState: Record<LiftType, TabState>,
   deadliftStance: DeadliftStancePreference
 ): {
   effectiveBaselineNames: Partial<Record<LiftType, string>>;
@@ -61,7 +59,7 @@ export function computeEffectiveNames(
     if (baselineName) {
       baseline[tab] = baselineName;
     }
-    const t = tabState[tab].targetName ?? defaultCompExerciseName(tabRows[tab].all, deadliftStance);
+    const t = defaultCompExerciseName(tabRows[tab].all, deadliftStance);
     if (t) {
       target[tab] = t;
     }

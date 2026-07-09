@@ -22,8 +22,8 @@ import type { DeadliftStancePreference, LiftType } from '@dyel/core';
 import { useLastSessionStats } from './hooks/data/useLastSessionStats';
 import { useBaselineTargetExercises } from './hooks/data/useBaselineTargetExercises';
 import { useLocalStorageState } from './hooks/infra/useLocalStorageState';
-import { extractSheetRef, initialTabState, MAIN_TABS } from './utils/appUtils';
-import type { InputMode, PageTab, TabState } from './utils/appUtils';
+import { extractSheetRef, MAIN_TABS } from './utils/appUtils';
+import type { InputMode, PageTab } from './utils/appUtils';
 import { buildTabRows, computeEffectiveNames, extractPairs } from './utils/appDataUtils';
 import { serializeSheetCache, deserializeSheetCache } from './utils/sheetCacheUtils';
 import type { CachedSheetData } from './utils/sheetCacheUtils';
@@ -61,10 +61,6 @@ export function App() {
   const [refreshToken, setRefreshToken] = useState(0);
   const [activeTab, setActiveTab] = useLocalStorageState<PageTab>('dyel:activeTab', 'sigma');
   const [shownResetToken, setShownResetToken] = useState(0);
-  const [tabState, setTabState] = useLocalStorageState<Record<LiftType, TabState>>(
-    'dyel:tabState',
-    initialTabState
-  );
   const [deadliftStance, setDeadliftStance] = useLocalStorageState<DeadliftStancePreference>(
     'dyel:deadliftStance',
     'sumo'
@@ -154,8 +150,8 @@ export function App() {
   const dataMap = useMemo(() => extractPairs(state), [state]);
   const tabRows = useMemo(() => buildTabRows(dataMap), [dataMap]);
   const { effectiveBaselineNames, effectiveTargetNames } = useMemo(
-    () => computeEffectiveNames(tabRows, tabState, deadliftStance),
-    [tabRows, tabState, deadliftStance]
+    () => computeEffectiveNames(tabRows, deadliftStance),
+    [tabRows, deadliftStance]
   );
 
   const tabs = MAIN_TABS.filter(
@@ -261,20 +257,17 @@ export function App() {
     setUrl(newUrl);
     setPanelForcedOpen(false);
     setShownResetToken((t) => t + 1);
-    setTabState(initialTabState());
   }
 
   function handleTextChange(newText: string) {
     setPastedText(newText);
     setPanelForcedOpen(false);
     setShownResetToken((t) => t + 1);
-    setTabState(initialTabState());
   }
 
   function handleModeChange(newMode: InputMode) {
     setInputMode(newMode);
     setShownResetToken((t) => t + 1);
-    setTabState(initialTabState());
   }
 
   return (

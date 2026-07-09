@@ -14,7 +14,6 @@ import { mergeWideRechartsRows } from '../utils/pipelineChartUtils';
 import { compareChartSeries } from '../testUtils/compareChartSeries';
 import { joinChartPointsByDate, diffSeries } from '../testUtils/diffChartSeries';
 import { extractPairs, buildTabRows, computeEffectiveNames } from '../utils/appDataUtils';
-import { initialTabState } from '../utils/appUtils';
 import { conjugateChartSpecs } from './conjugateChartSpecs';
 
 interface PipelineDataset {
@@ -35,7 +34,7 @@ describe('ConjugateCharts core-vs-pipeline parity', () => {
     );
     const pairs = parseConjugateData(txt);
     const tabRows = buildTabRows(extractPairs({ status: 'success', pairs }));
-    const eff = computeEffectiveNames(tabRows, initialTabState(), 'sumo');
+    const eff = computeEffectiveNames(tabRows, 'sumo');
     const allSigmaPairs = [
       ...tabRows.squat.maxEffort,
       ...tabRows.bench.maxEffort,

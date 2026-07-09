@@ -5,7 +5,6 @@ import { runPipeline } from '@dyel/pipeline';
 import { parseConjugateData, buildSessionStats, generateDiagnostics } from '@dyel/core';
 import { buildRawInput, PLACEHOLDER_ATHLETE } from '../utils/rawInputUtils';
 import { extractPairs, buildTabRows, computeEffectiveNames } from '../utils/appDataUtils';
-import { initialTabState } from '../utils/appUtils';
 
 type PipelineDiagnostics = ReturnType<typeof runPipeline>['diagnostics'];
 
@@ -55,7 +54,7 @@ describe('Diagnostics core-vs-pipeline parity', () => {
 
     const pairs = parseConjugateData(txt);
     const tabRows = buildTabRows(extractPairs({ status: 'success', pairs }));
-    const eff = computeEffectiveNames(tabRows, initialTabState(), 'sumo');
+    const eff = computeEffectiveNames(tabRows, 'sumo');
     legacyResults = generateDiagnostics(
       pairs,
       'Deadlift',
