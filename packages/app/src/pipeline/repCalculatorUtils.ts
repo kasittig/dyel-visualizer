@@ -64,14 +64,23 @@ export function predictRepsForWeight(e1rm: number, weight: number): number {
   return weight <= 0 || weight >= e1rm ? 1 : Math.max(1, 30 * (e1rm / weight - 1));
 }
 
+// Pipeline output is always kg (see packages/pipeline/src/dataset/CLAUDE.md); display-unit
+// conversion is the app's job.
+const KG_TO_LBS = 2.20462262185;
+
+export function convertE1RMToDisplayUnit(e1rmKg: number, unit: 'lbs' | 'kg'): number {
+  return unit === 'lbs' ? e1rmKg * KG_TO_LBS : e1rmKg;
+}
+
 /**
  * Finds the canonical string for a given exercise by display name.
  * Searches through available canonicals in the model and points.
  *
  * Matching strategy:
  * 1. If display name matches the baseline canonical, return the baseline
- * 2. Search for a canonical that matches the display name (exact or substring)
- * 3. For variants, look in model.variantFactor keys
+ * 2. Search for a canonical that exactly matches the slugified display name
+ * 3. Search for a canonical that contains the slugified display name as a substring
+ * 4. For variants, look in model.variantFactor keys
  */
 export function findCanonicalForExercise(
   displayName: string,
@@ -98,9 +107,17 @@ export function findCanonicalForExercise(
     .replace(/-+/g, '-')
     .replace(/^-|-$/g, '');
 
+  // Exact match takes priority over substring matching: a bare exercise's slug (e.g.
+  // "bench") is a substring of every compound variant's canonical (e.g. "bench-american"),
+  // so checking substrings before exact matches picks the wrong variant depending on
+  // Set iteration (insertion/chronological) order. Resolve all exact matches first.
+  if (canonicalsInPoints.has(slugifiedDisplay)) {
+    return slugifiedDisplay;
+  }
+
   // Check if any canonical starts with or contains the slugified display name
   for (const canonical of canonicalsInPoints) {
-    if (canonical === slugifiedDisplay || canonical.includes(slugifiedDisplay)) {
+    if (canonical.includes(slugifiedDisplay)) {
       return canonical;
     }
   }
@@ -121,4 +138,41 @@ export function findCanonicalForExercise(
   }
 
   return null;
+}
+
+export function resolveE1RMEstimate(params: {
+  liftType: string;
+  facetDisplayName: string;
+  baselineName: string | null | undefined;
+  model: NormalizationModel;
+  e1rmPoints: Point[];
+}): E1RMEstimate | null {
+  const baselineCanonical = params.model.baseline[`lift:${params.liftType}`];
+  if (!baselineCanonical) {
+    return null;
+  }
+
+  const baselinePoints = params.e1rmPoints.filter((p) => p.series === baselineCanonical);
+  if (baselinePoints.length === 0) {
+    return null;
+  }
+
+  const targetCanonical = findCanonicalForExercise(
+    params.facetDisplayName,
+    baselineCanonical,
+    params.model,
+    params.e1rmPoints,
+    params.liftType
+  );
+  if (!targetCanonical) {
+    return null;
+  }
+
+  return findBestE1RMFromPipeline(
+    targetCanonical,
+    baselineCanonical,
+    baselinePoints,
+    params.model,
+    params.baselineName ?? baselineCanonical
+  );
 }

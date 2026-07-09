@@ -3,7 +3,10 @@ import {
   predictWeightForReps as pipelineWeightForReps,
   predictRepsForWeight as pipelineRepsForWeight,
   findBestE1RMFromPipeline,
+  findCanonicalForExercise,
   selectBestE1RMPoint,
+  resolveE1RMEstimate,
+  convertE1RMToDisplayUnit,
 } from './repCalculatorUtils';
 import {
   predictWeightForReps as coreWeightForReps,
@@ -42,6 +45,16 @@ describe('RepCalculator parity: legacy vs pipeline', () => {
       const pipeline = pipelineRepsForWeight(e1rm, weight);
       expect(pipeline).toBeCloseTo(legacy, 1);
       expect(Math.abs(pipeline - expected)).toBeLessThan(0.1);
+    });
+  });
+
+  describe('convertE1RMToDisplayUnit', () => {
+    it.each([
+      ['kg passthrough', 300, 'kg', 300],
+      ['lbs conversion', 100, 'lbs', 220.462262185],
+      ['lbs conversion large', 300, 'lbs', 661.386786555],
+    ])('%s', (_msg: string, e1rmKg: number, unit: 'lbs' | 'kg', expected: number) => {
+      expect(convertE1RMToDisplayUnit(e1rmKg, unit)).toBeCloseTo(expected, 1);
     });
   });
 
@@ -181,6 +194,162 @@ describe('RepCalculator parity: legacy vs pipeline', () => {
         'Competition Squat'
       );
       expect(clamped?.e1rm).toBe(0);
+    });
+  });
+
+  describe('resolveE1RMEstimate', () => {
+    const pt = (
+      series: string,
+      v: number,
+      t: number = 1704067200000,
+      tags: string[] = []
+    ): Point => ({
+      t,
+      v,
+      series,
+      tags: new Set([...tags, 'lift:squat']),
+    });
+
+    const mkModel = (overrides?: Partial<NormalizationModel>): NormalizationModel => ({
+      fittedAt: Date.now(),
+      baseline: { 'lift:squat': 'squat' },
+      variantFactor: { squat: { factor: 1.0, n: 10 } },
+      addlWtOffset: {},
+      ...overrides,
+    });
+
+    it.each([
+      [
+        'regression: display name differs from canonical',
+        {
+          liftType: 'squat',
+          facetDisplayName: 'squat',
+          baselineName: 'Comp Squat',
+          model: mkModel(),
+          e1rmPoints: [pt('squat', 300)],
+        },
+        { isNotNull: true, sourceName: 'Comp Squat', e1rm: 300 },
+      ],
+      [
+        'no baseline entry for lift',
+        {
+          liftType: 'squat',
+          facetDisplayName: 'squat',
+          baselineName: 'Comp Squat',
+          model: mkModel({ baseline: {} }),
+          e1rmPoints: [pt('squat', 300)],
+        },
+        { isNotNull: false },
+      ],
+      [
+        'no matching points for canonical',
+        {
+          liftType: 'squat',
+          facetDisplayName: 'squat',
+          baselineName: 'Comp Squat',
+          model: mkModel(),
+          e1rmPoints: [],
+        },
+        { isNotNull: false },
+      ],
+      [
+        'baselineName null falls back to canonical',
+        {
+          liftType: 'squat',
+          facetDisplayName: 'squat',
+          baselineName: null,
+          model: mkModel(),
+          e1rmPoints: [pt('squat', 300)],
+        },
+        { isNotNull: true, sourceName: 'squat', e1rm: 300 },
+      ],
+      [
+        'baselineName undefined falls back to canonical',
+        {
+          liftType: 'squat',
+          facetDisplayName: 'squat',
+          baselineName: undefined,
+          model: mkModel(),
+          e1rmPoints: [pt('squat', 300)],
+        },
+        { isNotNull: true, sourceName: 'squat', e1rm: 300 },
+      ],
+      [
+        'points with different series',
+        {
+          liftType: 'squat',
+          facetDisplayName: 'squat',
+          baselineName: 'Comp Squat',
+          model: mkModel(),
+          e1rmPoints: [pt('bench', 200)],
+        },
+        { isNotNull: false },
+      ],
+    ])(
+      '%s',
+      (
+        _msg: string,
+        params: Parameters<typeof resolveE1RMEstimate>[0],
+        expected: { isNotNull: boolean; sourceName?: string; e1rm?: number }
+      ) => {
+        const result = resolveE1RMEstimate(params);
+        if (expected.isNotNull) {
+          expect(result).not.toBeNull();
+          expect(result?.sourceName).toBe(expected.sourceName);
+          expect(result?.e1rm).toBe(expected.e1rm);
+        } else {
+          expect(result).toBeNull();
+        }
+      }
+    );
+  });
+
+  describe('findCanonicalForExercise', () => {
+    const pt = (series: string, t: number): Point => ({
+      t,
+      v: 100,
+      series,
+      tags: new Set(['lift:bench']),
+    });
+
+    const model: NormalizationModel = {
+      fittedAt: Date.now(),
+      baseline: { 'lift:bench': 'bench' },
+      variantFactor: {
+        'bench-american': { factor: 0.75, n: 1 },
+        bench: { factor: 1.0, n: 5 },
+      },
+      addlWtOffset: {},
+    };
+
+    it('prefers an exact canonical match over an earlier substring match (regression: bare exercise mismatched to a compound variant)', () => {
+      // "bench-american" is chronologically first (and thus first in Set iteration
+      // order) and contains "bench" as a substring — a naive first-match substring
+      // scan would incorrectly resolve the bare "Bench" display name to it instead
+      // of the exact "bench" canonical, projecting through variantFactor and
+      // silently under-predicting e1RM (see RepCalculator bug report: displayed
+      // e1RM of 125lbs vs. the true ~148lbs best straight-bench session).
+      const e1rmPoints = [pt('bench-american', 1) /* earliest */, pt('bench', 2)];
+      expect(findCanonicalForExercise('Bench', 'bench', model, e1rmPoints, 'bench')).toBe('bench');
+    });
+
+    it.each([
+      [
+        'substring fallback still matches when no exact canonical exists',
+        [pt('bench-close', 1)],
+        'Close',
+        'bench-close',
+      ],
+      [
+        'falls back to baseline when nothing matches by name or variantFactor',
+        [pt('bench', 1)],
+        'Deadlift',
+        'bench',
+      ],
+    ])('%s', (_msg: string, e1rmPoints: Point[], displayName: string, expected: string) => {
+      expect(findCanonicalForExercise(displayName, 'bench', model, e1rmPoints, 'bench')).toBe(
+        expected
+      );
     });
   });
 });

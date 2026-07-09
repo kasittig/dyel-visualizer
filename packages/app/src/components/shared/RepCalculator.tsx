@@ -20,8 +20,8 @@ import { usePipelineModel } from '../../context/PipelineContext';
 import {
   predictWeightForReps,
   predictRepsForWeight,
-  findBestE1RMFromPipeline,
-  findCanonicalForExercise,
+  resolveE1RMEstimate,
+  convertE1RMToDisplayUnit,
 } from '../../pipeline/repCalculatorUtils';
 import type { E1RMEstimate } from '../../pipeline/repCalculatorUtils';
 import type { SplitRows } from '../../utils/appDataUtils';
@@ -166,35 +166,13 @@ export function RepCalculator({
       return null;
     }
 
-    const baselineCanonical = baselineNames[liftType];
-    if (!baselineCanonical) {
-      return null;
-    }
-
-    const e1rmPoints = pipelineModel.pointsByDeriver.get('e1rm') ?? [];
-    const baselinePoints = e1rmPoints.filter((p) => p.series === baselineCanonical);
-    if (baselinePoints.length === 0) {
-      return null;
-    }
-
-    const targetCanonical = findCanonicalForExercise(
-      facetExercise.displayName,
-      baselineCanonical,
-      pipelineModel.model,
-      e1rmPoints,
-      liftType
-    );
-    if (!targetCanonical) {
-      return null;
-    }
-
-    return findBestE1RMFromPipeline(
-      targetCanonical,
-      baselineCanonical,
-      baselinePoints,
-      pipelineModel.model,
-      baselineCanonical
-    );
+    return resolveE1RMEstimate({
+      liftType,
+      facetDisplayName: facetExercise.displayName,
+      baselineName: baselineNames[liftType],
+      model: pipelineModel.model,
+      e1rmPoints: pipelineModel.pointsByDeriver.get('e1rm') ?? [],
+    });
   }, [facetExercise, pipelineStatus, pipelineModel, baselineNames, liftType]);
 
   // Keep a ref so the exercise-change effect always reads the current reps value
@@ -210,15 +188,19 @@ export function RepCalculator({
     }
     const r = parseFloat(repsRef.current);
     if (!isNaN(r) && r > 0) {
-      setWeight(String(roundTo5(predictWeightForReps(estimate.e1rm, r))));
+      setWeight(
+        String(roundTo5(predictWeightForReps(convertE1RMToDisplayUnit(estimate.e1rm, unit), r)))
+      );
     }
-  }, [estimate]);
+  }, [estimate, unit]);
 
   function handleRepsChange(val: string) {
     setReps(val);
     const r = parseFloat(val);
     if (!isNaN(r) && r > 0 && estimate) {
-      setWeight(String(roundTo5(predictWeightForReps(estimate.e1rm, r))));
+      setWeight(
+        String(roundTo5(predictWeightForReps(convertE1RMToDisplayUnit(estimate.e1rm, unit), r)))
+      );
     }
   }
 
@@ -226,7 +208,7 @@ export function RepCalculator({
     setWeight(val);
     const w = parseFloat(val);
     if (!isNaN(w) && w > 0 && estimate) {
-      setReps(predictRepsForWeight(estimate.e1rm, w).toFixed(1));
+      setReps(predictRepsForWeight(convertE1RMToDisplayUnit(estimate.e1rm, unit), w).toFixed(1));
     }
   }
 
@@ -384,7 +366,7 @@ export function RepCalculator({
               </div>
 
               <div className={styles.e1rmDisplay}>
-                e1RM: {Math.round(estimate.e1rm)} {unit}
+                e1RM: {Math.round(convertE1RMToDisplayUnit(estimate.e1rm, unit))} {unit}
               </div>
 
               <p className={styles.sourceNote}>{sourceNote(estimate)}</p>
