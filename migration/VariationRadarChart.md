@@ -108,3 +108,84 @@ pre-dry-run `@dyel/core`-calling state immediately after verification** (confirm
 `git status --porcelain` showing no diff) — this was a verification-only pass. The actual
 swap-over remains not-done, gated on blocker (1) above closing to an exact match per
 `APP_COMPONENTS.md`'s policy.
+
+## Root-caused stale divergence numbers (2026-07-09, precedes swap-over below)
+
+A dedicated root-cause session found the alarming divergence numbers quoted above (squat
+13.9%, bench 23.2%/26.1%, deadlift 5.6%) were **test-harness bugs, not real pipeline
+regressions** — the same class of bug `conjugateChartParity.test.ts` had (stale
+`buildSessionStats` input). Two real bugs were found and fixed, both confined to test files
+(`testUtils/diffVariationSnapshot.ts` and this file):
+
+1. `variationRadarChartParity.test.ts` called `snapshotVariationsFromPipeline` wrapped in
+   `mergeWideRechartsRows(...)`, but `snapshotVariationsFromPipeline` expects the **raw**
+   `RechartsRow[]` (kg-valued, `.t`-keyed) — it does its own most-recent-row selection and
+   its own kg→lbs conversion. The wrapper had already converted `.t`→`.date` and kg→lbs, so
+   the internal `.t` comparison always failed (silently falling back to the first row, not
+   the true most-recent one) and `conv()` double-applied the kg→lbs conversion (~2.2x
+   inflation). Fixed by passing `res.datasets.variations` directly.
+2. `snapshotVariationsFromLegacy` (`testUtils/diffVariationSnapshot.ts`) multiplied
+   `normalizeToBaseE1RM`'s output by a kg→lbs `conv()` factor, but `@dyel/core`'s
+   `TrainingSession.weight` is never unit-converted internally (stays in the source sheet's
+   declared unit) — so already-lbs values were inflated another ~2.2x. Fixed by removing the
+   conversion entirely, mirroring `buildVariationChartData`'s own (correct) precedent.
+
+After both fixes, a new apples-to-apples **raw** (un-normalized) comparison was added
+(`legacyRawSnapshots` vs. `pipelineSnapshots`, both un-normalized) to isolate a real,
+pre-existing semantic mismatch (the old test compared legacy's cross-exercise-_normalized_
+value against pipeline's _raw_ value — not apples-to-apples) from actual bugs. Trustworthy
+residual after fixes: **raw** squat/bench/deadlift 0.0%/0.0%/0.0%; **normalized**
+(cross-exercise, via `normalizeToBaseE1RM` vs. pipeline's fixed-baseline `normalize: true`)
+squat 0.0%, deadlift 1.9%, bench 21.5% — the normalized residual is the same missing-primitive
+class of gap as `ConjugateCharts`' deprecated dropdown (pipeline has no per-variation
+cross-exercise-normalization equivalent), not a bug.
+
+## VariationRadarChart swap-over (2026-07-09, closes #460)
+
+**Decision made**: given (a) the raw per-variation e1RM snapshot has genuine, trustworthy
+0.0% divergence from legacy (not a soft-warn-tolerance judgment call — a real exact match),
+and (b) the remaining bench 21.5% gap is confirmed to be the same missing-primitive class of
+divergence `ConjugateCharts` already resolved by deprecating its per-target dropdown, the
+same precedent was applied here: `VariationRadarChart`'s cross-exercise per-target
+normalization (`normalizeToBaseE1RM`) is **deprecated, not ported**. The radar now displays
+each variation's raw, un-normalized last-session e1RM.
+
+Unlike `ConjugateCharts`' swap (which accepted a nonzero soft-warn residual as an explicit
+maintainer exception to the migration gate), this swap's production data path is fully
+gate-compliant: the raw-snapshot parity test was **promoted from soft-warn to a hard
+assertion** (`expect(maxRelDiff).toBe(0)`) in `variationRadarChartParity.test.ts`, since
+that's what actually ships now. The normalized-snapshot test remains soft-warn-only,
+untouched, retained purely as a historical/tracked measurement (no longer relevant to
+production since that code path was dropped).
+
+### Implementation
+
+- New `packages/app/src/hooks/pipeline/usePipelineVariationRadarData.ts`: pipeline-native
+  data hook, sourced from the shared `PipelineModel` via `usePipelineModel()` +
+  `usePipelineDatasets(conjugateChartSpecs(liftType), {})` (never calls `runPipeline`
+  directly, per the migration boundary rule). Returns `{ snapshot, lastSessionByLabel }` —
+  the raw per-variation e1RM map (`utils/variationSnapshot.ts`'s
+  `snapshotVariationsFromPipeline`) and last-session tooltip detail
+  (`pipeline/lastSessionDetail.ts`'s `buildLastSessionDetail`). Unit-tested
+  (`usePipelineVariationRadarData.test.ts`).
+- `components/charts/VariationRadarChart.tsx`: no longer imports `@dyel/core`
+  (`ConjugateExercise`, `normalizeToBaseE1RM`) or takes `rows`/`stats`/`baselineName` props.
+  New prop shape: `{ liftType, unit, targetName, onVariationClick? }`. Radar spoke/ring
+  values and tooltip now read from the new hook; the tooltip's date/weight fields convert
+  `LastSessionDetail`'s ISO date string / kg weight to the display unit inline (same
+  `KG_TO_LBS` pattern used elsewhere in this migration).
+- `components/pages/LiftTabPanel.tsx`: call site updated to the new prop shape; its own
+  now-fully-unused `rows`/`effectiveBaselineNames`/`baselineName` props, `filteredRows`
+  `useMemo`, and `useLastSessionStats` call were removed as dead code, cascading a small prop
+  signature change to `LiftTabPanel`'s single caller (`App.tsx`).
+
+### Verification
+
+`npm run build -w packages/pipeline && npm run build -w packages/core && npm run build -w
+packages/app && npm test -w packages/pipeline && npm test -w packages/core && npm test -w
+packages/app` — all green (pipeline 12/144, core 22/321, app 26/254), no regressions.
+`grep -rn "@dyel/core" components/charts/VariationRadarChart.tsx
+components/pages/LiftTabPanel.tsx` returns only `LiftTabPanel.tsx`'s two remaining type-only
+imports (`DeadliftStancePreference`, `LiftType`), not runtime business logic.
+
+`LiftTabPanel.md` (`MIGRATION_PLAN.md` item #2, composition-root migration) is now unblocked.

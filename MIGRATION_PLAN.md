@@ -10,33 +10,26 @@ both components were swapped onto `@dyel/pipeline` and their tracking docs
 see `HANDOFF.md`. `DiagnosticsPanel` is also **complete** — component was swapped onto
 `@dyel/pipeline`, tracking doc deleted, see `HANDOFF.md`. **`ConjugateCharts` (formerly item
 #1 below) is also complete** (2026-07-08, closes #459) — see `migration/ConjugateCharts.md`'s
-"ConjugateCharts swap-over" section.
+"ConjugateCharts swap-over" section. **`VariationRadarChart` (item #1 below) is also
+complete** (2026-07-09, closes #460) — see `migration/VariationRadarChart.md`'s
+"VariationRadarChart swap-over" section.
 
 **Architectural constraint:** All remaining component migrations below must use the new shared-context infrastructure introduced in Phase 1 — `PipelineProvider`, `usePipelineModel()`, and `usePipelineDatasets()` from `packages/app/src/context/PipelineContext.tsx` and `packages/app/src/hooks/pipeline/usePipelineDatasets.ts` — rather than adding per-component `runPipeline()` calls. This centralized approach is now the established pattern for all component migrations.
 
 ## Remaining items, in dependency order
 
-1. **`migration/VariationRadarChart.md`** — pipeline-native replacement
-   (`conjugateChartSpecs()` + `snapshotVariationsFromPipeline()`) validated and parity-tested,
-   component swap deliberately deferred: (1) ~~avoid reintroducing divergence risk into a
-   second user-facing chart ahead of `ConjugateCharts` landing~~ — **`ConjugateCharts` has
-   since landed** (2026-07-08, with its residual divergence explicitly accepted rather than
-   closed to an exact match — see `migration/ConjugateCharts.md`); re-evaluate whether the
-   same explicit-acceptance approach can now unblock this swap, rather than waiting on a
-   hard-assert exact match that may never come; (2) ~~the pipeline snapshot only carries
-   e1RM values, not the last-session detail (date, sets, reps, weight, RPE) the component's
-   tooltip currently shows~~ — **resolved 2026-07-08** via the new
-   `packages/app/src/pipeline/lastSessionDetail.ts` builder. Depends on `ConjugateCharts`'
-   snapshot-diff logic (`diffVariationSnapshot`, now backed by the promoted runtime util
-   `packages/app/src/utils/variationSnapshot.ts`). A 2026-07-08 wire-verify-revert dry run
-   confirmed the full swap chain (component + `LiftTabPanel.tsx`) works end-to-end, then
-   reverted the call-site changes — still not a committed swap. Hard dependency of
-   `LiftTabPanel` (#2). Tracked: [#460](https://github.com/kasittig/dyel-visualizer/issues/460).
+1. ~~**`migration/VariationRadarChart.md`**~~ — **complete** (2026-07-09, closes #460). Its
+   own cross-exercise per-target normalization (`normalizeToBaseE1RM`) was deprecated, not
+   ported, following the exact precedent `ConjugateCharts` set for its dropdown — but unlike
+   `ConjugateCharts`' soft-warn-accepted residual, the production data path here (raw
+   per-variation e1RM) has genuine 0.0% divergence, now hard-asserted (promoted from
+   soft-warn) in `variationRadarChartParity.test.ts`. See
+   `migration/VariationRadarChart.md`'s "VariationRadarChart swap-over" section for full
+   detail.
 
-2. **`migration/LiftTabPanel.md`** — composition root, last. Explicitly blocked on #1
-   (`VariationRadarChart`) landing first (`ConjugateCharts` no longer blocks this — it's
-   done); the `deadliftStance`-on-`AthleteContext` prerequisite (`HANDOFF.md` Part A) is
-   already complete, so it's no longer a blocker here.
+2. **`migration/LiftTabPanel.md`** — composition root, last remaining item. No longer
+   blocked — #1 (`VariationRadarChart`) has landed, and the `deadliftStance`-on-
+   `AthleteContext` prerequisite (`HANDOFF.md` Part A) was already complete.
 
 ## Off to the side, any time
 

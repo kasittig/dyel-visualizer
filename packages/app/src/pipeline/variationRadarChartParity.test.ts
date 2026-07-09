@@ -143,6 +143,10 @@ describe('VariationRadarChart core-vs-pipeline parity', () => {
     }
   });
 
+  // VariationRadarChart.tsx no longer consumes this normalized value in production as of this
+  // swap (closes #460) — it's retained purely as a tracked/historical divergence measurement,
+  // mirroring how ConjugateCharts' own pre-deprecation divergence numbers were retained for
+  // documentation purposes after that component's dropdown was deprecated (see migration/ConjugateCharts.md).
   it.each(LIFT_TYPES)('%s: normalized variation snapshots', (lift: string) => {
     const lSnap = legacySnapshots[lift],
       pSnap = pipelineSnapshots[lift];
@@ -193,13 +197,22 @@ describe('VariationRadarChart core-vs-pipeline parity', () => {
       expect(hasL || hasP).toBe(true);
 
       if (hasL && hasP && lSnap && pSnap) {
-        diffVariationSnapshots(lSnap, pSnap).forEach((d) => {
+        const diffs = diffVariationSnapshots(lSnap, pSnap);
+        const maxRelDiff = Math.max(
+          ...diffs
+            .filter((d) => d.legacyValue !== undefined && d.pipelineValue !== undefined)
+            .map((d) => d.relDiff)
+        );
+
+        diffs.forEach((d) => {
           if (d.legacyValue !== undefined && d.pipelineValue !== undefined) {
             console.warn(
               `core-vs-pipeline-raw ${lift} ${d.variationName}: legacy=${d.legacyValue} pipeline=${d.pipelineValue} absDiff=${d.absDiff} relDiff=${(d.relDiff * 100).toFixed(1)}%`
             );
           }
         });
+
+        expect(maxRelDiff).toBe(0);
       } else if (hasL || hasP) {
         console.warn(
           `core-vs-pipeline-raw ${lift}: one-sided data (legacy=${hasL}, pipeline=${hasP})`

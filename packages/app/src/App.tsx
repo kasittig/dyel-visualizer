@@ -355,11 +355,8 @@ export function App() {
               ) : liftTab !== null ? (
                 <LiftTabPanel
                   key={shownResetToken}
-                  rows={tabRows[liftTab].maxEffort}
-                  effectiveBaselineNames={effectiveBaselineNames}
                   liftType={liftTab}
                   targetName={effectiveTargetNames[liftTab]!}
-                  baselineName={effectiveBaselineNames[liftTab]}
                   deadliftStance={deadliftStance}
                   onDeadliftStanceChange={setDeadliftStance}
                   dateRange={dateRange}

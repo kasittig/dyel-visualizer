@@ -1,49 +1,39 @@
 import { useMemo } from 'react';
-import type { ConjugateExercise } from '@dyel/core';
-import { normalizeToBaseE1RM } from '@dyel/core';
-import type { ConjugateDataPair } from '../../hooks/conjugate/useConjugateData';
-import type { SessionStats } from '../../hooks/data/useLastSessionStats';
+import { usePipelineVariationRadarData } from '../../hooks/pipeline/usePipelineVariationRadarData';
 import { BaseRadarChart } from './BaseRadarChart';
 import { ChartTooltip } from './TooltipCard';
 import { CollapsibleSection } from '../shared/CollapsibleSection';
-import { distinctDisplayNames } from '../../utils/appUtils';
 import styles from './VariationRadarChart.module.css';
 
 const MIN_VARIATIONS = 3;
+const KG_TO_LBS = 2.20462262185;
 
 export function VariationRadarChart({
-  rows,
-  stats,
+  liftType,
+  unit,
   targetName,
-  baselineName,
   onVariationClick,
 }: {
-  rows: ConjugateDataPair[];
-  stats: SessionStats;
+  liftType: string;
+  unit: 'lbs' | 'kg';
   targetName: string;
-  baselineName?: string;
   onVariationClick?: (variation: string) => void;
 }) {
-  const unit = rows[0]?.[1].unit ?? 'lbs';
+  const { snapshot, lastSessionByLabel } = usePipelineVariationRadarData(liftType, unit);
 
   const data = useMemo(() => {
-    const exerciseByName = new Map<string, ConjugateExercise>(
-      rows.map(([ex]) => [ex.displayName, ex])
-    );
-    const targetEx = exerciseByName.get(targetName);
-    const baselineEx = baselineName ? exerciseByName.get(baselineName) : undefined;
-    const targetE1rm = stats.lastSession.get(targetName)?.e1rm;
+    const targetE1rm = snapshot[targetName];
+    const variationNames = Object.keys(snapshot).sort();
 
-    return distinctDisplayNames(rows)
+    return variationNames
       .map((name) => {
-        const sourceEx = exerciseByName.get(name);
-        const lastSess = stats.lastSession.get(name);
-        if (!sourceEx || !lastSess || !targetEx) {
+        const e1rm = snapshot[name];
+        if (e1rm === undefined) {
           return { variation: name, e1rm: undefined, targetE1rm };
         }
         return {
           variation: name,
-          e1rm: normalizeToBaseE1RM(lastSess, sourceEx, targetEx, stats, baselineEx) ?? undefined,
+          e1rm,
           targetE1rm,
         };
       })
@@ -51,7 +41,7 @@ export function VariationRadarChart({
         (d): d is { variation: string; e1rm: number; targetE1rm: number | undefined } =>
           d.e1rm !== undefined
       );
-  }, [rows, stats, targetName, baselineName]);
+  }, [snapshot, targetName]);
 
   if (data.length < MIN_VARIATIONS) {
     return null;
@@ -61,7 +51,7 @@ export function VariationRadarChart({
 
   return (
     <div className={styles.section}>
-      <CollapsibleSection label="Normalized e1RM by variation">
+      <CollapsibleSection label="e1RM by variation">
         <div className={styles.card}>
           <span className={styles.sectionLabel}>Variation Breakdown</span>
           <BaseRadarChart
@@ -78,31 +68,31 @@ export function VariationRadarChart({
                   return null;
                 }
                 const name = (item.payload as { variation: string }).variation;
-                const last = stats.lastSession.get(name);
-                const lastDate = last?.date;
-                const lastE1RM = last?.e1rm;
-                const bestSet = last;
-                const dateStr = lastDate
-                  ? lastDate.toLocaleDateString(undefined, {
+                const lastSession = lastSessionByLabel.get(name);
+                const dateStr = lastSession
+                  ? new Date(lastSession.date + 'T00:00:00').toLocaleDateString(undefined, {
                       month: 'short',
                       day: 'numeric',
                       year: 'numeric',
                     })
                   : 'Never';
+                const displayWeight = lastSession
+                  ? unit === 'lbs'
+                    ? Math.round(lastSession.weight * KG_TO_LBS)
+                    : lastSession.weight
+                  : 0;
                 return (
                   <ChartTooltip
                     lines={[
                       {
                         key: name,
                         name,
-                        detail: `Normalized e1RM: ${Number(item.value).toFixed(2)} ${unit}`,
+                        detail: `Raw e1RM: ${Number(item.value).toFixed(2)} ${unit}`,
                         extra: (
                           <>
-                            Last session:{' '}
-                            {lastE1RM !== undefined ? `${lastE1RM.toFixed(2)} ${unit} · ` : ''}
-                            {dateStr}
-                            {bestSet
-                              ? ` · ${bestSet.sets}×${bestSet.reps} @ ${bestSet.weight} ${unit}${bestSet.rpe != null ? ` · RPE ${bestSet.rpe}` : ''}`
+                            Last session: {dateStr}
+                            {lastSession
+                              ? ` · ${lastSession.sets}×${lastSession.reps} @ ${displayWeight} ${unit}${lastSession.rpe != null ? ` · RPE ${lastSession.rpe}` : ''}`
                               : ''}
                           </>
                         ),
