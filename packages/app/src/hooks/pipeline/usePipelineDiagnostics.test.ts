@@ -193,6 +193,74 @@ describe('usePipelineDiagnostics', () => {
     expect(result.current.hasDeadlift).toBe(expectedHasDeadlift);
   });
 
+  it.each([
+    [
+      'no liftType → returns all variants unfiltered',
+      undefined,
+      ['lift:squat', 'lift:bench', 'lift:deadlift'],
+      ['squat', 'bench', 'deadlift'],
+      true,
+    ],
+    [
+      'liftType="squat" with mixed variants → returns only squat, hasDeadlift false',
+      'squat',
+      ['lift:squat', 'lift:bench', 'lift:deadlift'],
+      ['squat'],
+      false,
+    ],
+    [
+      'liftType="bench" with mixed variants → returns only bench, hasDeadlift false',
+      'bench',
+      ['lift:squat', 'lift:bench', 'lift:deadlift'],
+      ['bench'],
+      false,
+    ],
+    [
+      'liftType="deadlift" with mixed variants → returns only deadlift, hasDeadlift true',
+      'deadlift',
+      ['lift:squat', 'lift:bench', 'lift:deadlift'],
+      ['deadlift'],
+      true,
+    ],
+    [
+      'liftType="squat" with no matching variants → returns empty array, hasDeadlift false',
+      'squat',
+      ['lift:bench', 'lift:deadlift'],
+      [],
+      false,
+    ],
+  ])(
+    'filters variants by liftType: %s',
+    (_, liftType, lifts, expectedCanonicals, expectedHasDeadlift) => {
+      const variants = lifts.map((lift) => {
+        const liftName = lift.split(':')[1];
+        return buildFixtureVariant({
+          canonical: liftName,
+          lift,
+        });
+      });
+
+      const fixtureModel = buildFixtureModel({
+        diagnostics: {
+          variants,
+          weaknesses: [],
+          unassessed: [],
+        },
+      });
+
+      mockUsePipelineModel.mockReturnValue({
+        status: 'success',
+        model: fixtureModel,
+      });
+
+      const { result } = renderHook(() => usePipelineDiagnostics(liftType));
+
+      expect(result.current.variants).toHaveLength(expectedCanonicals.length);
+      expect(result.current.variants.map((v) => v.canonical)).toEqual(expectedCanonicals);
+      expect(result.current.hasDeadlift).toBe(expectedHasDeadlift);
+    }
+  );
+
   it('handles multiple variants with mixed properties', () => {
     const variants = [
       buildFixtureVariant({

@@ -53,6 +53,7 @@ export function LiftTabPanel({
         onVariationClick={handleVariationClick}
       />
       <DiagnosticsPanel
+        liftType={liftType}
         deadliftStance={deadliftStance}
         onDeadliftStanceChange={onDeadliftStanceChange}
         onVariationClick={handleVariationClick}

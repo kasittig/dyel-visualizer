@@ -24,9 +24,12 @@ export interface DiagnosticResult {
  * Hook to retrieve diagnostics from the pipeline model.
  * Consumes the pipeline context and extracts variant diagnostics.
  *
- * @returns DiagnosticResult with variants and hasDeadlift flag
+ * @param liftType - Optional lift type filter (e.g., 'squat', 'bench', 'deadlift').
+ *                   When provided, only variants matching `lift:${liftType}` are returned.
+ *                   When omitted, all variants are returned unfiltered.
+ * @returns DiagnosticResult with filtered variants and hasDeadlift flag computed from the filtered set
  */
-export function usePipelineDiagnostics(): DiagnosticResult {
+export function usePipelineDiagnostics(liftType?: string): DiagnosticResult {
   const { model } = usePipelineModel();
 
   if (!model) {
@@ -34,7 +37,7 @@ export function usePipelineDiagnostics(): DiagnosticResult {
   }
 
   // Extract only the fields required by DiagnosticVariant
-  const variants: DiagnosticVariant[] = model.diagnostics.variants.map((v) => ({
+  let variants: DiagnosticVariant[] = model.diagnostics.variants.map((v) => ({
     canonical: v.canonical,
     displayName: v.displayName,
     lift: v.lift,
@@ -48,6 +51,12 @@ export function usePipelineDiagnostics(): DiagnosticResult {
     expectedBaseline: v.expectedBaseline,
     addlWtOffset: v.addlWtOffset,
   }));
+
+  // Filter by liftType if provided
+  if (liftType) {
+    const liftTag = `lift:${liftType}`;
+    variants = variants.filter((v) => v.lift === liftTag);
+  }
 
   const hasDeadlift = variants.some((v) => v.lift.includes('deadlift'));
 

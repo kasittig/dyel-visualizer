@@ -21,11 +21,13 @@ export function DiagnosticsPanel({
   onDeadliftStanceChange,
   onVariationClick,
   highlightedVariation,
+  liftType,
 }: {
   deadliftStance: DeadliftStancePreference;
   onDeadliftStanceChange: (s: DeadliftStancePreference) => void;
   onVariationClick?: (name: string | null) => void;
   highlightedVariation?: string | null;
+  liftType: string;
 }) {
   const [activeEffect, setActiveEffect] = useState<string | null>(null);
 
@@ -34,7 +36,7 @@ export function DiagnosticsPanel({
     onVariationClick?.(null);
   };
 
-  const { variants: results, hasDeadlift } = usePipelineDiagnostics();
+  const { variants: results, hasDeadlift } = usePipelineDiagnostics(liftType);
 
   const { weakEffects, overtrainedEffects } = useMemo(() => {
     const counter = new Map<string, number>();
