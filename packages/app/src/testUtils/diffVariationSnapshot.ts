@@ -3,10 +3,6 @@ import type { ConjugateExercise, SessionStats } from '@dyel/core';
 import { normalizeToBaseE1RM } from '@dyel/core';
 import { snapshotVariationsFromPipeline as snapshotFromPipeline } from '../utils/variationSnapshot';
 
-const KG_TO_LBS = 2.20462262185;
-const getConverter = (unit: 'lbs' | 'kg') =>
-  unit === 'lbs' ? (v: number) => Math.round(v * KG_TO_LBS) : (v: number) => v;
-
 export interface VariationSnapshot {
   [name: string]: number | undefined;
 }
@@ -30,15 +26,21 @@ export function snapshotVariationsFromPipeline(
   return snapshotFromPipeline(variationRows, unit);
 }
 
+// NOTE: unlike @dyel/pipeline's SetRecord.weight (always kg-canonical, see packages/pipeline/CLAUDE.md),
+// @dyel/core's TrainingSession.weight is stored in whatever unit the source sheet declared
+// (see packages/core/src/transform/CLAUDE.md's detectWeightUnit / "no value conversion" invariant) —
+// there is no unit-normalization step in @dyel/core. normalizeToBaseE1RM's output is therefore
+// already in that same native unit, so it must NOT be run through a kg->lbs converter here (that
+// was a real bug: it silently double-converted already-lbs values by ~2.2x for lbs-denominated
+// fixtures). This mirrors buildVariationChartData's own (correct) precedent, which returns
+// Math.round(normalized) with no unit conversion at all.
 export function snapshotVariationsFromLegacy(
   variationNames: string[],
   exerciseByName: Map<string, ConjugateExercise>,
   stats: SessionStats,
   targetName: string,
-  baselineName: string | undefined,
-  unit: 'lbs' | 'kg' = 'lbs'
+  baselineName: string | undefined
 ): VariationSnapshot {
-  const conv = getConverter(unit);
   const targetEx = exerciseByName.get(targetName);
   const baselineEx = baselineName ? exerciseByName.get(baselineName) : undefined;
   const snapshot: VariationSnapshot = {};
@@ -50,7 +52,7 @@ export function snapshotVariationsFromLegacy(
       !sourceEx || !lastSess || !targetEx
         ? null
         : normalizeToBaseE1RM(lastSess, sourceEx, targetEx, stats, baselineEx);
-    snapshot[name] = normalized !== null ? Math.round(conv(normalized)) : undefined;
+    snapshot[name] = normalized !== null ? Math.round(normalized) : undefined;
   }
   return snapshot;
 }

@@ -10,16 +10,15 @@ import {
 } from '@dyel/pipeline';
 import type { SetRecord } from '@dyel/pipeline';
 import type { ConjugateExercise, TrainingSession } from '@dyel/core';
-import { parseConjugateData, buildSessionStats } from '@dyel/core';
+import { parseConjugateData, buildSessionStats, calcE1RM } from '@dyel/core';
 import {
   snapshotVariationsFromLegacy,
   snapshotVariationsFromPipeline,
   diffVariationSnapshots,
 } from '../testUtils/diffVariationSnapshot';
 import { buildRawInput, PLACEHOLDER_ATHLETE } from '../utils/rawInputUtils';
-import { mergeWideRechartsRows } from '../utils/pipelineChartUtils';
 import { extractPairs, buildTabRows, computeEffectiveNames } from '../utils/appDataUtils';
-import { initialTabState, distinctDisplayNames } from '../utils/appUtils';
+import { distinctDisplayNames } from '../utils/appUtils';
 import { conjugateChartSpecs } from './conjugateChartSpecs';
 import { buildLastSessionDetail } from './lastSessionDetail';
 
@@ -31,6 +30,7 @@ const LIFT_TYPES: string[] = ['squat', 'bench', 'deadlift'];
 
 describe('VariationRadarChart core-vs-pipeline parity', () => {
   const legacySnapshots: Record<string, SnapshotDict> = {};
+  const legacyRawSnapshots: Record<string, SnapshotDict> = {};
   const pipelineSnapshots: Record<string, SnapshotDict> = {};
   const legacyLastSessions: Record<string, Map<string, TrainingSession>> = {};
   const pipelineLastSessions: Record<
@@ -45,8 +45,13 @@ describe('VariationRadarChart core-vs-pipeline parity', () => {
     );
     const pairs = parseConjugateData(txt),
       tabRows = buildTabRows(extractPairs({ status: 'success', pairs })),
-      eff = computeEffectiveNames(tabRows, initialTabState(), 'sumo');
-    const stats = buildSessionStats(pairs, eff.effectiveBaselineNames, new Date());
+      eff = computeEffectiveNames(tabRows, 'sumo');
+    const allSigmaPairs = [
+      ...tabRows.squat.maxEffort,
+      ...tabRows.bench.maxEffort,
+      ...tabRows.deadlift.maxEffort,
+    ];
+    const stats = buildSessionStats(allSigmaPairs, eff.effectiveBaselineNames, new Date());
     const raw = buildRawInput('url', txt);
 
     // Tag the records for pipeline last-session builder
@@ -64,8 +69,16 @@ describe('VariationRadarChart core-vs-pipeline parity', () => {
 
     for (const lift of LIFT_TYPES) {
       const res = runPipeline([raw], conjugateChartSpecs(lift), PLACEHOLDER_ATHLETE, {});
+      // snapshotVariationsFromPipeline expects the RAW pipeline RechartsRow[] (kg-valued,
+      // `.t`-keyed) — it does its own "most recent row" selection (via `.t`) and its own
+      // kg->lbs conversion. Wrapping in mergeWideRechartsRows() first was a call-site bug:
+      // mergeWideRechartsRows() already converts `.t` -> `.date` (string) and kg -> lbs, so
+      // the `.t` comparison inside snapshotVariationsFromPipeline always failed (silently
+      // falling back to the first row instead of the true most-recent one) and its own
+      // conv() then double-applied the kg->lbs conversion on top of the already-converted
+      // values (~2.2x inflation). Passing the raw dataset directly fixes both.
       pipelineSnapshots[lift] = snapshotVariationsFromPipeline(
-        mergeWideRechartsRows(res.datasets.variations ?? [], 'lbs'),
+        res.datasets.variations ?? [],
         'lbs'
       ) as SnapshotDict;
 
@@ -89,9 +102,20 @@ describe('VariationRadarChart core-vs-pipeline parity', () => {
           exMap,
           stats,
           target,
-          eff.effectiveBaselineNames[lift],
-          'lbs'
+          eff.effectiveBaselineNames[lift]
         ) as SnapshotDict;
+
+        // Build raw snapshot (un-normalized, apples-to-apples with pipeline). @dyel/core never
+        // unit-converts TrainingSession.weight (see snapshotVariationsFromLegacy's note in
+        // diffVariationSnapshot.ts) - calcE1RM's output is already in the fixture's native unit,
+        // no further conversion needed here.
+        const rawSnapshot: SnapshotDict = {};
+        for (const name of distinctDisplayNames(liftRows)) {
+          const lastSess = stats.lastSession.get(name);
+          const raw = !lastSess ? null : calcE1RM(lastSess.weight, lastSess.reps, lastSess.rpe);
+          rawSnapshot[name] = raw !== null ? Math.round(raw) : undefined;
+        }
+        legacyRawSnapshots[lift] = rawSnapshot;
       }
     }
   });
@@ -148,6 +172,41 @@ describe('VariationRadarChart core-vs-pipeline parity', () => {
       console.warn(`core-vs-pipeline ${lift}: one-sided data (legacy=${hasL}, pipeline=${hasP})`);
     }
   });
+
+  it.each(LIFT_TYPES)(
+    '%s: raw variation snapshots (pipeline vs legacy, apples-to-apples)',
+    (lift: string) => {
+      const lSnap = legacyRawSnapshots[lift],
+        pSnap = pipelineSnapshots[lift];
+      const hasL = !!(
+        lSnap &&
+        Object.values(lSnap).some((v: unknown) => {
+          return v !== undefined;
+        })
+      );
+      const hasP = !!(
+        pSnap &&
+        Object.values(pSnap).some((v: unknown) => {
+          return v !== undefined;
+        })
+      );
+      expect(hasL || hasP).toBe(true);
+
+      if (hasL && hasP && lSnap && pSnap) {
+        diffVariationSnapshots(lSnap, pSnap).forEach((d) => {
+          if (d.legacyValue !== undefined && d.pipelineValue !== undefined) {
+            console.warn(
+              `core-vs-pipeline-raw ${lift} ${d.variationName}: legacy=${d.legacyValue} pipeline=${d.pipelineValue} absDiff=${d.absDiff} relDiff=${(d.relDiff * 100).toFixed(1)}%`
+            );
+          }
+        });
+      } else if (hasL || hasP) {
+        console.warn(
+          `core-vs-pipeline-raw ${lift}: one-sided data (legacy=${hasL}, pipeline=${hasP})`
+        );
+      }
+    }
+  );
 
   it('snapshot values are within reasonable e1rm bounds', () => {
     for (const lift of LIFT_TYPES) {
