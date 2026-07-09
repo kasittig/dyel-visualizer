@@ -36,7 +36,16 @@ describe('ConjugateCharts core-vs-pipeline parity', () => {
     const pairs = parseConjugateData(txt);
     const tabRows = buildTabRows(extractPairs({ status: 'success', pairs }));
     const eff = computeEffectiveNames(tabRows, initialTabState(), 'sumo');
-    const stats: RepCalcStats = buildSessionStats(pairs, eff.effectiveBaselineNames, new Date());
+    const allSigmaPairs = [
+      ...tabRows.squat.maxEffort,
+      ...tabRows.bench.maxEffort,
+      ...tabRows.deadlift.maxEffort,
+    ];
+    const stats: RepCalcStats = buildSessionStats(
+      allSigmaPairs,
+      eff.effectiveBaselineNames,
+      new Date()
+    );
     const raw = buildRawInput('url', txt);
 
     for (const lift of LIFT_TYPES) {

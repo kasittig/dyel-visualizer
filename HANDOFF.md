@@ -4,13 +4,44 @@
 
 `migration-phase-1` implements `MIGRATION_PLAN.md`'s pipeline-native migration of
 `packages/app` off `@dyel/core` onto `@dyel/pipeline`. Task 13 (`DiagnosticsPanel`, issue
-#461) is complete (see git history / prior handoff commits). This session focused entirely
-on issue #459 (`ConjugateCharts`) — specifically, root-causing why its documented parity
-numbers were stale and what the real current divergence is. **No code changes landed this
-session** — every edit made was investigative/reverted; the working tree is clean at the
-time of this handoff.
+#461) is complete (see git history / prior handoff commits). This session is a direct
+follow-up to the previous one, which root-caused issue #459 (`ConjugateCharts`)'s stale
+parity numbers to a test-harness bug in `conjugateChartParity.test.ts` (Open TODO #1 from
+that handoff) but landed no fix. **This session implemented and verified that fix** — see
+"Progress Overview" below. Working tree has two modified files at time of this handoff:
+`packages/app/src/pipeline/conjugateChartParity.test.ts` (the fix) and
+`migration/ConjugateCharts.md` (documentation of the fix and results); not yet committed.
 
-## Progress Overview
+## Progress Overview (this session)
+
+- **Fixed `conjugateChartParity.test.ts`'s test-harness bug** (Open TODO #1 from prior
+  handoff): its `beforeAll` was calling `buildSessionStats(pairs, ...)` with the raw,
+  unfiltered pair list instead of max-effort-only rows. Changed it to build `allSigmaPairs`
+  (max-effort rows from `tabRows.squat/bench/deadlift.maxEffort`), exactly mirroring
+  `totalChartParity.test.ts`'s existing correct pattern, and pass that into
+  `buildSessionStats` instead of raw `pairs`.
+- **Verified the fix resolves the divergence**: real (non-stale) `normalized`-composite
+  maxRelDiff numbers are now squat 0.0% / bench 0.7% / deadlift 0.4% — an **exact match**
+  with `totalChartParity.test.ts`'s own documented residual baseline (squat 0.0%, bench
+  0.7%, deadlift 0.4%, pushPull 0.2%, total 0.0%). This strongly confirms last session's
+  31.4%/21.5%/25.4% numbers were purely a test-harness artifact, not a real pipeline
+  regression, and that `627fddf`'s `fitInput` filter in `packages/pipeline/src/pipeline.ts`
+  (correctly left untouched per last session's Open TODO #2) was never the problem.
+- **Full suite verified green, no regressions**: `npm run build -w packages/pipeline && npm
+run build -w packages/app && npm test -w packages/pipeline && npm test -w packages/app` —
+  pipeline 12 files/144 tests, app 24 files/236 tests, all passing.
+- **Updated `migration/ConjugateCharts.md`** with a new "Test-harness bug fix (2026-07-08,
+  follow-up)" section documenting the root cause, fix, corrected numbers, and full
+  verification — completing Open TODO #4 from the prior handoff.
+- **Flagged, but did NOT decide, the gate-status question** (see that doc section's "Gate
+  status decision point"): per `APP_COMPONENTS.md`'s literal "exact match, not soft-warn"
+  migration gate wording, bench (0.7%) and deadlift (0.4%) are still technically non-zero,
+  so the gate is not met in the strictest reading — even though the residual now exactly
+  matches `TotalChart`'s own already-accepted baseline. This is presented as an open
+  decision for a maintainer (promote as accepted residual vs. continue treating as
+  gate-failing), not resolved unilaterally this session.
+
+## Prior Session Progress (for reference)
 
 - **Re-checked issues #459/#460**: both still OPEN, no new comments/narrowing.
 - **Found `migration/ConjugateCharts.md`'s documented parity numbers are stale.** The doc's
@@ -62,46 +93,63 @@ time of this handoff.
   (`npm run build -w packages/pipeline` clean, `npm test -w packages/pipeline` 12 files/144
   tests passing) — i.e. back to the pre-session baseline, no regressions introduced.
 
-## Decisions Made & Rationale
+## Decisions Made & Rationale (this session)
 
-- **Did not implement any fix this session** — the investigation revealed the initial
+- **Implemented the fix identified last session** rather than re-investigating from scratch
+  — last session's root-cause (test-harness bug, not pipeline bug) was trusted since it was
+  independently confirmed via production data-flow tracing, not just inference.
+- **Did not act on the "gate status" question** (whether 0.7%/0.4% residual should be
+  promoted to accepted-baseline status) — this is an architectural/policy call about what
+  `APP_COMPONENTS.md`'s gate means in practice, not a mechanical next-step, so it's left as
+  an explicit open decision rather than resolved unilaterally.
+- **Did not proceed to Tasks 14-16** (the actual `ConjugateCharts`/`VariationRadarChart`
+  swap-over) even though numbers now match `TotalChart`'s precedent — that swap is gated on
+  the still-undecided gate-status question above, so starting it now would be presumptuous.
+
+## Prior Session's Decisions (for reference)
+
+- Did not implement any fix in that session — the investigation revealed the initial
   diagnosis was wrong partway through, and correcting course (reverting) took priority over
-  landing a fix based on a false premise. No sign-off was sought for a fix because there isn't
-  yet a confirmed-correct one to sign off on.
-- **User confirmed reverting the erroneous `pipeline.ts` change** rather than leaving it
-  uncommitted for a future session to clean up (auto-mode's destructive-action guard
-  correctly blocked the initial attempt to discard it without explicit confirmation).
+  landing a fix based on a false premise.
+- User confirmed reverting the erroneous `pipeline.ts` change rather than leaving it
+  uncommitted for a future session to clean up.
 
 ## Open TODOs
 
-1. **Fix `conjugateChartParity.test.ts`'s test-harness bug**: change its `beforeAll` (around
-   line 39) to call `buildSessionStats` with max-effort-filtered pairs (build a
-   `tabRows[lift].maxEffort`-sourced list, matching `totalChartParity.test.ts`'s
-   `allSigmaPairs` pattern and real production behavior), instead of the raw unfiltered
-   `pairs`. This is the next concrete step — not yet started.
-2. **Do NOT touch `packages/pipeline/src/pipeline.ts`'s `fitInput` filter** — it's correct as-
-   is (matches production legacy behavior); this was the false lead from earlier in this
-   session.
-3. **After fixing the test harness**, re-run `conjugateChartParity.test.ts` to see the _real_
-   current divergence numbers (previous soft-warn numbers, both the stale doc's 0.0/7.0/0.4
-   and this session's 31.4/21.5/25.4, are unreliable until the harness bug is fixed) — this
-   will determine whether there's still a genuine pipeline-vs-legacy gap to root-cause, or
-   whether fixing the harness alone closes most/all of the apparent divergence.
-4. **`migration/ConjugateCharts.md` needs a fresh update** once the above lands — its
-   documented numbers are stale and should not be trusted as-is by a future session.
-5. Resume Tasks 14-16 (`ConjugateCharts` swap, `VariationRadarChart`, `LiftTabPanel`) only
-   after the above parity work is genuinely resolved — issues #459/#460 still open, no change
-   from prior sessions on that front.
+1. **Decide the gate-status question** flagged in `migration/ConjugateCharts.md`'s "Test-
+   harness bug fix" section: now that `conjugateChartParity.test.ts` shows real numbers
+   (squat 0.0% / bench 0.7% / deadlift 0.4%) exactly matching `TotalChart`'s own accepted
+   residual baseline, should this be formally promoted (treated as the same
+   already-accepted approximation gap, clearing the way for Tasks 14-16), or does
+   `APP_COMPONENTS.md`'s literal "exact match, not soft-warn" gate wording still block the
+   swap since bench/deadlift are non-zero? This is a policy call for a maintainer, not
+   something to resolve mechanically.
+2. **Once decided**, either promote the relevant `conjugateChartParity.test.ts`/
+   `variationRadarChartParity.test.ts` assertions from soft-warn `console.warn` to hard
+   `expect`s (if promoting), or explicitly document further root-cause work needed to close
+   the residual to exactly 0% (if not promoting).
+3. **Resume Tasks 14-16** (`ConjugateCharts` swap, `VariationRadarChart` swap, `LiftTabPanel`
+   wiring) only after TODO #1 is decided — issues #459/#460 still open.
+4. **Commit the two currently-uncommitted changes** from this session
+   (`conjugateChartParity.test.ts` fix + `migration/ConjugateCharts.md` update) — not yet
+   committed as of this handoff; per repo convention, do this via a new commit (not
+   amending), and per `CLAUDE.md`'s git rules, on this existing feature branch (do NOT
+   create a new branch or commit to `main`).
 
 ## Files Touched
 
-**None.** Working tree is clean — every edit made this session (a `pipeline.ts` fit-input
-filter removal, done via `feature-implementer`) was reverted after being found to rest on a
-false premise. This handoff commit is the only change from this session.
+- `packages/app/src/pipeline/conjugateChartParity.test.ts` — `beforeAll` now builds
+  `allSigmaPairs` (max-effort-only rows) and passes that to `buildSessionStats`, instead of
+  the raw unfiltered `pairs` list. Fixes the test-harness bug identified last session.
+- `migration/ConjugateCharts.md` — new "Test-harness bug fix (2026-07-08, follow-up)"
+  section documenting root cause, fix, corrected numbers, full verification, and the open
+  gate-status decision point.
+
+Both changes are currently **uncommitted** (staged/unstaged in the working tree) — see Open
+TODO #4 above.
 
 ## Suggested Next Skills
 
-- No specific skill — next session should start directly on Open TODO #1 above (fix
-  `conjugateChartParity.test.ts`'s `buildSessionStats` call to use max-effort-filtered pairs),
-  then re-measure real divergence before deciding whether further pipeline-side work is
-  needed for issue #459.
+- No specific skill — next session should start by getting a maintainer decision on Open
+  TODO #1 above (the gate-status question), then commit this session's two pending file
+  changes (Open TODO #4) before resuming Tasks 14-16 work on issues #459/#460.

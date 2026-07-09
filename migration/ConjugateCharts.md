@@ -610,3 +610,89 @@ gate is met.
 ## Verification
 
 `npm test -w packages/app -- conjugateChartParity`
+
+## Test-harness bug fix (2026-07-08, follow-up)
+
+During a follow-up session, prior sessions' documented parity numbers in
+`conjugateChartParity.test.ts` were discovered to be stale. A re-run against a
+later commit showed drastically degraded residuals: squat 31.4% / bench 21.5% /
+deadlift 25.4% `normalized`-composite maxRelDiff — appearing as a huge
+regression from the 0.0%/7.0%/0.4% baseline documented in the Finding #6 fix
+session above.
+
+### Root cause: test-harness input filtering bug
+
+Root cause analysis via bisection and production data-flow tracing identified
+this as a **test-harness bug, not a pipeline regression**.
+
+`conjugateChartParity.test.ts`'s `beforeAll` called `buildSessionStats(pairs,
+...)` using the **raw, unfiltered pair list** extracted from the fixture,
+identical to how the fixture was originally loaded. However, real production
+code (`App.tsx` → `LiftTabPanel.tsx` → `useLastSessionStats`) always calls
+`buildSessionStats` with **max-effort-only rows** after filtering via
+`splitByEffort` (mirroring the `e1rm-max-effort` deriver gate applied to
+pipeline calculations).
+
+This was an asymmetry: the legacy side (`buildVariationChartData`) was receiving
+only `maxEffort` rows, while the harness was feeding it unfiltered raw data —
+amplifying every fitting divergence. By contrast, `totalChartParity.test.ts`
+already implemented the correct pattern via its `allSigmaPairs` construction,
+filtering to max-effort rows before passing to `buildSessionStats`. The
+`conjugateChartParity.test.ts` file was the outlier — a test-harness structural
+defect, not a pipeline-vs-legacy divergence.
+
+### Fix applied
+
+Changed `conjugateChartParity.test.ts`'s `beforeAll` to build `allSigmaPairs`
+(max-effort-only rows extracted from `tabRows.squat.maxEffort` +
+`tabRows.bench.maxEffort` + `tabRows.deadlift.maxEffort`, exactly mirroring
+`totalChartParity.test.ts`'s existing pattern) and pass that into
+`buildSessionStats` instead of the raw `pairs` array.
+
+### Corrected parity numbers (post-fix)
+
+Full test run with fix applied, all 4 conjugateChartParity tests passing:
+
+- **squat**: 0.0% maxRelDiff on `normalized` and all per-variation series
+- **bench**: 0.7% maxRelDiff on `normalized` and the `Bench` series itself;
+  per-variation range 0.0%-1.1% (e.g. Incline Bench 1.1%, American Bar 1.0%,
+  CG 0.8%, Floor Press/Floor Press Swiss bar 0.7-0.8%, most others 0.0%)
+- **deadlift**: 0.4% maxRelDiff on `normalized` and the `Deadlift` series
+  itself; all other per-variation series 0.0%
+
+**Critical observation**: These corrected numbers **exactly match**
+`totalChartParity.test.ts`'s documented residual baseline (squat 0.0%, bench
+0.7%, deadlift 0.4%, pushPull 0.2%, total 0.0%). This is strong confirmation
+that the stale numbers in `conjugateChartParity.test.ts` were a test artifact,
+not a real pipeline-vs-legacy gap unique to `ConjugateCharts`. The parity test
+had been silently measuring against garbage input the whole time.
+
+### Full verification
+
+```
+npm run build -w packages/pipeline && npm run build -w packages/app && npm test -w packages/pipeline && npm test -w packages/app
+```
+
+All green. Pipeline: 12 files / 144 tests. App: 24 files / 236 tests. No
+regressions.
+
+### Gate status decision point (NOT DECIDED HERE)
+
+Per `APP_COMPONENTS.md`'s migration gate ("pipeline and @dyel/core backends
+must produce _exactly_ matching output... not soft-warn tolerance"), bench
+(0.7%) and deadlift (0.4%) are still non-zero on the `normalized` composite.
+The exact-match gate is technically **NOT met**, even though the numbers now
+match `TotalChart`'s accepted residual baseline and the per-variation series
+show full date-level parity (all `missingInA=0`/`missingInB=0`).
+
+**Decision point for next maintainer/session**: either (a) treat the 0.7%/0.4%
+residual as the same already-accepted-and-precedented divergence that
+`TotalChart` carries (both implementations' documented e1RM-space approximations
+for `addlWtOffset` correction), and formally promote these numbers as the new
+gate baseline (soft-acceptance, matching TotalChart's model), or (b) continue
+treating them as non-zero and gate-failing, leaving the swap-over deferred
+pending either further pipeline refinement or explicit architectural decision to
+accept the approximation gap as acceptable.
+
+Do not treat this as a recommendation one way or another — both options are
+factually defensible. State this explicitly in any swap-over decision doc.
