@@ -69,6 +69,40 @@ LiftTabPanel.tsx` confirmed exactly one remaining match: the intentional
 `npm test -w packages/app` 26/26 files, 254/254 tests passing, zero regressions. `grep -rn
 "@dyel/core"` on `LiftTabPanel.tsx` returns only the one intentional type-only import.
 
+### Follow-up: dead-code/stale-doc cleanup pass (same session, user-requested)
+
+After the `LiftTabPanel` commit landed, the user asked to delete any unused code or
+documentation. Ran a research pass first (self + one `Explore` agent) rather than deleting
+blind, to distinguish genuinely dead code from intentional patterns:
+
+- **Deleted**: `appUtils.ts`'s `TabState` interface and `initialTabState()` function —
+  confirmed zero references anywhere in `packages/app/src` (this was Open TODO #2 from two
+  sessions back, flagged but never actually removed until now).
+- **Explicitly declined to touch**: ~15 barrel exports in `packages/core/src/index.ts`
+  (`PrimaryLift`, `EffectEnum`, `variantLabel`, `predictE1RM`, etc.) that the `Explore` audit
+  found are unused by any current `packages/app`/`packages/pipeline` consumer. Judgment call:
+  these are still used internally within `packages/core/src` itself, and trimming a shared
+  library's public barrel because its one current consumer doesn't happen to use every export
+  right now is a materially different (and riskier/more opinionated) kind of change than
+  deleting confirmed-orphaned application code — flagging here rather than doing it
+  unprompted.
+- **Fixed stale documentation** (4 files, all verified against real source before editing):
+  `components/charts/CONVENTIONS.md` (two false claims about `VariationRadarChart.tsx` — it
+  no longer reimplements the radar shell or owns local collapse state, both left over from
+  before its pipeline swap), `packages/app/CLAUDE.md` (dead `tabState`/`TabState` reference,
+  stale `useConjugateChartData` path in two places, false "`ConjugateCharts` not yet migrated"
+  parenthetical, and a stale `appUtils.ts` key-modules row also referencing a nonexistent
+  `toggleInSet` helper — caught and fixed directly, not delegated, since it was a small
+  one-line leftover the doc-fixing subagent's task scope hadn't explicitly listed),
+  `components/shared/CLAUDE.md` (stale `RepCalculator` description, missing
+  `StrengthScoreCalculator` row), `MIGRATION_PLAN.md` (collapsed the now-fully-struck-through
+  "Remaining items"/"Parallelization note" sections into the intro prose, since nothing in
+  them was actually remaining).
+- Re-verified independently after all edits: build clean, 26/26 files & 254/254 tests, zero
+  `TabState`/`initialTabState` matches anywhere in `packages/app/src`.
+- **Not yet committed** — this cleanup pass landed after the `LiftTabPanel` commit
+  (`21a9de2`); the user hasn't yet asked for it to be committed.
+
 ## Decisions Made & Rationale (this session)
 
 - **Did not invent a pipeline-native replacement type for `DeadliftStancePreference`.**
@@ -94,8 +128,11 @@ LiftTabPanel.tsx` confirmed exactly one remaining match: the intentional
 1. **`migration/ValidatorPage.md`** — still blocked on an unrelated scope decision
    ("is this even in scope for migration?"), unchanged from prior sessions. Only remaining
    item in the entire migration plan.
-2. Consider whether `TabState` (flagged two sessions ago as now-emptied of both fields) should
-   be removed entirely. Not resolved this session; still flagged only, not touched.
+2. ~~Consider whether `TabState` should be removed entirely.~~ **Resolved this session** —
+   deleted, see "Follow-up: dead-code/stale-doc cleanup pass" above.
+3. **New**: revisit whether `packages/core/src/index.ts`'s ~15 currently-unconsumed barrel
+   exports (see cleanup-pass note above) should eventually be trimmed — deliberately left
+   alone this session as a judgment call, not resolved either way.
 
 ## Prior Session Progress (for reference — VariationRadarChart swap, closes #460)
 
@@ -126,6 +163,10 @@ LiftTabPanel.tsx` confirmed exactly one remaining match: the intentional
   complete.
 - `APP_COMPONENTS.md` — added `LiftTabPanel` to the fully-migrated list; removed the stale
   "not yet migrated" paragraph; added a Status-section paragraph.
+- `packages/app/src/utils/appUtils.ts` — deleted dead `TabState`/`initialTabState()`.
+- `packages/app/src/components/charts/CONVENTIONS.md`,
+  `packages/app/CLAUDE.md`, `packages/app/src/components/shared/CLAUDE.md`,
+  `MIGRATION_PLAN.md` — stale-documentation fixes (see cleanup-pass note above).
 - `HANDOFF.md` — this update.
 
 ## Suggested Next Skills

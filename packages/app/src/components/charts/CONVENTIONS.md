@@ -6,9 +6,9 @@ Layered composition. There are two generic "base" wrappers, and feature-specific
 - DateLineChart.tsx — generic Recharts line-chart shell over a date X-axis; also exports ChartEmpty for the shared "No data found." placeholder
 - SigmaChart.tsx wraps BaseRadarChart (radar for 3+ lifts) or falls back to a raw PieChart (<3 lifts)
 - TotalChart.tsx wraps DateLineChart, supplying <Line> children per series
-- VariationRadarChart.tsx doesn't reuse BaseRadarChart — it reimplements the radar shell itself (duplicated CustomAxisTickProps/renderCustomAxis/tick-type logic) because it needs a second overlay <Radar> (the dashed target ring) and a custom tooltip content render-prop instead of a formatter.
+- VariationRadarChart.tsx wraps BaseRadarChart like the others, passing `overlayDataKey` to render the target ring as a second overlay radar.
 
-Presentation-only. Per the directory's CLAUDE.md: "Nothing here has page-level logic or data fetching — all data arrives via props." Data aggregation lives in hooks (e.g. useConjugateChartData, useLastSessionStats), not in these components.
+Presentation-only. Per the directory's CLAUDE.md: "Nothing here has page-level logic or data fetching — all data arrives via props." Data aggregation lives in hooks (e.g. usePipelineConjugateChartData, useLastSessionStats), not in these components.
 
 Shared visual primitives:
 
@@ -19,7 +19,7 @@ Shared visual primitives:
 
 Styling. Each component has a co-located CSS module (X.module.css); no inline style objects except for one-off layout tweaks (e.g. SigmaChart's pie-centering <div>).
 
-State/interactivity. Click-to-select wedges pattern: onClick/onVariationClick props read chartData.activeLabel from the underlying Recharts callback and only fire if it's a non-empty string. VariationRadarChart also owns local collapse state (isExpanded) with a ▾/▸ toggle button, unlike the other charts.
+State/interactivity. Click-to-select wedges pattern: onClick/onVariationClick props read chartData.activeLabel from the underlying Recharts callback and only fire if it's a non-empty string. VariationRadarChart wraps its chart in a shared `CollapsibleSection` component for expand/collapse state.
 
 Animation off for time series: all <Line> elements in TotalChart set isAnimationActive={false} and connectNulls (sparse/gappy session data).
 

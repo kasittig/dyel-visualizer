@@ -22,10 +22,6 @@ export const EXAMPLE_SHEET_URL =
   'https://docs.google.com/spreadsheets/d/1Uwfzrb4wjYcBisTPdNEUGJyvfKRLwpN0tm8ciRPHB0c/edit?gid=1297658251#gid=1297658251';
 export const EXAMPLE_VISUALIZER_URL = `?sheet=${encodeURIComponent(EXAMPLE_CSV_URL)}`;
 
-export interface TabState {
-  baselineName?: string;
-}
-
 /** Distinct exercise display names in first-seen order. Callers `.sort()` if they need it. */
 export function distinctDisplayNames(rows: ConjugateDataPair[]): string[] {
   const seen = new Set<string>();
@@ -55,8 +51,4 @@ export function extractSheetRef(input: string): SheetRef | null {
     return { id: input.trim(), published: false };
   }
   return null;
-}
-
-export function initialTabState(): Record<LiftType, TabState> {
-  return Object.fromEntries(LIFT_TABS.map((t) => [t, {}])) as Record<LiftType, TabState>;
 }
