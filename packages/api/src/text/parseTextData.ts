@@ -1,10 +1,11 @@
-import type { ConjugateExercise, TrainingSession, LiftUnits } from '../types/conjugate';
-import type { TextFieldInput } from '../types/TextFieldInput';
-import { extractTextLines } from '../extract/textExtract';
-import { textLineToRow } from './parsers/textLineToRow';
-import { nameToExercise } from './parsers/nameToExercise';
-import { parseSession } from './parsers/parseSession';
-import { detectWeightUnit } from './parsers/detectWeightUnit';
+import type { TextFieldInput, ConjugateExercise, TrainingSession, LiftUnits } from '@dyel/core';
+import {
+  extractTextLines,
+  textLineToRow,
+  nameToExercise,
+  parseSession,
+  detectWeightUnit,
+} from '@dyel/core';
 
 export function parseTextData(
   text: TextFieldInput,

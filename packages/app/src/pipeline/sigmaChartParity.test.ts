@@ -3,7 +3,8 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 import { runPipeline } from '@dyel/pipeline';
 import type { ChartPoint } from '@dyel/core';
-import { parseConjugateData, calculateVolumeCorrelation } from '@dyel/core';
+import { parseConjugateData } from '@dyel/core';
+import { calculateVolumeCorrelation } from '@dyel/api';
 import { buildRawInput, PLACEHOLDER_ATHLETE } from '../utils/rawInputUtils';
 import {
   mergeRechartsRowsToChartPoints,

@@ -12,7 +12,7 @@ import { LiftTabPanel } from './components/pages/LiftTabPanel';
 import { SheetUrlPanel } from './components/shared/SheetUrlPanel';
 import { GettingStarted } from './components/pages/GettingStarted';
 import { DateRangePicker } from './components/shared/DateRangePicker';
-import { filterByDateRange, calculateVolumeCorrelation, parseTextData } from '@dyel/core';
+import { filterByDateRange, calculateVolumeCorrelation, parseTextData } from '@dyel/api';
 import type { DeadliftStancePreference, LiftType } from '@dyel/core';
 import { useLocalStorageState } from './hooks/infra/useLocalStorageState';
 import { extractSheetRef, MAIN_TABS } from './utils/appUtils';

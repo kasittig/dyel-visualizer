@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { buildChartData } from './buildChartData';
-import type { ConjugateDataPair, ConjugateExercise } from '../types/conjugate';
-import type { RepCalcStats } from '../utils/stats/repCalculator';
+import { buildChartData } from './buildChartData.ts';
+import type { ConjugateDataPair, ConjugateExercise } from '@dyel/core';
+import type { RepCalcStats } from '@dyel/core';
 
 const emptyStats: RepCalcStats = {
   addlWtOffset: new Map(),

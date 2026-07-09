@@ -1,6 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { calculateVolumeCorrelation } from './volume';
-import type { ConjugateDataPair, ConjugateExercise, TrainingSession } from '../../types/conjugate';
+import { calculateVolumeCorrelation } from './volume.ts';
+import type {
+  ConjugateDataPair,
+  ConjugateExercise,
+  TrainingSession,
+} from '@dyel/core/src/types/conjugate.ts';
 
 const d = (dateStr: string) => new Date(dateStr + 'T00:00:00');
 

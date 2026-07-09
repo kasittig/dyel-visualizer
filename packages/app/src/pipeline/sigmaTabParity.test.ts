@@ -4,13 +4,8 @@ import { join } from 'path';
 import { runPipeline } from '@dyel/pipeline';
 import type { NormalizationModel } from '@dyel/pipeline';
 import type { ChartPoint, ConjugateExercise } from '@dyel/core';
-import {
-  parseConjugateData,
-  buildSessionStats,
-  calculateVolumeCorrelation,
-  buildChartData,
-  filterByDateRange,
-} from '@dyel/core';
+import { parseConjugateData, buildSessionStats } from '@dyel/core';
+import { calculateVolumeCorrelation, buildChartData, filterByDateRange } from '@dyel/api';
 import { buildRawInput, PLACEHOLDER_ATHLETE } from '../utils/rawInputUtils';
 import {
   mergeRechartsRowsToChartPoints,

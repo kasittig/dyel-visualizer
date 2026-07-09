@@ -32,8 +32,6 @@ export {
   fitVariantFactor,
 } from './utils/math/e1rm';
 
-export { calculateVolumeCorrelation } from './utils/math/volume';
-
 export type {
   SheetValidationResult,
   SheetValidationIssue,
@@ -46,8 +44,6 @@ export { validateTextData } from './transform/validateTextData';
 
 export type { IndexEntry } from './transform/parseIndexCsv';
 export { parseIndexCsv } from './transform/parseIndexCsv';
-
-export { filterByDateRange } from './utils/stats/exerciseFilters';
 
 export type { E1RMEstimate, RepCalcStats } from './utils/stats/repCalculator';
 export {
@@ -64,16 +60,21 @@ export { setsRepsLabel } from './utils/chart/setsRepsLabel';
 
 export { LINE_COLORS, formatDate } from './utils/chart/chartUtils';
 
-export type { ChartPoint } from './load/buildChartData';
-export { buildChartData } from './load/buildChartData';
-
 export type { VariationChartResult } from './load/buildVariationChartData';
 export { NORMALIZED_KEY, buildVariationChartData } from './load/buildVariationChartData';
 
 export { defaultBaselineName, defaultCompExerciseName } from './utils/lifts/defaultSelections';
 export { parseConjugateData } from './transform/parseConjugateData';
-export { parseTextData } from './transform/parseTextData';
 export { generateDiagnostics } from './load/generateDiagnostics';
 
 export type { TextFieldInput } from './types/TextFieldInput';
 export { extractTextLines } from './extract/textExtract';
+export type { ChartPoint } from './types/chart.ts';
+
+export { recordMax, sortedGridDates } from './utils/chart/chartGrid';
+export type { DateValueGrid } from './utils/chart/chartGrid';
+export { textLineToRow } from './transform/parsers/textLineToRow';
+export { nameToExercise } from './transform/parsers/nameToExercise';
+export { parseSession } from './transform/parsers/parseSession';
+export { detectWeightUnit } from './transform/parsers/detectWeightUnit';
+export { localDateKey } from './utils/math/localDateKey';

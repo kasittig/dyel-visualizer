@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { filterByDateRange } from './exerciseFilters';
-import type { ConjugateDataPair } from '../../types/conjugate';
+import { filterByDateRange } from './exerciseFilters.ts';
+import type { ConjugateDataPair } from '@dyel/core';
 
 function datedPair(dateStr: string): ConjugateDataPair {
   return [

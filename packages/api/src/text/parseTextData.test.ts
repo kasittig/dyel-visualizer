@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseTextData } from './parseTextData';
+import { parseTextData } from './parseTextData.ts';
 
 describe('parseTextData', () => {
   it('returns empty array for empty text', () => {
