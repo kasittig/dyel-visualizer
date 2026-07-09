@@ -11,7 +11,7 @@ import {
   mergeVolumeIntoChartPoints,
 } from '../utils/pipelineChartUtils';
 import { compareChartSeries } from '../testUtils/compareChartSeries';
-import { TOTAL_CHART_SPECS } from '../../../api/src/totalChartSpecs';
+import { TOTAL_CHART_SPECS } from '@dyel/api';
 
 const TOTAL_CHART_IDS: string[] = ['squat', 'bench', 'deadlift', 'pushPull', 'total'];
 const SESSION_BAR_SERIES: [string, number][] = [
