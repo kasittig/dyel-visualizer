@@ -167,4 +167,82 @@ describe('diagnose', () => {
       }
     });
   });
+
+  describe('equipment magnitude baseline ranges', () => {
+    it('produces distinct expectedBaseline strings for different board magnitudes', () => {
+      const boardMap = new Map<string, string[]>([
+        ['bench', []],
+        ['bench-board', ['tricep']],
+        ['bench-board-2', ['tricep']],
+        ['bench-board-3', ['tricep']],
+      ]);
+      const boardModel: NormalizationModel = {
+        ...model,
+        baseline: { 'lift:bench': 'bench' },
+        variantFactor: {
+          'bench-board': { factor: 1.05, n: 5 },
+          'bench-board-2': { factor: 1.15, n: 5 },
+          'bench-board-3': { factor: 1.25, n: 5 },
+        },
+      };
+      const baselineRanges = new Map([
+        ['bench', { min: 100, max: 100 }],
+        ['bench-board', { min: 105, max: 115 }],
+        ['bench-board-2', { min: 115, max: 125 }],
+        ['bench-board-3', { min: 125, max: 135 }],
+      ]);
+
+      const report = diagnose(
+        [
+          basePt,
+          pt('bench-board', 100, day(20), ['lift:bench']),
+          pt('bench-board-2', 110, day(20), ['lift:bench']),
+          pt('bench-board-3', 120, day(20), ['lift:bench']),
+        ],
+        boardModel,
+        boardMap,
+        opts,
+        undefined,
+        new Map(),
+        baselineRanges
+      );
+
+      const board1 = report.variants.find((v) => v.canonical === 'bench-board');
+      const board2 = report.variants.find((v) => v.canonical === 'bench-board-2');
+      const board3 = report.variants.find((v) => v.canonical === 'bench-board-3');
+
+      expect(board1?.expectedBaseline).toBe('105-115%');
+      expect(board2?.expectedBaseline).toBe('115-125%');
+      expect(board3?.expectedBaseline).toBe('125-135%');
+    });
+
+    it('unmapped magnitude falls back to no range (regression guard)', () => {
+      const boardMap = new Map<string, string[]>([
+        ['bench', []],
+        ['bench-board-4', ['tricep']],
+      ]);
+      const boardModel: NormalizationModel = {
+        ...model,
+        baseline: { 'lift:bench': 'bench' },
+        variantFactor: {
+          'bench-board-4': { factor: 1.35, n: 3 },
+        },
+      };
+      // No explicit range for bench-board-4, so it should fall back to null
+      const baselineRanges = new Map([['bench', { min: 100, max: 100 }]]);
+
+      const report = diagnose(
+        [basePt, pt('bench-board-4', 140, day(20), ['lift:bench'])],
+        boardModel,
+        boardMap,
+        opts,
+        undefined,
+        new Map(),
+        baselineRanges
+      );
+
+      const board4 = report.variants.find((v) => v.canonical === 'bench-board-4');
+      expect(board4?.expectedBaseline).toBeNull();
+    });
+  });
 });

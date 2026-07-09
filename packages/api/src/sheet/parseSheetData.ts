@@ -44,10 +44,8 @@ export function splitByEffort(records: TaggedSetRecord[], type: LiftType): Split
   return { all: records, maxEffort, volume };
 }
 
-export function parseSheetData(csv: string, athlete: AthleteContext): Record<LiftType, SplitRows> {
-  const raw: RawInput = { name: 'sheet.csv', content: csv };
-  const model = runPipelineModel([raw], athlete);
-  const byLiftType = Map.groupBy(model.tagged, liftTypeOf);
+export function groupByLiftType(tagged: TaggedSetRecord[]): Record<LiftType, SplitRows> {
+  const byLiftType = Map.groupBy(tagged, liftTypeOf);
 
   return {
     squat: splitByEffort(byLiftType.get('squat') ?? [], 'squat'),
@@ -55,4 +53,10 @@ export function parseSheetData(csv: string, athlete: AthleteContext): Record<Lif
     deadlift: splitByEffort(byLiftType.get('deadlift') ?? [], 'deadlift'),
     accessory: splitByEffort(byLiftType.get('accessory') ?? [], 'accessory'),
   };
+}
+
+export function parseSheetData(csv: string, athlete: AthleteContext): Record<LiftType, SplitRows> {
+  const raw: RawInput = { name: 'sheet.csv', content: csv };
+  const model = runPipelineModel([raw], athlete);
+  return groupByLiftType(model.tagged);
 }

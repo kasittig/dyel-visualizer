@@ -1,9 +1,6 @@
 import { createContext, useContext, useMemo } from 'react';
 import type { ReactNode } from 'react';
-import type { PipelineModel, AthleteContext } from '@dyel/pipeline';
-import { runPipelineModel } from '@dyel/pipeline';
-import type { InputMode } from '../utils/appUtils';
-import { useResolvedRawInput } from '../utils/rawInputUtils';
+import type { PipelineModel } from '@dyel/pipeline';
 
 interface PipelineContextValue {
   status: 'idle' | 'loading' | 'success' | 'error';
@@ -13,54 +10,28 @@ interface PipelineContextValue {
 const pipelineContext = createContext<PipelineContextValue | undefined>(undefined);
 
 /**
- * PipelineProvider component that orchestrates raw input resolution and pipeline model computation.
+ * PipelineProvider component that passes pre-computed pipeline model and status through context.
+ *
+ * The app (App.tsx) is responsible for calling useResolvedRawInput() and runPipelineModel()
+ * directly to compute the status and model. This provider simply makes those values available
+ * to child components via context, eliminating the double-fetch that occurred when both
+ * useResolvedRawInput() and a separate useConjugateData() hook were running independently.
  *
  * @param props Provider props
- * @param props.inputMode Input mode ('url' or 'text')
- * @param props.url Sheet URL (when inputMode is 'url')
- * @param props.pastedText Pasted text input (when inputMode is 'text')
- * @param props.refreshToken Refresh trigger token (increment to force re-fetch)
- * @param props.athlete Athlete context (sex, bodyweight, deadliftStance). Should be memoized by caller to avoid unnecessary recomputations.
+ * @param props.status Pipeline status: 'idle' | 'loading' | 'success' | 'error'
+ * @param props.model Computed PipelineModel (null if not in 'success' state)
  * @param props.children Child components
  */
 export function PipelineProvider({
-  inputMode,
-  url,
-  pastedText,
-  refreshToken,
-  athlete,
+  status,
+  model,
   children,
 }: {
-  inputMode: InputMode;
-  url: string;
-  pastedText: string;
-  refreshToken: number;
-  athlete: AthleteContext;
+  status: 'idle' | 'loading' | 'success' | 'error';
+  model: PipelineModel | null;
   children: ReactNode;
 }) {
-  const { status: rawStatus, raw } = useResolvedRawInput(inputMode, url, pastedText, refreshToken);
-
-  const { status: modelStatus, model } = useMemo((): PipelineContextValue => {
-    if (rawStatus === 'idle' || rawStatus === 'loading') {
-      return { status: rawStatus as Extract<typeof rawStatus, 'idle' | 'loading'>, model: null };
-    }
-    if (rawStatus === 'error') {
-      return { status: 'error', model: null };
-    }
-
-    // status === 'success'
-    try {
-      const pipelineModel = runPipelineModel(raw, athlete);
-      return { status: 'success', model: pipelineModel };
-    } catch {
-      return { status: 'error', model: null };
-    }
-  }, [raw, athlete, rawStatus]);
-
-  const contextValue: PipelineContextValue = useMemo(
-    () => ({ status: modelStatus, model }),
-    [modelStatus, model]
-  );
+  const contextValue: PipelineContextValue = useMemo(() => ({ status, model }), [status, model]);
 
   return <pipelineContext.Provider value={contextValue}>{children}</pipelineContext.Provider>;
 }

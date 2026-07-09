@@ -120,8 +120,25 @@ export function buildTagsAndEffects(
   };
   if (ex.equipment) {
     tags.add(`equip:${ex.equipment}`);
-    add(`equip:${ex.equipment}:${ex.type}`);
-    applyRange(`equip:${ex.equipment}:${ex.type}`);
+    // When equipment has a non-default magnitude (e.g., 2-board vs 1-board bench),
+    // add a magnitude-bearing tag to distinguish them downstream (e.g., facetsFromTags).
+    if (ex.equipmentMagnitude && ex.equipmentMagnitude !== '1') {
+      tags.add(`equip:${ex.equipment}-${ex.equipmentMagnitude}`);
+    }
+    // For effects/range lookups, try a magnitude-specific key first (if magnitude exists
+    // and is non-default), falling back to the base key. This mirrors the addlWts pattern
+    // (line ~152) and maintains backward compatibility: magnitudes without explicit entries
+    // fall back to the base range unchanged.
+    const magKey =
+      ex.equipmentMagnitude && ex.equipmentMagnitude !== '1'
+        ? `equip:${ex.equipment}-${ex.equipmentMagnitude}:${ex.type}`
+        : null;
+    const baseKey = `equip:${ex.equipment}:${ex.type}`;
+    add(magKey && effectsMap[magKey] ? magKey : baseKey);
+    // NOTE: Magnitude-specific numeric ranges (e.g., 2-board, 3-board) are proposed
+    // placeholder values pending reviewer/domain-expert sign-off. They are NOT verified
+    // physiological truth — see modifier-effects.json for details.
+    applyRange(magKey && effectsMap[magKey] ? magKey : baseKey);
   }
   const isDeadliftExplicitStance =
     ex.type === 'deadlift' &&

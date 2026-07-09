@@ -576,4 +576,79 @@ describe('generateDiagnostics', () => {
     expect(r!.expectedBaseline).toBe('90–95%');
     expect(r!.effects).toContain('UPPER_BACK_DEMAND'); // from SSB
   });
+
+  it('magnitude-aware equipment key: board-2 resolves to equipment:board-2:bench baseline (115–125%)', () => {
+    // Test the new magnitude-aware key-construction logic by explicitly constructing
+    // a fixture with equipmentMagnitude:'2' and equipment:'board'. This bypasses the
+    // parser (which doesn't extract magnitude yet) to verify the logic is correct
+    // and ready to activate once the parser is updated.
+    const pairs: ConjugateDataPair[] = [
+      pair({ displayName: 'bench press' }, session('2024-01-01', 300)),
+      pair(
+        { displayName: '2-board press', equipment: 'board', equipmentMagnitude: '2' },
+        session('2024-01-01', 345)
+      ),
+    ];
+    const results = generateDiagnostics(
+      pairs,
+      'bench press',
+      makePrecomputed(pairs, 'bench press')
+    );
+    expect(results).toHaveLength(1);
+    expect(results[0].displayName).toBe('2-board press');
+    // equipment:board-2:bench from modifierEffects.json has min:115, max:125
+    expect(results[0].expectedBaseline).toBe('115–125%');
+    expect(results[0].effects).toContain('TRICEP_DOMINANT');
+    expect(results[0].effects).toContain('SUPRAMAXIMAL');
+  });
+
+  it('regression: board press without equipmentMagnitude still resolves to base equipment:board:bench (105–115%)', () => {
+    // Verify that exercises without equipmentMagnitude (the current real-world case,
+    // since the parser doesn't extract it yet) continue to resolve to the base
+    // equipment key unchanged. This guards against regression when magnitude support
+    // is eventually added to the parser.
+    const pairs: ConjugateDataPair[] = [
+      pair({ displayName: 'bench press' }, session('2024-01-01', 300)),
+      pair({ displayName: 'board press', equipment: 'board' }, session('2024-01-01', 315)),
+    ];
+    const results = generateDiagnostics(
+      pairs,
+      'bench press',
+      makePrecomputed(pairs, 'bench press')
+    );
+    expect(results).toHaveLength(1);
+    expect(results[0].displayName).toBe('board press');
+    // equipment:board:bench from modifierEffects.json has min:105, max:115
+    expect(results[0].expectedBaseline).toBe('105–115%');
+    expect(results[0].effects).toContain('TRICEP_DOMINANT');
+    expect(results[0].effects).toContain('SUPRAMAXIMAL');
+  });
+
+  it('magnitude-aware equipment key: blocks-2 resolves to equipment:blocks-2:deadlift baseline (115–125%)', () => {
+    // Similar test with blocks equipment on deadlift to verify the pattern works
+    // across different equipment types. Use stance:'competition' to avoid deadlift
+    // stance resolution logic that would combine with stance modifiers.
+    const pairs: ConjugateDataPair[] = [
+      pair(
+        { type: 'deadlift', stance: 'competition', displayName: 'deadlift' },
+        session('2024-01-01', 500)
+      ),
+      pair(
+        {
+          type: 'deadlift',
+          stance: 'competition',
+          displayName: '2-block deadlift',
+          equipment: 'blocks',
+          equipmentMagnitude: '2',
+        },
+        session('2024-01-01', 575)
+      ),
+    ];
+    const results = generateDiagnostics(pairs, 'deadlift', makePrecomputed(pairs, 'deadlift'));
+    expect(results).toHaveLength(1);
+    expect(results[0].displayName).toBe('2-block deadlift');
+    // equipment:blocks-2:deadlift from modifierEffects.json has min:115, max:125
+    expect(results[0].expectedBaseline).toBe('115–125%');
+    expect(results[0].effects).toContain('LOCKOUT');
+  });
 });

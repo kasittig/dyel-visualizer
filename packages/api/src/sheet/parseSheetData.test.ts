@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { liftTypeOf, splitByEffort, parseSheetData } from './parseSheetData';
+import { liftTypeOf, splitByEffort, parseSheetData, groupByLiftType } from './parseSheetData';
 import type { LiftType } from './parseSheetData';
 import type { TaggedSetRecord, AthleteContext } from '@dyel/pipeline';
 
@@ -60,6 +60,66 @@ describe('splitByEffort', () => {
     expect(result.all).toHaveLength(expected.allCount);
     expect(result.maxEffort).toHaveLength(expected.maxEffortCount);
     expect(result.volume).toHaveLength(expected.volumeCount);
+  });
+});
+
+describe('groupByLiftType', () => {
+  it('groups records across all four lift types', () => {
+    const records: TaggedSetRecord[] = [
+      rec(['lift:squat'], { sets: 3 }),
+      rec(['lift:squat'], { sets: 1 }),
+      rec(['lift:bench'], { sets: 4 }),
+      rec(['lift:bench'], { sets: 1 }),
+      rec(['lift:deadlift'], { sets: 2 }),
+      rec(['lift:deadlift'], { sets: 1 }),
+      rec(['accessory-tag'], { sets: 3 }),
+    ];
+
+    const result = groupByLiftType(records);
+
+    expect(result.squat.all).toHaveLength(2);
+    expect(result.bench.all).toHaveLength(2);
+    expect(result.deadlift.all).toHaveLength(2);
+    expect(result.accessory.all).toHaveLength(1);
+  });
+
+  it('applies effort splitting per lift type', () => {
+    const records: TaggedSetRecord[] = [
+      rec(['lift:squat'], { sets: 1 }), // max effort
+      rec(['lift:squat'], { sets: 3 }), // volume
+      rec(['lift:bench'], { rpe: 8 }), // max effort (has rpe)
+      rec(['lift:bench'], { sets: 4 }), // volume
+      rec(['lift:deadlift'], { sets: 1 }), // max effort
+      rec(['lift:deadlift'], { sets: 5 }), // volume
+      rec(['accessory-tag'], { sets: 3 }), // all and maxEffort, no volume
+    ];
+
+    const result = groupByLiftType(records);
+
+    // Squat: 1 max effort (sets=1), 1 volume (sets=3)
+    expect(result.squat.maxEffort).toHaveLength(1);
+    expect(result.squat.volume).toHaveLength(1);
+
+    // Bench: 1 max effort (has rpe), 1 volume (sets=4, no rpe)
+    expect(result.bench.maxEffort).toHaveLength(1);
+    expect(result.bench.volume).toHaveLength(1);
+
+    // Deadlift: 1 max effort (sets=1), 1 volume (sets=5)
+    expect(result.deadlift.maxEffort).toHaveLength(1);
+    expect(result.deadlift.volume).toHaveLength(1);
+
+    // Accessory: all records in maxEffort, nothing in volume
+    expect(result.accessory.maxEffort).toHaveLength(1);
+    expect(result.accessory.volume).toHaveLength(0);
+  });
+
+  it('handles empty tagged records gracefully', () => {
+    const result = groupByLiftType([]);
+
+    expect(result.squat.all).toHaveLength(0);
+    expect(result.bench.all).toHaveLength(0);
+    expect(result.deadlift.all).toHaveLength(0);
+    expect(result.accessory.all).toHaveLength(0);
   });
 });
 

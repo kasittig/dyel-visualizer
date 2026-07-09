@@ -65,8 +65,30 @@ export function generateDiagnostics(
       return null;
     })();
 
+    // Build magnitude-aware equipment key: try magnitude-specific key first (e.g. equipment:board-2:bench),
+    // fall back to base key (e.g. equipment:board:bench) if no magnitude-specific entry exists.
+    // NOTE (parity mirror, currently a no-op in practice): unlike @dyel/pipeline's parseExercise,
+    // this package's parser (transform/parsers/nameToExercise.ts's parseEquipment) never extracts an
+    // equipment magnitude from the raw exercise name, so `ex.equipmentMagnitude` is always undefined
+    // here today and this always resolves to baseKey. This is a pre-existing legacy limitation, not
+    // introduced by this change — wiring up magnitude parsing in core's own parser would be a broader
+    // core refactor, out of scope for this parity-upkeep pass. Left in place so behavior is ready to
+    // activate the moment (if ever) core's parser gains magnitude support, and so the key-construction
+    // logic mirrors @dyel/pipeline's for anyone diffing the two implementations.
+    const equipmentKey: string | null =
+      ex.equipment !== null
+        ? (() => {
+            const magKey =
+              ex.equipmentMagnitude && ex.equipmentMagnitude !== '1'
+                ? `equipment:${ex.equipment}-${ex.equipmentMagnitude}:${ex.type}`
+                : null;
+            const baseKey = `equipment:${ex.equipment}:${ex.type}`;
+            return magKey && __MODIFIER__EFFECTS__[magKey] ? magKey : baseKey;
+          })()
+        : null;
+
     const candidateKeys = [
-      ex.equipment !== null ? `equipment:${ex.equipment}:${ex.type}` : null,
+      equipmentKey,
       resolvedStanceKey,
       ex.bar !== null && ex.bar !== 'standard' ? `bar:${ex.bar}:${ex.type}` : null,
     ].filter((k): k is string => k !== null);
@@ -105,12 +127,24 @@ export function generateDiagnostics(
         : ex.stance;
 
     const allEffects = new Set<EffectEnum>();
+    // Build magnitude-aware equipment key for effects gathering (same pattern as candidateKeys)
+    const equipmentEffectKey: string | null =
+      ex.equipment !== null
+        ? (() => {
+            const magKey =
+              ex.equipmentMagnitude && ex.equipmentMagnitude !== '1'
+                ? `equipment:${ex.equipment}-${ex.equipmentMagnitude}:${ex.type}`
+                : null;
+            const baseKey = `equipment:${ex.equipment}:${ex.type}`;
+            return magKey && __MODIFIER__EFFECTS__[magKey] ? magKey : baseKey;
+          })()
+        : null;
     const effectKeys: Array<string | null> = [
       ex.bar !== null && ex.bar !== 'standard' ? `bar:${ex.bar}:${ex.type}` : null,
       stanceForEffects !== null && stanceForEffects !== 'competition'
         ? `stance:${stanceForEffects}:${ex.type}`
         : null,
-      ex.equipment !== null ? `equipment:${ex.equipment}:${ex.type}` : null,
+      equipmentEffectKey,
       ...ex.addlWts.map((w) => `addl_wt:${w}:${ex.type}`),
     ];
     for (const k of effectKeys) {

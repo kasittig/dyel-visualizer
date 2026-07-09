@@ -3,7 +3,6 @@ import {
   predictWeightForReps as pipelineWeightForReps,
   predictRepsForWeight as pipelineRepsForWeight,
   findBestE1RMFromPipeline,
-  findCanonicalForExercise,
   selectBestE1RMPoint,
   resolveE1RMEstimate,
   convertE1RMToDisplayUnit,
@@ -218,12 +217,24 @@ describe('RepCalculator parity: legacy vs pipeline', () => {
       ...overrides,
     });
 
+    const ptBench = (
+      series: string,
+      v: number,
+      t: number = 1704067200000,
+      tags: string[] = []
+    ): Point => ({
+      t,
+      v,
+      series,
+      tags: new Set([...tags, 'lift:bench']),
+    });
+
     it.each([
       [
-        'regression: display name differs from canonical',
+        'exact match: baseline canonical',
         {
           liftType: 'squat',
-          facetDisplayName: 'squat',
+          targetCanonical: 'squat',
           baselineName: 'Comp Squat',
           model: mkModel(),
           e1rmPoints: [pt('squat', 300)],
@@ -234,7 +245,7 @@ describe('RepCalculator parity: legacy vs pipeline', () => {
         'no baseline entry for lift',
         {
           liftType: 'squat',
-          facetDisplayName: 'squat',
+          targetCanonical: 'squat',
           baselineName: 'Comp Squat',
           model: mkModel({ baseline: {} }),
           e1rmPoints: [pt('squat', 300)],
@@ -245,7 +256,7 @@ describe('RepCalculator parity: legacy vs pipeline', () => {
         'no matching points for canonical',
         {
           liftType: 'squat',
-          facetDisplayName: 'squat',
+          targetCanonical: 'squat',
           baselineName: 'Comp Squat',
           model: mkModel(),
           e1rmPoints: [],
@@ -256,7 +267,7 @@ describe('RepCalculator parity: legacy vs pipeline', () => {
         'baselineName null falls back to canonical',
         {
           liftType: 'squat',
-          facetDisplayName: 'squat',
+          targetCanonical: 'squat',
           baselineName: null,
           model: mkModel(),
           e1rmPoints: [pt('squat', 300)],
@@ -267,7 +278,7 @@ describe('RepCalculator parity: legacy vs pipeline', () => {
         'baselineName undefined falls back to canonical',
         {
           liftType: 'squat',
-          facetDisplayName: 'squat',
+          targetCanonical: 'squat',
           baselineName: undefined,
           model: mkModel(),
           e1rmPoints: [pt('squat', 300)],
@@ -278,78 +289,152 @@ describe('RepCalculator parity: legacy vs pipeline', () => {
         'points with different series',
         {
           liftType: 'squat',
-          facetDisplayName: 'squat',
+          targetCanonical: 'squat',
           baselineName: 'Comp Squat',
           model: mkModel(),
           e1rmPoints: [pt('bench', 200)],
         },
         { isNotNull: false },
       ],
+      [
+        'variant canonical with variant factor',
+        {
+          liftType: 'squat',
+          targetCanonical: 'squat-pause',
+          baselineName: 'Comp Squat',
+          model: mkModel({
+            variantFactor: { squat: { factor: 1.0, n: 10 }, 'squat-pause': { factor: 0.88, n: 5 } },
+          }),
+          e1rmPoints: [pt('squat', 300)],
+        },
+        { isNotNull: true, sourceName: 'Comp Squat', e1rm: 264, method: 'variantFactor' },
+      ],
     ])(
       '%s',
       (
         _msg: string,
         params: Parameters<typeof resolveE1RMEstimate>[0],
-        expected: { isNotNull: boolean; sourceName?: string; e1rm?: number }
+        expected: { isNotNull: boolean; sourceName?: string; e1rm?: number; method?: string }
       ) => {
         const result = resolveE1RMEstimate(params);
         if (expected.isNotNull) {
           expect(result).not.toBeNull();
           expect(result?.sourceName).toBe(expected.sourceName);
-          expect(result?.e1rm).toBe(expected.e1rm);
+          if (expected.e1rm !== undefined) {
+            expect(result?.e1rm).toBeCloseTo(expected.e1rm, 1);
+          }
+          if (expected.method) {
+            expect(result?.method).toBe(expected.method);
+          }
         } else {
           expect(result).toBeNull();
         }
       }
     );
-  });
 
-  describe('findCanonicalForExercise', () => {
-    const pt = (series: string, t: number): Point => ({
-      t,
-      v: 100,
-      series,
-      tags: new Set(['lift:bench']),
+    it('distinguishes equipment magnitude (1-board vs 2-board) with distinct variant factors', () => {
+      const baselineCompBench = 300;
+      const benchBoardModel: NormalizationModel = {
+        fittedAt: Date.now(),
+        baseline: { 'lift:bench': 'bench' },
+        variantFactor: {
+          bench: { factor: 1.0, n: 20 },
+          'bench-board': { factor: 0.95, n: 10 },
+          'bench-board-2': { factor: 0.98, n: 8 },
+        },
+        addlWtOffset: {},
+      };
+
+      const baselinePoints = [ptBench('bench', baselineCompBench)];
+
+      const estimate1Board = resolveE1RMEstimate({
+        liftType: 'bench',
+        targetCanonical: 'bench-board',
+        baselineName: 'Competition Bench',
+        model: benchBoardModel,
+        e1rmPoints: baselinePoints,
+      });
+
+      const estimate2Board = resolveE1RMEstimate({
+        liftType: 'bench',
+        targetCanonical: 'bench-board-2',
+        baselineName: 'Competition Bench',
+        model: benchBoardModel,
+        e1rmPoints: baselinePoints,
+      });
+
+      // Both should resolve successfully
+      expect(estimate1Board).not.toBeNull();
+      expect(estimate2Board).not.toBeNull();
+
+      // 1-board and 2-board should produce distinct e1RM estimates
+      expect(estimate1Board?.e1rm).not.toBeCloseTo(estimate2Board?.e1rm ?? 0, 0);
+
+      // 2-board (shorter ROM, factor 0.98) should estimate higher than 1-board (factor 0.95)
+      expect(estimate2Board?.e1rm).toBeGreaterThan(estimate1Board?.e1rm ?? 0);
+
+      // Verify the actual computed values match expected factors
+      expect(estimate1Board?.e1rm).toBeCloseTo(baselineCompBench * 0.95, 1);
+      expect(estimate2Board?.e1rm).toBeCloseTo(baselineCompBench * 0.98, 1);
+
+      // Both should use variantFactor method
+      expect(estimate1Board?.method).toBe('variantFactor');
+      expect(estimate2Board?.method).toBe('variantFactor');
     });
 
-    const model: NormalizationModel = {
-      fittedAt: Date.now(),
-      baseline: { 'lift:bench': 'bench' },
-      variantFactor: {
-        'bench-american': { factor: 0.75, n: 1 },
-        bench: { factor: 1.0, n: 5 },
-      },
-      addlWtOffset: {},
-    };
+    it('distinguishes equipment magnitude for deficit and blocks variations', () => {
+      const baselineDL = 500;
+      const deficitBlocksModel: NormalizationModel = {
+        fittedAt: Date.now(),
+        baseline: { 'lift:deadlift': 'deadlift' },
+        variantFactor: {
+          deadlift: { factor: 1.0, n: 25 },
+          'deadlift-deficit': { factor: 0.92, n: 12 },
+          'deadlift-deficit-2': { factor: 0.88, n: 8 },
+          'deadlift-blocks': { factor: 1.05, n: 15 },
+          'deadlift-blocks-2': { factor: 1.08, n: 10 },
+        },
+        addlWtOffset: {},
+      };
 
-    it('prefers an exact canonical match over an earlier substring match (regression: bare exercise mismatched to a compound variant)', () => {
-      // "bench-american" is chronologically first (and thus first in Set iteration
-      // order) and contains "bench" as a substring — a naive first-match substring
-      // scan would incorrectly resolve the bare "Bench" display name to it instead
-      // of the exact "bench" canonical, projecting through variantFactor and
-      // silently under-predicting e1RM (see RepCalculator bug report: displayed
-      // e1RM of 125lbs vs. the true ~148lbs best straight-bench session).
-      const e1rmPoints = [pt('bench-american', 1) /* earliest */, pt('bench', 2)];
-      expect(findCanonicalForExercise('Bench', 'bench', model, e1rmPoints, 'bench')).toBe('bench');
-    });
+      const baselinePoints = [
+        { t: 1704067200000, v: baselineDL, series: 'deadlift', tags: new Set(['lift:deadlift']) },
+      ];
 
-    it.each([
-      [
-        'substring fallback still matches when no exact canonical exists',
-        [pt('bench-close', 1)],
-        'Close',
-        'bench-close',
-      ],
-      [
-        'falls back to baseline when nothing matches by name or variantFactor',
-        [pt('bench', 1)],
-        'Deadlift',
-        'bench',
-      ],
-    ])('%s', (_msg: string, e1rmPoints: Point[], displayName: string, expected: string) => {
-      expect(findCanonicalForExercise(displayName, 'bench', model, e1rmPoints, 'bench')).toBe(
-        expected
+      const estimates = [
+        ['deadlift-deficit', 0.92],
+        ['deadlift-deficit-2', 0.88],
+        ['deadlift-blocks', 1.05],
+        ['deadlift-blocks-2', 1.08],
+      ].map(([canonical]) =>
+        resolveE1RMEstimate({
+          liftType: 'deadlift',
+          targetCanonical: canonical,
+          baselineName: 'Competition Deadlift',
+          model: deficitBlocksModel,
+          e1rmPoints: baselinePoints,
+        })
       );
+
+      // All should resolve successfully
+      estimates.forEach((est) => {
+        expect(est).not.toBeNull();
+        expect(est?.method).toBe('variantFactor');
+      });
+
+      // Deficit estimates should be lower than blocks estimates
+      expect(estimates[0]?.e1rm).toBeLessThan(estimates[2]?.e1rm ?? 0);
+      expect(estimates[1]?.e1rm).toBeLessThan(estimates[2]?.e1rm ?? 0);
+
+      // Within-group magnitudes should be ordered (smaller magnitude = lower estimate)
+      expect(estimates[0]?.e1rm).toBeGreaterThan(estimates[1]?.e1rm ?? 0);
+      expect(estimates[3]?.e1rm).toBeGreaterThan(estimates[2]?.e1rm ?? 0);
+
+      // Verify exact computed values
+      expect(estimates[0]?.e1rm).toBeCloseTo(baselineDL * 0.92, 1);
+      expect(estimates[1]?.e1rm).toBeCloseTo(baselineDL * 0.88, 1);
+      expect(estimates[2]?.e1rm).toBeCloseTo(baselineDL * 1.05, 1);
+      expect(estimates[3]?.e1rm).toBeCloseTo(baselineDL * 1.08, 1);
     });
   });
 });

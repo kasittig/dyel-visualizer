@@ -179,15 +179,40 @@
     "min": 105,
     "max": 115
   },
+  "equip:blocks-2:deadlift": {
+    "effects": ["LOCKOUT"],
+    "min": 115,
+    "max": 125
+  },
+  "equip:blocks-3:deadlift": {
+    "effects": ["LOCKOUT"],
+    "min": 125,
+    "max": 135
+  },
   "equip:deficit:deadlift": {
     "effects": ["EXTENDED_ROM", "BOTTOM_RANGE"],
     "min": 85,
     "max": 95
   },
+  "equip:deficit-2:deadlift": {
+    "effects": ["EXTENDED_ROM", "BOTTOM_RANGE"],
+    "min": 75,
+    "max": 85
+  },
   "equip:board:bench": {
     "effects": ["TRICEP_DOMINANT", "SUPRAMAXIMAL"],
     "min": 105,
     "max": 115
+  },
+  "equip:board-2:bench": {
+    "effects": ["TRICEP_DOMINANT", "SUPRAMAXIMAL"],
+    "min": 115,
+    "max": 125
+  },
+  "equip:board-3:bench": {
+    "effects": ["TRICEP_DOMINANT", "SUPRAMAXIMAL"],
+    "min": 125,
+    "max": 135
   },
   "equip:pause:squat": {
     "effects": ["DEAD_STOP"],

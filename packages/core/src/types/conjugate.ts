@@ -111,6 +111,7 @@ export interface ConjugateExercise {
   stance: ConjugateStance | null;
   addlWts: ConjugateAddlWt[];
   equipment: ConjugateEquipment | null;
+  equipmentMagnitude?: string; // e.g. '2' for 2-board, '3' for 3-block; defaults to '1' when not specified
   displayName: string;
   averageIndex: number | null;
   expectedBaseline: string | null;

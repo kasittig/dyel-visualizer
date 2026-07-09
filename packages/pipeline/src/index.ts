@@ -4,7 +4,25 @@ export { ParseError, resolveUnit, ParserRegistry } from './parse/parser';
 export { csvParser } from './parse/csv';
 export { freeformParser, parseFreeformText } from './parse/freeform/parser';
 export type { TaggedSetRecord } from './tag/tag';
-export { tagRecords, resolveCanonicalNames, matches } from './tag/tag';
+export {
+  tagRecords,
+  resolveCanonicalNames,
+  matches,
+  facetsFromTags,
+  facetFamilyKey,
+} from './tag/tag';
+export type {
+  ConjugateBar,
+  ConjugateStance,
+  ConjugateEquipment,
+  ConjugateAddlWt,
+} from './tag/detect/conjugate-types';
+export {
+  CONJUGATE_BARS,
+  CONJUGATE_STANCES,
+  CONJUGATE_EQUIPMENT,
+  CONJUGATE_ADDL_WTS,
+} from './tag/detect/conjugate-types';
 export type { SeriesDeriver } from './derive/derivers';
 export { derivers, isSpeedWork } from './derive/derivers';
 export { calcE1RM, invertE1RM } from './derive/e1rm';

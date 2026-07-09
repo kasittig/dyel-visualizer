@@ -168,9 +168,87 @@ describe('buildTagsAndEffects deadlift stance resolution', () => {
   it('deficit deadlift (competition stance, no explicit stance keyword) gets only deficit range/effects', () => {
     const ex = parseExercise('Deadlift (2" deficit)');
     const result = buildTagsAndEffects(ex, 'sumo');
-    // Deficit range only (85–95%), no stance range compounding
-    expect(result.range).toEqual({ min: 85, max: 95 });
+    // Magnitude-specific range for 2" deficit (75–85%), no stance range compounding
+    expect(result.range).toEqual({ min: 75, max: 85 });
     // Deficit effects (EXTENDED_ROM, BOTTOM_RANGE), no stance-derived effects
     expect(new Set(result.effects)).toEqual(new Set(['EXTENDED_ROM', 'BOTTOM_RANGE']));
+  });
+});
+
+describe('equipment magnitude produces distinct tags, effects, and ranges', () => {
+  it.each([
+    [
+      'bench 1-board (default magnitude)',
+      'Bench (1 board)',
+      ['equip:board'],
+      { min: 105, max: 115 },
+      ['TRICEP_DOMINANT', 'SUPRAMAXIMAL'],
+    ],
+    [
+      'bench 2-board',
+      'Bench (2 board)',
+      ['equip:board', 'equip:board-2'],
+      { min: 115, max: 125 },
+      ['TRICEP_DOMINANT', 'SUPRAMAXIMAL'],
+    ],
+    [
+      'bench 3-board',
+      'Bench (3 board)',
+      ['equip:board', 'equip:board-3'],
+      { min: 125, max: 135 },
+      ['TRICEP_DOMINANT', 'SUPRAMAXIMAL'],
+    ],
+  ])(
+    '%s produces expected tags and range',
+    (_, ex, expectedEquipTags, expectedRange, expectedEffects) => {
+      const result = buildTagsAndEffects(parseExercise(ex));
+      // Verify magnitude-bearing tags are emitted
+      expectedEquipTags.forEach((tag) => {
+        expect(result.tags.has(tag)).toBe(true);
+      });
+      // Verify range is magnitude-specific
+      expect(result.range).toEqual(expectedRange);
+      // Verify effects are consistent across magnitudes
+      expect(new Set(result.effects)).toEqual(new Set(expectedEffects));
+    }
+  );
+
+  it('block magnitudes produce distinct ranges for deadlift', () => {
+    const cases = [
+      ['Deadlift (1 block)', { min: 105, max: 115 }],
+      ['Deadlift (2 blocks)', { min: 115, max: 125 }],
+      ['Deadlift (3 blocks)', { min: 125, max: 135 }],
+    ] as const;
+    cases.forEach(([ex, expectedRange]) => {
+      const result = buildTagsAndEffects(parseExercise(ex));
+      expect(result.range).toEqual(expectedRange);
+    });
+  });
+
+  it('deficit magnitudes produce distinct ranges for deadlift', () => {
+    const cases = [
+      ['Deadlift (1 deficit)', { min: 85, max: 95 }],
+      ['Deadlift (2 deficit)', { min: 75, max: 85 }],
+    ] as const;
+    cases.forEach(([ex, expectedRange]) => {
+      const result = buildTagsAndEffects(parseExercise(ex));
+      expect(result.range).toEqual(expectedRange);
+    });
+  });
+});
+
+describe('equipment magnitude fallback for unmapped magnitudes (regression guard)', () => {
+  it('unmapped magnitude falls back to base key when no explicit entry exists', () => {
+    // 4-board has no explicit entry in modifier-effects.json, so it should fall back
+    // to the base equip:board:bench range
+    const ex = parseExercise('Bench (4 board)');
+    const result = buildTagsAndEffects(ex);
+    // Should emit the magnitude-bearing tag for facets to parse
+    expect(result.tags.has('equip:board')).toBe(true);
+    expect(result.tags.has('equip:board-4')).toBe(true);
+    // But range should fall back to base-key behavior (105–115% same as 1-board)
+    expect(result.range).toEqual({ min: 105, max: 115 });
+    // Effects should be the base effects
+    expect(new Set(result.effects)).toEqual(new Set(['TRICEP_DOMINANT', 'SUPRAMAXIMAL']));
   });
 });

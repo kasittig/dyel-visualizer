@@ -1,21 +1,20 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 import clsx from 'clsx';
 import {
-  familyKey,
   CONJUGATE_BARS,
   CONJUGATE_STANCES,
   CONJUGATE_EQUIPMENT,
   CONJUGATE_ADDL_WTS,
-} from '@dyel/core';
+  facetsFromTags,
+  facetFamilyKey,
+} from '@dyel/pipeline';
 import type {
   ConjugateAddlWt,
   ConjugateBar,
-  ConjugateDataPair,
   ConjugateEquipment,
-  ConjugateExercise,
   ConjugateStance,
-  LiftType,
-} from '@dyel/core';
+} from '@dyel/pipeline';
+import type { LiftType, SplitRows } from '@dyel/api';
 import { usePipelineModel } from '../../context/PipelineContext';
 import {
   predictWeightForReps,
@@ -24,8 +23,6 @@ import {
   convertE1RMToDisplayUnit,
 } from '../../pipeline/repCalculatorUtils';
 import type { E1RMEstimate } from '../../pipeline/repCalculatorUtils';
-import type { SplitRows } from '../../utils/appDataUtils';
-import { distinctDisplayNames, LIFT_TABS } from '../../utils/appUtils';
 import styles from './RepCalculator.module.css';
 import { CollapsibleSection } from '../shared/CollapsibleSection';
 
@@ -54,126 +51,182 @@ export function RepCalculator({
   baselineNames,
 }: {
   tabRows: Record<LiftType, SplitRows>;
-  baselineNames: Partial<Record<string, string>>;
+  baselineNames: Partial<Record<LiftType, string>>;
 }) {
   const [liftType, setLiftType] = useState<LiftType>('squat');
-  const [selectedName, setSelectedName] = useState('');
+  const [selectedCanonical, setSelectedCanonical] = useState('');
   const [reps, setReps] = useState('');
   const [weight, setWeight] = useState('');
   const [selectedBar, setSelectedBar] = useState<ConjugateBar | null>(null);
   const [selectedStance, setSelectedStance] = useState<ConjugateStance | null>(null);
   const [selectedEquipment, setSelectedEquipment] = useState<ConjugateEquipment | null>(null);
   const [selectedAddlWt, setSelectedAddlWt] = useState<ConjugateAddlWt | null>(null);
-
-  const pairsByTab = useMemo(
-    () =>
-      Object.fromEntries(LIFT_TABS.map((tab) => [tab, tabRows[tab].maxEffort])) as Record<
-        LiftType,
-        ConjugateDataPair[]
-      >,
-    [tabRows]
-  );
+  const [selectedEquipmentMagnitude, setSelectedEquipmentMagnitude] = useState<string | null>(null);
 
   const { status: pipelineStatus, model: pipelineModel } = usePipelineModel();
 
-  const pairs = pairsByTab[liftType];
+  const records = tabRows[liftType].maxEffort;
 
-  const unit = pairs[0]?.[1].unit ?? 'lbs';
+  const unit = useMemo(() => {
+    for (const rec of records) {
+      if (rec.meta?.rawUnit) {
+        return (rec.meta.rawUnit === 'lbs' ? 'lbs' : 'kg') as 'lbs' | 'kg';
+      }
+    }
+    return 'lbs';
+  }, [records]);
 
   const hasAccessories = tabRows.accessory.all.length > 0;
 
-  const exercisesForType = useMemo(
-    () => distinctDisplayNames(pairs).sort((a, b) => a.localeCompare(b)),
-    [pairs]
-  );
+  // Derive available equipment magnitudes for the currently selected equipment
+  const availableMagnitudes = useMemo(() => {
+    if (!selectedEquipment || !['board', 'blocks', 'deficit'].includes(selectedEquipment)) {
+      return [];
+    }
+    const magnitudes = new Set<string>();
+    for (const rec of records) {
+      const facets = facetsFromTags(rec.tags);
+      if (facets.equipment === selectedEquipment && facets.equipmentMagnitude) {
+        magnitudes.add(facets.equipmentMagnitude);
+      }
+    }
+    return Array.from(magnitudes).sort((a, b) => {
+      const numA = parseInt(a, 10);
+      const numB = parseInt(b, 10);
+      return isNaN(numA) || isNaN(numB) ? a.localeCompare(b) : numA - numB;
+    });
+  }, [selectedEquipment, records]);
+
+  // Build a unique list of exercises by canonical, keeping first-seen raw label for display
+  const exercisesForType = useMemo(() => {
+    const seen = new Map<string, { canonical: string; label: string }>();
+    for (const rec of records) {
+      if (!seen.has(rec.canonical)) {
+        const label = rec.meta?.rawExercise ?? rec.exercise;
+        seen.set(rec.canonical, { canonical: rec.canonical, label });
+      }
+    }
+    return Array.from(seen.values()).sort((a, b) => a.label.localeCompare(b.label));
+  }, [records]);
 
   useEffect(() => {
-    const name = exercisesForType[0] ?? '';
-    const ex = pairs.find(([e]) => e.displayName === name)?.[0] ?? null;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setSelectedName(name);
-    setReps('');
-    setWeight('');
-    setSelectedBar(ex?.bar ?? null);
-    setSelectedStance(ex?.stance ?? null);
-    setSelectedEquipment(ex?.equipment ?? null);
-    setSelectedAddlWt(ex?.addlWts[0] ?? null);
+    const firstExercise = exercisesForType[0];
+    if (!firstExercise) {
+      // Syncing local facet-selection state to the (rare) case where the exercise list has
+      // become empty — mirrors the exhaustive-deps suppression already used at the bottom
+      // of this effect for the same reason (initial-selection sync, not external subscription).
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setSelectedCanonical('');
+      setReps('');
+      setWeight('');
+      setSelectedBar(null);
+      setSelectedStance(null);
+      setSelectedEquipment(null);
+      setSelectedAddlWt(null);
+      setSelectedEquipmentMagnitude(null);
+      return;
+    }
+
+    const selectedRecord = records.find((r) => r.canonical === firstExercise.canonical);
+    if (selectedRecord) {
+      const facets = facetsFromTags(selectedRecord.tags);
+      setSelectedCanonical(firstExercise.canonical);
+      setReps('');
+      setWeight('');
+      setSelectedBar(facets.bar);
+      setSelectedStance(facets.stance);
+      setSelectedEquipment(facets.equipment);
+      setSelectedAddlWt(facets.addlWts[0] ?? null);
+      setSelectedEquipmentMagnitude(facets.equipmentMagnitude);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [liftType, exercisesForType]);
 
-  const selectedExercise = useMemo(
-    () => pairs.find(([ex]) => ex.displayName === selectedName)?.[0] ?? null,
-    [pairs, selectedName]
+  const selectedRecord = useMemo(
+    () => records.find((r) => r.canonical === selectedCanonical),
+    [records, selectedCanonical]
   );
 
-  function handleSelectedNameChange(name: string) {
-    setSelectedName(name);
-    const ex = pairs.find(([e]) => e.displayName === name)?.[0] ?? null;
-    setSelectedBar(ex?.bar ?? null);
-    setSelectedStance(ex?.stance ?? null);
-    setSelectedEquipment(ex?.equipment ?? null);
-    setSelectedAddlWt(ex?.addlWts[0] ?? null);
+  function handleSelectedCanonicalChange(canonical: string) {
+    setSelectedCanonical(canonical);
+    const rec = records.find((r) => r.canonical === canonical);
+    if (rec) {
+      const facets = facetsFromTags(rec.tags);
+      setSelectedBar(facets.bar);
+      setSelectedStance(facets.stance);
+      setSelectedEquipment(facets.equipment);
+      setSelectedAddlWt(facets.addlWts[0] ?? null);
+      setSelectedEquipmentMagnitude(facets.equipmentMagnitude);
+    }
   }
 
-  const facetExercise = useMemo(() => {
-    if (!selectedExercise) {
+  // Derive the effective canonical for e1RM lookup
+  const effectiveCanonical = useMemo(() => {
+    if (!selectedRecord) {
       return null;
     }
+
     if (liftType === 'accessory') {
-      return selectedExercise;
+      return selectedRecord.canonical;
     }
-    const candidate = {
-      type: liftType,
-      bar: selectedBar,
-      stance: selectedStance,
-      equipment: selectedEquipment,
-    } as ConjugateExercise;
-    const addlWts = selectedAddlWt ? [selectedAddlWt] : [];
-    const match = pairs.find(
-      ([ex]) =>
-        familyKey(ex) === familyKey(candidate) &&
-        ex.addlWts.length === addlWts.length &&
-        (addlWts.length === 0 || ex.addlWts[0] === addlWts[0])
-    )?.[0];
-    if (match) {
-      return match;
+
+    // For comp lifts, check if selected facets match any existing record
+    // by comparing family keys (bar/stance/equipment, excluding addlWts)
+    const candidateFamilyKey = `${liftType}${selectedBar ? `-${selectedBar}` : ''}${selectedStance && selectedStance !== 'competition' ? `-${selectedStance}` : ''}${selectedEquipment ? `-${selectedEquipment}` : ''}`;
+
+    for (const rec of records) {
+      const recFamilyKey = facetFamilyKey(rec.canonical);
+      const recFacets = facetsFromTags(rec.tags);
+
+      // Match on bar/stance/equipment/magnitude and addlWt
+      if (
+        recFamilyKey === candidateFamilyKey ||
+        (recFacets.bar === selectedBar &&
+          recFacets.stance === selectedStance &&
+          recFacets.equipment === selectedEquipment &&
+          recFacets.equipmentMagnitude === selectedEquipmentMagnitude)
+      ) {
+        // If addlWt is specified, try to find exact match
+        if (selectedAddlWt) {
+          if (recFacets.addlWts.includes(selectedAddlWt)) {
+            return rec.canonical;
+          }
+        } else {
+          // If no addlWt selected, prefer a record with no addlWts
+          if (recFacets.addlWts.length === 0) {
+            return rec.canonical;
+          }
+        }
+      }
     }
-    return {
-      type: liftType,
-      bar: selectedBar,
-      stance: selectedStance,
-      equipment: selectedEquipment,
-      addlWts,
-      displayName: 'placeholder',
-      averageIndex: null,
-      expectedBaseline: null,
-      status: null,
-      diagnostic: null,
-      effects: [],
-    } satisfies ConjugateExercise;
+
+    // No exact match found; use the selected record's canonical as fallback
+    // (it's the closest thing we have)
+    return selectedRecord.canonical;
   }, [
-    selectedExercise,
+    selectedRecord,
     liftType,
-    pairs,
     selectedBar,
     selectedStance,
     selectedEquipment,
+    selectedEquipmentMagnitude,
     selectedAddlWt,
+    records,
   ]);
 
   const estimate = useMemo(() => {
-    if (!facetExercise || pipelineStatus !== 'success' || !pipelineModel) {
+    if (!effectiveCanonical || pipelineStatus !== 'success' || !pipelineModel) {
       return null;
     }
 
     return resolveE1RMEstimate({
       liftType,
-      facetDisplayName: facetExercise.displayName,
+      targetCanonical: effectiveCanonical,
       baselineName: baselineNames[liftType],
       model: pipelineModel.model,
       e1rmPoints: pipelineModel.pointsByDeriver.get('e1rm') ?? [],
     });
-  }, [facetExercise, pipelineStatus, pipelineModel, baselineNames, liftType]);
+  }, [effectiveCanonical, pipelineStatus, pipelineModel, baselineNames, liftType]);
 
   // Keep a ref so the exercise-change effect always reads the current reps value
   // without reps being a dependency (which would cause circular updates when typing weight).
@@ -238,13 +291,13 @@ export function RepCalculator({
           <div className={styles.field}>
             <div className={styles.fieldLabel}>Exercise</div>
             <select
-              value={selectedName}
-              onChange={(e) => handleSelectedNameChange(e.target.value)}
+              value={selectedCanonical}
+              onChange={(e) => handleSelectedCanonicalChange(e.target.value)}
               className={styles.input}
             >
-              {exercisesForType.map((name) => (
-                <option key={name} value={name}>
-                  {name}
+              {exercisesForType.map((ex) => (
+                <option key={ex.canonical} value={ex.canonical}>
+                  {ex.label}
                 </option>
               ))}
             </select>
@@ -303,6 +356,26 @@ export function RepCalculator({
                   ))}
                 </select>
               </div>
+
+              {selectedEquipment && ['board', 'blocks', 'deficit'].includes(selectedEquipment) && (
+                <div className={styles.field}>
+                  <div className={styles.fieldLabel}>Magnitude</div>
+                  <select
+                    value={selectedEquipmentMagnitude ?? ''}
+                    onChange={(e) =>
+                      setSelectedEquipmentMagnitude((e.target.value || null) as string | null)
+                    }
+                    className={styles.input}
+                  >
+                    <option value="">—</option>
+                    {availableMagnitudes.map((mag) => (
+                      <option key={mag} value={mag}>
+                        {mag}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
               <div className={styles.field}>
                 <div className={styles.fieldLabel}>Additional Weight</div>

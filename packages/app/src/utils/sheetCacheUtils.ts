@@ -1,25 +1,12 @@
-import type { ConjugateDataPair } from '@dyel/core';
+import type { RawInput } from '@dyel/pipeline';
 
 export interface CachedSheetData {
   sheetKey: string;
-  pairs: ConjugateDataPair[];
-}
-
-/** JSON-safe wire format: `TrainingSession.date` becomes an ISO string. */
-interface SerializedCachedSheetData {
-  sheetKey: string;
-  pairs: [ConjugateDataPair[0], Omit<ConjugateDataPair[1], 'date'> & { date: string }][];
+  raw: RawInput[];
 }
 
 export function serializeSheetCache(data: CachedSheetData): string {
-  const serialized: SerializedCachedSheetData = {
-    sheetKey: data.sheetKey,
-    pairs: data.pairs.map(([exercise, session]) => [
-      exercise,
-      { ...session, date: session.date.toISOString() },
-    ]),
-  };
-  return JSON.stringify(serialized);
+  return JSON.stringify(data);
 }
 
 export function deserializeSheetCache(raw: string): CachedSheetData {
@@ -27,17 +14,10 @@ export function deserializeSheetCache(raw: string): CachedSheetData {
   if (
     typeof parsed !== 'object' ||
     parsed === null ||
-    typeof (parsed as SerializedCachedSheetData).sheetKey !== 'string' ||
-    !Array.isArray((parsed as SerializedCachedSheetData).pairs)
+    typeof (parsed as CachedSheetData).sheetKey !== 'string' ||
+    !Array.isArray((parsed as CachedSheetData).raw)
   ) {
     throw new Error('Malformed cached sheet data');
   }
-  const { sheetKey, pairs } = parsed as SerializedCachedSheetData;
-  return {
-    sheetKey,
-    pairs: pairs.map(([exercise, session]) => [
-      exercise,
-      { ...session, date: new Date(session.date) },
-    ]),
-  };
+  return parsed as CachedSheetData;
 }

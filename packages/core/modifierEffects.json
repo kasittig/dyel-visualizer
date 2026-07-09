@@ -85,15 +85,32 @@
   "equipment:incline:bench": { "effects": ["UPPER_PECS"], "min": 85, "max": 95 },
   "equipment:decline:bench": { "effects": ["LOWER_PECS"], "min": 100, "max": 110 },
   "equipment:blocks:deadlift": { "effects": ["LOCKOUT"], "min": 105, "max": 115 },
+  "equipment:blocks-2:deadlift": { "effects": ["LOCKOUT"], "min": 115, "max": 125 },
+  "equipment:blocks-3:deadlift": { "effects": ["LOCKOUT"], "min": 125, "max": 135 },
   "equipment:deficit:deadlift": {
     "effects": ["EXTENDED_ROM", "BOTTOM_RANGE"],
     "min": 85,
     "max": 95
   },
+  "equipment:deficit-2:deadlift": {
+    "effects": ["EXTENDED_ROM", "BOTTOM_RANGE"],
+    "min": 75,
+    "max": 85
+  },
   "equipment:board:bench": {
     "effects": ["TRICEP_DOMINANT", "SUPRAMAXIMAL"],
     "min": 105,
     "max": 115
+  },
+  "equipment:board-2:bench": {
+    "effects": ["TRICEP_DOMINANT", "SUPRAMAXIMAL"],
+    "min": 115,
+    "max": 125
+  },
+  "equipment:board-3:bench": {
+    "effects": ["TRICEP_DOMINANT", "SUPRAMAXIMAL"],
+    "min": 125,
+    "max": 135
   },
   "equipment:pause:squat": { "effects": ["DEAD_STOP"], "min": 85, "max": 95 },
   "equipment:pause:bench": { "effects": [], "min": 85, "max": 95 },
