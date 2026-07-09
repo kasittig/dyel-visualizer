@@ -60,21 +60,35 @@ describe('diagnose', () => {
     expect(variant.ratio).toBeCloseTo(ratio, 3);
   });
 
-  it('excludes unassessed/stale variants', () => {
+  it('surfaces stale variants in variants with status stale (not unassessed)', () => {
     const report = diagnose(
-      [
-        basePt,
-        pt('bench-bands', 70, day(20), ['lift:bench']),
-        pt('bench-chains', 80, Date.now() - 40 * 86400000, ['lift:bench']),
-      ],
+      [basePt, pt('bench-chains', 80, Date.now() - 40 * 86400000, ['lift:bench'])],
       model,
       map,
       opts,
       undefined
     );
 
-    expect(report.variants.map((v) => v.canonical)).not.toContain('bench-chains');
-    expect(report.unassessed).toEqual(['bench-bands', 'bench-chains']);
+    const staleVariant = report.variants.find((v) => v.canonical === 'bench-chains');
+    expect(staleVariant).toBeDefined();
+    expect(staleVariant!.status).toBe('stale');
+    expect(staleVariant!.ratio).toBeCloseTo(1, 3);
+    expect(staleVariant!.averageIndex).toBe(80);
+    expect(staleVariant!.expectedBaseline).toBeNull();
+    expect(report.unassessed).toEqual([]);
+  });
+
+  it('excludes unassessed variants (no lift tag, no factor, no baseline)', () => {
+    const report = diagnose(
+      [basePt, pt('bench-bands', 70, day(20), ['lift:bench'])],
+      model,
+      map,
+      opts,
+      undefined
+    );
+
+    expect(report.variants.map((v) => v.canonical)).not.toContain('bench-bands');
+    expect(report.unassessed).toEqual(['bench-bands']);
   });
 
   describe('weaknesses aggregation', () => {
@@ -107,6 +121,50 @@ describe('diagnose', () => {
         undefined
       );
       expect(report.weaknesses).toEqual([]);
+    });
+
+    it('stale variants do not contribute votes to weaknesses', () => {
+      const report = diagnose(
+        [
+          basePt,
+          pt('bench-chains', 70, Date.now() - 40 * 86400000, ['lift:bench']), // stale weakness
+          pt('bench-close-grip', 80, day(20), ['lift:bench']), // fresh weakness
+        ],
+        model,
+        map,
+        opts,
+        undefined
+      );
+
+      // only bench-close-grip (fresh) should contribute votes; bench-chains (stale) should not
+      expect(report.weaknesses).toEqual([
+        { quality: 'lockout', score: 1, evidence: ['bench-close-grip'] },
+        { quality: 'tricep', score: 1, evidence: ['bench-close-grip'] },
+      ]);
+    });
+  });
+
+  describe('addlWtOffset field', () => {
+    it.each([
+      [
+        'present with n > 0',
+        { 'bench-chains': { offsetKg: 11.34, n: 5 } },
+        { offsetLbs: 25, n: 5 },
+      ],
+      ['absent', {}, undefined],
+      ['present but n === 0', { 'bench-chains': { offsetKg: 11.34, n: 0 } }, undefined],
+    ] as const)('includes addlWtOffset when %s', (desc, addlWtOffset, expected) => {
+      const testModel: NormalizationModel = { ...model, addlWtOffset };
+      const points = [basePt, pt('bench-chains', 80, day(20), ['lift:bench'])];
+      const report = diagnose(points, testModel, map, opts, undefined);
+      const variant = report.variants.find((v) => v.canonical === 'bench-chains')!;
+
+      if (expected === undefined) {
+        expect(variant.addlWtOffset).toBeUndefined();
+      } else {
+        expect(variant.addlWtOffset?.offsetLbs).toBeCloseTo(expected.offsetLbs, 1);
+        expect(variant.addlWtOffset?.n).toBe(expected.n);
+      }
     });
   });
 });

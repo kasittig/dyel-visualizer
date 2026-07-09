@@ -251,12 +251,13 @@ describe('runPipeline (end-to-end)', () => {
         deadliftStance: 'conventional' as const,
       };
       const ui = {};
+      const now = Date.now();
 
-      // Old path: runPipeline
-      const oldResult = runPipeline(raw, testSpecs, testAthlete, ui);
+      // Old path: runPipeline (uses the same now value)
+      const oldResult = runPipeline(raw, testSpecs, testAthlete, ui, now);
 
-      // New path: runPipelineModel + buildDatasetsFromModel
-      const model = runPipelineModel(raw, testAthlete);
+      // New path: runPipelineModel + buildDatasetsFromModel (uses the same now value)
+      const model = runPipelineModel(raw, testAthlete, now);
       const datasets = buildDatasetsFromModel(model, testSpecs, ui);
       const newResult = {
         datasets,

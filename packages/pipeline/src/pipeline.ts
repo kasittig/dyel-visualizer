@@ -75,7 +75,12 @@ function buildPointsByLabel(tagged: TaggedSetRecord[], deriverId: string): Point
   });
 }
 
-export function runPipelineModel(raw: RawInput[], athlete: AthleteContext): PipelineModel {
+export function runPipelineModel(
+  raw: RawInput[],
+  athlete: AthleteContext,
+  now?: number
+): PipelineModel {
+  const timestamp = now ?? Date.now();
   const registry = new ParserRegistry();
   registry.registerMany([csvParser, freeformParser]);
   const parseErrors: ParseError[] = [],
@@ -186,7 +191,7 @@ export function runPipelineModel(raw: RawInput[], athlete: AthleteContext): Pipe
     model,
     effectsByCanonical,
     { tolerance: DIAGNOSTICS_TOLERANCE, staleDays: DIAGNOSTICS_STALE_DAYS },
-    undefined,
+    timestamp,
     displayNameByCanonical,
     baselineRangeByCanonical
   );
@@ -226,9 +231,11 @@ export function runPipeline(
   raw: RawInput[],
   specs: DatasetSpec[],
   athlete: AthleteContext,
-  ui: RenderParams
+  ui: RenderParams,
+  now?: number
 ): PipelineResult {
-  const pipelineModel = runPipelineModel(raw, athlete);
+  const timestamp = now ?? Date.now();
+  const pipelineModel = runPipelineModel(raw, athlete, timestamp);
   const datasets = buildDatasetsFromModel(pipelineModel, specs, ui);
   return {
     datasets,

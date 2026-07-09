@@ -4,7 +4,7 @@ Inventory of `packages/app/src` components/hooks that still depend on `@dyel/cor
 per the pipeline migration boundary rule (migrated components must call only
 `runPipeline`, never `@dyel/core`). Components already fully migrated (`TotalChart`,
 `SigmaTab`, `SessionBarChart`, `SigmaChart`, `DateLineChart`, `RepCalculator`,
-`StrengthScoreCalculator`) are omitted here — see `HANDOFF.md` for that history.
+`StrengthScoreCalculator`, `DiagnosticsPanel`) are omitted here — see `HANDOFF.md` for that history.
 
 **Migration gate: the pipeline and `@dyel/core` backends must produce _exactly_ matching
 output — not just "close" or within a soft-warn tolerance — before a component is switched
@@ -15,7 +15,7 @@ parity test first, then swap the component.
 
 ## Ready to migrate (pipeline-native replacement + parity test exist, component not yet switched over)
 
-These three have a working pipeline-native implementation and a parity test already in place,
+These two have a working pipeline-native implementation and a parity test already in place,
 but the component itself still calls `@dyel/core` at runtime — swapping it over is
 intentionally deferred pending exact parity (see gate above). Each carries a real, documented
 blocker beyond "wire up the hook" — see each entry below before attempting those.
@@ -41,25 +41,6 @@ both have since been swapped over, see "Status" below.)
   divergence remain soft-warned) — see `migration/ConjugateCharts.md`'s "Wire-verify-
   revert dry run" section. The call-site files were reverted after verification; still
   on `@dyel/core` at runtime. Tracked: [#459](https://github.com/kasittig/dyel-visualizer/issues/459).
-- `components/shared/DiagnosticsPanel.tsx` — still calls `generateDiagnostics`
-  (`@dyel/core`). Pipeline-native replacement exists: `usePipelineDiagnostics` hook
-  (`packages/app/src/hooks/pipeline/usePipelineDiagnostics.ts`) wraps `runPipeline` +
-  `PipelineResult.diagnostics`, with a soft-warn parity test at
-  `packages/app/src/pipeline/diagnosticsPanelParity.test.ts`. **Swap is intentionally
-  deferred** — closer scoping against the component's actual render logic (not just the
-  parity test's structural checks) found this is not a small wiring change: pipeline's
-  `diagnose()` has no canonical→display-name resolution (the table needs `displayName`,
-  pipeline only has a bare `canonical` slug), no modifier-percentage-baseline-range model
-  (the table needs `averageIndex`/`expectedBaseline` as a % range; pipeline only produces a
-  flat `expectedE1rmKg`/`ratio`), a different status-classification model (not just a
-  renamed enum — legacy uses a baseline min/max range, pipeline a flat tolerance band), and
-  no additional-weight offset data. `usePipelineDiagnostics`'s props
-  (`inputMode`/`url`/`pastedText`/`refreshToken`, self-fetching) also don't match the
-  component's current pre-computed `rows`/`targetName`/`variantFactor`/`addlWtOffset` props,
-  meaning a swap would also touch `pages/LiftTabPanel.tsx`'s prop-drilling. See
-  `migration/DiagnosticsPanel.md`'s Status section for full detail. Held to the same bar as
-  `VariationRadarChart` below — missing pipeline functionality is a proposed pipeline
-  change, not a client-side workaround. Tracked: [#461](https://github.com/kasittig/dyel-visualizer/issues/461).
 - `components/charts/VariationRadarChart.tsx` — still calls
   `normalizeToBaseE1RM` and imports `ConjugateExercise` directly from
   `@dyel/core`. Pipeline-native replacement exists and is validated on the
@@ -96,9 +77,9 @@ Components that still call `@dyel/core` for real business logic:
 | `pages/LiftTabPanel.tsx`  | `filterByDateRange`, `DeadliftStancePreference`, `LiftType`                                     |
 | `pages/ValidatorPage.tsx` | `SheetValidationResult`, `ColumnInfo` (likely intentionally core-only — legacy sheet validator) |
 
-`LiftTabPanel.tsx` is blocked on `ConjugateCharts`, `VariationRadarChart`, and
-`DiagnosticsPanel` swapping over first (see `MIGRATION_PLAN.md`); its own
-`deadliftStance`-on-`AthleteContext` prerequisite is already complete.
+`LiftTabPanel.tsx` is blocked on `ConjugateCharts` and `VariationRadarChart` swapping over
+first (see `MIGRATION_PLAN.md`); its own `deadliftStance`-on-`AthleteContext` prerequisite
+is already complete.
 `ValidatorPage.tsx` is blocked on a scope decision ("is this even in scope for migration?"),
 not sequencing — not yet raised.
 
@@ -119,14 +100,13 @@ not sequencing — not yet raised.
 
 ## Status
 
-`ConjugateCharts`, `DiagnosticsPanel`, and `VariationRadarChart` each have a pipeline-native
-replacement and a parity test (see "Ready to migrate" above), but the actual component
-swap-over is intentionally deferred for all three pending an exact-match parity result (see
-gate at top) — the components still call `@dyel/core` at runtime. `ConjugateCharts`
-specifically was migrated once already and
-**reverted** after the parity test surfaced real divergence from legacy (see `HANDOFF.md`);
-any future attempt to swap it back over must close that divergence to an exact match first
-(tracked: [#459](https://github.com/kasittig/dyel-visualizer/issues/459)).
+`ConjugateCharts` and `VariationRadarChart` each have a pipeline-native replacement and a
+parity test (see "Ready to migrate" above), but the actual component swap-over is
+intentionally deferred for both pending an exact-match parity result (see gate at top) —
+the components still call `@dyel/core` at runtime. `ConjugateCharts` specifically was
+migrated once already and **reverted** after the parity test surfaced real divergence from
+legacy (see `HANDOFF.md`); any future attempt to swap it back over must close that
+divergence to an exact match first (tracked: [#459](https://github.com/kasittig/dyel-visualizer/issues/459)).
 `VariationRadarChart` shares the same underlying divergence risk (see its entry above); its
 separate tooltip-data gap was resolved 2026-07-08 (`lastSessionDetail.ts`), leaving the
 shared divergence as its only remaining blocker (tracked: [#460](https://github.com/kasittig/dyel-visualizer/issues/460)).
@@ -135,15 +115,16 @@ run confirming their swaps are mechanically ready (full test suites + builds gre
 each swap live), but the call-site files were reverted afterward per explicit direction —
 neither is a committed swap, both still call `@dyel/core` at runtime, and the exact-match
 gate above still isn't met for either.
-`DiagnosticsPanel` was initially assessed as a small swap too, but scoping it directly
-against the component's render logic found a real gap instead (no canonical→display-name
-resolution, no percentage-baseline-range model, a differently-classified status enum, no
-add'l-weight offset data — see `migration/DiagnosticsPanel.md`'s Status section), so it's
-held to the same "real blocker, not a wiring task" bar (tracked:
-[#461](https://github.com/kasittig/dyel-visualizer/issues/461)). `RepCalculator` and
-`StrengthScoreCalculator` — previously the two components closest to done — have since been
-swapped over (2026-07-08): both now consume their pipeline-native replacements at runtime
-with zero `@dyel/core` references, and their tracking docs (`migration/RepCalculator.md`,
-`migration/StrengthScoreCalculator.md`) have been deleted as fully completed.
+`RepCalculator`, `StrengthScoreCalculator`, and `DiagnosticsPanel` — previously the three
+components closest to done — have since been swapped over (2026-07-08): all three now
+consume their pipeline-native replacements at runtime with zero `@dyel/core` references,
+and their tracking docs (`migration/RepCalculator.md`, `migration/StrengthScoreCalculator.md`,
+`migration/DiagnosticsPanel.md`) have been deleted as fully completed. `DiagnosticsPanel`
+now uses `usePipelineDiagnostics()` with two accepted scope decisions: (1) shows all-time
+diagnostics instead of date-range-filtered (pipeline's shared model has no date-range param);
+(2) renders signed equipment-offset values (e.g. "+12.3lbs") without equipment labels, since
+pipeline has no raw-equipment-tag list on `VariantAssessment`. A new `'stale'` status was
+added to distinguish variants past the staleness threshold (`staleDays` gate in `diagnose()`)
+and is rendered distinctly (muted, "Stale" label) so users are aware of recency.
 
 See `MIGRATION_PLAN.md` for full sequencing across the remaining items.

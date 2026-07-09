@@ -3,149 +3,137 @@
 ## Context
 
 `migration-phase-1` implements `MIGRATION_PLAN.md`'s pipeline-native migration of
-`packages/app` off `@dyel/core` onto `@dyel/pipeline`. This session tackled a specific
-architectural gap the user raised: they want an MVC-like structure where `@dyel/pipeline`
-loads/processes data **once**, additional pure functions derive different "views" on top of
-that single run, and `packages/app` components only render already-transformed data. The
-codebase was already mid-migration toward this shape, but each `hooks/pipeline/*` hook
-(`usePipelineTotalChartData`, `usePipelineDiagnostics`, `usePipelineRepCalculator`)
-independently called `runPipeline` itself — this session closed that gap by introducing a
-shared pipeline-execution context. Full plan lives at
-`/Users/kasittig/.claude/plans/let-s-move-more-towards-refactored-adleman.md` (18 tasks,
-tracked in the task tool, IDs match the plan's numbering).
+`packages/app` off `@dyel/core` onto `@dyel/pipeline`. This session picked up Task 13
+(`DiagnosticsPanel.tsx`), previously blocked on GitHub issue #461, and closed it end-to-end:
+pipeline-side gap work, the component swap, hard-assert parity promotion, and doc updates.
+Full plan lives at `/Users/kasittig/.claude/plans/stateful-launching-parnas.md`.
 
 ## Progress Overview
 
-Completed Tasks 1–12 and 17–18 of the plan (all verified green: 685 tests across pipeline
-(139)/app (225)/core (321), all 3 package builds clean):
+**Task 13 / issue #461 is complete and verified** (144 pipeline tests / 236 app tests / 321
+core tests all green, both `packages/pipeline` and `packages/app` builds clean):
 
-- **Phase 1 (shared infra, Tasks 1-5):** Split `runPipeline` in
-  `packages/pipeline/src/pipeline.ts` into `runPipelineModel(raw, athlete): PipelineModel`
-  (parse→tag→normalize→diagnose, the expensive/view-independent stages, now computing
-  points for _every_ registered deriver id) + `buildDatasetsFromModel(model, specs, ui)`
-  (the cheap per-view `buildDataset` step — `ui.dateRange` isn't safely post-hoc-filterable
-  for composite specs, so this step must stay per-view). `runPipeline` kept as a thin
-  back-compat wrapper. Both new functions exported from `@dyel/pipeline`'s barrel. Added
-  `useResolvedRawInput` (consolidates fetch/parse/`AbortController` logic that was
-  duplicated across 3 hooks) in `packages/app/src/utils/rawInputUtils.ts`. Added
-  `PipelineProvider`/`usePipelineModel()` React context in
-  `packages/app/src/context/PipelineContext.tsx` (memoizes one `runPipelineModel` call per
-  raw-input/athlete change, verified via spy test that it doesn't re-run per consumer). Added
-  `usePipelineDatasets(specs, ui)` selector hook in
-  `packages/app/src/hooks/pipeline/usePipelineDatasets.ts`.
-- **Phase 2 (Tasks 6-10):** Wrapped `App.tsx`'s tree in `PipelineProvider` (memoized
-  `athlete` object built from existing `deadliftStance` state). Rewrote
-  `usePipelineTotalChartData`, `usePipelineDiagnostics`, `usePipelineRepCalculator` to
-  consume the shared context instead of calling `runPipeline` themselves.
-  `usePipelineTotalChartData`'s signature shrank from 6 params to 2 (`dateRange`, `unit`);
-  its only caller (`SigmaTab.tsx`, and `App.tsx`'s call site) was updated to match.
-  `usePipelineDiagnostics`/`usePipelineRepCalculator` aren't wired into any component yet
-  (that's blocked/pending Tasks 13/11) so their signature changes were safe.
-- **Phase 3 (Tasks 11-12, the two unblocked component swaps):** `RepCalculator.tsx` swapped
-  off `@dyel/core`'s `findBestE1RM`/`buildSessionStats` onto `usePipelineRepCalculator()` +
-  `findBestE1RMFromPipeline` (added a `findCanonicalForExercise` helper to
-  `packages/app/src/pipeline/repCalculatorUtils.ts`). `StrengthScoreCalculator.tsx` swapped
-  off `@dyel/core`'s `calculateMetrics` onto `@dyel/pipeline`'s `computeStrengthScores`
-  (one-line change, same signature). Both parity tests stayed at their existing
-  assertion tiers (no promotion — divergence not yet fully closed per their migration docs).
-- **Phase 4 (Tasks 17-18, docs):** Added an explicit "MVC mapping" section to
-  `packages/app/CLAUDE.md` (Model = `runPipelineModel`/`PipelineProvider`; Controller =
-  `hooks/pipeline/*` + `pipeline/*.ts` helpers; View = `components/**`, render-only) and
-  updated stale references to the old "components call only `runPipeline`" rule. Added a
-  preamble note to `MIGRATION_PLAN.md` that all remaining component migrations must land on
-  the new shared-context infrastructure. Fixed two stale doc references left over
-  (`RepCalculator.tsx`'s table entry, and a mention that `ConjugateCharts` was migrated when
-  it isn't) during final review.
-
-**Tasks 13-16 remain intentionally un-implemented** (blocked on external, pre-existing
-issues, not part of this session's scope):
-
-- Task 13: `DiagnosticsPanel.tsx` swap — blocked on issue #461 / `GAPS_REMAINING.md` 5d-5h.
-- Task 14: `ConjugateCharts.tsx` swap — blocked on issue #459 (normalization divergence).
-- Task 15: `VariationRadarChart.tsx` swap — blocked on issue #460, depends on Task 14.
-- Task 16: `LiftTabPanel.tsx`'s `filterByDateRange` removal — blocked on Tasks 13-15.
-  Each has a fully-specified target file + swap approach in the plan doc, ready to execute the
-  moment its blocker closes.
+- **Scope correction:** fresh exploration found #461's original description was stale — most
+  described gaps (canonical→display-name resolution, percentage-baseline-range model,
+  range-based status classification, context-based `usePipelineDiagnostics()`) were already
+  implemented in a prior session. The one genuine gap: `addlWtOffset` wasn't surfaced by
+  `diagnose()`.
+- **Pipeline-side (`packages/pipeline/src/analyze/diagnose.ts`):** added `addlWtOffset?: {
+offsetLbs: number; n: number }` to `VariantAssessment` (kg→lbs converted from
+  `NormalizationModel.addlWtOffset`, only when `n > 0`). `packages/pipeline/src/pipeline.ts`'s
+  `runPipeline`/`runPipelineModel` gained an optional `now?: number` param for deterministic
+  testing (defaults to `Date.now()`).
+- **New `'stale'` status (mid-session addendum, user-requested):** promoting
+  `diagnosticsPanelParity.test.ts` to hard-assert surfaced a real, root-caused divergence —
+  pipeline's `diagnose()` has an intentional `staleDays` gate (90 days) that legacy
+  `generateDiagnostics` never had; a variant whose only session was 93 days old was silently
+  dropped into `unassessed` by pipeline but stayed `optimal` forever in legacy. Decision
+  (confirmed with user): keep the staleness gate, but surface it as a first-class `'stale'`
+  status (`VariantAssessment['status']` is now `'optimal' | 'weakness' | 'overperforming' |
+'stale'`) instead of silently excluding the variant. `unassessed` is now narrower — only
+  for canonicals with no `lift:` tag, no fitted `variantFactor`, or no baseline-lift latest
+  point. Stale variants still compute `ratio`/`averageIndex`/`expectedBaseline` normally and
+  are excluded from weakness-vote tallying.
+- **App-side:** `usePipelineDiagnostics.ts` extended to pass through `displayName`/
+  `averageIndex`/`expectedBaseline`/`addlWtOffset`/the 4-way status (previously silently
+  dropped these fields). `DiagnosticsPanel.tsx` fully swapped off `generateDiagnostics`
+  (`@dyel/core`) onto `usePipelineDiagnostics()` — renders `'stale'` with `var(--muted)`/
+  "Stale" label (no new CSS var needed, `--muted` already has light/dark values in
+  `index.css`); `addlWtOffset` renders as a signed number only (`+12.3lbs`), no equipment-
+  label prefix (pipeline has no raw-equipment-tag list to build one from). `LiftTabPanel.tsx`'s
+  `<DiagnosticsPanel />` call site narrowly trimmed (`rows`/`targetName`/`variantFactor`/
+  `addlWtOffset` dropped; UI-state props kept) — nothing else in that file touched, it's still
+  blocked on `ConjugateCharts`/`VariationRadarChart` (#459/#460) for its own full migration.
+- **Parity test promoted:** `diagnosticsPanelParity.test.ts` moved from soft-warn to
+  hard-assert — fixed-anchor `now` (deterministic, no more wall-clock dependency), per-variant
+  `it.each` status equivalence (6/6 pass, `'overperforming'`↔`'overtrained'` mapping
+  confirmed correct), stale variants explicitly excluded from that equivalence check (with a
+  comment explaining why) plus a separate un-skipped assertion proving the stale variant is
+  tagged correctly rather than lost. Zero `it.skip`/soft-warn-and-pass masking remains.
+- **Docs:** `MIGRATION_PLAN.md`/`APP_COMPONENTS.md` updated to reflect `DiagnosticsPanel` as
+  complete (renumbered remaining items to `ConjugateCharts`(1)/`VariationRadarChart`(2)/
+  `LiftTabPanel`(3)); `migration/DiagnosticsPanel.md` deleted (matches
+  `RepCalculator`/`StrengthScoreCalculator` precedent); `packages/app/CLAUDE.md` and
+  `components/shared/CLAUDE.md`'s `DiagnosticsPanel.tsx` descriptions updated;
+  `packages/pipeline/src/analyze/CLAUDE.md`'s contract doc fixed twice (once for pre-existing
+  drift on `displayNameByCanonical`/`baselineRangeByCanonical` params, once for the new
+  `addlWtOffset`/`'stale'` additions).
 
 ## Decisions Made & Rationale
 
-- **Split point is `buildDataset`, not the whole pipeline.** Confirmed by reading
-  `dataset/build.ts`: `ui.dateRange` filters points _before_ forward-fill/combine for
-  composite specs, so a full-range single run + post-hoc trim would NOT be equivalent to
-  running with the date range applied up front. Parse/tag/normalize/diagnose/points-by-deriver
-  run once (cheap enough to always compute for every deriver, ~6-id registry); `buildDataset`
-  runs per-view with that view's own `specs`+`ui`.
-- **`PipelineModel` computes points for every registered deriver**, not just ones referenced
-  in a `specs` array — since there's no `specs` param at the shared-model stage anymore.
-- **No directory rename** (`pipeline/` stays `pipeline/`, not `views/`/`selectors/`) — the
-  existing per-file `CLAUDE.md` convention already documents intent, and renaming would churn
-  every open migration doc/issue reference (#459-#461) for no functional gain. Explicitly
-  documented as a "don't do this" in `packages/app/CLAUDE.md`.
-- **No new root `ARCHITECTURE.md`** — the MVC statement was folded into the existing
-  `packages/app/CLAUDE.md`, matching the repo's per-package-CLAUDE.md convention.
-- **Git commit policy correction mid-session:** an early feature-implementer subagent (Task 3) made an unauthorized commit (`003d1d5`, contains the `useResolvedRawInput` work) despite
-  no request to commit. User explicitly said to leave that commit as-is but told every
-  subsequent subagent not to commit — all Task 4-18 changes are correctly sitting uncommitted
-  in the working tree as of session end, per that instruction. **This session's own final
-  commit (see below) is the first authorized commit since `003d1d5`.**
-- **Parity test tiers left unchanged** for `RepCalculator`/`StrengthScoreCalculator` — their
-  migration docs don't claim divergence is fully closed, so promoting soft-warn assertions to
-  hard-assert wasn't done (would risk false failures on known residual gaps).
+- **Two scope decisions confirmed with user (both "Option A" — accept smaller scope, document
+  residuals, same pattern as prior `RepCalculator`/`StrengthScoreCalculator` migrations):**
+  1. `DiagnosticsPanel` now shows all-time diagnostics, not date-range-filtered — pipeline's
+     shared `PipelineModel` has no date-range parameter (`diagnose()` runs once over full
+     history, unlike per-view `buildDataset`). Accepted, documented behavior change.
+  2. Dropped the add'l-weight equipment-label prefix (e.g. "Chains + Bands: +12.3lbs" →
+     "+12.3lbs") — pipeline's `VariantAssessment` has no raw-equipment-tag list to build a
+     label from. Follow-up filed only if the label is wanted later (not filed this session).
+- **`'stale'` status addition (third decision, mid-session):** rather than either forcing the
+  hard-assert to fail/skip on the staleness divergence, or reverting pipeline's staleness gate
+  to match legacy's total absence of one, the user asked to surface staleness as a real
+  diagnosis. This is treated as a product improvement (don't present 90+-day-old data as a
+  current diagnosis) rather than a bug — confirmed narrow/architectural via root-cause
+  investigation (both implementations' `MIN_SAMPLES` thresholds already matched at 1; this was
+  purely legacy having no staleness concept at all).
+- **Status vocabulary:** `DiagnosticsPanel.tsx` renamed its internal comparisons from legacy's
+  `'overtrained'` to pipeline's `'overperforming'` (single source of truth on pipeline's enum,
+  no translation layer) — but kept the user-facing label text "Overtrained" as cosmetic copy,
+  since that's a product/copy decision, not a technical one.
+- **No dedicated `DiagnosticsPanel.test.tsx` was created** — the component had none before this
+  session either; coverage comes from `usePipelineDiagnostics.test.ts` (hook-level) plus the
+  parity test (end-to-end pipeline output). Not flagged as a gap, matches pre-existing
+  convention for this component.
+- **Git commit policy:** per this session's convention (carried from prior sessions), all
+  subagents were instructed not to commit. Everything below is uncommitted in the working tree
+  as of this handoff, EXCEPT the commit made by this `/handoff` skill run itself (see below).
 
 ## Open TODOs
 
-1. **Resume Tasks 13-16 as their blockers close** (external issues #461, #459, #460 — not
-   part of this session, tracked separately in `GAPS_REMAINING.md`/`migration/*.md`). Full
-   swap instructions are in the plan doc; no further scoping needed once unblocked.
-2. Nothing else from this session's plan is outstanding — Tasks 1-12, 17-18 are complete and
-   verified. The task tracker (IDs 1-18) reflects this; Tasks 13-16 are `pending` with
-   `blockedBy` unmet.
-3. Consider whether to squash/organize the working-tree changes (Tasks 4-18, currently one
-   big uncommitted diff) into more granular commits before this lands on `main` — this
-   session made one commit covering all of it (see below) per the user's implicit go-ahead
-   pattern, but hasn't been asked whether a different commit granularity is preferred.
+1. **Resume Tasks 14-16 as their blockers close** — issues #459 (`ConjugateCharts`) and #460
+   (`VariationRadarChart`) are still OPEN as of this session (re-checked via `gh issue view`).
+   `LiftTabPanel.tsx`'s full migration (`filterByDateRange` removal, `Task 16`) is blocked on
+   both. No new scoping needed — `MIGRATION_PLAN.md` items 1-2 have full detail once unblocked.
+2. Nothing else from Task 13 is outstanding — issue #461 is fully closed, all 8 plan steps (plus
+   the mid-session `'stale'`-status addendum) verified green.
+3. Same open item carried from the prior session: consider whether to organize this session's
+   changes into more granular commits vs. one commit covering all of it (this handoff makes one
+   commit, per the established pattern) — not yet asked.
 
 ## Files Touched
 
 **Pipeline package:**
 
-- `packages/pipeline/src/pipeline.ts` — added `PipelineModel`, `runPipelineModel`,
-  `buildDatasetsFromModel`; `runPipeline` now a thin wrapper
-- `packages/pipeline/src/pipeline.test.ts` — added parity test
-- `packages/pipeline/src/index.ts` — exported the three new symbols
+- `packages/pipeline/src/analyze/diagnose.ts` — added `addlWtOffset` field, added `'stale'`
+  status, narrowed `unassessed` semantics
+- `packages/pipeline/src/analyze/diagnose.test.ts` — new coverage for both additions
+- `packages/pipeline/src/analyze/CLAUDE.md` — contract doc fixed (params + new status/field)
+- `packages/pipeline/src/pipeline.ts` — `runPipelineModel`/`runPipeline` gained optional `now?`
+- `packages/pipeline/src/pipeline.test.ts` — updated for the new param
 
-**App package — new files:**
+**App package:**
 
-- `packages/app/src/context/PipelineContext.tsx` + `.test.tsx` — `PipelineProvider`/`usePipelineModel()`
-- `packages/app/src/hooks/pipeline/usePipelineDatasets.ts` + `.test.ts` — per-view selector
-- `packages/app/src/hooks/pipeline/index.ts`, `CLAUDE.md` — barrel/docs for the hooks dir
-- `packages/app/src/utils/rawInputUtils.ts` (`useResolvedRawInput` added) + `.test.ts`
-
-**App package — modified:**
-
-- `packages/app/src/App.tsx` — wrapped tree in `PipelineProvider`, memoized `athlete`
-- `packages/app/src/components/pages/SigmaTab.tsx` — updated call to match new hook signature
-- `packages/app/src/components/shared/RepCalculator.tsx` — swapped onto pipeline-native path
-- `packages/app/src/components/shared/StrengthScoreCalculator.tsx` — swapped onto `computeStrengthScores`
-- `packages/app/src/hooks/pipeline/usePipelineTotalChartData.ts` — onto shared context
-- `packages/app/src/hooks/pipeline/usePipelineDiagnostics.ts` — onto shared context
-- `packages/app/src/hooks/pipeline/usePipelineRepCalculator.ts` — onto shared context
-- `packages/app/src/pipeline/repCalculatorUtils.ts` — added `findCanonicalForExercise`
-- `packages/app/src/pipeline/repCalculatorParity.test.ts` — fixed a call signature
-- `packages/app/CLAUDE.md` — added MVC mapping section, updated boundary-rule wording
+- `packages/app/src/hooks/pipeline/usePipelineDiagnostics.ts` — extended `DiagnosticVariant`
+- `packages/app/src/hooks/pipeline/usePipelineDiagnostics.test.ts` — new test file
+- `packages/app/src/components/shared/DiagnosticsPanel.tsx` — swapped onto pipeline-native path
+- `packages/app/src/components/pages/LiftTabPanel.tsx` — trimmed `<DiagnosticsPanel />` props
+- `packages/app/src/pipeline/diagnosticsPanelParity.test.ts` — promoted to hard-assert
+- `packages/app/CLAUDE.md`, `packages/app/src/components/shared/CLAUDE.md` — description fixes
 
 **Docs:**
 
-- `MIGRATION_PLAN.md` — preamble note requiring remaining migrations to use shared-context infra
+- `MIGRATION_PLAN.md`, `APP_COMPONENTS.md` — `DiagnosticsPanel` marked complete, renumbered
+- `migration/DiagnosticsPanel.md` — deleted (fully completed)
 
-**Also present in working tree, not touched this session** (pre-existing from before, listed
-for completeness): `.claude/agents/feature-implementer.md`, `.claude/agents/team-lead.md`,
+**Also present in working tree, not touched this session** (pre-existing, listed for
+completeness): `.claude/agents/feature-implementer.md`, `.claude/agents/team-lead.md`,
 `.claude/skills/handoff/SKILL.md`, deleted `SPECIFICATIONS.md`, `migration/LiftTabPanel.md`,
-`package-lock.json`, untracked `.agents/`, `.codex/`, `AGENTS.md`.
+`package-lock.json`, untracked `.agents/`, `.codex/`, `AGENTS.md`, stray output-redirect files
+(`build-output.txt`, `test-output.txt`, `packages/app/test_output.txt`).
 
 ## Suggested Next Skills
 
-- No specific skill needed — next session should just check `GAPS_REMAINING.md`/issues
-  #459/#460/#461 for status, and if any have closed, resume the corresponding blocked task
-  (13/14/15/16) using the target files and approach already specified in
-  `/Users/kasittig/.claude/plans/let-s-move-more-towards-refactored-adleman.md`.
+- No specific skill needed — next session should check issues #459/#460 for status (both open
+  as of 2026-07-08), and if either has closed, resume the corresponding blocked task
+  (`ConjugateCharts` or `VariationRadarChart`) using `MIGRATION_PLAN.md`'s items 1/2, which
+  already have full swap instructions and blocker context.

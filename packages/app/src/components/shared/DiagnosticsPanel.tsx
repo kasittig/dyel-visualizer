@@ -1,12 +1,6 @@
 import { useMemo, useState, type CSSProperties } from 'react';
-import { generateDiagnostics } from '@dyel/core';
-import type {
-  ConjugateExercise,
-  DeadliftStancePreference,
-  EffectEnum,
-  RepCalcStats,
-} from '@dyel/core';
-import type { ConjugateDataPair } from '../../hooks/conjugate/useConjugateData';
+import type { DeadliftStancePreference } from '@dyel/core';
+import { usePipelineDiagnostics } from '../../hooks/pipeline/usePipelineDiagnostics';
 import { CollapsibleSection } from './CollapsibleSection';
 import styles from './DiagnosticsPanel.module.css';
 
@@ -17,67 +11,44 @@ function formatEffect(effect: string): string {
     .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-function formatAddlWts(ex: ConjugateExercise): string | undefined {
-  if (ex.addlWtOffset === undefined) {
-    return undefined;
-  }
-  const label = ex.addlWts
-    .map((w) =>
-      w
-        .split(' ')
-        .map((p) => p[0].toUpperCase() + p.slice(1))
-        .join(' ')
-    )
-    .join(' + ');
-  const sign = ex.addlWtOffset >= 0 ? '+' : '-';
-  return `${label}: ${sign}${Math.abs(ex.addlWtOffset).toFixed(1)}lbs`;
+function formatAddlWtOffset(offsetLbs: number): string {
+  const sign = offsetLbs >= 0 ? '+' : '-';
+  return `${sign}${Math.abs(offsetLbs).toFixed(1)}lbs`;
 }
 
 export function DiagnosticsPanel({
-  rows,
-  targetName,
   deadliftStance,
   onDeadliftStanceChange,
   onVariationClick,
   highlightedVariation,
-  variantFactor,
-  addlWtOffset,
 }: {
-  rows: ConjugateDataPair[];
-  targetName: string;
   deadliftStance: DeadliftStancePreference;
   onDeadliftStanceChange: (s: DeadliftStancePreference) => void;
   onVariationClick?: (name: string | null) => void;
   highlightedVariation?: string | null;
-  variantFactor: RepCalcStats['variantFactor'];
-  addlWtOffset: RepCalcStats['addlWtOffset'];
 }) {
-  const [activeEffect, setActiveEffect] = useState<EffectEnum | null>(null);
+  const [activeEffect, setActiveEffect] = useState<string | null>(null);
 
-  const handleEffectClick = (e: EffectEnum) => {
+  const handleEffectClick = (e: string) => {
     setActiveEffect((prev) => (prev === e ? null : e));
     onVariationClick?.(null);
   };
-  const hasDeadlift = useMemo(() => rows.some(([ex]) => ex.type === 'deadlift'), [rows]);
 
-  const results = useMemo(
-    () => generateDiagnostics(rows, targetName, { variantFactor, addlWtOffset }, deadliftStance),
-    [rows, targetName, deadliftStance, variantFactor, addlWtOffset]
-  );
+  const { variants: results, hasDeadlift } = usePipelineDiagnostics();
 
   const { weakEffects, overtrainedEffects } = useMemo(() => {
-    const counter = new Map<EffectEnum, number>();
+    const counter = new Map<string, number>();
     for (const r of results) {
-      if (r.status !== 'overtrained' && r.status !== 'weakness') {
+      if (r.status !== 'overperforming' && r.status !== 'weakness') {
         continue;
       }
-      const delta = r.status === 'overtrained' ? 1 : -1;
+      const delta = r.status === 'overperforming' ? 1 : -1;
       for (const e of r.effects) {
         counter.set(e, (counter.get(e) ?? 0) + delta);
       }
     }
-    const weakEffects: EffectEnum[] = [];
-    const overtrainedEffects: EffectEnum[] = [];
+    const weakEffects: string[] = [];
+    const overtrainedEffects: string[] = [];
     for (const [e, count] of counter) {
       if (count < 0) {
         weakEffects.push(e);
@@ -166,15 +137,19 @@ export function DiagnosticsPanel({
                   const diagnosticColor =
                     status === 'optimal'
                       ? 'var(--success)'
-                      : status === 'overtrained'
+                      : status === 'overperforming'
                         ? 'var(--warning)'
-                        : 'var(--danger)';
+                        : status === 'weakness'
+                          ? 'var(--danger)'
+                          : 'var(--muted)';
                   const diagnosticLabel =
                     status === 'optimal'
                       ? 'Optimal'
-                      : status === 'overtrained'
+                      : status === 'overperforming'
                         ? 'Overtrained'
-                        : 'Weakness';
+                        : status === 'weakness'
+                          ? 'Weakness'
+                          : 'Stale';
                   const isHighlighted =
                     r.displayName === highlightedVariation ||
                     (activeEffect !== null && r.effects.includes(activeEffect));
@@ -196,7 +171,9 @@ export function DiagnosticsPanel({
                       <td className={styles.cellText}>
                         {[
                           ...r.effects.map(formatEffect),
-                          ...(r.addlWtOffset !== undefined ? [formatAddlWts(r)!] : []),
+                          ...(r.addlWtOffset !== undefined
+                            ? [formatAddlWtOffset(r.addlWtOffset.offsetLbs)]
+                            : []),
                         ].join(', ')}
                       </td>
                       <td className={styles.cellMono}>{r.averageIndex?.toFixed(1) ?? '-'}%</td>

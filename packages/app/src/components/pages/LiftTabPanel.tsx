@@ -71,14 +71,10 @@ export function LiftTabPanel({
         onVariationClick={handleVariationClick}
       />
       <DiagnosticsPanel
-        rows={filteredRows}
-        targetName={targetName}
         deadliftStance={deadliftStance}
         onDeadliftStanceChange={onDeadliftStanceChange}
         onVariationClick={handleVariationClick}
         highlightedVariation={selectedVariation}
-        variantFactor={stats.variantFactor}
-        addlWtOffset={stats.addlWtOffset}
       />
     </>
   );
