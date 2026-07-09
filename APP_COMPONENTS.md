@@ -4,7 +4,8 @@ Inventory of `packages/app/src` components/hooks that still depend on `@dyel/cor
 per the pipeline migration boundary rule (migrated components must call only
 `runPipeline`, never `@dyel/core`). Components already fully migrated (`TotalChart`,
 `SigmaTab`, `SessionBarChart`, `SigmaChart`, `DateLineChart`, `RepCalculator`,
-`StrengthScoreCalculator`, `DiagnosticsPanel`) are omitted here — see `HANDOFF.md` for that history.
+`StrengthScoreCalculator`, `DiagnosticsPanel`, `ConjugateCharts`) are omitted here — see
+`HANDOFF.md` for that history.
 
 **Migration gate: the pipeline and `@dyel/core` backends must produce _exactly_ matching
 output — not just "close" or within a soft-warn tolerance — before a component is switched
@@ -13,60 +14,40 @@ the swap itself; soft-warn is a temporary tracking mechanism for an open diverge
 investigation, not an accepted-tolerance policy (see `HANDOFF.md`). Promote to a hard-assert
 parity test first, then swap the component.
 
+**Exception (2026-07-08): `ConjugateCharts`** was swapped over with its residual soft-warn
+divergence (squat 0.0% / bench 0.7% / deadlift 0.4% `normalized`-composite, exactly matching
+`TotalChart`'s own already-accepted baseline) explicitly accepted as a maintainer decision,
+rather than promoted to a hard assert first — see `migration/ConjugateCharts.md`'s
+"ConjugateCharts swap-over" section for the full rationale. This is a one-off, explicitly
+approved exception to the gate above, not a change to the gate's general policy.
+
 ## Ready to migrate (pipeline-native replacement + parity test exist, component not yet switched over)
 
-These two have a working pipeline-native implementation and a parity test already in place,
+This one has a working pipeline-native implementation and a parity test already in place,
 but the component itself still calls `@dyel/core` at runtime — swapping it over is
-intentionally deferred pending exact parity (see gate above). Each carries a real, documented
-blocker beyond "wire up the hook" — see each entry below before attempting those.
-(`RepCalculator`/`StrengthScoreCalculator` were the two low-risk exceptions to that pattern —
-both have since been swapped over, see "Status" below.)
+intentionally deferred pending exact parity (see gate above), or an explicit exception
+decision like the one that unblocked `ConjugateCharts` (see above).
+(`RepCalculator`/`StrengthScoreCalculator`/`ConjugateCharts` were the low-risk/explicitly-
+approved exceptions to that pattern — all three have since been swapped over, see "Status"
+below.)
 
-- `components/conjugate/ConjugateCharts.tsx` — still calls
-  `useConjugateChartData` (`@dyel/core`'s `buildVariationChartData`
-  internally) and imports `LINE_COLORS`/`RepCalcStats` directly from
-  `@dyel/core`. This was previously migrated to `@dyel/pipeline` but was
-  **deliberately reverted** back to `@dyel/core` (see `46f267f` "Revert
-  ConjugateCharts from @dyel/pipeline back to @dyel/core" and
-  `HANDOFF.md`) after divergence was found between the two
-  implementations. Pipeline-native replacement still exists at
-  `packages/app/src/pipeline/conjugateChartSpecs.ts` (a `DatasetSpec[]`
-  builder with no other importer) and is exercised by the core-vs-pipeline
-  regression harness at `packages/app/src/pipeline/conjugateChartParity.test.ts`
-  — this parity test is what surfaced the divergence and is what any future
-  re-migration attempt needs to satisfy (exact match, not soft-warn) before the
-  component is swapped back over. A 2026-07-08 wire-verify-revert dry run confirmed the
-  swap itself is mechanically clean (full suite + build green with the swap live) but
-  the exact-match gate still isn't met (bench 7.0% / deadlift 0.4% `normalized`
-  divergence remain soft-warned) — see `migration/ConjugateCharts.md`'s "Wire-verify-
-  revert dry run" section. The call-site files were reverted after verification; still
-  on `@dyel/core` at runtime. Tracked: [#459](https://github.com/kasittig/dyel-visualizer/issues/459).
 - `components/charts/VariationRadarChart.tsx` — still calls
   `normalizeToBaseE1RM` and imports `ConjugateExercise` directly from
   `@dyel/core`. Pipeline-native replacement exists and is validated on the
   current fixture (no divergence observed) via `conjugateChartSpecs()` +
   `testUtils/diffVariationSnapshot.ts`'s `snapshotVariationsFromPipeline`/
   `snapshotVariationsFromLegacy`/`diffVariationSnapshots`, exercised by
-  `packages/app/src/pipeline/variationRadarChartParity.test.ts`. **Swap is
-  intentionally deferred**, for two reasons, not just one: (1) the underlying
-  per-variation normalization is the same logic `ConjugateCharts` was
-  **reverted away from** after its own parity test surfaced real divergence
-  (`46f267f`; see `HANDOFF.md`) — swapping this component now, before that
-  divergence is root-caused and closed to an exact match, risks silently
-  reintroducing the same bug into a second user-facing chart, even though this
-  test file's soft-warn logging hasn't (yet) surfaced divergence on the current
-  fixture; (2) ~~the pipeline snapshot only carries last-value e1RM numbers, not
-  the last-session detail (date, sets, reps, weight, RPE) the component's
-  tooltip currently renders~~ — **resolved 2026-07-08**: `packages/app/src/pipeline/lastSessionDetail.ts`
-  (new, committed) sources this detail pipeline-natively, plus a promoted
-  runtime util `packages/app/src/utils/variationSnapshot.ts` for the e1RM
-  snapshot reduction. A 2026-07-08 wire-verify-revert dry run confirmed the full
-  swap chain (`VariationRadarChart.tsx` + `LiftTabPanel.tsx`) works end-to-end
-  (full suite + both builds green with the swap live), then reverted the
-  call-site files — see `migration/VariationRadarChart.md`'s "Wire-verify-revert
-  dry run" section. Blocker (1) still isn't resolved to an exact match (see
-  `ConjugateCharts` entry above), so the swap remains deferred; do not attempt
-  it for real until that gate is met. Tracked: [#460](https://github.com/kasittig/dyel-visualizer/issues/460).
+  `packages/app/src/pipeline/variationRadarChartParity.test.ts`. `lastSessionDetail.ts`
+  (new, committed 2026-07-08) sources last-session tooltip detail pipeline-natively, plus a
+  promoted runtime util `packages/app/src/utils/variationSnapshot.ts` for the e1RM snapshot
+  reduction — the tooltip-data gap that used to block this swap is resolved. A 2026-07-08
+  wire-verify-revert dry run confirmed the full swap chain
+  (`VariationRadarChart.tsx` + `LiftTabPanel.tsx`) works end-to-end (full suite + both builds
+  green with the swap live), then reverted the call-site files — see
+  `migration/VariationRadarChart.md`'s "Wire-verify-revert dry run" section. Now that
+  `ConjugateCharts` has landed (see above), re-evaluate whether this swap can proceed the
+  same way (explicit residual-acceptance decision) rather than waiting on a hard-assert exact
+  match. Tracked: [#460](https://github.com/kasittig/dyel-visualizer/issues/460).
 
 ## Not yet migrated
 
@@ -77,9 +58,9 @@ Components that still call `@dyel/core` for real business logic:
 | `pages/LiftTabPanel.tsx`  | `filterByDateRange`, `DeadliftStancePreference`, `LiftType`                                     |
 | `pages/ValidatorPage.tsx` | `SheetValidationResult`, `ColumnInfo` (likely intentionally core-only — legacy sheet validator) |
 
-`LiftTabPanel.tsx` is blocked on `ConjugateCharts` and `VariationRadarChart` swapping over
-first (see `MIGRATION_PLAN.md`); its own `deadliftStance`-on-`AthleteContext` prerequisite
-is already complete.
+`LiftTabPanel.tsx` is blocked on `VariationRadarChart` swapping over first (see
+`MIGRATION_PLAN.md`) — `ConjugateCharts` has landed (2026-07-08); its own
+`deadliftStance`-on-`AthleteContext` prerequisite is already complete.
 `ValidatorPage.tsx` is blocked on a scope decision ("is this even in scope for migration?"),
 not sequencing — not yet raised.
 
@@ -100,21 +81,25 @@ not sequencing — not yet raised.
 
 ## Status
 
-`ConjugateCharts` and `VariationRadarChart` each have a pipeline-native replacement and a
-parity test (see "Ready to migrate" above), but the actual component swap-over is
-intentionally deferred for both pending an exact-match parity result (see gate at top) —
-the components still call `@dyel/core` at runtime. `ConjugateCharts` specifically was
-migrated once already and **reverted** after the parity test surfaced real divergence from
-legacy (see `HANDOFF.md`); any future attempt to swap it back over must close that
-divergence to an exact match first (tracked: [#459](https://github.com/kasittig/dyel-visualizer/issues/459)).
-`VariationRadarChart` shares the same underlying divergence risk (see its entry above); its
-separate tooltip-data gap was resolved 2026-07-08 (`lastSessionDetail.ts`), leaving the
-shared divergence as its only remaining blocker (tracked: [#460](https://github.com/kasittig/dyel-visualizer/issues/460)).
-Both `ConjugateCharts` and `VariationRadarChart` had a 2026-07-08 wire-verify-revert dry
-run confirming their swaps are mechanically ready (full test suites + builds green with
-each swap live), but the call-site files were reverted afterward per explicit direction —
-neither is a committed swap, both still call `@dyel/core` at runtime, and the exact-match
-gate above still isn't met for either.
+`VariationRadarChart` has a pipeline-native replacement and a parity test (see "Ready to
+migrate" above), but the actual component swap-over remains deferred — see its entry above
+for current status now that `ConjugateCharts` has landed (tracked:
+[#460](https://github.com/kasittig/dyel-visualizer/issues/460)).
+
+`ConjugateCharts` was swapped over onto `@dyel/pipeline` on 2026-07-08 (closes
+[#459](https://github.com/kasittig/dyel-visualizer/issues/459)), following an earlier
+migration attempt that was **deliberately reverted** (see `46f267f` "Revert ConjugateCharts
+from @dyel/pipeline back to @dyel/core" and `HANDOFF.md`) after divergence was found. This
+time, the residual soft-warn divergence (matching `TotalChart`'s own accepted baseline) was
+explicitly accepted rather than closed to an exact match — see `migration/ConjugateCharts.md`.
+As part of this swap, the "Competition variation" normalization-target dropdown (`targetName`/
+`onTargetChange` on `ConjugateCharts.tsx`) was **intentionally deprecated, not carried
+over** — per explicit product direction, the normalized composite now always tracks the
+model's fixed lift-family baseline rather than a user-selected target exercise. `useConjugateChartData.ts`
+(the old `@dyel/core`-backed hook) was deleted; its replacement is
+`hooks/pipeline/usePipelineConjugateChartData.ts`, plus a new pipeline-native best-set-lookup
+util (`pipeline/conjugateBestSet.ts`) that preserves the tooltip's sets/reps/weight/RPE detail.
+
 `RepCalculator`, `StrengthScoreCalculator`, and `DiagnosticsPanel` — previously the three
 components closest to done — have since been swapped over (2026-07-08): all three now
 consume their pipeline-native replacements at runtime with zero `@dyel/core` references,

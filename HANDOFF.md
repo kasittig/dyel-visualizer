@@ -4,152 +4,149 @@
 
 `migration-phase-1` implements `MIGRATION_PLAN.md`'s pipeline-native migration of
 `packages/app` off `@dyel/core` onto `@dyel/pipeline`. Task 13 (`DiagnosticsPanel`, issue
-#461) is complete (see git history / prior handoff commits). This session is a direct
-follow-up to the previous one, which root-caused issue #459 (`ConjugateCharts`)'s stale
-parity numbers to a test-harness bug in `conjugateChartParity.test.ts` (Open TODO #1 from
-that handoff) but landed no fix. **This session implemented and verified that fix** — see
-"Progress Overview" below. Working tree has two modified files at time of this handoff:
-`packages/app/src/pipeline/conjugateChartParity.test.ts` (the fix) and
-`migration/ConjugateCharts.md` (documentation of the fix and results); not yet committed.
+#461) is complete. The previous session fixed `conjugateChartParity.test.ts`'s test-harness
+bug (see "Prior Session Progress" below) and flagged an open gate-status policy question
+rather than deciding it. **This session got explicit direction to proceed anyway** ("continue
+w/task 14") and implemented the real `ConjugateCharts` swap-over (`MIGRATION_PLAN.md` item
+#1, issue #459) — not another dry-run-and-revert. Mid-implementation, a second, more
+significant gap was found (the "Competition variation" normalization-target dropdown has no
+pipeline-native equivalent) and flagged to the user before proceeding; **explicit direction
+was given to deprecate that dropdown entirely** rather than port it. Working tree has this
+session's changes committed or ready to commit — see "Files Touched" below.
 
-## Progress Overview (this session)
+## Progress Overview (this session — ConjugateCharts swap, closes #459)
 
-- **Fixed `conjugateChartParity.test.ts`'s test-harness bug** (Open TODO #1 from prior
-  handoff): its `beforeAll` was calling `buildSessionStats(pairs, ...)` with the raw,
-  unfiltered pair list instead of max-effort-only rows. Changed it to build `allSigmaPairs`
-  (max-effort rows from `tabRows.squat/bench/deadlift.maxEffort`), exactly mirroring
-  `totalChartParity.test.ts`'s existing correct pattern, and pass that into
-  `buildSessionStats` instead of raw `pairs`.
-- **Verified the fix resolves the divergence**: real (non-stale) `normalized`-composite
-  maxRelDiff numbers are now squat 0.0% / bench 0.7% / deadlift 0.4% — an **exact match**
-  with `totalChartParity.test.ts`'s own documented residual baseline (squat 0.0%, bench
-  0.7%, deadlift 0.4%, pushPull 0.2%, total 0.0%). This strongly confirms last session's
-  31.4%/21.5%/25.4% numbers were purely a test-harness artifact, not a real pipeline
-  regression, and that `627fddf`'s `fitInput` filter in `packages/pipeline/src/pipeline.ts`
-  (correctly left untouched per last session's Open TODO #2) was never the problem.
-- **Full suite verified green, no regressions**: `npm run build -w packages/pipeline && npm
-run build -w packages/app && npm test -w packages/pipeline && npm test -w packages/app` —
-  pipeline 12 files/144 tests, app 24 files/236 tests, all passing.
-- **Updated `migration/ConjugateCharts.md`** with a new "Test-harness bug fix (2026-07-08,
-  follow-up)" section documenting the root cause, fix, corrected numbers, and full
-  verification — completing Open TODO #4 from the prior handoff.
-- **Flagged, but did NOT decide, the gate-status question** (see that doc section's "Gate
-  status decision point"): per `APP_COMPONENTS.md`'s literal "exact match, not soft-warn"
-  migration gate wording, bench (0.7%) and deadlift (0.4%) are still technically non-zero,
-  so the gate is not met in the strictest reading — even though the residual now exactly
-  matches `TotalChart`'s own already-accepted baseline. This is presented as an open
-  decision for a maintainer (promote as accepted residual vs. continue treating as
-  gate-failing), not resolved unilaterally this session.
-
-## Prior Session Progress (for reference)
-
-- **Re-checked issues #459/#460**: both still OPEN, no new comments/narrowing.
-- **Found `migration/ConjugateCharts.md`'s documented parity numbers are stale.** The doc's
-  last entry (a "2026-07-08 wire-verify-revert dry run") cites `normalized`-composite
-  `maxRelDiff` of squat 0.0% / bench 7.0% / deadlift 0.4%, treated as an accepted
-  approximation ceiling. Re-running `conjugateChartParity.test.ts` against current `HEAD`
-  (`f9e1129`) shows squat 31.4% / bench 21.5% / deadlift 25.4% — squat is the tell, since it
-  has zero `addlWt` (chain/band) canonicals, proving the regression is unrelated to the
-  `addlWtOffset` story the docs tell.
-- **Bisected the regression** (via a general-purpose agent checking out each intervening
-  commit and re-running the test, restoring the repo afterward): introduced by commit
-  `627fddf` ("Close volume/speed-work filtering parity gap"), which added a pre-fit filter in
-  `packages/pipeline/src/pipeline.ts`:
-  ```ts
-  const fitInput = tagged.filter(
-    (r) => r.sets === undefined || r.sets === 1 || r.rpe !== undefined
-  );
-  const model = fitNormalizationModel(fitInput, { minSamples: MIN_SAMPLES }, athlete);
-  ```
-  This strips almost all records for canonicals logged mostly as multi-set/no-RPE volume work
-  (box squat, SSB squat, most deadlift stance/band variants), collapsing their fitted-sample
-  count and starving `variantFactor` for those canonicals.
-- **First fix attempt was WRONG — caught and reverted before landing.** Initial hypothesis:
-  legacy's `buildSessionStats`/`fitVariantFactor` fits on the _full unfiltered_ session list
-  (based on reading `conjugateChartParity.test.ts`'s own `beforeAll`, which calls
-  `buildSessionStats(pairs, ...)` with unfiltered `pairs`), so `627fddf`'s fit-input filter
-  was assumed to be a pipeline-side deviation from legacy. Reverting it (dropping the
-  `fitInput` filter, fitting on full `tagged`) did improve `conjugateChartParity` numbers
-  (squat 0.0%, bench 3.4%, deadlift 0.4%) but **regressed `totalChartParity` badly** (squat
-  0.0%→18.1%, bench 0.7%→21.5%, deadlift 0.4%→25.4%, total 0.0%→16.9%, pushPull 0.2%→16.7%).
-- **Root cause of the real discrepancy, found while investigating that regression**:
-  `conjugateChartParity.test.ts`'s `beforeAll` (line 39) calls
-  `buildSessionStats(pairs, ...)` with the **full, unfiltered** `pairs` — but this does NOT
-  match real production legacy behavior. Confirmed by tracing the actual component data flow:
-  - `App.tsx` line 365: `<LiftTabPanel rows={tabRows[liftTab].maxEffort} ...>`
-  - `LiftTabPanel.tsx` line 42: `useLastSessionStats(rows, effectiveBaselineNames)` →
-    `buildSessionStats(maxEffort-only rows, ...)`
-  - Production ConjugateCharts stats (and TotalChart/SigmaTab's, via the same
-    `tabRows[X].maxEffort`-sourced `sigmaPairs` in `App.tsx` line ~211) are **always fit on
-    max-effort-only sessions**, never the full unfiltered pair list.
-  - `totalChartParity.test.ts` correctly mirrors this (`allSigmaPairs` built from
-    `tabRows.squat.maxEffort` etc., lines 53-57/91).
-  - `conjugateChartParity.test.ts` does NOT mirror this — it's the outlier, calling
-    `buildSessionStats(pairs, ...)` with the raw unfiltered list. **This is a test-harness bug,
-    not a pipeline bug.** `627fddf`'s fit-input filter was actually correct (matches real
-    legacy production behavior); the revert was based on a false premise.
-- **Reverted the false-premise fix**: `git checkout -- packages/pipeline/src/pipeline.ts`,
-  confirmed clean (`git status --porcelain` empty) and pipeline package still green
-  (`npm run build -w packages/pipeline` clean, `npm test -w packages/pipeline` 12 files/144
-  tests passing) — i.e. back to the pre-session baseline, no regressions introduced.
+- **Implemented the real `ConjugateCharts` swap onto `@dyel/pipeline`**, superseding the
+  prior wire-verify-revert dry runs — this is a committed behavior change, not another
+  verify-then-revert pass.
+- **Found and flagged a scope gap before implementing**: `conjugateChartSpecs.ts`'s
+  `normalized` composite has no per-target parameter — it always normalizes to the model's
+  fixed lift-family baseline, while legacy's `buildVariationChartData` normalized to
+  whatever variation the user had selected via `ConjugateCharts`' "Competition variation"
+  dropdown. Silently swapping would have made that dropdown cosmetic (a real interactivity
+  regression, not just a numeric approximation) — flagged this explicitly rather than
+  guessing, since it changes real user-facing behavior.
+- **User decided: deprecate the dropdown entirely, don't port it.** Implemented accordingly
+  — `ConjugateCharts.tsx` no longer has a target-selection UI; the normalized composite
+  always tracks the model's fixed baseline, matching `TotalChart`/`SigmaTab`'s existing
+  pattern.
+- **Extended `@dyel/pipeline`**: `PipelineModel` now also exposes `tagged: TaggedSetRecord[]`
+  (needed for per-set detail — sets/reps/weight/rpe — that day-collapsed `Point`s don't
+  carry); `isSpeedWork` is now exported from the package's public `index.ts`.
+- **New pipeline-native util** `packages/app/src/pipeline/conjugateBestSet.ts`
+  (`buildBestSetByLabelAndDate`) — preserves the chart tooltip's best-set detail
+  (sets/reps/weight/RPE) that legacy's `bestSetByLabelAndDate` provided, without needing
+  `@dyel/core`.
+- **New hook** `packages/app/src/hooks/pipeline/usePipelineConjugateChartData.ts` replaces
+  the deleted `hooks/conjugate/useConjugateChartData.ts`; follows the same
+  `usePipelineModel()`/`usePipelineDatasets()` pattern as `usePipelineTotalChartData.ts` —
+  no per-component `runPipeline()` calls, per the shared-context architectural constraint.
+- **`ConjugateCharts.tsx`** now takes `{ liftType, dateRange, unit, highlightedVariation?,
+onVariationClick? }` instead of `{ rows, baselineNames, stats, targetName, onTargetChange }`;
+  imports `LINE_COLORS` from `@dyel/pipeline` instead of `@dyel/core`; zero `@dyel/core`
+  references remain in the component or its data hook.
+- **`LiftTabPanel.tsx`/`App.tsx`** updated: new `unit` prop threaded from `App.tsx`'s existing
+  `dataUnit`; `onTargetChange` removed entirely from `LiftTabPanel`'s props (dead once
+  `ConjugateCharts`' dropdown was gone — `VariationRadarChart` never called it).
+  `VariationRadarChart`'s own `targetName`/`stats`/`rows` plumbing is untouched (still
+  `@dyel/core`-backed, still issue #460's separate concern, not in scope this session).
+- **Full verification green**: `npm run build -w packages/pipeline && npm run build -w
+packages/app && npm test -w packages/pipeline && npm test -w packages/app` — pipeline 12
+  files/144 tests, app 25 files/244 tests (+1 file/+8 tests for the new
+  `conjugateBestSet.test.ts`), no regressions. Dev server left running on port 5173 for
+  manual visual verification per usual workflow.
+- **Docs updated**: `MIGRATION_PLAN.md`, `APP_COMPONENTS.md`, `TASK_LIST.md`, and
+  `migration/ConjugateCharts.md` (new "ConjugateCharts swap-over" section) all updated to
+  reflect the swap as DONE, including the dropdown-deprecation decision and its rationale.
 
 ## Decisions Made & Rationale (this session)
 
-- **Implemented the fix identified last session** rather than re-investigating from scratch
-  — last session's root-cause (test-harness bug, not pipeline bug) was trusted since it was
-  independently confirmed via production data-flow tracing, not just inference.
-- **Did not act on the "gate status" question** (whether 0.7%/0.4% residual should be
-  promoted to accepted-baseline status) — this is an architectural/policy call about what
-  `APP_COMPONENTS.md`'s gate means in practice, not a mechanical next-step, so it's left as
-  an explicit open decision rather than resolved unilaterally.
-- **Did not proceed to Tasks 14-16** (the actual `ConjugateCharts`/`VariationRadarChart`
-  swap-over) even though numbers now match `TotalChart`'s precedent — that swap is gated on
-  the still-undecided gate-status question above, so starting it now would be presumptuous.
+- **Proceeded past the prior session's open gate-status question** on explicit user
+  direction ("continue w/task 14") rather than waiting for further discussion — the residual
+  divergence (bench 0.7%/deadlift 0.4%, matching `TotalChart`'s own baseline) is now
+  explicitly accepted, not just flagged.
+- **Stopped and asked before shipping the dropdown-removal** rather than silently dropping
+  or silently keeping broken behavior — this was a genuine "decision only the user can make"
+  moment (auto-mode's guidance to ask when the shape of the task calls for it), since it's a
+  real user-facing feature change, not an internal implementation detail. Got explicit
+  direction to deprecate, then implemented that directly (no further back-and-forth needed).
+- **Did not touch `VariationRadarChart`/`LiftTabPanel` composition-root swaps** (issue #460,
+  `MIGRATION_PLAN.md` item #1 now) — those were explicitly out of scope for "Task 14"
+  specifically (`ConjugateCharts` only); `VariationRadarChart`'s own `targetName` feature is
+  a distinct radar-chart concept unaffected by today's dropdown deprecation.
+- **Removed `onTargetChange` from `LiftTabPanel`/`App.tsx` entirely** rather than leaving it
+  wired-but-unused — it had no remaining caller once `ConjugateCharts`' dropdown was gone,
+  and leaving dead plumbing around would violate the "avoid duplication/dead code"
+  convention. `tabState[tab].targetName` (the underlying persisted state field) was left
+  alone — it's harmless now-permanently-`undefined` state, and removing it would ripple into
+  the broader `TabState`/persisted-settings shape, which is out of scope here.
 
-## Prior Session's Decisions (for reference)
+## Prior Session Progress (for reference)
 
-- Did not implement any fix in that session — the investigation revealed the initial
-  diagnosis was wrong partway through, and correcting course (reverting) took priority over
-  landing a fix based on a false premise.
-- User confirmed reverting the erroneous `pipeline.ts` change rather than leaving it
-  uncommitted for a future session to clean up.
+- **Fixed `conjugateChartParity.test.ts`'s test-harness bug**: its `beforeAll` was calling
+  `buildSessionStats(pairs, ...)` with the raw, unfiltered pair list instead of
+  max-effort-only rows. Changed it to build `allSigmaPairs` (max-effort rows from
+  `tabRows.squat/bench/deadlift.maxEffort`), exactly mirroring `totalChartParity.test.ts`'s
+  existing correct pattern.
+- **Verified the fix resolved the divergence**: real `normalized`-composite maxRelDiff
+  numbers came back as squat 0.0% / bench 0.7% / deadlift 0.4% — an exact match with
+  `totalChartParity.test.ts`'s own documented residual baseline. This confirmed the
+  previous session's alarming 31.4%/21.5%/25.4% numbers were purely a test-harness artifact.
+- **Flagged, but did not decide, the gate-status question**: per `APP_COMPONENTS.md`'s
+  literal "exact match, not soft-warn" gate wording, bench/deadlift were still technically
+  non-zero, so whether to treat this as "gate met" (matching `TotalChart`'s precedent) or
+  "still open" was left as an explicit maintainer decision — resolved this session (see
+  above) by direct user instruction to proceed.
+- Committed as `a102a4d` ("Fix conjugateChartParity test-harness fit-input bug (issue #459)").
+
+## Prior-Prior Session Progress (for reference)
+
+- Root-caused issue #459's stale parity numbers via bisection + production data-flow
+  tracing; found and reverted a false-premise fix attempt on `packages/pipeline/src/pipeline.ts`'s
+  `fitInput` filter (that filter is correct as-is, matches production legacy behavior — do
+  not revert it). See git history (`b1b6a65`) for full detail if needed.
 
 ## Open TODOs
 
-1. **Decide the gate-status question** flagged in `migration/ConjugateCharts.md`'s "Test-
-   harness bug fix" section: now that `conjugateChartParity.test.ts` shows real numbers
-   (squat 0.0% / bench 0.7% / deadlift 0.4%) exactly matching `TotalChart`'s own accepted
-   residual baseline, should this be formally promoted (treated as the same
-   already-accepted approximation gap, clearing the way for Tasks 14-16), or does
-   `APP_COMPONENTS.md`'s literal "exact match, not soft-warn" gate wording still block the
-   swap since bench/deadlift are non-zero? This is a policy call for a maintainer, not
-   something to resolve mechanically.
-2. **Once decided**, either promote the relevant `conjugateChartParity.test.ts`/
-   `variationRadarChartParity.test.ts` assertions from soft-warn `console.warn` to hard
-   `expect`s (if promoting), or explicitly document further root-cause work needed to close
-   the residual to exactly 0% (if not promoting).
-3. **Resume Tasks 14-16** (`ConjugateCharts` swap, `VariationRadarChart` swap, `LiftTabPanel`
-   wiring) only after TODO #1 is decided — issues #459/#460 still open.
-4. **Commit the two currently-uncommitted changes** from this session
-   (`conjugateChartParity.test.ts` fix + `migration/ConjugateCharts.md` update) — not yet
-   committed as of this handoff; per repo convention, do this via a new commit (not
-   amending), and per `CLAUDE.md`'s git rules, on this existing feature branch (do NOT
-   create a new branch or commit to `main`).
+1. **Re-evaluate `VariationRadarChart` (issue #460, `MIGRATION_PLAN.md` item #1)** now that
+   `ConjugateCharts` has landed with its residual explicitly accepted: does the same
+   explicit-acceptance approach unblock this swap too, rather than waiting on a hard-assert
+   exact match? This is the natural next migration step, but is a policy question (same shape
+   as last session's gate-status question) worth a quick confirmation before implementing,
+   not a purely mechanical next-step.
+2. **`LiftTabPanel.md` (`MIGRATION_PLAN.md` item #2)** — composition-root swap, blocked on
+   #1 above landing first.
+3. Consider whether `TabState.targetName` (the persisted-settings field that used to be set
+   by `ConjugateCharts`' now-removed dropdown) should be removed from the `TabState` type
+   entirely, or left as permanently-unused-but-harmless state — not resolved this session,
+   flagged as a minor cleanup opportunity only.
+4. `migration/ValidatorPage.md` — still blocked on an unrelated scope decision, not
+   sequencing; unchanged from prior sessions.
 
-## Files Touched
+## Files Touched (this session)
 
-- `packages/app/src/pipeline/conjugateChartParity.test.ts` — `beforeAll` now builds
-  `allSigmaPairs` (max-effort-only rows) and passes that to `buildSessionStats`, instead of
-  the raw unfiltered `pairs` list. Fixes the test-harness bug identified last session.
-- `migration/ConjugateCharts.md` — new "Test-harness bug fix (2026-07-08, follow-up)"
-  section documenting root cause, fix, corrected numbers, full verification, and the open
-  gate-status decision point.
-
-Both changes are currently **uncommitted** (staged/unstaged in the working tree) — see Open
-TODO #4 above.
+- `packages/pipeline/src/pipeline.ts` — `PipelineModel` now exposes `tagged`.
+- `packages/pipeline/src/index.ts` — exports `isSpeedWork`.
+- `packages/app/src/pipeline/conjugateBestSet.ts` (new) + `conjugateBestSet.test.ts` (new).
+- `packages/app/src/hooks/pipeline/usePipelineConjugateChartData.ts` (new).
+- `packages/app/src/hooks/conjugate/useConjugateChartData.ts` (deleted).
+- `packages/app/src/hooks/conjugate/index.ts`, `CLAUDE.md` — barrel/doc updates for the
+  deletion above.
+- `packages/app/src/hooks/pipeline/CLAUDE.md` — new hook entry.
+- `packages/app/src/components/conjugate/ConjugateCharts.tsx` — swapped onto pipeline,
+  dropdown removed.
+- `packages/app/src/components/conjugate/ConjugateCharts.module.css` — removed now-unused
+  `.targetRow`/`.targetSelect` rules.
+- `packages/app/src/components/conjugate/CLAUDE.md` — doc update.
+- `packages/app/src/components/pages/LiftTabPanel.tsx`, `packages/app/src/App.tsx` — new
+  props wiring, `onTargetChange` removed.
+- `MIGRATION_PLAN.md`, `APP_COMPONENTS.md`, `TASK_LIST.md`, `migration/ConjugateCharts.md` —
+  docs updated to reflect the swap as done.
+- `HANDOFF.md` — this update.
 
 ## Suggested Next Skills
 
-- No specific skill — next session should start by getting a maintainer decision on Open
-  TODO #1 above (the gate-status question), then commit this session's two pending file
-  changes (Open TODO #4) before resuming Tasks 14-16 work on issues #459/#460.
+- No specific skill — next session should start by confirming Open TODO #1 (whether
+  `VariationRadarChart`'s residual divergence can be explicitly accepted the same way
+  `ConjugateCharts`' was), then proceed with that swap and `LiftTabPanel` composition-root
+  wiring if so.

@@ -1,45 +1,36 @@
 import { useCallback } from 'react';
+import type { DateRange } from 'react-day-picker';
 import { Line, Tooltip } from 'recharts';
-import { LINE_COLORS } from '@dyel/core';
-import type { RepCalcStats } from '@dyel/core';
-import type { ConjugateDataPair } from '../../hooks/conjugate/useConjugateData';
+import { LINE_COLORS } from '@dyel/pipeline';
 import {
-  useConjugateChartData,
+  usePipelineConjugateChartData,
   NORMALIZED_KEY,
-  NORMALIZED_COLOR,
-  NORMALIZED_LABEL,
-} from '../../hooks/conjugate/useConjugateChartData';
+} from '../../hooks/pipeline/usePipelineConjugateChartData';
 import { DateLineChart, ChartEmpty } from '../charts/DateLineChart';
 import { ChartTooltip } from '../charts/TooltipCard';
 import styles from './ConjugateCharts.module.css';
 
+const NORMALIZED_COLOR = 'var(--chart-blue)';
+const NORMALIZED_LABEL = 'Normalized e1RM';
+
 export function ConjugateCharts({
-  rows,
-  baselineNames = {},
-  stats,
-  targetName,
-  onTargetChange,
+  liftType,
+  dateRange,
+  unit,
   highlightedVariation = null,
   onVariationClick,
 }: {
-  rows: ConjugateDataPair[];
-  baselineNames?: Partial<Record<string, string>>;
-  stats: RepCalcStats;
-  targetName: string | null;
-  onTargetChange: (name: string) => void;
+  liftType: string;
+  dateRange: DateRange;
+  unit: 'lbs' | 'kg';
   highlightedVariation?: string | null;
   onVariationClick?: (variation: string) => void;
 }) {
-  const unit = rows[0]?.[1].unit ?? 'lbs';
-
-  const {
-    variations,
-    data,
-    showNormalized,
-    bestSetByLabelAndDate,
-    baselineExercise,
-    effectiveTargetName,
-  } = useConjugateChartData(rows, baselineNames, stats, targetName);
+  const { variations, data, showNormalized, bestSetByLabelAndDate } = usePipelineConjugateChartData(
+    liftType,
+    dateRange,
+    unit
+  );
 
   const tooltipContent = useCallback(
     ({
@@ -90,24 +81,6 @@ export function ConjugateCharts({
   return (
     <div className={styles.card}>
       <span className={styles.sectionLabel}>e1RM History</span>
-      {baselineExercise && (
-        <div className={styles.targetRow}>
-          <label>
-            Competition variation:{' '}
-            <select
-              value={effectiveTargetName ?? ''}
-              onChange={(e) => onTargetChange(e.target.value)}
-              className={styles.targetSelect}
-            >
-              {variations.map((v) => (
-                <option key={v} value={v}>
-                  {v}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-      )}
       <DateLineChart data={data} unit={unit}>
         <Tooltip content={tooltipContent} />
         {showNormalized && (

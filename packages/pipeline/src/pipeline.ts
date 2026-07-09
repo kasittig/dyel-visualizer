@@ -37,6 +37,10 @@ export interface PipelineModel {
   pointsByDeriver: Map<string, Point[]>;
   pointsByLabelByDeriver: Map<string, Point[]>;
   pointsByDeriverAdjusted: Map<string, Point[]>;
+  // Tagged, canonicalized set records prior to any deriver aggregation -- exposed for
+  // callers that need per-set detail (sets/reps/weight/rpe) rather than a day-collapsed
+  // Point, e.g. building a per-variation/per-date "best set" lookup for chart tooltips.
+  tagged: TaggedSetRecord[];
   athlete: AthleteContext;
 }
 
@@ -205,6 +209,7 @@ export function runPipelineModel(
     pointsByDeriver,
     pointsByLabelByDeriver,
     pointsByDeriverAdjusted,
+    tagged,
     athlete,
   };
 }

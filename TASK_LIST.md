@@ -1,15 +1,27 @@
 # TASK_LIST — Swap remaining chart components onto `@dyel/pipeline`'s `ChartPoint`
 
-## Status: Tasks 1–8 done (2026-07-08); Task 9 (optional/low priority) still open
+## Status: Phase A superseded by a real swap (2026-07-08); Phase C dry run stands; Task 9 (optional/low priority) still open
 
-The wire-verify-revert dry run described below was executed for both `ConjugateCharts`
-(Phase A) and `VariationRadarChart` (Phase C), the net-new infra from Phase B landed and
-stays committed, and Phase D's docs cleanup was completed — see the "Wire-verify-revert dry
-run (2026-07-08)" sections in `migration/ConjugateCharts.md` and
+**Update (2026-07-08, follow-up session):** Phase A's `ConjugateCharts` swap, originally
+wired-verified-then-reverted per the plan below, was **actually committed** in a later pass
+— not another dry run. See `migration/ConjugateCharts.md`'s "ConjugateCharts swap-over"
+section for the real implementation (closes #459). That session also deprecated the
+"Competition variation" normalization-target dropdown entirely (per explicit direction)
+rather than porting it, since `conjugateChartSpecs`' composite normalization has no
+per-target parameter. `VariationRadarChart` (Phase C) is unaffected by this and remains at
+the dry-run-then-revert stage described below — still gated on #460, now worth
+re-evaluating given `ConjugateCharts` landed with its residual explicitly accepted rather
+than closed to an exact match.
+
+The wire-verify-revert dry run described below was originally executed for both
+`ConjugateCharts` (Phase A) and `VariationRadarChart` (Phase C), the net-new infra from
+Phase B landed and stays committed, and Phase D's docs cleanup was completed — see the
+"Wire-verify-revert dry run (2026-07-08)" sections in `migration/ConjugateCharts.md` and
 `migration/VariationRadarChart.md`, and the current state of `MIGRATION_PLAN.md`/
 `APP_COMPONENTS.md`. Per the plan below, the four call-site files were reverted after
-verification — this was **not** a committed component swap-over; both components still call
-`@dyel/core` at runtime, gated on issues #459/#460 as before. Only Task 9 (cosmetic, not
+verification at the time — Phase A has since been superseded by the real swap noted above;
+`VariationRadarChart` still calls `@dyel/core` at runtime, gated on issue #460. Only Task 9
+(cosmetic, not
 blocking) remains undone.
 
 ## IMPORTANT — wire it all up, verify, then revert the live flip before committing

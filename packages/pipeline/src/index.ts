@@ -6,7 +6,7 @@ export { freeformParser, parseFreeformText } from './parse/freeform/parser';
 export type { TaggedSetRecord } from './tag/tag';
 export { tagRecords, resolveCanonicalNames, matches } from './tag/tag';
 export type { SeriesDeriver } from './derive/derivers';
-export { derivers } from './derive/derivers';
+export { derivers, isSpeedWork } from './derive/derivers';
 export { calcE1RM, invertE1RM } from './derive/e1rm';
 export type { NormalizationModel } from './derive/normalize';
 export {

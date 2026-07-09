@@ -696,3 +696,71 @@ accept the approximation gap as acceptable.
 
 Do not treat this as a recommendation one way or another — both options are
 factually defensible. State this explicitly in any swap-over decision doc.
+
+## ConjugateCharts swap-over (2026-07-08, closes #459)
+
+**Decision made**: per explicit direction, option (a) above was chosen — the 0.7%/0.4%
+residual is accepted as the same already-precedented divergence `TotalChart` carries, and
+the actual component swap-over (not another dry-run-and-revert) was implemented and
+committed this session.
+
+### Scope change: the "Competition variation" dropdown was deprecated, not ported
+
+While wiring the real swap, a second, more significant gap was found and flagged separately
+from the numeric-residual question above: `conjugateChartSpecs.ts`'s `normalized` composite
+dataset has no per-target parameter — it always normalizes via `normalizeE1rm(canonical,
+e1rm, model)`, i.e. to the model's fixed lift-family baseline. Legacy's
+`buildVariationChartData`, by contrast, normalized every point to whatever
+`effectiveTargetName` the user currently had selected via `ConjugateCharts`' "Competition
+variation" dropdown — which could be any variation, not just the baseline. Swapping without
+addressing this would have made the dropdown cosmetic (it would still change which line is
+highlighted, but silently stop affecting what the normalized line is normalized to) — a real
+interactivity regression, not just a numeric approximation.
+
+**Per explicit direction, this feature was deprecated rather than ported**: `ConjugateCharts`
+no longer has a target-selection dropdown at all. The normalized composite always tracks the
+model's fixed lift-family baseline, matching every other pipeline-native normalized series
+(`TotalChart`, `SigmaTab`). `VariationRadarChart`'s own separate `targetName` prop/feature
+(a different, radar-chart-specific concept) is untouched by this — it's `VariationRadarChart`'s
+concern (#460), not `ConjugateCharts`'.
+
+### Implementation
+
+- **`packages/pipeline/src/pipeline.ts`**: `PipelineModel` now also exposes `tagged:
+TaggedSetRecord[]` (the tagged, canonicalized records prior to deriver aggregation) —
+  needed by callers that want per-set detail (sets/reps/weight/rpe), not just a
+  day-collapsed `Point`. `isSpeedWork` (already defined in `derive/derivers.ts`) is now also
+  exported from the package's public `index.ts`.
+- **`packages/app/src/pipeline/conjugateBestSet.ts`** (new): `buildBestSetByLabelAndDate(tagged,
+liftType)` — a pipeline-native equivalent of legacy's `bestSetByLabelAndDate` (the
+  highest-e1RM non-speed-work set logged per variation per date, used to enrich the chart
+  tooltip). Mirrors the `e1rm-max-effort` deriver's speed-work exclusion so a tooltip never
+  shows detail for a date the chart itself excludes.
+- **`packages/app/src/hooks/pipeline/usePipelineConjugateChartData.ts`** (new): replaces
+  `hooks/conjugate/useConjugateChartData.ts` (deleted). Consumes `usePipelineModel()` +
+  `usePipelineDatasets(conjugateChartSpecs(liftType), ui)` (never calls `runPipeline`
+  directly, per the shared-context architectural constraint in `MIGRATION_PLAN.md`), merges
+  the `variations`/`normalized` datasets into one combined `ChartPoint[]`, and builds the
+  best-set lookup from `model.tagged`.
+- **`packages/app/src/components/conjugate/ConjugateCharts.tsx`**: now takes
+  `{ liftType, dateRange, unit, highlightedVariation?, onVariationClick? }` instead of
+  `{ rows, baselineNames, stats, targetName, onTargetChange, ... }`. Imports `LINE_COLORS`
+  from `@dyel/pipeline` instead of `@dyel/core`; no more `RepCalcStats`/`ConjugateDataPair`
+  imports. The "Competition variation" `<select>` and its `.targetRow`/`.targetSelect` CSS
+  were removed entirely.
+- **`packages/app/src/components/pages/LiftTabPanel.tsx`** / **`App.tsx`**: updated to pass
+  `liftType`/`dateRange`/`unit` to `ConjugateCharts` (new `unit` prop threaded from `App.tsx`'s
+  existing `dataUnit`). `onTargetChange` was removed from `LiftTabPanel`'s props entirely
+  (it had no remaining caller once `ConjugateCharts`' dropdown was gone — `VariationRadarChart`
+  never called it). `VariationRadarChart`'s own `targetName`/`stats`/`rows` plumbing is
+  untouched (still `@dyel/core`-backed, still #460's concern).
+
+### Verification
+
+`npm run build -w packages/pipeline && npm run build -w packages/app && npm test -w
+packages/pipeline && npm test -w packages/app` — all green (pipeline: 12 files/144 tests;
+app: 25 files/244 tests, +1 file/+8 tests for `conjugateBestSet.test.ts`). Manual dev-server
+smoke check left running for visual confirmation per usual workflow.
+
+**Status: DONE.** `ConjugateCharts.tsx` and `usePipelineConjugateChartData.ts` call only
+`@dyel/pipeline`; zero `@dyel/core` references remain in either file. This closes #459.

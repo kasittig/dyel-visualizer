@@ -16,22 +16,22 @@ export function LiftTabPanel({
   liftType,
   targetName,
   baselineName,
-  onTargetChange,
   deadliftStance,
   onDeadliftStanceChange,
   dateRange,
   onDateRangeChange,
+  unit,
 }: {
   rows: ConjugateDataPair[];
   effectiveBaselineNames: Partial<Record<LiftType, string>>;
   liftType: LiftType;
   targetName: string;
   baselineName?: string;
-  onTargetChange: (name: string | null) => void;
   deadliftStance: DeadliftStancePreference;
   onDeadliftStanceChange: (s: DeadliftStancePreference) => void;
   dateRange: DateRange;
   onDateRangeChange: (range: DateRange) => void;
+  unit: 'lbs' | 'kg';
 }) {
   const [selectedVariation, setSelectedVariation] = useState<string | null>(null);
 
@@ -54,11 +54,9 @@ export function LiftTabPanel({
         trailing={<EditableDateChip dateRange={dateRange} onDateRangeChange={onDateRangeChange} />}
       >
         <ConjugateCharts
-          rows={filteredRows}
-          baselineNames={effectiveBaselineNames}
-          stats={stats}
-          targetName={targetName}
-          onTargetChange={onTargetChange}
+          liftType={liftType}
+          dateRange={dateRange}
+          unit={unit}
           highlightedVariation={selectedVariation}
           onVariationClick={handleVariationClick}
         />
