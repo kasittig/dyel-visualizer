@@ -12,7 +12,10 @@ see `HANDOFF.md`. `DiagnosticsPanel` is also **complete** — component was swap
 #1 below) is also complete** (2026-07-08, closes #459) — see `migration/ConjugateCharts.md`'s
 "ConjugateCharts swap-over" section. **`VariationRadarChart` (item #1 below) is also
 complete** (2026-07-09, closes #460) — see `migration/VariationRadarChart.md`'s
-"VariationRadarChart swap-over" section.
+"VariationRadarChart swap-over" section. **`LiftTabPanel` (item #2 below) is also complete**
+(2026-07-09) — see `migration/LiftTabPanel.md`'s "LiftTabPanel swap-over" section.
+**Phase 1 migration plan is complete** — all items have landed, and this document is retained
+for historical reference only.
 
 **Architectural constraint:** All remaining component migrations below must use the new shared-context infrastructure introduced in Phase 1 — `PipelineProvider`, `usePipelineModel()`, and `usePipelineDatasets()` from `packages/app/src/context/PipelineContext.tsx` and `packages/app/src/hooks/pipeline/usePipelineDatasets.ts` — rather than adding per-component `runPipeline()` calls. This centralized approach is now the established pattern for all component migrations.
 
@@ -27,9 +30,11 @@ complete** (2026-07-09, closes #460) — see `migration/VariationRadarChart.md`'
    `migration/VariationRadarChart.md`'s "VariationRadarChart swap-over" section for full
    detail.
 
-2. **`migration/LiftTabPanel.md`** — composition root, last remaining item. No longer
-   blocked — #1 (`VariationRadarChart`) has landed, and the `deadliftStance`-on-
-   `AthleteContext` prerequisite (`HANDOFF.md` Part A) was already complete.
+2. ~~**`migration/LiftTabPanel.md`**~~ — **complete** (2026-07-09). Composition root
+   migration: `liftType` prop widened to plain `string`, `DeadliftStancePreference` type-only
+   import kept per `DiagnosticsPanel` precedent. Pure composition (no data transformation), so
+   no parity test needed. See `migration/LiftTabPanel.md`'s "LiftTabPanel swap-over" section
+   for full detail.
 
 ## Off to the side, any time
 

@@ -4,8 +4,8 @@ Inventory of `packages/app/src` components/hooks that still depend on `@dyel/cor
 per the pipeline migration boundary rule (migrated components must call only
 `runPipeline`, never `@dyel/core`). Components already fully migrated (`TotalChart`,
 `SigmaTab`, `SessionBarChart`, `SigmaChart`, `DateLineChart`, `RepCalculator`,
-`StrengthScoreCalculator`, `DiagnosticsPanel`, `ConjugateCharts`, `VariationRadarChart`) are
-omitted here — see `HANDOFF.md` for that history.
+`StrengthScoreCalculator`, `DiagnosticsPanel`, `ConjugateCharts`, `VariationRadarChart`,
+`LiftTabPanel`) are omitted here — see `HANDOFF.md` for that history.
 
 **Migration gate: the pipeline and `@dyel/core` backends must produce _exactly_ matching
 output — not just "close" or within a soft-warn tolerance — before a component is switched
@@ -35,10 +35,6 @@ Components that still call `@dyel/core` for real business logic:
 | ------------------------- | ----------------------------------------------------------------------------------------------- |
 | `pages/ValidatorPage.tsx` | `SheetValidationResult`, `ColumnInfo` (likely intentionally core-only — legacy sheet validator) |
 
-`pages/LiftTabPanel.tsx` no longer appears here — after `VariationRadarChart`'s swap removed
-its `rows`/`stats`/`baselineName`/`filterByDateRange` plumbing (dead once `VariationRadarChart`
-stopped needing it), the only remaining `@dyel/core` references are the type-only imports
-`DeadliftStancePreference`/`LiftType`, not runtime business logic.
 `ValidatorPage.tsx` is blocked on a scope decision ("is this even in scope for migration?"),
 not sequencing — not yet raised.
 
@@ -102,5 +98,13 @@ diagnostics instead of date-range-filtered (pipeline's shared model has no date-
 pipeline has no raw-equipment-tag list on `VariantAssessment`. A new `'stale'` status was
 added to distinguish variants past the staleness threshold (`staleDays` gate in `diagnose()`)
 and is rendered distinctly (muted, "Stale" label) so users are aware of recency.
+
+`LiftTabPanel` (the composition root, page tab for squat/bench/deadlift) was finalized on
+2026-07-09 as a trivial completion: its `liftType` prop was widened to plain `string` (matching
+its children `ConjugateCharts`/`VariationRadarChart`), and the `DeadliftStancePreference`
+type-only import was kept per the precedent already established by `DiagnosticsPanel`. The only
+remaining `@dyel/core` reference is that single type-only import; no runtime business logic
+remains. No parity test was needed since `LiftTabPanel` does pure composition/prop-passing
+with no data transformation.
 
 See `MIGRATION_PLAN.md` for full sequencing across the remaining items.

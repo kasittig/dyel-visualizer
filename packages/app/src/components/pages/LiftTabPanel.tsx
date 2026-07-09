@@ -5,7 +5,7 @@ import { VariationRadarChart } from '../charts/VariationRadarChart';
 import { CollapsibleSection } from '../shared/CollapsibleSection';
 import { EditableDateChip } from '../shared/EditableDateChip';
 import type { DateRange } from 'react-day-picker';
-import type { DeadliftStancePreference, LiftType } from '@dyel/core';
+import type { DeadliftStancePreference } from '@dyel/core';
 
 export function LiftTabPanel({
   liftType,
@@ -16,7 +16,7 @@ export function LiftTabPanel({
   onDateRangeChange,
   unit,
 }: {
-  liftType: LiftType;
+  liftType: string;
   targetName: string;
   deadliftStance: DeadliftStancePreference;
   onDeadliftStanceChange: (s: DeadliftStancePreference) => void;
