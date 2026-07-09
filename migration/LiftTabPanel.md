@@ -11,14 +11,14 @@ migrate `LiftTabPanel` off `@dyel/core` and add an analogous parity test.
 own migration is blocked on its children's migrations landing first
 (`migration/ConjugateCharts.md`, `migration/VariationRadarChart.md`,
 `migration/DiagnosticsPanel.md`). It also directly overlaps with the in-flight
-`deadliftStance` athlete-preference work tracked in `SPECIFICATIONS.md` (Part A) — the
+`deadliftStance` athlete-preference work tracked in `HANDOFF.md` (Part A) — the
 `DeadliftStancePreference` type this component depends on today should become
 `AthleteContext.deadliftStance` on the pipeline side, per that plan.
 
 ## Plan
 
 1. Sequence this after `ConjugateCharts`, `VariationRadarChart`, and `DiagnosticsPanel`
-   migrations land, and after `SPECIFICATIONS.md` Part A (`deadliftStance` on
+   migrations land, and after `HANDOFF.md` Part A (`deadliftStance` on
    `AthleteContext`) is merged — both are hard dependencies, not just convenience
    ordering.
 2. Migrate `filterByDateRange` usage to operate on pipeline's already-normalized
