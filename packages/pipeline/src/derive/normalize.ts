@@ -15,7 +15,7 @@ export interface NormalizationModel {
 
 interface GridPoint {
   t: number;
-  e1rm: number;
+  v: number;
 }
 
 const mean = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
@@ -25,7 +25,7 @@ const buildSessionGrid = (records: TaggedSetRecord[]): GridPoint[] => {
   records.forEach((r) =>
     map.set(r.date, Math.max(map.get(r.date) || 0, calcE1RM(r.weight, r.reps, r.rpe)))
   );
-  return [...map.entries()].map(([t, e1rm]) => ({ t, e1rm })).sort((a, b) => a.t - b.t);
+  return [...map.entries()].map(([t, v]) => ({ t, v })).sort((a, b) => a.t - b.t);
 };
 
 const interpolateGrid = (grid: GridPoint[], target: number): number | null => {
@@ -33,20 +33,20 @@ const interpolateGrid = (grid: GridPoint[], target: number): number | null => {
     return null;
   }
   if (grid.length === 1) {
-    return grid[0].e1rm;
+    return grid[0].v;
   }
   const edgeRate = (i: number, j: number) => {
     const dt = grid[j].t - grid[i].t;
-    return dt ? (grid[j].e1rm - grid[i].e1rm) / dt : 0;
+    return dt ? (grid[j].v - grid[i].v) / dt : 0;
   };
 
   const first = grid[0],
     last = grid[grid.length - 1];
   if (target <= first.t) {
-    return Math.max(0, first.e1rm + edgeRate(0, 1) * (target - first.t));
+    return Math.max(0, first.v + edgeRate(0, 1) * (target - first.t));
   }
   if (target >= last.t) {
-    return Math.max(0, last.e1rm + edgeRate(grid.length - 2, grid.length - 1) * (target - last.t));
+    return Math.max(0, last.v + edgeRate(grid.length - 2, grid.length - 1) * (target - last.t));
   }
 
   let lo = 0,
@@ -62,7 +62,7 @@ const interpolateGrid = (grid: GridPoint[], target: number): number | null => {
   const a = grid[lo],
     b = grid[hi],
     dt = b.t - a.t;
-  return dt ? a.e1rm + (b.e1rm - a.e1rm) * ((target - a.t) / dt) : a.e1rm;
+  return dt ? a.v + (b.v - a.v) * ((target - a.t) / dt) : a.v;
 };
 
 const fitMetric = (
@@ -266,4 +266,31 @@ export const projectToVariant = (
 ) => {
   const f = getFactor(targetCan, model);
   return f ? Math.max(0, baseE1rmKg * f) : null;
+};
+
+/**
+ * Builds a grid from already-derived points (e.g., from Point[] emitted by the e1rm deriver).
+ * Dedupes by date taking the max v for that date, then sorts by t ascending.
+ * Mirrors buildSessionGrid's per-date dedupe/sort logic but accepts generic {t,v} points
+ * instead of raw TaggedSetRecord[].
+ */
+export const buildGridFromPoints = (points: { t: number; v: number }[]): GridPoint[] => {
+  const map = new Map<number, number>();
+  points.forEach((p) => map.set(p.t, Math.max(map.get(p.t) || 0, p.v)));
+  return [...map.entries()].map(([t, v]) => ({ t, v })).sort((a, b) => a.t - b.t);
+};
+
+/**
+ * Projects an estimated value to a target date via grid interpolation/extrapolation.
+ * Pure port of legacy @dyel/core's predictE1RM(sessions, targetDate), generalized to
+ * accept {t,v} points instead of TrainingSession[].
+ * Same edge-extrapolation behavior: single-point grid returns that point's value regardless
+ * of target; target before/after data range extrapolates linearly using the two nearest edge
+ * points' rate; otherwise interpolates between the two bracketing points.
+ */
+export const projectE1RMToDate = (
+  points: { t: number; v: number }[],
+  targetDate: number
+): number | null => {
+  return interpolateGrid(buildGridFromPoints(points), targetDate);
 };

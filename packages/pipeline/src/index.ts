@@ -32,6 +32,8 @@ export {
   normalizeE1rm,
   projectToVariant,
   offsetAdjustRecords,
+  buildGridFromPoints,
+  projectE1RMToDate,
 } from './derive/normalize';
 export type { AthleteContext, LiftMetrics } from './derive/athlete';
 export { wilks, dots, computeStrengthScores } from './derive/athlete';

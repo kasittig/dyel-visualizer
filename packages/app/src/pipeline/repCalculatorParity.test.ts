@@ -92,14 +92,23 @@ describe('RepCalculator parity: legacy vs pipeline', () => {
     };
 
     it('returns null on missing inputs or variant validation failures', () => {
+      const today = new Date('2024-01-01');
       expect(
-        findBestE1RMFromPipeline('competition squat', 'competition squat', makePoints(), model, '')
+        findBestE1RMFromPipeline(
+          'competition squat',
+          'competition squat',
+          makePoints(),
+          today,
+          model,
+          ''
+        )
       ).toBeNull();
       expect(
         findBestE1RMFromPipeline(
           'competition squat',
           'competition squat',
           [],
+          today,
           model,
           'Baseline Squat'
         )
@@ -109,6 +118,7 @@ describe('RepCalculator parity: legacy vs pipeline', () => {
           'unknown variant squat',
           'competition squat',
           makePoints(),
+          today,
           model,
           'Competition Squat'
         )
@@ -123,6 +133,7 @@ describe('RepCalculator parity: legacy vs pipeline', () => {
           'bad squat',
           'competition squat',
           makePoints(),
+          today,
           badFactorModel,
           'Competition Squat'
         )
@@ -135,19 +146,24 @@ describe('RepCalculator parity: legacy vs pipeline', () => {
         { t: 1704067200000, v: 250, series: 'comp', tags: new Set<string>(['lift:squat']) },
         { t: 1704153600000, v: 300, series: 'comp', tags: new Set<string>(['lift:squat']) },
       ];
+      // For multi-point grid, use today at the last point's date to preserve expected value unchanged
+      const todayExact = new Date(1704153600000);
       const exact = findBestE1RMFromPipeline(
         'competition squat',
         'competition squat',
         exactPts,
+        todayExact,
         model,
         'Competition Squat'
       );
       expect(exact).toMatchObject({ e1rm: 300, method: 'exact', sourceName: 'Competition Squat' });
 
+      const todayFactored = new Date('2024-01-01');
       const factored = findBestE1RMFromPipeline(
         'high bar squat',
         'competition squat',
         makePoints(),
+        todayFactored,
         model,
         'Competition Squat'
       );
@@ -162,19 +178,23 @@ describe('RepCalculator parity: legacy vs pipeline', () => {
         },
         addlWtOffset: { 'competition squat chains': { offsetKg: 20, n: 4 } },
       };
+      const todayOffset = new Date('2024-01-01');
       const offsetRes = findBestE1RMFromPipeline(
         'competition squat chains',
         'competition squat',
         makePoints(),
+        todayOffset,
         offsetModel,
         'Competition Squat'
       );
       expect(offsetRes?.e1rm).toBeCloseTo(300 - 20, 1);
 
+      const todayDated = new Date('2024-01-01');
       const dated = findBestE1RMFromPipeline(
         'competition squat',
         'competition squat',
         makePoints(300, 1704067200000),
+        todayDated,
         model,
         'Competition Squat'
       );
@@ -185,10 +205,12 @@ describe('RepCalculator parity: legacy vs pipeline', () => {
         variantFactor: { ...model.variantFactor, 'light squat': { factor: 1.0, n: 2 } },
         addlWtOffset: { 'light squat': { offsetKg: 350, n: 2 } },
       };
+      const todayClamp = new Date('2024-01-01');
       const clamped = findBestE1RMFromPipeline(
         'light squat',
         'competition squat',
         makePoints(),
+        todayClamp,
         clampModel,
         'Competition Squat'
       );
@@ -236,6 +258,7 @@ describe('RepCalculator parity: legacy vs pipeline', () => {
           liftType: 'squat',
           targetCanonical: 'squat',
           baselineName: 'Comp Squat',
+          today: new Date('2024-01-01'),
           model: mkModel(),
           e1rmPoints: [pt('squat', 300)],
         },
@@ -247,6 +270,7 @@ describe('RepCalculator parity: legacy vs pipeline', () => {
           liftType: 'squat',
           targetCanonical: 'squat',
           baselineName: 'Comp Squat',
+          today: new Date('2024-01-01'),
           model: mkModel({ baseline: {} }),
           e1rmPoints: [pt('squat', 300)],
         },
@@ -258,6 +282,7 @@ describe('RepCalculator parity: legacy vs pipeline', () => {
           liftType: 'squat',
           targetCanonical: 'squat',
           baselineName: 'Comp Squat',
+          today: new Date('2024-01-01'),
           model: mkModel(),
           e1rmPoints: [],
         },
@@ -269,6 +294,7 @@ describe('RepCalculator parity: legacy vs pipeline', () => {
           liftType: 'squat',
           targetCanonical: 'squat',
           baselineName: null,
+          today: new Date('2024-01-01'),
           model: mkModel(),
           e1rmPoints: [pt('squat', 300)],
         },
@@ -280,6 +306,7 @@ describe('RepCalculator parity: legacy vs pipeline', () => {
           liftType: 'squat',
           targetCanonical: 'squat',
           baselineName: undefined,
+          today: new Date('2024-01-01'),
           model: mkModel(),
           e1rmPoints: [pt('squat', 300)],
         },
@@ -291,6 +318,7 @@ describe('RepCalculator parity: legacy vs pipeline', () => {
           liftType: 'squat',
           targetCanonical: 'squat',
           baselineName: 'Comp Squat',
+          today: new Date('2024-01-01'),
           model: mkModel(),
           e1rmPoints: [pt('bench', 200)],
         },
@@ -302,6 +330,7 @@ describe('RepCalculator parity: legacy vs pipeline', () => {
           liftType: 'squat',
           targetCanonical: 'squat-pause',
           baselineName: 'Comp Squat',
+          today: new Date('2024-01-01'),
           model: mkModel({
             variantFactor: { squat: { factor: 1.0, n: 10 }, 'squat-pause': { factor: 0.88, n: 5 } },
           }),
@@ -346,11 +375,13 @@ describe('RepCalculator parity: legacy vs pipeline', () => {
       };
 
       const baselinePoints = [ptBench('bench', baselineCompBench)];
+      const today = new Date('2024-01-01');
 
       const estimate1Board = resolveE1RMEstimate({
         liftType: 'bench',
         targetCanonical: 'bench-board',
         baselineName: 'Competition Bench',
+        today,
         model: benchBoardModel,
         e1rmPoints: baselinePoints,
       });
@@ -359,6 +390,7 @@ describe('RepCalculator parity: legacy vs pipeline', () => {
         liftType: 'bench',
         targetCanonical: 'bench-board-2',
         baselineName: 'Competition Bench',
+        today,
         model: benchBoardModel,
         e1rmPoints: baselinePoints,
       });
@@ -400,6 +432,7 @@ describe('RepCalculator parity: legacy vs pipeline', () => {
       const baselinePoints = [
         { t: 1704067200000, v: baselineDL, series: 'deadlift', tags: new Set(['lift:deadlift']) },
       ];
+      const today = new Date('2024-01-01');
 
       const estimates = [
         ['deadlift-deficit', 0.92],
@@ -411,6 +444,7 @@ describe('RepCalculator parity: legacy vs pipeline', () => {
           liftType: 'deadlift',
           targetCanonical: canonical,
           baselineName: 'Competition Deadlift',
+          today,
           model: deficitBlocksModel,
           e1rmPoints: baselinePoints,
         })
@@ -435,6 +469,37 @@ describe('RepCalculator parity: legacy vs pipeline', () => {
       expect(estimates[1]?.e1rm).toBeCloseTo(baselineDL * 0.88, 1);
       expect(estimates[2]?.e1rm).toBeCloseTo(baselineDL * 1.05, 1);
       expect(estimates[3]?.e1rm).toBeCloseTo(baselineDL * 1.08, 1);
+    });
+
+    it('exercises trend extrapolation: projects e1RM forward beyond last data point', () => {
+      // Create a multi-point grid with clear linear trend: 250 kg on 2024-01-01, 300 kg on 2024-01-02
+      const trendPts: Point[] = [
+        { t: 1704067200000, v: 250, series: 'squat', tags: new Set<string>(['lift:squat']) },
+        { t: 1704153600000, v: 300, series: 'squat', tags: new Set<string>(['lift:squat']) },
+      ];
+
+      const trendModel = mkModel();
+
+      // Project to 2024-01-03 (one day after last point)
+      // Rate = (300 - 250) / (1704153600000 - 1704067200000) = 50 / 86400000 per ms
+      // Extrapolated = 300 + rate * (1704240000000 - 1704153600000)
+      //              = 300 + (50 / 86400000) * 86400000
+      //              = 300 + 50 = 350
+      const todayExtrapolated = new Date(1704240000000); // 2024-01-03
+
+      const result = resolveE1RMEstimate({
+        liftType: 'squat',
+        targetCanonical: 'squat',
+        baselineName: 'Comp Squat',
+        today: todayExtrapolated,
+        model: trendModel,
+        e1rmPoints: trendPts,
+      });
+
+      expect(result).not.toBeNull();
+      expect(result?.e1rm).toBeCloseTo(350, 0);
+      expect(result?.sourceName).toBe('Comp Squat');
+      expect(result?.method).toBe('exact');
     });
   });
 });

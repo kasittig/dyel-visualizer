@@ -223,6 +223,7 @@ export function RepCalculator({
       liftType,
       targetCanonical: effectiveCanonical,
       baselineName: baselineNames[liftType],
+      today: new Date(),
       model: pipelineModel.model,
       e1rmPoints: pipelineModel.pointsByDeriver.get('e1rm') ?? [],
     });

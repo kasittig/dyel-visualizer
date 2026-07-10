@@ -1,5 +1,5 @@
 import type { Point, NormalizationModel } from '@dyel/pipeline';
-import { invertE1RM } from '@dyel/pipeline';
+import { invertE1RM, projectE1RMToDate } from '@dyel/pipeline';
 
 export interface E1RMEstimate {
   e1rm: number;
@@ -22,19 +22,28 @@ export function findBestE1RMFromPipeline(
   targetCanonical: string,
   baselineCanonical: string,
   baselineE1RMPoints: Point[],
+  today: Date,
   model: NormalizationModel,
   baselineSourceName: string
 ): E1RMEstimate | null {
   if (!baselineSourceName) {
     return null;
   }
-  const bestBaseline = selectBestE1RMPoint(baselineE1RMPoints);
-  if (!bestBaseline) {
+
+  // Compute e1RM via trend projection to today, not flat max
+  const compE1RM = projectE1RMToDate(baselineE1RMPoints, today.getTime());
+  if (compE1RM === null) {
     return null;
   }
 
-  const sourceDate = new Date(bestBaseline.t);
-  const compE1RM = bestBaseline.e1rm;
+  // sourceDate is the last actual baseline point (most recent), not the highest-value point
+  if (!baselineE1RMPoints.length) {
+    return null;
+  }
+  const lastPoint = baselineE1RMPoints.reduce((acc, p) => {
+    return p.t > acc.t ? p : acc;
+  });
+  const sourceDate = new Date(lastPoint.t);
 
   if (targetCanonical === baselineCanonical) {
     return { e1rm: compE1RM, date: sourceDate, sourceName: baselineSourceName, method: 'exact' };
@@ -76,6 +85,7 @@ export function resolveE1RMEstimate(params: {
   liftType: string;
   targetCanonical: string;
   baselineName: string | null | undefined;
+  today: Date;
   model: NormalizationModel;
   e1rmPoints: Point[];
 }): E1RMEstimate | null {
@@ -93,6 +103,7 @@ export function resolveE1RMEstimate(params: {
     params.targetCanonical,
     baselineCanonical,
     baselinePoints,
+    params.today,
     params.model,
     params.baselineName ?? baselineCanonical
   );
