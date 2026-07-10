@@ -1,10 +1,12 @@
 # tag/ — SetRecord[] → TaggedSetRecord[]
 
 Runtime tagging is a KEYWORD-DETECTOR PARSE, not a dictionary lookup. `detect/` holds a
-ported copy of `@dyel/core`'s exercise-name parser (`detect/detectors.ts` +
-`detect/parseExercise.ts`) plus a re-keyed copy of `@dyel/core`'s
-`modifierEffects.json` (`detect/modifier-effects.json`). This is a deliberate copy, not a
-dependency on `@dyel/core` — pipeline and core do not import from each other.
+ported copy of the now-deleted `@dyel/core` package's exercise-name parser
+(`detect/detectors.ts` + `detect/parseExercise.ts`) plus a re-keyed copy of its
+`modifierEffects.json` (`detect/modifier-effects.json`). This was always a deliberate
+one-time copy, never a dependency — pipeline never imported from `@dyel/core`, and
+`@dyel/core` has since been removed from the workspace entirely (see
+`HANDOFF.md`).
 
 ## Contract
 
@@ -13,6 +15,16 @@ dependency on `@dyel/core` — pipeline and core do not import from each other.
     function tagRecords(records: SetRecord[]):
       { tagged: TaggedSetRecord[]; unknown: string[] };
     function matches(tags: ReadonlySet<string>, q: TagQuery): boolean;  // all/any/none
+    function classifyExerciseName(name: string): { type: LiftType; isUnknown: boolean };
+    function facetsFromTags(tags: ReadonlySet<string>): { bar; stance; equipment; equipmentMagnitude; addlWts };
+    function facetFamilyKey(canonical: string): string;
+
+`classifyExerciseName` is a small additive export (wraps `parseExercise`) for callers that
+just need a lift-type/unknown classification without going through the full
+`resolveCanonicalNames`/`tagRecords` pipeline — e.g. `packages/app`'s sheet/freeform
+validators and `packages/api`'s `parseTextData`. `facetsFromTags`/`facetFamilyKey` parse
+tag strings back into structured facets (used by `packages/api/src/sheet/defaultExercise.ts`)
+— see their doc comments in `tag.ts` for details.
 
 `resolveCanonicalNames` runs first (raw name → canonical via `detect/parseExercise.ts` +
 `detect/canonical.ts`'s `buildCanonical`), then `tagRecords` (canonical → tags/effects via

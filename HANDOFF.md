@@ -2,10 +2,15 @@
 
 ## Background
 
-Full plan and history live in `migration/CoreDeprecation.md` — this file is just the
-live status tracker for team-lead-coordinated execution. Goal: fully remove
-`@dyel/core` from the workspace once `@dyel/pipeline`/`@dyel/api` cover its
-functionality.
+This file is the live status tracker for team-lead-coordinated execution of the
+`@dyel/core` removal. Goal: fully remove `@dyel/core` from the workspace once
+`@dyel/pipeline`/`@dyel/api` cover its functionality.
+
+**This effort is now complete** (see "Status" below) — the full plan and history
+previously lived in `migration/CoreDeprecation.md`, which has been deleted per the
+`migration/` convention of removing docs once the work they describe is 100% done.
+The one piece of follow-on work explicitly deferred out of that doc now has its own
+doc: `migration/PipelineApiBoundary.md` (not started).
 
 ## Task list (this session)
 
@@ -55,22 +60,20 @@ from a clean `npm install`:
 - `npm test -w packages/app`: 166/166 passing
 - **Total: 386/386 tests passing, no regressions**
 
-`migration/CoreDeprecation.md`'s "Done" list now covers steps 1-11 (all of Core's
-migration work); its "Remaining" section is empty. Changes are uncommitted on
-`migration-phase-1` as of this handoff — not yet committed (only committing when the
-user explicitly asks, per repo convention).
+`@dyel/core` migration work is fully done, steps 1-11 complete, nothing remaining.
+This has since been committed on `migration-phase-1` (see "Remove @dyel/core entirely
+from the workspace").
 
-## Next up (not started this session)
+## Next up (not started)
 
-The only work left per `CoreDeprecation.md` is the explicitly **deferred** effort,
-now unblocked since `packages/core` is deleted:
-
-Reconciling `@dyel/api`'s own `CLAUDE.md` claim that it's "the sole boundary between
-`packages/app` and `@dyel/pipeline`" against the ~20 files in `packages/app` that
-already import `@dyel/pipeline` directly (`App.tsx`, several `components/charts/*.tsx`,
-`hooks/pipeline/*.ts`, `utils/rawInputUtils.ts`, the validators, etc.) — and against
-`packages/app/CLAUDE.md`'s own MVC "Controller layer" section, which documents this as
-intentional. The two docs currently disagree with each other and with reality. This
-needs its own scoping pass to decide which doc is right (move everything behind
-`@dyel/api`, or walk back the "sole boundary" claim) before any implementation starts
-— see `CoreDeprecation.md`'s "Deferred" section for full detail.
+The only work left, now unblocked since `packages/core` is deleted, is tracked in
+`migration/PipelineApiBoundary.md`: reconciling `@dyel/api`'s own `CLAUDE.md` claim
+that it's "the sole boundary between `packages/app` and `@dyel/pipeline`" against the
+~20 files in `packages/app` that already import `@dyel/pipeline` directly (`App.tsx`,
+several `components/charts/*.tsx`, `hooks/pipeline/*.ts`, `utils/rawInputUtils.ts`, the
+validators, etc.) — and against `packages/app/CLAUDE.md`'s own MVC "Controller layer"
+section, which documents this as intentional. The two docs currently disagree with
+each other and with reality. This needs its own scoping pass to decide which doc is
+right (move everything behind `@dyel/api`, or walk back the "sole boundary" claim)
+before any implementation starts — see `migration/PipelineApiBoundary.md` for full
+detail.

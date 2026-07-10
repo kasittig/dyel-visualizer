@@ -8,7 +8,7 @@ Top-level page and tab-panel components. These are the entry points rendered by 
 | `IndexPage.tsx`              | Landing page listing linked sheets; fetches from the hardcoded published index sheet via `useIndexData`                                                                                |
 | `LiftTabPanel.tsx`           | Per-lift tab: composes `ConjugateCharts` + `VariationRadarChart` + `DiagnosticsPanel` with shared variation-highlight state                                                            |
 | `PipelineValidationPage.tsx` | Pipeline validation page showing parse errors, unknown exercises, and normalization issues; uses `usePipelineValidation`, toggled via the same url/text `InputMode` as `ValidatorPage` |
-| `SigmaTab.tsx`               | "Σ" overview tab: `TotalChart` + `SessionBarChart` + `SigmaRadarChart` across all lift types                                                                                           |
+| `SigmaTab.tsx`               | "Σ" overview tab: `TotalChart` + `SessionBarChart` + `SigmaChart` across all lift types                                                                                                |
 | `ValidatorPage.tsx`          | Sheet/pasted-text validator page; uses `useSheetValidation` and `useTextValidation`, toggled via the same url/text `InputMode` as `SheetUrlPanel`                                      |
 
-`main.tsx` lazy-imports `ConjugateInfoPage`, `IndexPage`, and `ValidatorPage` by page query param.
+`main.tsx` lazy-imports `ConjugateInfoPage`, `IndexPage`, `ValidatorPage`, and `PipelineValidationPage` by page query param (`?page=conjugate`/`index`/`validator`/`pipeline-validation`).

@@ -30,7 +30,10 @@ Every record carries `meta.rawUnit` / `meta.rawWeight` (audit trail).
   - `315/335/355 x3` → one record per weight.
   - Sets multipliers EXPAND: `3 x 5 @ 100kg` → three identical records.
   - Exercise name = tokens not consumed by date/effort roles (multi-word ok).
-  - Dates `M/D` or `M/D/YYYY`; missing year → current year.
+  - Dates are strict `YYYY-MM-DD` only (`^\d{4}-\d{2}-\d{2}` at line start) — no other
+    format is accepted, no missing-year inference. This is an intentional break from
+    legacy's lenient `M/D`/`M/D/YYYY` parsing (see `freeform/CLAUDE.md`); validators
+    surface this as a hard requirement to users.
     This is the most intricate module in the system. Hard-fail with line
     context; never guess silently.
 

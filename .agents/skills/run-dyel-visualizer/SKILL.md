@@ -3,7 +3,7 @@ name: run-dyel-visualizer
 description: Build, run, and drive the dyel-visualizer React app. Use when asked to start dyel-visualizer, run its dev server, take a screenshot of its UI, interact with the running app, or run its tests.
 ---
 
-A React/Vite single-page app that visualizes conjugate powerlifting data from a Google Sheet. Drive it by starting the Vite dev server then running `.Codex/skills/run-dyel-visualizer/driver.mjs` (Playwright-based) to navigate, interact, and screenshot. All paths below are relative to the repo root.
+A React/Vite single-page app that visualizes conjugate powerlifting data from a Google Sheet. Drive it by starting the Vite dev server then running `.agents/skills/run-dyel-visualizer/driver.mjs` (Playwright-based) to navigate, interact, and screenshot. All paths below are relative to the repo root.
 
 ## Prerequisites
 
@@ -46,13 +46,13 @@ After the dev server is ready, use the driver to navigate and screenshot:
 
 ```bash
 # Default: main visualizer (Σ tab), saves screenshot to /tmp/dyel-shots/
-node .Codex/skills/run-dyel-visualizer/driver.mjs
+node .agents/skills/run-dyel-visualizer/driver.mjs
 
 # Options:
-node .Codex/skills/run-dyel-visualizer/driver.mjs --out /tmp/shots        # custom output dir
-node .Codex/skills/run-dyel-visualizer/driver.mjs --page index            # index page (?page=index)
-node .Codex/skills/run-dyel-visualizer/driver.mjs --page conjugate        # conjugate info page
-node .Codex/skills/run-dyel-visualizer/driver.mjs --sheet-url "https://..." # pass a sheet URL
+node .agents/skills/run-dyel-visualizer/driver.mjs --out /tmp/shots        # custom output dir
+node .agents/skills/run-dyel-visualizer/driver.mjs --page index            # index page (?page=index)
+node .agents/skills/run-dyel-visualizer/driver.mjs --page conjugate        # conjugate info page
+node .agents/skills/run-dyel-visualizer/driver.mjs --sheet-url "https://..." # pass a sheet URL
 ```
 
 Screenshots land in `--out` (default `/tmp/dyel-shots/`) as `<label>-<timestamp>.png`.
@@ -63,7 +63,7 @@ For tab interaction and multi-step flows, write an inline Playwright script (the
 cat > /tmp/dyel-flow.mjs << 'EOF'
 import { createRequire } from 'module';
 const { chromium } = createRequire(import.meta.url)(
-  '/path/to/dyel-visualizer/.Codex/skills/run-dyel-visualizer/node_modules/playwright'
+  '/path/to/dyel-visualizer/.agents/skills/run-dyel-visualizer/node_modules/playwright'
 );
 import { mkdir } from 'fs/promises';
 await mkdir('/tmp/dyel-shots', { recursive: true });
@@ -83,6 +83,8 @@ Pages and tabs:
 - Default (`/`): main visualizer — tabs: Σ, Squat, Bench, Deadlift, Accessories, Calculator
 - `?page=index`: index page listing linked sheets
 - `?page=conjugate`: conjugate method info (markdown)
+- `?page=validator`: sheet/pasted-text structural validator
+- `?page=pipeline-validation`: pipeline-level validation (parse errors, unknown exercises, normalization issues)
 
 ## Run (human path)
 
@@ -109,7 +111,7 @@ Expected: all tests pass in ~1s.
 
 ## Troubleshooting
 
-- **`Cannot find package 'playwright'`**: The skill's `node_modules` is missing. Run `npm install` inside `.Codex/skills/run-dyel-visualizer/` to install it there.
+- **`Cannot find package 'playwright'`**: The skill's `node_modules` is missing. Run `npm install` inside `.agents/skills/run-dyel-visualizer/` to install it there.
 - **`EADDRINUSE` on port 5173**: Another dev server is running. Run `npx kill-port 5173` before starting.
-- **`ERR_MODULE_NOT_FOUND` for the driver itself**: Run from the repo root — `node .Codex/skills/run-dyel-visualizer/driver.mjs` — not from inside the skill directory.
+- **`ERR_MODULE_NOT_FOUND` for the driver itself**: Run from the repo root — `node .agents/skills/run-dyel-visualizer/driver.mjs` — not from inside the skill directory.
 - **Blank screenshot / only title visible**: `VITE_SHEET_URL` is not set and no `?url=` param was passed. The app shows "Getting Started" state; this is correct behavior, not an error.

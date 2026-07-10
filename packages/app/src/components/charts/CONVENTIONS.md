@@ -13,7 +13,7 @@ Presentation-only. Per the directory's CLAUDE.md: "Nothing here has page-level l
 Shared visual primitives:
 
 - TooltipCard.tsx — shared floating card div, used inside custom Recharts <Tooltip> content
-- A consistent radar color (#3b82f6 blue) and fixed lift-color palette (Squat #e74c3c, Bench #3498db, Deadlift #f1c40f) repeated in SigmaChart.tsx and TotalChart.tsx
+- Fixed lift-color palette centralized in `colors.ts` (`SQUAT_COLOR`/`BENCH_COLOR`/`DEADLIFT_COLOR`/`PUSH_PULL_COLOR`/`TOTAL_COLOR`, each a CSS custom-property reference like `var(--chart-2-pink)`, not a hardcoded hex value), imported by both SigmaChart.tsx and TotalChart.tsx. `ConjugateCharts.tsx` (in `components/conjugate/`) uses a separate palette, `@dyel/pipeline`'s `LINE_COLORS`, for its per-variation lines.
 - Custom polar-axis tick rendering (offset labels 10% from center, fontSize 11) — duplicated identically between BaseRadarChart.tsx and VariationRadarChart.tsx
 - ResponsiveContainer always wraps the chart; radar charts are fixed at height 340, line charts default to 300
 

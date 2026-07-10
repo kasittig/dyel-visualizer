@@ -21,16 +21,16 @@ The app reads a **published Google Sheet** as CSV. Your sheet must be published 
 
 Your sheet needs a header row that contains at minimum:
 
-| Column     | Notes                                                                                                                                                                                                                                                                                                                                                |
-| ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `exercise` | Name of the exercise (see naming rules below)                                                                                                                                                                                                                                                                                                        |
-| `date`     | Any standard date format (e.g. `2024-11-15` or `11/15/2024`)                                                                                                                                                                                                                                                                                         |
-| `weight`   | The weight lifted. Rename to `weight (lbs)` or `weight (kg)` to set the unit. If you don't annotate the unit, the app assumes lbs.                                                                                                                                                                                                                   |
-| `reps`     | Number of reps performed                                                                                                                                                                                                                                                                                                                             |
-| `sets`     | _(optional)_ Number of sets — defaults to 1 if omitted                                                                                                                                                                                                                                                                                               |
-| `rpe`      | _(optional)_ Rate of Perceived Exertion on a **1–10 scale**. Without RPE, the app assumes every set was a rep max (0 reps in reserve). Adding RPE lets you include volume work in e1RM calculations — e.g. a 5-rep set at RPE 7 (3 RIR) is adjusted to an equivalent 8-rep max before the Epley formula is applied. Out-of-range values are ignored. |
+| Column     | Notes                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `exercise` | Name of the exercise (see naming rules below)                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `date`     | Any standard date format (e.g. `2024-11-15` or `11/15/2024`)                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| `weight`   | The weight lifted. Rename to `weight (lbs)` or `weight (kg)` to set the unit. If you don't annotate the unit, the app assumes lbs.                                                                                                                                                                                                                                                                                                                                                                          |
+| `reps`     | Number of reps performed                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| `sets`     | _(optional)_ Number of sets — defaults to 1 if omitted                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| `rpe`      | _(optional)_ Rate of Perceived Exertion on a **1–10 scale**. Without RPE, a single-set entry is still treated as a rep max, but a multi-set entry is treated as speed/volume work and mostly excluded from e1RM estimates. Adding RPE always counts the set as a real effort attempt regardless of set count — e.g. a 5-rep set at RPE 7 (3 RIR) is adjusted to an equivalent 8-rep max before the Epley formula is applied. Stay within 1–10: out-of-range values are not currently validated or rejected. |
 
-You can have rows above the header (for notes, a title, etc.) — the parser skips everything before the first row that contains the word "exercise".
+The header row must be the very first row of the sheet — the CSV parser treats row 1 as the header unconditionally. Any title/notes rows above it will be misread as data (or as the header itself), so don't add them.
 
 ### Naming Exercises
 
@@ -131,41 +131,34 @@ Each lift tab has the same three sections.
 
 One line per exercise variation you've done, plotted over time. Hover a point to see the actual set (e.g. 1×3 @ 365 lbs) and the calculated e1RM. Click a line to highlight it; the corresponding spoke in the radar chart below will also highlight.
 
-**"Normalize to" dropdown:** When you have a baseline exercise set, this dropdown lets you choose which exercise the y-axis is calibrated to. When normalization is active, a dashed line appears showing the target exercise's projected e1RM computed from all your variation data — this line is often smoother than the raw e1RM because it synthesizes information from multiple exercises.
+**Normalized e1RM line:** A dashed line showing every variation's e1RM re-expressed on your competition lift's scale. The app automatically picks the competition-lift baseline for each lift type (squat/bench/deadlift) from your logged data — preferring an explicitly-named "Competition X" entry, then your preferred deadlift stance, then a paused/"commands" bench, then any plain competition-tagged entry — there's no exercise picker to choose a different baseline manually. This line is often smoother than any single raw variation's e1RM because it synthesizes information across all your variations.
 
 **How to use it:** Look for stalls. If a variation that used to trend upward has flatlined, you've probably adapted to it and should rotate to something different. If the normalized dashed line is climbing while the raw competition lift line isn't, your special exercises are getting stronger faster than your competition lift — a sign you may need more specificity.
 
-### Baseline Selector
-
-At the top of each lift tab is a small "Baseline:" dropdown. This selects which exercise the app treats as your anchor — the exercise everything else is expressed relative to. The default is the most natural competition movement (e.g. paused bench to commands, or conventional deadlift). Change this if you compete with a different primary movement.
-
-### Filters
-
-Click "▼ Filters" to show filter chips. You can narrow the line chart to specific bars, stances, equipment, or additional weight types. Useful if you have a lot of variations and want to focus on, say, only band work.
-
 ### Variation Radar Chart
 
-A spider chart with one spoke per exercise variation, showing the **normalized e1RM today** for each — expressed as a percentage of your selected target exercise's projected e1RM. A dashed reference ring marks 100% (the target e1RM). Unlike the line chart (which shows history), this shows where the app estimates each variation is right now, using a linear trend fit to recent sessions.
+A spider chart with one spoke per exercise variation, showing each variation's **most recent e1RM, normalized to your competition lift** (same normalization as the line chart's dashed line, in the same weight unit — not a percentage). A dashed reference ring marks your competition lift's own current normalized value, so spokes outside the ring are running stronger than your competition lift and spokes inside it are relatively weaker.
 
-**How to use it:** Spokes that fall outside the reference ring are running stronger than your target lift; spokes inside it are relatively weaker. Clicking a spoke highlights that variation in the line chart above so you can see its history.
+**How to use it:** Unlike the line chart (which shows history), this shows where the app estimates each variation stands right now, from its most recent logged session. Clicking a spoke highlights that variation in the line chart above so you can see its history. Hover a spoke to see the last date/sets/reps/weight/RPE logged for it.
 
 ### Diagnostics Panel
 
 A table that appears below the radar chart. For each variation (excluding accessories and exercises that can't be classified), it shows:
 
-| Column             | What it means                                                                                          |
-| ------------------ | ------------------------------------------------------------------------------------------------------ |
-| **Variation**      | Exercise name                                                                                          |
-| **Category**       | What physical quality it trains (e.g. lockout, bottom range, quad dominant, posterior chain)           |
-| **Avg Index**      | Your average e1RM on this exercise as a % of your competition-lift e1RM                                |
-| **Baseline Range** | The expected % range for this modifier (e.g. a board press is typically 105–115% of competition bench) |
-| **Diagnostic**     | **Optimal** (in range), **Weakness** (below range), or **Overtrained** (above range)                   |
+| Column             | What it means                                                                                                                |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------------------- |
+| **Variation**      | Exercise name                                                                                                                |
+| **Category**       | What physical quality it trains (e.g. lockout, bottom range, quad dominant, posterior chain)                                 |
+| **Avg Index**      | Your average e1RM on this exercise as a % of your competition-lift e1RM                                                      |
+| **Baseline Range** | The expected % range for this modifier (e.g. a board press is typically 105–115% of competition bench)                       |
+| **Diagnostic**     | **Optimal** (in range), **Weakness** (below range), **Overtrained** (above range), or **Stale** (no recent data — see below) |
 
 **How to use it:** This is the most actionable view in the app for programming decisions.
 
 - **Weakness** means you're lifting less on this variation relative to your competition lift than you should be, given what the exercise is. For example, if your lockout work (board press, rack pulls) is below the expected range, your lockout is the limiting factor in your competition lifts — add more lockout-focused work.
 - **Overtrained** means you're doing that variation so often or so heavy that you're overspecialized there relative to your competition lift — consider reducing frequency and rotating to a different quality.
 - **Optimal** means your training is producing the expected transfer to the competition lift from that exercise.
+- **Stale** means the variation's most recent logged session is old enough (past a 90-day threshold) that its diagnostic can't be trusted — it isn't counted as a weakness or overtrained finding until you log it again.
 
 If you pull conventional or sumo, set the "Primary pull" radio button in the diagnostics panel so deadlift variations are classified correctly.
 
@@ -187,5 +180,5 @@ A rep calculator that translates between weight and reps using your actual e1RM.
 
 - **Log every Max Effort set as a separate row**, even warmup singles. The app takes the best e1RM per session per exercise, so extra rows don't hurt and give the trend lines more data.
 - **Be consistent with exercise names.** The parser matches on keywords, so "SSB Squat" and "Safety Bar Squat" are treated as the same bar type — but "SSB" and "Squats with the SSB" will produce two different variation entries. Pick one name and stick to it.
-- **Keep the "Exclude volume work" checkbox on** if you log Dynamic Effort sets as multiple sets (e.g. 8 × 3). This prevents your volume work from appearing as spuriously low e1RMs on the chart.
+- **Log an RPE whenever you can, especially on multi-set days.** Without RPE, a multi-set entry (e.g. 8 × 3 Dynamic Effort) is treated as speed/volume work and mostly excluded from e1RM estimates rather than counted as a near-max attempt; an explicit RPE always overrides that and gets used regardless of set count.
 - **Check the diagnostics after every training block**, not just at the end of a cycle. Early identification of a lockout weakness or a posterior chain deficit gives you time to address it before a meet.
