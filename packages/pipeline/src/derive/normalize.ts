@@ -81,6 +81,19 @@ const fitMetric = (
 const getTag = (tags: ReadonlySet<string>, prefix: string) =>
   [...tags].find((t) => t.startsWith(prefix));
 
+const getNonAddlSignature = (tags: ReadonlySet<string>): string =>
+  [...tags]
+    .filter(
+      (t) =>
+        !t.startsWith('addl:') &&
+        (t.startsWith('lift:') ||
+          t.startsWith('bar:') ||
+          t.startsWith('stance:') ||
+          t.startsWith('equip:'))
+    )
+    .sort()
+    .join('|');
+
 export function fitNormalizationModel(
   history: TaggedSetRecord[],
   opts: { minSamples: number },
@@ -105,6 +118,19 @@ export function fitNormalizationModel(
 
   for (const [family, canonicals] of byFamily) {
     const entries = canonicals.map((c) => ({ c, r: byCanonical[c]! }));
+
+    // Task 2 prep: group addlWt-free canonicals by non-addl tag signature, mirroring core's
+    // buildStraightByFamily. This will be used to fit addlWt offsets against the correct
+    // family-specific baseline grid (not the flat comp baseline) in the next task.
+    const straightBySignature = new Map<string, string>();
+    for (const { c, r } of entries) {
+      const hasAddlWt = getTag(r[0]?.tags || new Set(), 'addl:');
+      if (!hasAddlWt) {
+        const sig = getNonAddlSignature(r[0]?.tags || new Set());
+        straightBySignature.set(sig, c);
+      }
+    }
+
     // A logged name containing "competition" (e.g. "Competition Bench") is a stronger
     // signal of the true competition lift than the bare comp-lift tag alone — some logs
     // use the bare name for other work (e.g. speed/rep-effort days) and reserve
@@ -162,11 +188,24 @@ export function fitNormalizationModel(
       let offsetKg: number | null = null;
 
       if (hasAddlWt) {
-        const o = fitMetric(grid, r, (p, rec) => invertE1RM(p, rec.reps) - rec.weight);
-        if (o && o.n >= opts.minSamples) {
-          addlWtOffset[c] = { offsetKg: o.v, n: o.n };
-          offsetKg = o.v;
+        // Task 2 fix: fit offset against the straight (addlWt-free) canonical's grid, not the
+        // flat comp-lift baseline grid. This isolates the addlWt effect from stance/equipment effects.
+        // Port of @dyel/core's fitAddlWtOffset pattern (sessionIndex.ts:23-35, e1rm.ts:110-171).
+        const sig = getNonAddlSignature(r[0]?.tags || new Set());
+        const straightCan = straightBySignature.get(sig);
+
+        // If a matching straight canonical exists, fit against its grid
+        if (straightCan) {
+          const straightGrid = buildSessionGrid(byCanonical[straightCan]!);
+          const o = fitMetric(straightGrid, r, (p, rec) => invertE1RM(p, rec.reps) - rec.weight);
+          if (o && o.n >= opts.minSamples) {
+            addlWtOffset[c] = { offsetKg: o.v, n: o.n };
+            offsetKg = o.v;
+          }
         }
+        // If no matching straight canonical exists, leave addlWtOffset[c] unfitted (skip setting it),
+        // mirroring @dyel/core's behavior when the straight grid is empty and invariant in CLAUDE.md:
+        // "null = unfitted... never fall back to factor 1.0 silently."
       }
 
       // Fit variantFactor on offset-adjusted records if offset was fit, otherwise on raw records

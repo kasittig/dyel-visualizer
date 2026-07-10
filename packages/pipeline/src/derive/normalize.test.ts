@@ -425,3 +425,91 @@ describe('Design C: offsetAdjustRecords pre-derivation (weight-space correction)
     expect(projected).toBeGreaterThan(0);
   });
 });
+
+describe('fitNormalizationModel — Task 3: chain-offset sign fix (fit against straight-canonical grid)', () => {
+  it('regression: simple addlWt (no stance/equipment) fits offset unchanged at expected numeric value', () => {
+    const model = fitNormalizationModel(history, { minSamples: 1 }, athlete());
+
+    // bench-chains: offset vs comp-lift baseline 'bench' grid
+    // grid: day(1)→100, day(10)→110
+    // day(1): invertE1RM(100, 1) - 80 = 100 - 80 = 20
+    // day(10): invertE1RM(110, 1) - 90 = 110 - 90 = 20
+    // average: 20
+    expect(model.addlWtOffset['bench-chains']).toEqual({ offsetKg: 20, n: 2 });
+
+    // squat-chains: offset vs comp-lift baseline 'squat' grid
+    // grid: day(1)→200, day(10)→220
+    // day(1): invertE1RM(200, 1) - 150 = 200 - 150 = 50
+    // day(10): invertE1RM(220, 1) - 160 = 220 - 160 = 60
+    // average: 55
+    expect(model.addlWtOffset['squat-chains']).toEqual({ offsetKg: 55, n: 2 });
+  });
+
+  it('compound stance + addlWt: offset fits against matched straight canonical, isolating chains from stance', () => {
+    // Build fixture family: plain bench (baseline), slingshot (assistive boost), slingshot+chains (resistive delta)
+    const slingshotFixture: TaggedSetRecord[] = [
+      // Plain comp-lift baseline
+      rec(day(1), 'bench', 100, 1, ['lift:bench', 'comp-lift']),
+      rec(day(10), 'bench', 110, 1, ['lift:bench', 'comp-lift']),
+      // Slingshot (assistive stance): notably higher than plain bench
+      rec(day(1), 'bench-slingshot', 130, 1, ['lift:bench', 'stance:slingshot', 'variation']),
+      rec(day(10), 'bench-slingshot', 140, 1, ['lift:bench', 'stance:slingshot', 'variation']),
+      // Slingshot + chains: lower than slingshot, simulating chains' resistance
+      rec(day(1), 'bench-slingshot-chains', 120, 1, [
+        'lift:bench',
+        'stance:slingshot',
+        'addl:chains',
+        'variation',
+      ]),
+      rec(day(10), 'bench-slingshot-chains', 130, 1, [
+        'lift:bench',
+        'stance:slingshot',
+        'addl:chains',
+        'variation',
+      ]),
+    ];
+
+    const model = fitNormalizationModel(slingshotFixture, { minSamples: 1 }, athlete());
+
+    // Baseline should be plain 'bench'
+    expect(model.baseline['lift:bench']).toBe('bench');
+
+    // bench-slingshot should have NO offset (it's addlWt-free)
+    expect(model.addlWtOffset['bench-slingshot']).toBeUndefined();
+
+    // bench-slingshot-chains offset: fit against bench-slingshot's grid (not bench's flat baseline)
+    // slingshot grid: day(1)→130, day(10)→140
+    // day(1): invertE1RM(130, 1) - 120 = 130 - 120 = 10
+    // day(10): invertE1RM(140, 1) - 130 = 140 - 130 = 10
+    // average: 10 (POSITIVE, not negative — this is the fix)
+    expect(model.addlWtOffset['bench-slingshot-chains']).toEqual({ offsetKg: 10, n: 2 });
+    expect(model.addlWtOffset['bench-slingshot-chains'].offsetKg).toBeGreaterThan(0);
+  });
+
+  it('edge case: addlWt canonical with stance modifier but no addlWt-free sibling leaves offset unfitted', () => {
+    // History: plain bench (comp baseline), NO bench-sumo anywhere, only bench-sumo-chains
+    const edgeCaseFixture: TaggedSetRecord[] = [
+      rec(day(1), 'bench', 100, 1, ['lift:bench', 'comp-lift']),
+      rec(day(10), 'bench', 110, 1, ['lift:bench', 'comp-lift']),
+      // ONLY slingshot + chains; NO plain slingshot
+      rec(day(1), 'bench-sumo-chains', 80, 1, [
+        'lift:bench',
+        'stance:sumo',
+        'addl:chains',
+        'variation',
+      ]),
+      rec(day(10), 'bench-sumo-chains', 90, 1, [
+        'lift:bench',
+        'stance:sumo',
+        'addl:chains',
+        'variation',
+      ]),
+    ];
+
+    const model = fitNormalizationModel(edgeCaseFixture, { minSamples: 1 }, athlete());
+
+    // bench-sumo-chains has no matching straight canonical (no bench-sumo records exist),
+    // so offset must NOT be fit and must remain undefined — never fall back to flat baseline.
+    expect(model.addlWtOffset['bench-sumo-chains']).toBeUndefined();
+  });
+});
