@@ -8,7 +8,7 @@ Layered composition. There are two generic "base" wrappers, and feature-specific
 - TotalChart.tsx wraps DateLineChart, supplying <Line> children per series
 - VariationRadarChart.tsx wraps BaseRadarChart like the others, passing `overlayDataKey` to render the target ring as a second overlay radar.
 
-Presentation-only. Per the directory's CLAUDE.md: "Nothing here has page-level logic or data fetching — all data arrives via props." Data aggregation lives in hooks (e.g. usePipelineConjugateChartData, useLastSessionStats), not in these components.
+Presentation-only. Per the directory's CLAUDE.md: "Nothing here has page-level logic or data fetching — all data arrives via props." Data aggregation lives in hooks (e.g. usePipelineConjugateChartData), not in these components.
 
 Shared visual primitives:
 

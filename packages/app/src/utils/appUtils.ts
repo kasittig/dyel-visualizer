@@ -1,4 +1,4 @@
-import type { ConjugateDataPair, LiftType } from '@dyel/core';
+import type { LiftType } from '@dyel/pipeline';
 
 export interface SheetRef {
   id: string;
@@ -22,19 +22,6 @@ export const EXAMPLE_CSV_URL =
 export const EXAMPLE_SHEET_URL =
   'https://docs.google.com/spreadsheets/d/1Uwfzrb4wjYcBisTPdNEUGJyvfKRLwpN0tm8ciRPHB0c/edit?gid=1297658251#gid=1297658251';
 export const EXAMPLE_VISUALIZER_URL = `?sheet=${encodeURIComponent(EXAMPLE_CSV_URL)}`;
-
-/** Distinct exercise display names in first-seen order. Callers `.sort()` if they need it. */
-export function distinctDisplayNames(rows: ConjugateDataPair[]): string[] {
-  const seen = new Set<string>();
-  const result: string[] = [];
-  for (const [ex] of rows) {
-    if (!seen.has(ex.displayName)) {
-      seen.add(ex.displayName);
-      result.push(ex.displayName);
-    }
-  }
-  return result;
-}
 
 export function extractSheetRef(input: string): SheetRef | null {
   // Published web URL: .../d/e/PUBLISHED_ID/pubhtml (may have /u/N/ before /d/)

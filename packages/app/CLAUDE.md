@@ -22,11 +22,12 @@ Single-page React app with no backend. Data comes from either a user-supplied Go
 
 **Data flow (`App.tsx`):**
 
-1. `SheetUrlPanel` offers two input modes: a Google Sheet URL (`extractSheetRef()` → `useConjugateData()`, which fetches the sheet as CSV and calls `parseConjugateData` from `@dyel/core`) or pasted free-text (parsed via `parseTextData` from `@dyel/core`). `App.tsx` picks whichever mode is active and normalizes both into the same `ConjugateDataState` shape.
-2. The resulting `ConjugateDataPair[]` flows through exercise-type tabs (squat / bench / deadlift / accessory), `ExerciseFilters`, and `LiftTabPanel` (which composes `ConjugateCharts` + `VariationRadarChart` + `DiagnosticsPanel`)
-3. `useLastSessionStats` computes per-exercise stats from the pair list — e1RM, last session, predicted e1RM, variant factors, resistance offsets
-4. `ErrorBoundary` wraps the root in `main.tsx`
-5. Settings (`url`, `inputMode`, `pastedText`, `activeTab`, `deadliftStance`) and the last successfully fetched sheet's `ConjugateDataPair[]` are persisted to `localStorage` via `useLocalStorageState`, so a revisit restores the previous configuration and renders the last sheet's data instantly instead of a blank/loading state. Explicit `?sheet=`/`?mode=`/`?text=` query params always override cached settings (reconciled once on mount). The sheet-data cache is keyed by the sheet URL, so switching sheets never shows stale data from a different sheet; there is no staleness/invalidation logic — users refresh manually via the existing refresh button.
+1. `SheetUrlPanel` offers two input modes: a Google Sheet URL or pasted free-text. Both modes resolve to a `RawInput[]` via `useResolvedRawInput`. URL mode calls `fetchSheetCsv` to retrieve the published CSV (using the dev proxy `/sheets-proxy/` during development to handle CORS); text mode directly wraps the pasted text into a `RawInput`. This raw input normalization eliminates mode-specific parsing logic downstream.
+2. The resolved `RawInput[]` is passed to `runPipelineModel(raw, athlete)` from `@dyel/pipeline`, which performs all parsing, normalization, tagging, and diagnostic computation in a single call, returning a `PipelineModel`.
+3. The `PipelineModel` is stored in context via `PipelineProvider` and accessed downstream via the `usePipelineModel()` hook. Child components use selector hooks (e.g., `usePipelineConjugateChartData`, `usePipelineTotalChartData`) to derive display-ready data from the model, eliminating intermediate hook-computed pair structures.
+4. Exercise-type tabs (squat / bench / deadlift / accessory), `ExerciseFilters`, and `LiftTabPanel` (which composes `ConjugateCharts` + `VariationRadarChart` + `DiagnosticsPanel`) consume the derived data from selectors.
+5. `ErrorBoundary` wraps the root in `main.tsx`.
+6. Settings (`url`, `inputMode`, `pastedText`, `activeTab`, `deadliftStance`) and the last successfully resolved raw input are persisted to `localStorage` via `useLocalStorageState`, so a revisit restores the previous configuration and renders the last sheet's data instantly instead of a blank/loading state. Explicit `?sheet=`/`?mode=`/`?text=` query params always override cached settings (reconciled once on mount). The raw-data cache is keyed by the sheet URL, so switching sheets never shows stale data from a different sheet; there is no staleness/invalidation logic — users refresh manually via the existing refresh button.
 
 **Tab state:** `App.tsx` owns a single `activeTab: PageTab` state variable that tracks the current tab. Valid values are lift types (`'squat'`, `'bench'`, `'deadlift'`, `'accessory'`) or non-lift tabs (`'sigma'` for the competition-total overview, `'calculator'` for the rep/strength-score calculators). The active tab is persisted to localStorage and restored on revisit.
 
@@ -45,8 +46,7 @@ Each subdirectory has an `index.ts` barrel and a `CLAUDE.md` with per-file descr
 
 | Subdirectory | Contents                                                                             |
 | ------------ | ------------------------------------------------------------------------------------ |
-| `conjugate/` | `useConjugateData`                                                                   |
-| `data/`      | `useBaselineTargetExercises`, `useIndexData`, `useLastSessionStats`                  |
+| `data/`      | `useIndexData`                                                                       |
 | `infra/`     | `useCsvResource`, `useSheetValidation`, `useLocalStorageState`                       |
 | `pipeline/`  | `usePipelineModel`, `usePipelineConjugateChartData`, `usePipelineVariationRadarData` |
 
@@ -54,22 +54,22 @@ Each subdirectory has an `index.ts` barrel and a `CLAUDE.md` with per-file descr
 
 **Key modules:**
 
-| Path                                                  | Purpose                                                                                                                                                                                                            |
-| ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `src/utils/appUtils.ts`                               | Pure helpers (`extractSheetRef`, `distinctDisplayNames`), type aliases (`LiftType`, `PageTab`), and URL/tab constants — no React dependency                                                                        |
-| `src/components/charts/BaseRadarChart.tsx`            | Shared Recharts radar wrapper; accepts `angleKey`, `unit`, `tooltip`, optional `onClick`                                                                                                                           |
-| `src/components/pages/SigmaTab.tsx`                   | "Σ" overview tab: `TotalChart` + `SessionBarChart` + `SigmaRadarChart` across all lift types                                                                                                                       |
-| `src/components/pages/LiftTabPanel.tsx`               | Per-lift tab content: `ConjugateCharts` + `VariationRadarChart` with shared variation-highlight state                                                                                                              |
-| `src/components/shared/RepCalculator.tsx`             | Calculator tab: predicts weight-for-reps and reps-for-weight using pipeline-native `findBestE1RMFromPipeline` via `usePipelineModel()`                                                                             |
-| `src/components/shared/DiagnosticsPanel.tsx`          | Diagnostics panel using `usePipelineDiagnostics()` (pipeline-native, all-time not date-range-filtered; surfaces `'stale'` status for variants past the staleness threshold)                                        |
-| `src/components/shared/DateRangePicker.tsx`           | Date range input using `react-day-picker` + Radix Popover                                                                                                                                                          |
-| `src/components/pages/IndexPage.tsx`                  | Landing page listing linked sheets; fetches from a hardcoded published index sheet via `useIndexData`                                                                                                              |
-| `src/hooks/data/useBaselineTargetExercises.ts`        | Exports pure `computeBaselineTargetExercises` (for use outside React, e.g. tests) plus a `useMemo`-wrapped hook; builds `baselineExByType` and `targetExByType` maps; shared by `TotalChart` and `SigmaRadarChart` |
-| `src/hooks/pipeline/usePipelineConjugateChartData.ts` | All data aggregation for `ConjugateCharts` (grouping, normalization, forward-fill); the component itself is presentation-only                                                                                      |
-| `src/hooks/data/useIndexData.ts`                      | Fetches and parses the published index sheet CSV; returns `IndexEntry[]`                                                                                                                                           |
-| `src/utils/sheetCacheUtils.ts`                        | Pure serialize/deserialize helpers for caching `ConjugateDataPair[]` to localStorage (handles `Date` round-tripping)                                                                                               |
+| Path                                                  | Purpose                                                                                                                                                                                                                |
+| ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/utils/appUtils.ts`                               | Pure helpers (`extractSheetRef`), type aliases (`LiftType`, `PageTab`), and URL/tab constants — no React dependency                                                                                                    |
+| `src/components/charts/BaseRadarChart.tsx`            | Shared Recharts radar wrapper; accepts `angleKey`, `unit`, `tooltip`, optional `onClick`                                                                                                                               |
+| `src/components/pages/SigmaTab.tsx`                   | "Σ" overview tab: `TotalChart` + `SessionBarChart` + `SigmaRadarChart` across all lift types                                                                                                                           |
+| `src/components/pages/LiftTabPanel.tsx`               | Per-lift tab content: `ConjugateCharts` + `VariationRadarChart` with shared variation-highlight state                                                                                                                  |
+| `src/components/shared/RepCalculator.tsx`             | Calculator tab: predicts weight-for-reps and reps-for-weight using pipeline-native `findBestE1RMFromPipeline` via `usePipelineModel()`                                                                                 |
+| `src/components/shared/DiagnosticsPanel.tsx`          | Diagnostics panel using `usePipelineDiagnostics()` (pipeline-native, all-time not date-range-filtered; surfaces `'stale'` status for variants past the staleness threshold)                                            |
+| `src/components/shared/DateRangePicker.tsx`           | Date range input using `react-day-picker` + Radix Popover                                                                                                                                                              |
+| `src/components/pages/IndexPage.tsx`                  | Landing page listing linked sheets; fetches from a hardcoded published index sheet via `useIndexData`                                                                                                                  |
+| `src/hooks/pipeline/usePipelineConjugateChartData.ts` | All data aggregation for `ConjugateCharts` (grouping, normalization, forward-fill); the component itself is presentation-only                                                                                          |
+| `src/hooks/data/useIndexData.ts`                      | Fetches and parses the published index sheet CSV; returns `IndexEntry[]`                                                                                                                                               |
+| `src/utils/sheetCacheUtils.ts`                        | Pure serialize/deserialize helpers for caching resolved `RawInput[]` to localStorage (handles `Date` round-tripping)                                                                                                   |
+| `src/utils/sheetFetch.ts`                             | CSV fetching utilities: `sheetCsvUrl` constructs the appropriate Google Sheets URL (dev proxy or production), `fetchSheetCsv` retrieves the CSV with error handling, `csvFetchError` maps HTTP status to user messages |
 
-**Dev proxy:** `vite.config.ts` defines a `sheetsProxyPlugin` that forwards `/sheets-proxy/*` to `https://docs.google.com/*` using Node's `fetch`, which follows redirects server-side and avoids CORS issues. In production `useConjugateData` hits Google directly — this only works with published sheets.
+**Dev proxy:** `vite.config.ts` defines a `sheetsProxyPlugin` that forwards `/sheets-proxy/*` to `https://docs.google.com/*` using Node's `fetch`, which follows redirects server-side and avoids CORS issues. In production `fetchSheetCsv` hits Google directly — this only works with published sheets.
 
 ## MVC mapping
 

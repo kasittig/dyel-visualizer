@@ -17,6 +17,7 @@ export type {
   ConjugateStance,
   ConjugateEquipment,
   ConjugateAddlWt,
+  LiftType,
 } from './tag/detect/conjugate-types';
 export {
   CONJUGATE_BARS,

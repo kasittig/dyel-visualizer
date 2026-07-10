@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { extractSheetRef, distinctDisplayNames } from './appUtils';
-import type { ConjugateDataPair, ConjugateExercise } from '@dyel/core';
+import { extractSheetRef } from './appUtils';
 
 describe('extractSheetRef', () => {
   it('parses a published web URL as published', () => {
@@ -37,21 +36,5 @@ describe('extractSheetRef', () => {
     expect(extractSheetRef('https://example.com')).toBeNull();
     expect(extractSheetRef('short-id')).toBeNull();
     expect(extractSheetRef('')).toBeNull();
-  });
-});
-
-function pair(displayName: string): ConjugateDataPair {
-  const ex = { displayName } as ConjugateExercise;
-  return [ex, {} as ConjugateDataPair[1]];
-}
-
-describe('distinctDisplayNames', () => {
-  it('returns names in first-seen order without duplicates', () => {
-    const rows = [pair('Squat'), pair('SSB Squat'), pair('Squat'), pair('Box Squat')];
-    expect(distinctDisplayNames(rows)).toEqual(['Squat', 'SSB Squat', 'Box Squat']);
-  });
-
-  it('returns an empty array for no rows', () => {
-    expect(distinctDisplayNames([])).toEqual([]);
   });
 });

@@ -39,38 +39,33 @@ Commits: "Migrate ValidatorPage, useIndexData, and DeadliftStancePreference off
 @dyel/core" and "Delete core-vs-pipeline parity test suite now that app-side
 @dyel/core gaps are closed" on `migration-phase-1`.
 
+6. **Dead-code cluster deleted (step 1)** — `packages/app/src/hooks/conjugate/`
+   (entire dir: `useConjugateData.ts`, `index.ts`, `CLAUDE.md`),
+   `packages/app/src/hooks/data/useBaselineTargetExercises.ts`,
+   `packages/app/src/hooks/data/useLastSessionStats.ts` (+ export lines removed from
+   `hooks/data/index.ts`), `packages/app/src/utils/appDataUtils.ts` (+ `.test.ts`), and
+   the `distinctDisplayNames` function + `ConjugateDataPair` import in
+   `packages/app/src/utils/appUtils.ts`. `appUtils.ts`'s `LiftType` now imports from
+   `@dyel/pipeline` (newly re-exported from `packages/pipeline/src/index.ts`) instead of
+   `@dyel/core`. `npm run build -w packages/app && npm test -w packages/app`: 166/166
+   green; `npm test -w packages/pipeline`: 181/181 green.
+7. **Stale docs updated (step 2)** — `packages/app/CLAUDE.md`'s "Data flow" section
+   rewritten to describe the actual `useResolvedRawInput` → `runPipelineModel` →
+   `PipelineProvider`/`usePipelineModel()` flow; its "Hook subdirectories"/"Key modules"
+   tables and the "Dev proxy" note updated to match (removed `conjugate/` row, trimmed
+   `data/` row to `useIndexData` only, fixed the proxy note to reference
+   `fetchSheetCsv`). `hooks/conjugate/CLAUDE.md` deleted with its directory.
+   `hooks/data/CLAUDE.md` trimmed to `useIndexData.ts` only. Also fixed two stale
+   references the doc didn't originally call out:
+   `hooks/infra/CLAUDE.md`'s `useCsvResource.ts` row (dropped `useConjugateData` from its
+   "used by" list) and `components/charts/CONVENTIONS.md` (dropped `useLastSessionStats`
+   from its data-aggregation example list).
+
+Commits (pending): dead-code cluster deletion + doc updates, both on `migration-phase-1`.
+
 ## Remaining, in dependency order
 
-### 1. Delete the dead-code cluster in `packages/app`
-
-These files still import `@dyel/core` but have **zero production callers** — confirmed
-by grepping for actual call sites, not just imports. `App.tsx` gets equivalent
-behavior today from `@dyel/api`'s `groupByLiftType`/`defaultCompExerciseCanonical`
-instead (see `packages/api/src/sheet/{parseSheetData,defaultExercise}.ts`). Only the
-now-deleted parity tests were still referencing these:
-
-- `packages/app/src/hooks/conjugate/useConjugateData.ts` (+ its `index.ts`/dir if
-  nothing else lives there)
-- `packages/app/src/hooks/data/useBaselineTargetExercises.ts`
-- `packages/app/src/hooks/data/useLastSessionStats.ts`
-- `packages/app/src/utils/appDataUtils.ts` (+ its `.test.ts`)
-- The `distinctDisplayNames`/`ConjugateDataPair` import in
-  `packages/app/src/utils/appUtils.ts` (only `distinctDisplayNames` itself needs
-  removing; `LiftType` there should switch to `@dyel/pipeline`'s own `LiftType` — it's
-  already duplicated verbatim in `packages/pipeline/src/tag/detect/conjugate-types.ts`)
-
-Verify with `npm run build -w packages/app && npm test -w packages/app` after deleting.
-
-### 2. Update stale docs describing the old core-backed data flow
-
-`packages/app/CLAUDE.md`'s "Data flow" section still describes the obsolete
-`useConjugateData()`/`parseConjugateData` flow as current — it's actually
-`useResolvedRawInput` → `runPipelineModel` now (see `packages/app/src/utils/rawInputUtils.ts`,
-`packages/app/src/context/PipelineContext.tsx`). Check `hooks/conjugate/CLAUDE.md`,
-`hooks/data/CLAUDE.md`, and `components/conjugate/CLAUDE.md` for the same staleness,
-and update/remove them to match whatever remains after step 1's deletions.
-
-### 3. Migrate `@dyel/api`'s remaining `@dyel/core` dependencies
+### 1. Migrate `@dyel/api`'s remaining `@dyel/core` dependencies
 
 **Discovered mid-effort, not originally scoped.** `packages/api`'s `package.json` only
 declares `@dyel/pipeline` as a dependency, and its own `CLAUDE.md` says it's "the sole
@@ -95,7 +90,7 @@ Migrate package-by-package, verifying with `npm test -w packages/api && npm run
 build -w packages/api` after each, plus the full `packages/app` suite since `App.tsx`
 is a live consumer.
 
-### 4. Final removal
+### 2. Final removal
 
 Once `grep -rn "@dyel/core" -- ':!packages/core'` (repo root) comes back empty:
 
