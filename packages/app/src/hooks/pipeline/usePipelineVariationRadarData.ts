@@ -1,13 +1,16 @@
 import { useMemo } from 'react';
-import { matches, type RenderParams } from '@dyel/pipeline';
-import { usePipelineModel } from '../../context/PipelineContext';
-import { usePipelineDatasets } from './usePipelineDatasets';
-import { conjugateChartSpecs } from '../../pipeline/conjugateChartSpecs';
-import { buildLastSessionDetail, type LastSessionDetail } from '../../pipeline/lastSessionDetail';
+import type { RenderParams } from '@dyel/api';
 import {
+  buildLastSessionDetail,
   snapshotVariationsFromPipeline,
   snapshotNormalizedVariationsFromPipeline,
-} from '../../utils/variationSnapshot';
+  buildCanonicalByLabel,
+  resolveTargetLabel,
+  conjugateChartSpecs,
+  type LastSessionDetail,
+} from '@dyel/api';
+import { usePipelineModel } from '../../context/PipelineContext';
+import { usePipelineDatasets } from './usePipelineDatasets';
 
 export interface PipelineVariationRadarData {
   snapshot: Record<string, number | undefined>;
@@ -76,21 +79,7 @@ export function usePipelineVariationRadarData(
 
     const snapshot = snapshotVariationsFromPipeline(datasets.variations ?? [], unit);
     const lastSessionByLabel = buildLastSessionDetail(model.tagged, liftType);
-
-    // Build a map from each variation label to its most-recently-logged canonical id.
-    const canonicalByLabel = new Map<string, string>();
-    const dateByLabel = new Map<string, number>();
-    for (const r of model.tagged) {
-      if (!matches(r.tags, { all: [`lift:${liftType}`] })) {
-        continue;
-      }
-      const label = r.meta?.rawExercise ?? r.canonical;
-      const currentDate = dateByLabel.get(label) ?? -Infinity;
-      if (r.date > currentDate) {
-        dateByLabel.set(label, r.date);
-        canonicalByLabel.set(label, r.canonical);
-      }
-    }
+    const canonicalByLabel = buildCanonicalByLabel(model.tagged, liftType);
 
     // Apply cross-exercise normalization to get per-variation normalized e1RM values.
     // Use the offset-adjusted dataset (variationsAdjusted) as input to ensure weight-space
@@ -104,17 +93,7 @@ export function usePipelineVariationRadarData(
 
     // Resolve the target's canonical id to its most-recently-logged label so callers can
     // index `snapshot` (label-keyed) correctly.
-    let targetLabel: string | undefined;
-    let targetDate = -Infinity;
-    for (const r of model.tagged) {
-      if (r.canonical !== targetCanonical || !matches(r.tags, { all: [`lift:${liftType}`] })) {
-        continue;
-      }
-      if (r.date > targetDate) {
-        targetDate = r.date;
-        targetLabel = r.meta?.rawExercise ?? r.canonical;
-      }
-    }
+    const targetLabel = resolveTargetLabel(model.tagged, liftType, targetCanonical);
 
     return {
       snapshot,

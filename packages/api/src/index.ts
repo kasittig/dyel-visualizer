@@ -2,6 +2,7 @@ export { getCompetitionTotal } from './getCompetitionTotal';
 export { calculateVolumeCorrelationFromTagged } from './volume/volume';
 export { parseTextData } from './text/parseTextData';
 export { TOTAL_CHART_SPECS } from './totalChartSpecs';
+export { buildChartDatasets } from './chart/buildChartDatasets';
 export type { LiftType, SplitRows } from './sheet/parseSheetData';
 export type {
   PipelineModel,

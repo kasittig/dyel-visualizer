@@ -1,4 +1,4 @@
-import { classifyExerciseName } from '@dyel/pipeline';
+import { classifyExerciseName } from '@dyel/api';
 
 export interface TextValidationIssue {
   row: number;

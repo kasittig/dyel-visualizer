@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import type { AthleteContext, RawInput } from '@dyel/pipeline';
+import type { AthleteContext, RawInput } from '@dyel/api';
 import type { InputMode } from './appUtils';
 import { extractSheetRef } from './appUtils';
 import { sheetCsvUrl, fetchSheetCsv } from './sheetFetch';

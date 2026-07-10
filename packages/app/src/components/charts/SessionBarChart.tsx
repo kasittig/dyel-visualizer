@@ -8,8 +8,8 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import type { ChartPoint } from '@dyel/pipeline';
-import { formatChartDate } from '../../utils/pipelineChartUtils';
+import type { ChartPoint } from '@dyel/api';
+import { formatChartDate } from '@dyel/api';
 import { ChartEmpty } from './DateLineChart';
 import { ChartTooltip } from './TooltipCard';
 import styles from './SessionBarChart.module.css';

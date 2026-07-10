@@ -1,5 +1,5 @@
 import { Line, Tooltip } from 'recharts';
-import type { ChartPoint } from '@dyel/pipeline';
+import type { ChartPoint } from '@dyel/api';
 import { DateLineChart, ChartEmpty } from './DateLineChart';
 import { ChartTooltip } from './TooltipCard';
 import styles from './TotalChart.module.css';

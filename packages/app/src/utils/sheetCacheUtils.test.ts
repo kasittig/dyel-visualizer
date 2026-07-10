@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { serializeSheetCache, deserializeSheetCache } from './sheetCacheUtils';
 import type { CachedSheetData } from './sheetCacheUtils';
-import type { RawInput } from '@dyel/pipeline';
+import type { RawInput } from '@dyel/api';
 
 function rawInput(name: string, content: string): RawInput {
   return { name, content };

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook } from '@testing-library/react';
-import type { PipelineModel, VariantAssessment } from '@dyel/pipeline';
+import type { PipelineModel, VariantAssessment } from '@dyel/api';
 import { usePipelineDiagnostics } from './usePipelineDiagnostics';
 
 vi.mock('../../context/PipelineContext');

@@ -1,8 +1,8 @@
 # API Phase 2: Repoint `packages/app` consumers to `@dyel/api`
 
-## Status: NOT STARTED (unblocked — `API_PHASE_1.md` is complete, see its `HANDOFF.md`
+## Status: DONE — all 19 tasks (13-31) landed and verified. See `HANDOFF.md` for the
 
-entry; all `@dyel/api` exports this phase's tasks depend on now exist)
+final regression numbers and delegation notes.
 
 ## Background
 
@@ -74,44 +74,44 @@ logic — no task below touches it.
 
 ### Group A — pure import-path swaps, no logic changes, fully parallelizable
 
-- [ ] Task 13: `context/PipelineContext.tsx` (+ `.test.tsx`) — swap `PipelineModel`/
+- [x] Task 13: `context/PipelineContext.tsx` (+ `.test.tsx`) — swap `PipelineModel`/
       `AthleteContext` type imports to `@dyel/api` (Target:
       `packages/app/src/context/PipelineContext.tsx`, Test:
       `npm test -w packages/app -- PipelineContext`)
-- [ ] Task 14: `utils/rawInputUtils.ts` (+ `.test.ts`) — swap `AthleteContext`/
+- [x] Task 14: `utils/rawInputUtils.ts` (+ `.test.ts`) — swap `AthleteContext`/
       `RawInput` type imports to `@dyel/api` (Target:
       `packages/app/src/utils/rawInputUtils.ts`, Test:
       `npm test -w packages/app -- rawInputUtils`)
-- [ ] Task 15: `utils/appUtils.ts` (+ `.test.ts`) — swap `LiftType` import to
+- [x] Task 15: `utils/appUtils.ts` (+ `.test.ts`) — swap `LiftType` import to
       `@dyel/api`'s existing `LiftType` export (note: `@dyel/api` independently
       defines this type rather than re-exporting pipeline's identical one; do not
       reconcile that duplication in this task — see `API_PHASE_4.md`'s "Next up" note)
       (Target: `packages/app/src/utils/appUtils.ts`, Test:
       `npm test -w packages/app -- appUtils`)
-- [ ] Task 16: `utils/sheetCacheUtils.ts` (+ `.test.ts`) — swap `RawInput` type import
+- [x] Task 16: `utils/sheetCacheUtils.ts` (+ `.test.ts`) — swap `RawInput` type import
       to `@dyel/api` (Target: `packages/app/src/utils/sheetCacheUtils.ts`, Test:
       `npm test -w packages/app -- sheetCacheUtils`)
-- [ ] Task 17: `utils/validators/pipelineFreeformValidator.ts` +
+- [x] Task 17: `utils/validators/pipelineFreeformValidator.ts` +
       `pipelineSheetValidator.ts` (+ `.test.ts`s) — swap `classifyExerciseName`
       import to `@dyel/api` (Target: `packages/app/src/utils/validators/`, Test:
       `npm test -w packages/app -- validators`)
-- [ ] Task 18: `components/charts/SessionBarChart.tsx`, `DateLineChart.tsx`,
+- [x] Task 18: `components/charts/SessionBarChart.tsx`, `DateLineChart.tsx`,
       `SigmaChart.tsx`, `TotalChart.tsx` — swap `ChartPoint` type import to
       `@dyel/api` (Target: `packages/app/src/components/charts/`, Test:
       `npm test -w packages/app -- charts`)
-- [ ] Task 19: `components/shared/StrengthScoreCalculator.tsx` — swap
+- [x] Task 19: `components/shared/StrengthScoreCalculator.tsx` — swap
       `computeStrengthScores` import to `@dyel/api` (Target:
       `packages/app/src/components/shared/StrengthScoreCalculator.tsx`, Test:
       `npm test -w packages/app -- StrengthScoreCalculator`)
-- [ ] Task 20: `components/conjugate/ConjugateCharts.tsx` — swap `LINE_COLORS`
+- [x] Task 20: `components/conjugate/ConjugateCharts.tsx` — swap `LINE_COLORS`
       import to `@dyel/api` (Target:
       `packages/app/src/components/conjugate/ConjugateCharts.tsx`, Test:
       `npm test -w packages/app -- ConjugateCharts`)
-- [ ] Task 21: `hooks/infra/usePipelineValidation.ts` — keep `runPipeline` from
+- [x] Task 21: `hooks/infra/usePipelineValidation.ts` — keep `runPipeline` from
       `@dyel/pipeline` (legitimate exception), swap `PipelineResult` type import to
       `@dyel/api` (Target: `packages/app/src/hooks/infra/usePipelineValidation.ts`,
       Test: `npm test -w packages/app -- usePipelineValidation`)
-- [ ] Task 22: `hooks/pipeline/usePipelineDatasets.ts` (+ `.test.ts`) — **correction
+- [x] Task 22: `hooks/pipeline/usePipelineDatasets.ts` (+ `.test.ts`) — **correction
       (found during a post-Phase-1 doc review): `buildDatasetsFromModel` is NOT
       exported from `@dyel/api`** — per `API_PHASE_1.md`'s Design decisions, it's
       deliberately engine-internal, never exposed on `@dyel/api`'s own public surface
@@ -121,7 +121,7 @@ logic — no task below touches it.
       written is impossible. Instead: add a new small wrapper to `@dyel/api` — e.g.
       `packages/api/src/chart/buildChartDatasets.ts` exporting
       `buildChartDatasets(model: PipelineModel, specs: DatasetSpec[], ui: RenderParams):
-    Record<string, RechartsRow[]>`, a thin pass-through to `buildDatasetsFromModel`
+  Record<string, RechartsRow[]>`, a thin pass-through to `buildDatasetsFromModel`
       (imported directly from `@dyel/pipeline`, same documented engine-internal
       exception category as `matches`/`normalizeE1rm`/etc.) — mirroring the existing
       precedent in `getCompetitionTotal.ts`. Export it from `packages/api/src/index.ts`.
@@ -132,56 +132,56 @@ logic — no task below touches it.
       issue there). (Target: `packages/api/src/chart/buildChartDatasets.ts` (new),
       `packages/api/src/index.ts`, `packages/app/src/hooks/pipeline/usePipelineDatasets.ts`,
       Test: `npm test -w packages/api && npm test -w packages/app --
-    usePipelineDatasets`)
-- [ ] Task 23: `hooks/pipeline/usePipelineTotalChartData.ts` — swap `RenderParams`/
+  usePipelineDatasets`)
+- [x] Task 23: `hooks/pipeline/usePipelineTotalChartData.ts` — swap `RenderParams`/
       `ChartPoint` types to `@dyel/api` (Target:
       `packages/app/src/hooks/pipeline/usePipelineTotalChartData.ts`, Test:
       `npm test -w packages/app -- usePipelineTotalChartData`)
-- [ ] Task 24: `hooks/pipeline/usePipelineDiagnostics.test.ts` — swap `PipelineModel`/
+- [x] Task 24: `hooks/pipeline/usePipelineDiagnostics.test.ts` — swap `PipelineModel`/
       `VariantAssessment` types to `@dyel/api` (Target:
       `packages/app/src/hooks/pipeline/usePipelineDiagnostics.test.ts`, Test:
       `npm test -w packages/app -- usePipelineDiagnostics`)
 
 ### Group B — consumers of moved logic (depends on Phase 1 Tasks 4-11)
 
-- [ ] Task 25: `hooks/pipeline/usePipelineConjugateChartData.ts` — repoint to
+- [x] Task 25: `hooks/pipeline/usePipelineConjugateChartData.ts` — repoint to
       `@dyel/api`'s moved `conjugateChartSpecs`/`buildBestSetByLabelAndDate` plus
       `RenderParams`/`RechartsRow`/`ChartPoint` type re-exports (Target:
       `packages/app/src/hooks/pipeline/usePipelineConjugateChartData.ts`, Test:
       `npm test -w packages/app -- usePipelineConjugateChartData`)
-- [ ] Task 26: `hooks/pipeline/usePipelineVariationRadarData.ts` (+ `.test.ts`) —
+- [x] Task 26: `hooks/pipeline/usePipelineVariationRadarData.ts` (+ `.test.ts`) —
       repoint to `@dyel/api`'s moved `buildLastSessionDetail`,
       `snapshotVariationsFromPipeline`/`snapshotNormalizedVariationsFromPipeline`, and
       new `buildCanonicalByLabel`/`resolveTargetLabel` selectors; replace the inline
       `for` loops with calls to those; swap `RenderParams` type (Target:
       `packages/app/src/hooks/pipeline/usePipelineVariationRadarData.ts`, Test:
       `npm test -w packages/app -- usePipelineVariationRadarData`)
-- [ ] Task 27: `utils/pipelineChartUtils.ts` — **delete**, repoint the consumers of
+- [x] Task 27: `utils/pipelineChartUtils.ts` — **delete**, repoint the consumers of
       `mergeRechartsRowsToChartPoints`/`mergeWideRechartsRows`/
       `mergeVolumeIntoChartPoints`/`formatChartDate` (grep for actual call sites at
       implementation time) to `@dyel/api`'s `chart/pipelineChartUtils.ts` (Target:
       `packages/app/src/utils/pipelineChartUtils.ts` (deleted) and its consumers,
       Test: `npm test -w packages/app`)
-- [ ] Task 28: Extend `hooks/pipeline/usePipelineRepCalculator.ts` per the design
+- [x] Task 28: Extend `hooks/pipeline/usePipelineRepCalculator.ts` per the design
       decision above, calling `@dyel/api`'s `repCalculator/repCalculatorSelectors.ts`
       and `repCalculator/repCalculatorUtils.ts`; add/extend `.test.ts` covering the
       hook's returned derived state end-to-end (Target:
       `packages/app/src/hooks/pipeline/usePipelineRepCalculator.ts`, Test:
       `npm test -w packages/app -- usePipelineRepCalculator`) — **must land before or
       paired with Task 29, not in parallel**
-- [ ] Task 29: Rewrite `components/shared/RepCalculator.tsx` to be render-only,
+- [x] Task 29: Rewrite `components/shared/RepCalculator.tsx` to be render-only,
       calling the extended `usePipelineRepCalculator(tabRows, baselineNames)` hook
       from Task 28 instead of holding its own state/derivation; keep only
       `roundTo5`/`sourceNote`/`LIFT_LABELS`/JSX (Target:
       `packages/app/src/components/shared/RepCalculator.tsx`, Test:
       `npm test -w packages/app -- RepCalculator`)
-- [ ] Task 30: Delete now-empty `app/src/pipeline/` directory
+- [x] Task 30: Delete now-empty `app/src/pipeline/` directory
       (`conjugateBestSet.ts(.test.ts)`, `lastSessionDetail.ts(.test.ts)`,
       `repCalculatorUtils.ts`, `conjugateChartSpecs.ts`) and its `CLAUDE.md`, once
       Tasks 25-29 confirm nothing else references it (Target:
       `packages/app/src/pipeline/` (deleted), Test:
       `npm run build -w packages/app && npm test -w packages/app`)
-- [ ] Task 31: Delete `app/src/utils/variationSnapshot.ts` (+ `.test.ts`), now unused
+- [x] Task 31: Delete `app/src/utils/variationSnapshot.ts` (+ `.test.ts`), now unused
       after Task 26 (Target: `packages/app/src/utils/variationSnapshot.ts` (deleted),
       Test: `npm run build -w packages/app`)
 

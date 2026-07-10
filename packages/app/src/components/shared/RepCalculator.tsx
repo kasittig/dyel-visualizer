@@ -1,28 +1,13 @@
-import { useState, useMemo, useEffect, useRef } from 'react';
 import clsx from 'clsx';
 import {
   CONJUGATE_BARS,
   CONJUGATE_STANCES,
   CONJUGATE_EQUIPMENT,
   CONJUGATE_ADDL_WTS,
-  facetsFromTags,
-  facetFamilyKey,
-} from '@dyel/pipeline';
-import type {
-  ConjugateAddlWt,
-  ConjugateBar,
-  ConjugateEquipment,
-  ConjugateStance,
-} from '@dyel/pipeline';
-import type { LiftType, SplitRows } from '@dyel/api';
-import { usePipelineModel } from '../../context/PipelineContext';
-import {
-  predictWeightForReps,
-  predictRepsForWeight,
-  resolveE1RMEstimate,
-  convertE1RMToDisplayUnit,
-} from '../../pipeline/repCalculatorUtils';
-import type { E1RMEstimate } from '../../pipeline/repCalculatorUtils';
+} from '@dyel/api';
+import type { LiftType, SplitRows, E1RMEstimate } from '@dyel/api';
+import { convertE1RMToDisplayUnit } from '@dyel/api';
+import { usePipelineRepCalculator } from '../../hooks/pipeline/usePipelineRepCalculator';
 import styles from './RepCalculator.module.css';
 import { CollapsibleSection } from './CollapsibleSection.tsx';
 
@@ -32,10 +17,6 @@ const LIFT_LABELS: Record<LiftType, string> = {
   deadlift: 'Deadlift',
   accessory: 'Accessory',
 };
-
-function roundTo5(n: number): number {
-  return Math.round(n / 5) * 5;
-}
 
 function sourceNote(estimate: E1RMEstimate): string {
   switch (estimate.method) {
@@ -53,174 +34,32 @@ export function RepCalculator({
   tabRows: Record<LiftType, SplitRows>;
   baselineNames: Partial<Record<LiftType, string>>;
 }) {
-  const [liftType, setLiftType] = useState<LiftType>('squat');
-  const [selectedCanonical, setSelectedCanonical] = useState('');
-  const [reps, setReps] = useState('');
-  const [weight, setWeight] = useState('');
-  const [selectedBar, setSelectedBar] = useState<ConjugateBar | null>(null);
-  const [selectedStance, setSelectedStance] = useState<ConjugateStance | null>(null);
-  const [selectedEquipment, setSelectedEquipment] = useState<ConjugateEquipment | null>(null);
-  const [selectedAddlWt, setSelectedAddlWt] = useState<ConjugateAddlWt | null>(null);
-  const [selectedEquipmentMagnitude, setSelectedEquipmentMagnitude] = useState<string | null>(null);
-
-  const { status: pipelineStatus, model: pipelineModel } = usePipelineModel();
-  const records = tabRows[liftType].maxEffort;
-
-  const unit = useMemo(() => {
-    const found = records.find((r) => r.meta?.rawUnit);
-    return (found?.meta?.rawUnit === 'lbs' ? 'lbs' : 'kg') as 'lbs' | 'kg';
-  }, [records]);
+  const {
+    liftType,
+    setLiftType,
+    exercisesForType,
+    activeCanonical,
+    selectedBar,
+    setSelectedBar,
+    selectedStance,
+    setSelectedStance,
+    selectedEquipment,
+    setSelectedEquipment,
+    selectedAddlWt,
+    setSelectedAddlWt,
+    selectedEquipmentMagnitude,
+    setSelectedEquipmentMagnitude,
+    availableMagnitudes,
+    reps,
+    weight,
+    handleRepsChange,
+    handleWeightChange,
+    handleSelectedCanonicalChange,
+    unit,
+    estimate,
+  } = usePipelineRepCalculator(tabRows, baselineNames);
 
   const hasAccessories = tabRows.accessory.all.length > 0;
-
-  const availableMagnitudes = useMemo(() => {
-    if (!selectedEquipment || !['board', 'blocks', 'deficit'].includes(selectedEquipment)) {
-      return [];
-    }
-
-    const mags = records
-      .map((r) => facetsFromTags(r.tags))
-      .filter((f) => f.equipment === selectedEquipment && f.equipmentMagnitude)
-      .map((f) => f.equipmentMagnitude!);
-
-    return Array.from(new Set(mags)).sort((a, b) => {
-      const [nA, nB] = [parseInt(a, 10), parseInt(b, 10)];
-      return isNaN(nA) || isNaN(nB) ? a.localeCompare(b) : nA - nB;
-    });
-  }, [selectedEquipment, records]);
-
-  const exercisesForType = useMemo(() => {
-    const seen = new Map<string, { canonical: string; label: string }>();
-    records.forEach((r) => {
-      if (!seen.has(r.canonical)) {
-        seen.set(r.canonical, { canonical: r.canonical, label: r.meta?.rawExercise ?? r.exercise });
-      }
-    });
-    return Array.from(seen.values()).sort((a, b) => a.label.localeCompare(b.label));
-  }, [records]);
-
-  // --- ELIMINATED THE EFFECT ENTIRELY ---
-  // Derive the active canonical key inline during render.
-  // If the user's manual selection is no longer valid for this liftType, default to the first available exercise.
-  const activeCanonical = records.some((r) => r.canonical === selectedCanonical)
-    ? selectedCanonical
-    : (exercisesForType[0]?.canonical ?? '');
-
-  const selectedRecord = useMemo(
-    () => records.find((r) => r.canonical === activeCanonical),
-    [records, activeCanonical]
-  );
-
-  // Unified state updater used exclusively by user interactions
-  const syncFacetsAndInputs = (canonical: string, rec?: (typeof records)[number]) => {
-    const f = rec ? facetsFromTags(rec.tags) : null;
-    setSelectedCanonical(canonical);
-    setReps('');
-    setWeight('');
-    setSelectedBar(f?.bar ?? null);
-    setSelectedStance(f?.stance ?? null);
-    setSelectedEquipment(f?.equipment ?? null);
-    setSelectedAddlWt(f?.addlWts?.[0] ?? null);
-    setSelectedEquipmentMagnitude(f?.equipmentMagnitude ?? null);
-  };
-
-  function handleSelectedCanonicalChange(canonical: string) {
-    syncFacetsAndInputs(
-      canonical,
-      records.find((r) => r.canonical === canonical)
-    );
-  }
-
-  // Derive the effective canonical for e1RM lookup
-  const effectiveCanonical = useMemo(() => {
-    if (!selectedRecord) {
-      return null;
-    }
-    if (liftType === 'accessory') {
-      return selectedRecord.canonical;
-    }
-
-    const candidateKey = [
-      liftType,
-      selectedBar,
-      selectedStance !== 'competition' && selectedStance,
-      selectedEquipment,
-    ]
-      .filter(Boolean)
-      .join('-');
-
-    const match = records.find((rec) => {
-      const fKey = facetFamilyKey(rec.canonical);
-      const f = facetsFromTags(rec.tags);
-
-      const keyMatch =
-        fKey === candidateKey ||
-        (f.bar === selectedBar &&
-          f.stance === selectedStance &&
-          f.equipment === selectedEquipment &&
-          f.equipmentMagnitude === selectedEquipmentMagnitude);
-
-      if (!keyMatch) {
-        return false;
-      }
-      return selectedAddlWt ? f.addlWts.includes(selectedAddlWt) : f.addlWts.length === 0;
-    });
-
-    return match ? match.canonical : selectedRecord.canonical;
-  }, [
-    selectedRecord,
-    liftType,
-    selectedBar,
-    selectedStance,
-    selectedEquipment,
-    selectedEquipmentMagnitude,
-    selectedAddlWt,
-    records,
-  ]);
-
-  const estimate = useMemo(() => {
-    if (!effectiveCanonical || pipelineStatus !== 'success' || !pipelineModel) {
-      return null;
-    }
-
-    return resolveE1RMEstimate({
-      liftType,
-      targetCanonical: effectiveCanonical,
-      baselineName: baselineNames[liftType],
-      today: new Date(),
-      model: pipelineModel.model,
-      e1rmPoints: pipelineModel.pointsByDeriver.get('e1rm-max-effort') ?? [],
-    });
-  }, [effectiveCanonical, pipelineStatus, pipelineModel, baselineNames, liftType]);
-
-  // Ref safely managed via mutations during event handlers
-  const repsRef = useRef(reps);
-
-  const syncWeightFromReps = (rVal: string) => {
-    const r = parseFloat(rVal);
-    if (r > 0 && estimate) {
-      const dispE1RM = convertE1RMToDisplayUnit(estimate.e1rm, unit);
-      setWeight(String(roundTo5(predictWeightForReps(dispE1RM, r))));
-    }
-  };
-
-  useEffect(() => {
-    syncWeightFromReps(repsRef.current);
-  }, [estimate, unit]);
-
-  function handleRepsChange(val: string) {
-    setReps(val);
-    syncWeightFromReps(val);
-  }
-
-  function handleWeightChange(val: string) {
-    setWeight(val);
-    const w = parseFloat(val);
-    if (w > 0 && estimate) {
-      const dispE1RM = convertE1RMToDisplayUnit(estimate.e1rm, unit);
-      setReps(predictRepsForWeight(dispE1RM, w).toFixed(1));
-    }
-  }
 
   return (
     <CollapsibleSection label="Rep Calculator">
@@ -248,7 +87,7 @@ export function RepCalculator({
           <div className={styles.field}>
             <div className={styles.fieldLabel}>Exercise</div>
             <select
-              value={selectedCanonical}
+              value={activeCanonical}
               onChange={(e) => handleSelectedCanonicalChange(e.target.value)}
               className={styles.input}
             >

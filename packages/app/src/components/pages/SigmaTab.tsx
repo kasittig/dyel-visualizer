@@ -2,7 +2,7 @@ import type { DateRange } from 'react-day-picker';
 import { CollapsibleSection } from '../shared/CollapsibleSection';
 import { EditableDateChip } from '../shared/EditableDateChip';
 import { usePipelineTotalChartData } from '../../hooks/pipeline/usePipelineTotalChartData';
-import { mergeVolumeIntoChartPoints } from '../../utils/pipelineChartUtils';
+import { mergeVolumeIntoChartPoints } from '@dyel/api';
 import { TotalChart } from '../charts/TotalChart';
 import { SessionBarChart } from '../charts/SessionBarChart';
 import { SigmaChart } from '../charts/SigmaChart';

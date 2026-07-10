@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import clsx from 'clsx';
-import { computeStrengthScores } from '@dyel/pipeline';
+import { computeStrengthScores } from '@dyel/api';
 import { CollapsibleSection } from './CollapsibleSection';
 import styles from './StrengthScoreCalculator.module.css';
 import { getCompetitionTotal } from '@dyel/api';

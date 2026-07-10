@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
-import type { DatasetSpec, RenderParams, RechartsRow } from '@dyel/pipeline';
-import { buildDatasetsFromModel } from '@dyel/pipeline';
+import { buildChartDatasets } from '@dyel/api';
+import type { DatasetSpec, RenderParams, RechartsRow } from '@dyel/api';
 import { usePipelineModel } from '../../context/PipelineContext';
 
 /**
@@ -22,5 +22,5 @@ export function usePipelineDatasets(
 ): Record<string, RechartsRow[]> {
   const { model } = usePipelineModel();
 
-  return useMemo(() => (model ? buildDatasetsFromModel(model, specs, ui) : {}), [model, specs, ui]);
+  return useMemo(() => (model ? buildChartDatasets(model, specs, ui) : {}), [model, specs, ui]);
 }

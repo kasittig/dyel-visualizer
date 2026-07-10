@@ -1,6 +1,6 @@
 import { createContext, useContext, useMemo } from 'react';
 import type { ReactNode } from 'react';
-import type { PipelineModel } from '@dyel/pipeline';
+import type { PipelineModel } from '@dyel/api';
 
 interface PipelineContextValue {
   status: 'idle' | 'loading' | 'success' | 'error';

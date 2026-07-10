@@ -1,4 +1,4 @@
-import type { LiftType } from '@dyel/pipeline';
+import type { LiftType } from '@dyel/api';
 
 export interface SheetRef {
   id: string;

@@ -1,11 +1,14 @@
 import { useMemo } from 'react';
 import type { DateRange } from 'react-day-picker';
-import type { RenderParams, RechartsRow, ChartPoint } from '@dyel/pipeline';
+import type { RenderParams, RechartsRow, ChartPoint } from '@dyel/api';
 import { usePipelineModel } from '../../context/PipelineContext';
 import { usePipelineDatasets } from './usePipelineDatasets';
-import { conjugateChartSpecs } from '../../pipeline/conjugateChartSpecs';
-import { buildBestSetByLabelAndDate, type BestSet } from '../../pipeline/conjugateBestSet';
-import { mergeWideRechartsRows } from '../../utils/pipelineChartUtils';
+import {
+  conjugateChartSpecs,
+  buildBestSetByLabelAndDate,
+  type BestSet,
+  mergeWideRechartsRows,
+} from '@dyel/api';
 import { roundWeight } from '../../utils/weightUnit';
 
 export const NORMALIZED_KEY = 'normalized';

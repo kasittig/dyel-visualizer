@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, cleanup } from '@testing-library/react';
-import type { PipelineModel, AthleteContext } from '@dyel/pipeline';
+import type { PipelineModel, AthleteContext } from '@dyel/api';
 import { PipelineProvider, usePipelineModel } from './PipelineContext';
 
 function TestConsumer({ id }: { id: string }) {

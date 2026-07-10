@@ -7,8 +7,8 @@ between `packages/app` and `@dyel/pipeline` (see `migration/API_PHASE_1.md` for 
 rationale, superseding `migration/PipelineApiBoundary.md`). Four phased docs:
 
 - `migration/API_PHASE_1.md` — add `@dyel/api` modules (**DONE, committed**)
-- `migration/API_PHASE_2.md` — repoint `packages/app` consumers to `@dyel/api` (**NOT
-  STARTED — reviewed and one bug fixed, ready to delegate, see below**)
+- `migration/API_PHASE_2.md` — repoint `packages/app` consumers to `@dyel/api` (**DONE,
+  all 19 tasks landed and verified — uncommitted, see below**)
 - `migration/API_PHASE_3.md` — verify the boundary is actually enforced (not started)
 - `migration/API_PHASE_4.md` — documentation cleanup (not started)
 
@@ -52,7 +52,55 @@ Deferred out of Phase 1 on purpose: **Task 12b** (delete the now-duplicated
 from `packages/pipeline`) — blocked on Phase 2's Tasks 19/20 landing first, since
 `packages/app` still imports pipeline's copies directly until then.
 
-## Phase 2: doc review complete, one bug found and fixed, not yet delegated
+## Phase 2: DONE — all 19 tasks (13-31) landed, verified, uncommitted
+
+Delegated via `feature-implementer` (Group A/B mechanical swaps + cleanup) and
+`senior-coder` (Tasks 28/29, the `RepCalculator.tsx` refactor). Final cross-package
+regression (independently re-run via `qa-reviewer`, not just agent-reported):
+
+- `npm run build -w packages/pipeline && npm run build -w packages/api && npm run build
+-w packages/app`: all clean, 0 TypeScript errors
+- `npm test -w packages/pipeline`: 181/181 (unaffected, matches baseline)
+- `npm test -w packages/api`: 125/125 (unaffected, matches Phase 1 baseline)
+- `npm test -w packages/app`: **133/133** (down from the 166/166 Phase 1 baseline —
+  expected: 4 test files were deleted along with their now-dead source in Tasks 27/30/31
+  — `pipelineChartUtils.test.ts`, `conjugateBestSet.test.ts`, `lastSessionDetail.test.ts`,
+  `variationSnapshot.test.ts` — accounts for exactly the 33-test delta)
+
+**Process notes for future phases:**
+
+- Two `senior-coder` agent runs (Tasks 28 and 29) reported they had no shell/bash tool
+  available in their sandbox and could only do static review, despite the agent
+  definition listing `Command`. Both times I re-ran the actual `npm test`/`npm run
+build` verification myself afterward rather than trusting the static review — this
+  caught nothing broken in either case, but is worth flagging: don't trust a
+  `senior-coder` "tests should pass" claim without independently re-running the actual
+  commands.
+- Task 29's agent (RepCalculator.tsx rewrite) left two real boundary leaks in its diff
+  that I caught via manual `git diff` review after its self-report: (1) `CONJUGATE_BARS`/
+  `CONJUGATE_STANCES`/`CONJUGATE_EQUIPMENT`/`CONJUGATE_ADDL_WTS` were still imported
+  directly from `@dyel/pipeline` instead of `@dyel/api` (both export the same consts),
+  and (2) the `E1RMEstimate` type was still imported from the now-almost-dead
+  `../../pipeline/repCalculatorUtils` instead of `@dyel/api`. Neither broke the build
+  (both are/were valid TypeScript), which is exactly the "build passing is necessary but
+  not sufficient" trap the doc's Verification section warns about. Fixed directly rather
+  than re-delegating. Worth a `grep -rln "@dyel/pipeline"` sanity sweep after any
+  component-level task, not just a build/test check.
+- The Task 30 agent (deleting `packages/app/src/pipeline/`) found a real leftover
+  reference Task 26 had missed (`usePipelineVariationRadarData.ts` was still importing
+  `conjugateChartSpecs` from the local `pipeline/` dir, not `@dyel/api`) and fixed it
+  inline before deleting the directory — correct call, flagged and verified rather than
+  blindly trusted.
+- Final `grep -rln "@dyel/pipeline" packages/app/src` (excluding `.test.` files) turned
+  up exactly the two documented exceptions (`App.tsx`, `usePipelineValidation.ts`) plus
+  two files with only doc-comment mentions of `@dyel/pipeline` (no real imports) — this
+  is the check Phase 3 should run first and treat as the acceptance gate.
+
+**Doc status:** `migration/API_PHASE_2.md` updated — status line flipped to DONE, all 19
+task checkboxes marked `[x]`. **Not yet committed** — everything in this phase (Tasks
+13-31 code changes + the doc update) is sitting uncommitted in the working tree.
+
+## Phase 2 archive: doc review before delegation (historical, kept for context)
 
 Before delegating, cross-checked every export/file path `API_PHASE_2.md`'s 19 tasks
 (13-31) assume against what Phase 1 actually produced.
@@ -102,19 +150,15 @@ grep, only the barrel `hooks/pipeline/index.ts` references it today.
 
 ## Next
 
-1. Decide whether to commit the `migration/API_PHASE_2.md` fix (currently uncommitted —
-   `git diff --stat` shows just that one file, +24/-5 lines).
-2. Delegate Phase 2's Group A tasks (13-27, 30, 31) — sequentially or in small batches
-   where file scopes don't overlap, each followed by `npm run build -w packages/app &&
-npm test -w packages/app` verification (see Phase 1's execution pattern in git
-   history for the sequencing/verification approach to reuse).
-3. Handle Tasks 28/29 as a paired, same-session unit on a stronger model, verified
-   against the working-tree `RepCalculator.tsx` (not git history) the same way Phase
-   1's Task 11 was.
-4. Once all of Phase 2 lands and `packages/app` build/tests are green, proceed to
-   `API_PHASE_3.md`'s verification gate (grep check + full regression + `qa-reviewer`
-   sign-off), then `API_PHASE_4.md`'s doc cleanup — which also records Task 12b as new
-   work once Phase 2's Tasks 19/20 are confirmed landed.
+1. Phase 2 is committed as of this update (see git log).
+2. Proceed to `API_PHASE_3.md`'s verification gate (grep check + full regression +
+   `qa-reviewer` sign-off) — the `grep -rln "@dyel/pipeline" packages/app/src` sweep run
+   at the end of Phase 2 already found only the two documented exceptions plus harmless
+   doc-comment mentions, so Phase 3 should mostly be confirming/formalizing that.
+3. Then `API_PHASE_4.md`'s doc cleanup — which also records Task 12b (deleting
+   `packages/pipeline`'s now-duplicated `facetsFromTags`/`facetFamilyKey`/
+   `CONJUGATE_*`/`computeStrengthScores`/`LINE_COLORS`) as new work now that Phase 2's
+   Tasks 19/20 (and the rest of Group A) are confirmed landed.
 
 ## Verification commands (reference)
 

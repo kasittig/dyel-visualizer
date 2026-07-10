@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { runPipeline } from '@dyel/pipeline';
-import type { PipelineResult } from '@dyel/pipeline';
+import type { PipelineResult } from '@dyel/api';
 import { extractSheetRef } from '../../utils/appUtils';
 import { sheetCsvUrl, fetchSheetCsv } from '../../utils/sheetFetch';
 import { buildRawInput, PLACEHOLDER_ATHLETE } from '../../utils/rawInputUtils';

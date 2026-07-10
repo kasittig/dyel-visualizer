@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import type { DateRange } from 'react-day-picker';
 import { Line, Tooltip } from 'recharts';
-import { LINE_COLORS } from '@dyel/pipeline';
+import { LINE_COLORS } from '@dyel/api';
 import {
   usePipelineConjugateChartData,
   NORMALIZED_KEY,

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook } from '@testing-library/react';
-import type { PipelineModel, DatasetSpec, RenderParams, Point } from '@dyel/pipeline';
-import { buildDatasetsFromModel } from '@dyel/pipeline';
+import { buildChartDatasets } from '@dyel/api';
+import type { PipelineModel, DatasetSpec, RenderParams, Point } from '@dyel/api';
 import { usePipelineDatasets } from './usePipelineDatasets';
 
 vi.mock('../../context/PipelineContext');
@@ -88,7 +88,7 @@ describe('usePipelineDatasets', () => {
     const ui: RenderParams = {};
     const { result } = renderHook(() => usePipelineDatasets([seriesSpec], ui));
 
-    const expected = buildDatasetsFromModel(fixtureModel, [seriesSpec], ui);
+    const expected = buildChartDatasets(fixtureModel, [seriesSpec], ui);
     expect(result.current).toEqual(expected);
   });
 

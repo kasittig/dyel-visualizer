@@ -1,4 +1,4 @@
-import type { RawInput } from '@dyel/pipeline';
+import type { RawInput } from '@dyel/api';
 
 export interface CachedSheetData {
   sheetKey: string;

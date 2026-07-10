@@ -1,10 +1,9 @@
 import { useMemo } from 'react';
 import type { DateRange } from 'react-day-picker';
-import type { RenderParams, ChartPoint } from '@dyel/pipeline';
+import type { RenderParams, ChartPoint } from '@dyel/api';
 import { usePipelineModel } from '../../context/PipelineContext';
 import { usePipelineDatasets } from './usePipelineDatasets';
-import { TOTAL_CHART_SPECS } from '@dyel/api';
-import { mergeRechartsRowsToChartPoints } from '../../utils/pipelineChartUtils';
+import { TOTAL_CHART_SPECS, mergeRechartsRowsToChartPoints } from '@dyel/api';
 
 const TOTAL_CHART_IDS = ['squat', 'bench', 'deadlift', 'pushPull', 'total'];
 

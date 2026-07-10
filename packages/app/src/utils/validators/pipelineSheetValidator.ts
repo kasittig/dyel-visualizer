@@ -1,5 +1,5 @@
 import Papa from 'papaparse';
-import { classifyExerciseName } from '@dyel/pipeline';
+import { classifyExerciseName } from '@dyel/api';
 
 export interface SheetValidationIssue {
   row: number;
