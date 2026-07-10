@@ -63,48 +63,51 @@ Commits: "Migrate ValidatorPage, useIndexData, and DeadliftStancePreference off
 
 Commits (pending): dead-code cluster deletion + doc updates, both on `migration-phase-1`.
 
-## Remaining, in dependency order
+8. **`parseTextData` migrated off `@dyel/core`** —
+   `packages/api/src/text/parseTextData.ts` now uses `@dyel/pipeline`-native
+   `classifyExerciseName`/`calcE1RM` plus local parsing logic instead of `@dyel/core`'s
+   `extractTextLines`/`textLineToRow`/`nameToExercise`/`parseSession`/
+   `detectWeightUnit`. `App.tsx:186`'s call site (`parseTextData(pastedText)`) needed
+   no changes — public signature/behavior preserved. `packages/api/src/text/
+parseTextData.test.ts` updated to match.
+9. **Confirmed-dead `@dyel/core`-dependent code deleted from `packages/api`** —
+   `filterByDateRange` (`filters/exerciseFilters.ts` + test, whole dir removed),
+   `buildChartData` (`chart/buildChartData.ts` + test, whole dir removed — confirmed
+   dead via grep, only self-reference was its own `index.ts` export and stale `dist/`
+   artifacts), and the non-Tagged half of `volume.ts`
+   (`calculateVolumeCorrelation`, which took `ConjugateDataPair[]` and imported
+   `@dyel/core` — confirmed no caller). `calculateVolumeCorrelationFromTagged` (the
+   `App.tsx:285` call site) was untouched — it was already `@dyel/pipeline`-native.
+   Corresponding exports removed from `packages/api/src/index.ts`.
+10. **Dead `__MODIFIER__EFFECTS__`/`__COEFFICIENTS__` global-injection mechanism
+    removed** — this was untracked in this doc until now, discovered during
+    re-verification. Deleted the ambient declarations (`ExerciseModifierDetail`,
+    `MetricCoefficients`, `MetricCoefficientGroup`, `MetricCoefficient`,
+    `SMAnchorValue`, the two `declare const` lines) from root `global.d.ts`, and the
+    JSON reads + `define` block from `packages/app/vite.config.ts` (also cleaned
+    `packages/app/vitest.config.ts` for consistency). Confirmed via grep: zero
+    consumers outside `packages/core` itself, which no longer exists.
+11. **Final removal** — `packages/core/` deleted entirely. Dropped the `@dyel/core`
+    dependency from `packages/app/package.json`, the path alias from
+    `packages/app/tsconfig.app.json`, the `resolve.alias` entry from
+    `packages/app/vite.config.ts`, and the `npm run build -w packages/core` step from
+    root `package.json`'s build script. Removed the "Shared Core Package" mapping,
+    "Build Shared Core" command, and `@dyel/core`-import-guidance paragraph from root
+    `CLAUDE.md`. Also discovered and fixed a phantom-dependency bug this surfaced:
+    `packages/pipeline/src/parse/csv.ts` uses `papaparse` but never declared it in
+    `packages/pipeline/package.json` — it only resolved because npm workspaces hoisted
+    it from `packages/core`'s dependency list. Added `papaparse`/`@types/papaparse`
+    directly to `packages/pipeline/package.json` to fix.
 
-### 1. Migrate `@dyel/api`'s remaining `@dyel/core` dependencies
+Commits (pending): all of the above, on `migration-phase-1`.
 
-**Discovered mid-effort, not originally scoped.** `packages/api`'s `package.json` only
-declares `@dyel/pipeline` as a dependency, and its own `CLAUDE.md` says it's "the sole
-boundary between `packages/app` and `@dyel/pipeline`" — but several of its modules
-still import `@dyel/core` directly (an undeclared dependency that only resolves
-because npm workspaces hoist `node_modules`):
+## Remaining
 
-- `packages/api/src/text/parseTextData.ts`
-- `packages/api/src/filters/exerciseFilters.ts`
-- `packages/api/src/volume/volume.ts`
-- `packages/api/src/chart/buildChartData.ts`
-
-Confirmed live production impact: `App.tsx` calls `parseTextData`, `filterByDateRange`,
-and `calculateVolumeCorrelation`/`calculateVolumeCorrelationFromTagged` from
-`@dyel/api` directly — all three route through the core-dependent files above, so
-they need real `@dyel/pipeline`-native replacements, not deletion.
-`buildChartData` looks like a dead export now that its only consumer
-(`totalChartParity.test.ts`) has been deleted — **confirm this via grep before
-assuming**, and if genuinely unused, delete it rather than migrate it.
-
-Migrate package-by-package, verifying with `npm test -w packages/api && npm run
-build -w packages/api` after each, plus the full `packages/app` suite since `App.tsx`
-is a live consumer.
-
-### 2. Final removal
-
-Once `grep -rn "@dyel/core" -- ':!packages/core'` (repo root) comes back empty:
-
-- Delete `packages/core/` entirely.
-- Drop it from the root `package.json` workspaces array (currently `packages/*`, so
-  no entry to remove there beyond the directory itself) and the `@dyel/core`
-  dependency entries in `packages/app/package.json` / `packages/api/package.json`.
-- Remove the "Shared Core Package" mapping and "Build Shared Core" command from root
-  `CLAUDE.md`.
-- Final verification: `npm install && npm run build -w packages/pipeline && npm run
-build -w packages/api && npm run build -w packages/app && npm test -w
-packages/pipeline && npm test -w packages/api && npm test -w packages/app` — all
-  green, and the pre-commit hook (which already runs the full workspace build+test)
-  will re-confirm this on the deletion commit.
+None — `@dyel/core` is fully removed from the workspace. Final verification (via
+`qa-reviewer`, independently re-run): `npm install`, `npm run build -w
+packages/pipeline`, `npm run build -w packages/api`, `npm run build -w packages/app`
+all clean; `npm test -w packages/pipeline` 181/181, `npm test -w packages/api` 39/39,
+`npm test -w packages/app` 166/166 — 386/386 total, no regressions.
 
 ## Deferred — explicitly next, but NOT part of this effort
 
@@ -119,7 +122,9 @@ consuming "Controller" layer. The two docs currently disagree with each other an
 reality.
 
 This is a separate, explicitly deferred effort: **do not start it until
-`packages/core` is fully deleted per step 4 above.** When picked up, it needs its own
+`packages/core` is fully deleted per step 11 above.** `packages/core` is now fully
+deleted, so this deferred effort is unblocked and can be picked up in a future
+session. When picked up, it needs its own
 scoping pass to reconcile the two conflicting docs (either move everything behind
 `@dyel/api`, or walk back `@dyel/api/CLAUDE.md`'s "sole boundary" claim to match the
 documented Controller-layer convention) before touching any files.

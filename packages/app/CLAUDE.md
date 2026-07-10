@@ -77,7 +77,7 @@ The app follows an MVC-like separation:
 
 - **Model** = `@dyel/pipeline`'s `runPipelineModel(raw, athlete): PipelineModel` (parse → tag → normalize → diagnose), executed once per raw-input/athlete change. Owned by `PipelineProvider` in `src/context/PipelineContext.tsx` and accessed via the `usePipelineModel()` hook.
 - **Controller** = `hooks/pipeline/*` selectors (e.g. `usePipelineDatasets`, `usePipelineTotalChartData`, `usePipelineDiagnostics`, `usePipelineRepCalculator`) that read the shared `PipelineModel`, plus non-hook view-derivation helpers in `src/pipeline/*.ts` (chart specs, `lastSessionDetail.ts`, `repCalculatorUtils.ts`, `variationSnapshot.ts`). These are pure functions with no React dependency.
-- **View** = `components/**`, render-only, no direct `@dyel/core`/`@dyel/pipeline` imports (except the documented test-file-only parity-test exception below).
+- **View** = `components/**`, render-only, no direct `@dyel/core`/`@dyel/pipeline` imports.
 
 The `src/pipeline/` directory remains named `pipeline/` and is not renamed to `views/` or `selectors/` — subdirectories are documented per-file via existing `CLAUDE.md` files, and a rename would unnecessarily churn existing migration docs (#459, #460, #461) with no functional gain.
 
