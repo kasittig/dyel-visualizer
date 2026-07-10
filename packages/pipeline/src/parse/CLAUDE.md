@@ -13,6 +13,7 @@ here: output weights are always kg; no unit information escapes this stage.
 
 Unit precedence: `record-level > ctx.datasetUnit > ctx.fallback ('lbs')`.
 `resolveUnit` is internal to this stage — never export it past parse/.
+`convertToKg` is a shared helper (unitConversion.ts) used by CSV and freeform adapters — internal to parse/.
 Every record carries `meta.rawUnit` / `meta.rawWeight` (audit trail).
 
 ## Adapters

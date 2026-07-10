@@ -2,10 +2,7 @@ import type { RawInput, Parser, ParseContext } from './parser';
 import { ParseError, resolveUnit } from './parser';
 import type { SetRecord, Unit } from '../types';
 import Papa from 'papaparse';
-
-const convertToKg = (w: number, u: Unit) => {
-  return u === 'lbs' ? w * 0.453592 : w;
-};
+import { convertToKg } from './unitConversion';
 const parseFloat_ = (v: string) => {
   const n = parseFloat(v);
   return isNaN(n) ? null : n;

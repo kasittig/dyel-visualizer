@@ -2,10 +2,7 @@ import type { RawInput, Parser, ParseContext } from '../parser';
 import { ParseError, resolveUnit } from '../parser';
 import type { SetRecord, Unit } from '../../types';
 import { tokenize, TokenizerError } from './tokenizer';
-
-const convertToKg = (w: number, u: Unit) => {
-  return u === 'lbs' ? w * 0.453592 : w;
-};
+import { convertToKg } from '../unitConversion';
 
 function parseDate(dateStr: string, lineNum: number, rawLine: string): number {
   const d = new Date(dateStr);
