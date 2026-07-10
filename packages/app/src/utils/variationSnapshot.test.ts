@@ -36,12 +36,29 @@ describe('snapshotVariationsFromPipeline', () => {
       'lbs',
     ],
     [
-      'handles partial data per variation',
+      'collects all variations from different dates (sparse per-day data)',
       [
-        { t: 1000, squat: 100 },
-        { t: 2000, bench: 90 },
+        { t: 1000, Bench: 90 },
+        { t: 2000, 'Bench (2 board)': 85 },
+        { t: 3000, 'Bench (Slingshot)': 95 },
+        { t: 1500, 'Bench (chains)': 80 },
       ] as RechartsRow[],
-      { bench: Math.round(90 * KG_TO_LBS) },
+      {
+        Bench: Math.round(90 * KG_TO_LBS),
+        'Bench (2 board)': Math.round(85 * KG_TO_LBS),
+        'Bench (Slingshot)': Math.round(95 * KG_TO_LBS),
+        'Bench (chains)': Math.round(80 * KG_TO_LBS),
+      },
+      'lbs',
+    ],
+    [
+      'same variation key appears in multiple rows - uses latest value',
+      [
+        { t: 1000, Bench: 80 },
+        { t: 2000, Bench: 85 },
+        { t: 3000, Bench: 90 },
+      ] as RechartsRow[],
+      { Bench: Math.round(90 * KG_TO_LBS) },
       'lbs',
     ],
   ])('extracts snapshot %s', (_, rows, expected, unit) => {

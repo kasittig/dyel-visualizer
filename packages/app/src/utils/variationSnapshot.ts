@@ -15,6 +15,12 @@ const getConverter = (unit: 'lbs' | 'kg') =>
  *
  * Returns an object keyed by variation label with the latest e1RM value for each.
  * Non-numeric values and the timestamp key 't' are excluded.
+ *
+ * Since the input dataset is not forward-filled (each row only contains variations
+ * actually logged on that calendar day), this function scans ALL rows chronologically,
+ * and for each variation key, keeps the value from the row with the maximum timestamp
+ * at which that key has a defined numeric value — i.e., each variation's own latest
+ * logged value, not the literal last row's contents.
  */
 export function snapshotVariationsFromPipeline(
   variationRows: RechartsRow[],
@@ -25,13 +31,20 @@ export function snapshotVariationsFromPipeline(
   }
 
   const conv = getConverter(unit);
-  // Find the row with the maximum timestamp (most recent)
-  const lastRow = variationRows.reduce((a, b) => ((b.t as number) > (a.t as number) ? b : a));
+  const result: Record<string, number> = {};
 
-  // Extract all non-timestamp numeric values and convert to display unit
-  return Object.fromEntries(
-    Object.entries(lastRow)
-      .filter(([k, v]) => k !== 't' && typeof v === 'number')
-      .map(([k, v]) => [k, Math.round(conv(v as number))])
-  );
+  // Sort rows by timestamp ascending so that later rows' values naturally overwrite earlier ones
+  const sorted = [...variationRows].sort((a, b) => (a.t as number) - (b.t as number));
+
+  // For each row (in chronological order), update all numeric non-`t` keys
+  // Since we process chronologically, the final value in result[key] is the latest one for that key
+  for (const row of sorted) {
+    for (const [k, v] of Object.entries(row)) {
+      if (k !== 't' && typeof v === 'number') {
+        result[k] = Math.round(conv(v));
+      }
+    }
+  }
+
+  return result;
 }
