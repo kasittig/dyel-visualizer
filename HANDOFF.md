@@ -1,79 +1,124 @@
-# HANDOFF: @dyel/core deprecation (migration-phase-1)
+# HANDOFF: `@dyel/api`-as-sole-boundary migration (migration-phase-1)
 
 ## Background
 
-This file is the live status tracker for team-lead-coordinated execution of the
-`@dyel/core` removal. Goal: fully remove `@dyel/core` from the workspace once
-`@dyel/pipeline`/`@dyel/api` cover its functionality.
+Live status tracker for the multi-phase migration making `@dyel/api` the sole boundary
+between `packages/app` and `@dyel/pipeline` (see `migration/API_PHASE_1.md` for the full
+rationale, superseding `migration/PipelineApiBoundary.md`). Four phased docs:
 
-**This effort is now complete** (see "Status" below) — the full plan and history
-previously lived in `migration/CoreDeprecation.md`, which has been deleted per the
-`migration/` convention of removing docs once the work they describe is 100% done.
-The one piece of follow-on work explicitly deferred out of that doc now has its own
-doc: `migration/PipelineApiBoundary.md` (not started).
+- `migration/API_PHASE_1.md` — add `@dyel/api` modules (**DONE, committed**)
+- `migration/API_PHASE_2.md` — repoint `packages/app` consumers to `@dyel/api` (**NOT
+  STARTED — reviewed and one bug fixed, ready to delegate, see below**)
+- `migration/API_PHASE_3.md` — verify the boundary is actually enforced (not started)
+- `migration/API_PHASE_4.md` — documentation cleanup (not started)
 
-## Task list (this session)
+The prior effort tracked in this file (`@dyel/core` removal) is complete and committed;
+see git history.
 
-- [x] Task 1: Migrate `parseTextData` off `@dyel/core` — replaced
-      `extractTextLines`/`textLineToRow`/`nameToExercise`/`parseSession`/
-      `detectWeightUnit` with `@dyel/pipeline`-native `classifyExerciseName`/
-      `calcE1RM` + local parsing logic (Target: `packages/api/src/text/parseTextData.ts`,
-      `packages/api/src/text/parseTextData.test.ts`)
-- [x] Task 2: Delete confirmed-dead `@dyel/core`-dependent code in `packages/api` —
-      `filterByDateRange`, `buildChartData`, and the non-Tagged half of `volume.ts`
-      (Target: `packages/api/src/filters/`, `packages/api/src/chart/`,
-      `packages/api/src/volume/volume.ts`, `packages/api/src/index.ts`) — ran in
-      parallel with Task 1
-- [x] Task 3: Remove the dead `__MODIFIER__EFFECTS__`/`__COEFFICIENTS__`
-      global-injection mechanism (Target: `global.d.ts`, `packages/app/vite.config.ts`,
-      `packages/app/vitest.config.ts`) — ran in parallel with Tasks 1/2
-- [x] Task 4: Final removal — deleted `packages/core/` entirely; dropped the
-      `@dyel/core` dependency/alias/path entries from `packages/app`'s
-      `package.json`/`tsconfig.app.json`/`vite.config.ts` and root `package.json`'s
-      build script; updated root `CLAUDE.md` (Target: `packages/core/` (deleted),
-      `packages/app/package.json`, `packages/app/tsconfig.app.json`,
-      `packages/app/vite.config.ts`, root `package.json`, root `CLAUDE.md`) — blocked
-      by Tasks 1-3, ran after they completed
-- [x] Task 5: Doc cleanup — fixed `packages/app/CLAUDE.md:80`'s dangling reference to
-      the already-deleted parity-test exception (Target: `packages/app/CLAUDE.md`) —
-      ran independently, any time
+## Phase 1: DONE (committed as `eb13f0f` on `migration-phase-1`)
 
-## Status
+All 12 tasks landed: `@dyel/api` gained owned copies of conjugate facets/best-sets/
+chart-specs, session detail, variation snapshot/radar selectors, chart utilities,
+rep-calculator utils/selectors, strength scores, colors, a shared `weightUnit.ts`, and a
+documented `classifyExerciseName` re-export. `packages/app`/`packages/pipeline` were left
+untouched (by design — both keep their originals until Phase 2 repoints consumers).
 
-**All tasks (1-5) DONE. `@dyel/core` is fully removed from the workspace.**
+**One process note carried forward:** a `feature-implementer` agent doing Task 4 briefly
+violated the "packages/app untouched" rule (rewrote `conjugateBestSet.ts` into a
+re-export bridge, deleted its test). Caught via `git status packages/app/` after the
+task, reverted with `git checkout`, and every subsequent task prompt got an explicit "do
+not touch packages/app" reminder with a post-task `git status` check — no further
+violations. Worth repeating this verification habit in Phase 2, inverted: Phase 2's
+tasks are _supposed_ to touch `packages/app`, so the risk there is scope creep (an agent
+touching files outside its assigned task) rather than an outright forbidden-directory
+violation — spot-check `git status --short` after each task to confirm only the assigned
+file(s) changed.
 
-Task 4 surfaced one unplanned issue: `packages/pipeline/src/parse/csv.ts` uses
-`papaparse` but never declared it in `packages/pipeline/package.json` — it only
-resolved because npm workspaces hoisted it from `packages/core`'s dependency list (a
-phantom dependency). Deleting `packages/core` broke `packages/pipeline`'s build/tests
-until this was found and fixed by adding `papaparse`/`@types/papaparse` directly to
-`packages/pipeline/package.json`.
+**Final verification (independently re-run, not just agent-reported):**
 
-Final verification (independently re-run via `qa-reviewer`, not just agent-reported),
-from a clean `npm install`:
-
-- `npm run build -w packages/pipeline`: clean
 - `npm run build -w packages/api`: clean
-- `npm run build -w packages/app`: clean
-- `npm test -w packages/pipeline`: 181/181 passing
-- `npm test -w packages/api`: 39/39 passing
-- `npm test -w packages/app`: 166/166 passing
-- **Total: 386/386 tests passing, no regressions**
+- `npm test -w packages/api`: **125/125 passing** (11 test files) — this is the
+  pre-Phase-2 baseline count for `packages/api`
+- `npm run build -w packages/pipeline`: clean, unaffected
+- `npm run build -w packages/app`: clean, unaffected
+- `npm test -w packages/app`: **166/166 passing** — pre-Phase-2 baseline for `packages/app`
+  (Phase 3's regression-count check should compare against this number)
+- Commit `eb13f0f` also includes the pre-existing uncommitted `RepCalculator.tsx`
+  refactor (Task 11 extracted from its working-tree state, per the phase doc's explicit
+  instruction to use the working tree, not git HEAD)
 
-`@dyel/core` migration work is fully done, steps 1-11 complete, nothing remaining.
-This has since been committed on `migration-phase-1` (see "Remove @dyel/core entirely
-from the workspace").
+Deferred out of Phase 1 on purpose: **Task 12b** (delete the now-duplicated
+`facetsFromTags`/`facetFamilyKey`/`CONJUGATE_*`/`computeStrengthScores`/`LINE_COLORS`
+from `packages/pipeline`) — blocked on Phase 2's Tasks 19/20 landing first, since
+`packages/app` still imports pipeline's copies directly until then.
 
-## Next up (not started)
+## Phase 2: doc review complete, one bug found and fixed, not yet delegated
 
-The only work left, now unblocked since `packages/core` is deleted, is tracked in
-`migration/PipelineApiBoundary.md`: reconciling `@dyel/api`'s own `CLAUDE.md` claim
-that it's "the sole boundary between `packages/app` and `@dyel/pipeline`" against the
-~20 files in `packages/app` that already import `@dyel/pipeline` directly (`App.tsx`,
-several `components/charts/*.tsx`, `hooks/pipeline/*.ts`, `utils/rawInputUtils.ts`, the
-validators, etc.) — and against `packages/app/CLAUDE.md`'s own MVC "Controller layer"
-section, which documents this as intentional. The two docs currently disagree with
-each other and with reality. This needs its own scoping pass to decide which doc is
-right (move everything behind `@dyel/api`, or walk back the "sole boundary" claim)
-before any implementation starts — see `migration/PipelineApiBoundary.md` for full
-detail.
+Before delegating, cross-checked every export/file path `API_PHASE_2.md`'s 19 tasks
+(13-31) assume against what Phase 1 actually produced.
+
+**Bug found and fixed (uncommitted edit in `migration/API_PHASE_2.md`):** Task 22 told
+the implementer to swap `buildDatasetsFromModel` to `@dyel/api`, but that function is
+deliberately **not exported** from `@dyel/api` (Phase 1's own Design decisions section
+keeps it engine-internal, used only inside `getCompetitionTotal.ts`) — confirmed absent
+from `packages/api/src/index.ts`. Task was impossible as written. Rewrote it to instead
+add a small new `packages/api/src/chart/buildChartDatasets.ts` wrapper (mirroring
+`getCompetitionTotal.ts`'s existing precedent), export it from `index.ts`, and have
+`usePipelineDatasets.ts` call that. Also updated the stale "blocked by API_PHASE_1.md"
+status line now that Phase 1 is done.
+
+**Everything else checked out:** all other referenced exports exist exactly as named
+(`computeStrengthScores`, `LINE_COLORS`, `classifyExerciseName`, `conjugateChartSpecs`,
+`buildBestSetByLabelAndDate`, `buildLastSessionDetail`,
+`snapshotVariationsFromPipeline`/`snapshotNormalizedVariationsFromPipeline`,
+`buildCanonicalByLabel`/`resolveTargetLabel`, the chart-utils quartet, rep-calculator
+utils/selectors, all type-only re-exports); all 22 target file paths in Tasks 13-31
+exist on disk; `usePipelineRepCalculator.ts`'s "dead code, unused by RepCalculator.tsx"
+description (load-bearing for the Task 28/29 design decision) still holds — confirmed by
+grep, only the barrel `hooks/pipeline/index.ts` references it today.
+
+**Delegation-readiness assessment (not yet acted on):**
+
+- **Ready for a lighter/faster model (haiku):** Tasks 13-21, 23-27, 30, 31 — mechanical,
+  single-file import-path swaps or grep-and-repoint/delete work with clear test
+  commands. Sampled the underlying current files for Tasks 25 and 26 directly (not just
+  trusting the doc) — both are confirmed to be clean 1:1 substitutions against Phase 1's
+  new exports/selectors, no open-ended logic work.
+- **Borderline, give extra QA scrutiny regardless of model:** Task 22 (the newly-fixed
+  one) — spans creating new `packages/api` code and editing `packages/app` in the same
+  task, more surface area than a pure swap.
+- **Keep on a stronger model (sonnet), NOT haiku:** Tasks 28 and 29
+  (`usePipelineRepCalculator.ts` extension + `RepCalculator.tsx` render-only rewrite).
+  Read the current `RepCalculator.tsx`: 5 `useState` fields, a `useRef`, a `useEffect`
+  with a real dependency-array subtlety (`syncWeightFromReps` closing over
+  `estimate`/`unit`), several interdependent `useMemo`s — moving all of this into a hook
+  while preserving exact runtime behavior is genuine refactoring risk (stale closures,
+  wrong dependency arrays, effect-ordering bugs), not a mechanical swap. This is exactly
+  why `API_PHASE_3.md`'s own QA checklist singles this file out for manual runtime
+  verification rather than trusting tests alone. The doc also mandates Tasks 28/29 be
+  sequenced/paired (28 before, or with, 29 — never parallel, never split across
+  independently-briefed fresh agents), which should be preserved regardless of model
+  choice.
+
+## Next
+
+1. Decide whether to commit the `migration/API_PHASE_2.md` fix (currently uncommitted —
+   `git diff --stat` shows just that one file, +24/-5 lines).
+2. Delegate Phase 2's Group A tasks (13-27, 30, 31) — sequentially or in small batches
+   where file scopes don't overlap, each followed by `npm run build -w packages/app &&
+npm test -w packages/app` verification (see Phase 1's execution pattern in git
+   history for the sequencing/verification approach to reuse).
+3. Handle Tasks 28/29 as a paired, same-session unit on a stronger model, verified
+   against the working-tree `RepCalculator.tsx` (not git history) the same way Phase
+   1's Task 11 was.
+4. Once all of Phase 2 lands and `packages/app` build/tests are green, proceed to
+   `API_PHASE_3.md`'s verification gate (grep check + full regression + `qa-reviewer`
+   sign-off), then `API_PHASE_4.md`'s doc cleanup — which also records Task 12b as new
+   work once Phase 2's Tasks 19/20 are confirmed landed.
+
+## Verification commands (reference)
+
+```bash
+npm run build -w packages/pipeline && npm run build -w packages/api && npm run build -w packages/app
+npm test -w packages/pipeline && npm test -w packages/api && npm test -w packages/app
+```
