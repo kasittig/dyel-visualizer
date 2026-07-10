@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { usePipelineVariationRadarData } from '../../hooks/pipeline/usePipelineVariationRadarData';
 import { BaseRadarChart } from './BaseRadarChart';
-import { ChartTooltip } from './TooltipCard';
+import { ChartTooltip, type TooltipLine } from './TooltipCard';
 import { CollapsibleSection } from '../shared/CollapsibleSection';
 import styles from './VariationRadarChart.module.css';
 
@@ -19,29 +19,32 @@ export function VariationRadarChart({
   targetName: string;
   onVariationClick?: (variation: string) => void;
 }) {
-  const { snapshot, lastSessionByLabel } = usePipelineVariationRadarData(liftType, unit);
+  const { normalizedSnapshot, lastSessionByLabel, targetLabel } = usePipelineVariationRadarData(
+    liftType,
+    unit,
+    targetName
+  );
 
+  // Radar spokes show each variation's cross-exercise-normalized e1RM (normalized to the
+  // model's fixed lift-family baseline canonical) rather than raw last-session e1RM. Labels
+  // with no fitted normalization factor are silently excluded (see
+  // snapshotNormalizedVariationsFromPipeline's omission rule) rather than shown with a
+  // misleading raw value.
   const data = useMemo(() => {
-    const targetE1rm = snapshot[targetName];
-    const variationNames = Object.keys(snapshot).sort();
+    const targetE1rm = targetLabel ? normalizedSnapshot[targetLabel] : undefined;
+    const variationNames = Object.keys(normalizedSnapshot).sort();
 
     return variationNames
-      .map((name) => {
-        const e1rm = snapshot[name];
-        if (e1rm === undefined) {
-          return { variation: name, e1rm: undefined, targetE1rm };
-        }
-        return {
-          variation: name,
-          e1rm,
-          targetE1rm,
-        };
-      })
+      .map((name) => ({
+        variation: name,
+        e1rm: normalizedSnapshot[name],
+        targetE1rm,
+      }))
       .filter(
         (d): d is { variation: string; e1rm: number; targetE1rm: number | undefined } =>
           d.e1rm !== undefined
       );
-  }, [snapshot, targetName]);
+  }, [normalizedSnapshot, targetLabel]);
 
   if (data.length < MIN_VARIATIONS) {
     return null;
@@ -51,7 +54,7 @@ export function VariationRadarChart({
 
   return (
     <div className={styles.section}>
-      <CollapsibleSection label="e1RM by variation">
+      <CollapsibleSection label="Normalized e1RM by variation">
         <div className={styles.card}>
           <span className={styles.sectionLabel}>Variation Breakdown</span>
           <BaseRadarChart
@@ -81,25 +84,22 @@ export function VariationRadarChart({
                     ? Math.round(lastSession.weight * KG_TO_LBS)
                     : lastSession.weight
                   : 0;
-                return (
-                  <ChartTooltip
-                    lines={[
-                      {
-                        key: name,
-                        name,
-                        detail: `Raw e1RM: ${Number(item.value).toFixed(2)} ${unit}`,
-                        extra: (
-                          <>
-                            Last session: {dateStr}
-                            {lastSession
-                              ? ` · ${lastSession.sets}×${lastSession.reps} @ ${displayWeight} ${unit}${lastSession.rpe != null ? ` · RPE ${lastSession.rpe}` : ''}`
-                              : ''}
-                          </>
-                        ),
-                      },
-                    ]}
-                  />
-                );
+                const lines: TooltipLine[] = [
+                  {
+                    key: name,
+                    name,
+                    detail: `Normalized e1RM: ${Number(item.value).toFixed(2)} ${unit}`,
+                    extra: (
+                      <>
+                        Last session: {dateStr}
+                        {lastSession
+                          ? ` · ${lastSession.sets}×${lastSession.reps} @ ${displayWeight} ${unit}${lastSession.rpe != null ? ` · RPE ${lastSession.rpe}` : ''}`
+                          : ''}
+                      </>
+                    ),
+                  },
+                ];
+                return <ChartTooltip lines={lines} />;
               },
             }}
           />

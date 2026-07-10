@@ -1,32 +1,43 @@
 import { useMemo } from 'react';
-import type { RenderParams } from '@dyel/pipeline';
+import { matches, type RenderParams } from '@dyel/pipeline';
 import { usePipelineModel } from '../../context/PipelineContext';
 import { usePipelineDatasets } from './usePipelineDatasets';
 import { conjugateChartSpecs } from '../../pipeline/conjugateChartSpecs';
 import { buildLastSessionDetail, type LastSessionDetail } from '../../pipeline/lastSessionDetail';
-import { snapshotVariationsFromPipeline } from '../../utils/variationSnapshot';
+import {
+  snapshotVariationsFromPipeline,
+  snapshotNormalizedVariationsFromPipeline,
+} from '../../utils/variationSnapshot';
 
 export interface PipelineVariationRadarData {
   snapshot: Record<string, number | undefined>;
+  normalizedSnapshot: Record<string, number | undefined>;
   lastSessionByLabel: Map<string, LastSessionDetail>;
+  targetLabel: string | undefined;
+  canonicalByLabel: Map<string, string>;
 }
 
 const EMPTY: PipelineVariationRadarData = {
   snapshot: {},
+  normalizedSnapshot: {},
   lastSessionByLabel: new Map(),
+  targetLabel: undefined,
+  canonicalByLabel: new Map(),
 };
 
 /**
- * Pipeline-native replacement for `VariationRadarChart.tsx`'s previous cross-exercise
- * per-target normalization via `@dyel/core`'s `normalizeToBaseE1RM`. This hook returns
- * each variation's **raw**, un-normalized last-session e1RM instead, matching the same
- * "deprecate the per-target feature" decision already made for `ConjugateCharts`' target-selection
- * dropdown (see `migration/ConjugateCharts.md`'s "ConjugateCharts swap-over" section, closes #459).
- *
- * The cross-exercise normalization was root-caused as safe to omit by a parity test
- * showing 0.0% divergence between legacy's raw (un-normalized) per-variation e1RM and
- * the pipeline's — see `packages/app/src/pipeline/variationRadarChartParity.test.ts`'s
- * raw-snapshot test.
+ * Pipeline-native data source for `VariationRadarChart.tsx`. Returns both `snapshot`
+ * (each variation's raw, un-normalized last-session e1RM) and `normalizedSnapshot`
+ * (cross-exercise-normalized, via `@dyel/pipeline`'s `NormalizationModel`/`normalizeE1rm`
+ * against the model's fixed lift-family baseline canonical — see
+ * `snapshotNormalizedVariationsFromPipeline`'s doc comment for the omission rule for
+ * unfitted/unmapped labels). `VariationRadarChart` currently only displays
+ * `normalizedSnapshot` (baseline-only cross-exercise normalization, reintroduced after
+ * being deprecated during the #460 pipeline swap — see `migration/VariationRadarChart.md`'s
+ * "Cross-exercise normalization reintroduced" section); `snapshot` is kept on this hook's
+ * return for potential other consumers and because `normalizedSnapshot`'s correctness was
+ * verified against it via `variationRadarChartParity.test.ts`'s raw-snapshot test (0.0%
+ * divergence from legacy).
  *
  * Note: `VariationRadarChart` does not filter by date range (its `rows` prop comes
  * pre-filtered from `LiftTabPanel`'s own date-range filtering upstream), so this hook
@@ -34,10 +45,24 @@ const EMPTY: PipelineVariationRadarData = {
  * itself is unfiltered by date. This matches the fact that `snapshotVariationsFromPipeline`
  * only cares about the single most-recent row anyway, so date-range filtering doesn't
  * change its output.
+ *
+ * `targetCanonical` (e.g. `App.tsx`'s `effectiveTargetCanonicals`, sourced from
+ * `defaultCompExerciseCanonical`) is a stable canonical id, but `snapshot` is keyed by
+ * variation *label* (raw logged exercise string — see `conjugateChartSpecs`'s
+ * `groupBy: 'label'` and `@dyel/pipeline`'s `Point.series` docs). Indexing `snapshot`
+ * directly with the canonical id silently misses (labels can drift/reword over time and
+ * rarely equal the canonical slug), which drops the target overlay ring in
+ * `VariationRadarChart`. This hook resolves `targetCanonical` to its current label —
+ * most-recent-by-date, mirroring `@dyel/pipeline`'s own `displayNameLatest` logic in
+ * `pipeline.ts` — and returns it as `targetLabel` for the caller to index `snapshot` with.
+ *
+ * `canonicalByLabel` maps each variation label to its most-recently-logged canonical id,
+ * enabling a future cross-exercise normalization step to look up each label's NormalizationModel factor.
  */
 export function usePipelineVariationRadarData(
   liftType: string,
-  unit: 'lbs' | 'kg'
+  unit: 'lbs' | 'kg',
+  targetCanonical?: string
 ): PipelineVariationRadarData {
   const { status, model } = usePipelineModel();
   const specs = useMemo(() => conjugateChartSpecs(liftType), [liftType]);
@@ -52,9 +77,51 @@ export function usePipelineVariationRadarData(
     const snapshot = snapshotVariationsFromPipeline(datasets.variations ?? [], unit);
     const lastSessionByLabel = buildLastSessionDetail(model.tagged, liftType);
 
+    // Build a map from each variation label to its most-recently-logged canonical id.
+    const canonicalByLabel = new Map<string, string>();
+    const dateByLabel = new Map<string, number>();
+    for (const r of model.tagged) {
+      if (!matches(r.tags, { all: [`lift:${liftType}`] })) {
+        continue;
+      }
+      const label = r.meta?.rawExercise ?? r.canonical;
+      const currentDate = dateByLabel.get(label) ?? -Infinity;
+      if (r.date > currentDate) {
+        dateByLabel.set(label, r.date);
+        canonicalByLabel.set(label, r.canonical);
+      }
+    }
+
+    // Apply cross-exercise normalization to get per-variation normalized e1RM values.
+    // Use the offset-adjusted dataset (variationsAdjusted) as input to ensure weight-space
+    // corrections from equipment/bands/chains are applied before the normalization step.
+    const normalizedSnapshot = snapshotNormalizedVariationsFromPipeline(
+      datasets.variationsAdjusted ?? [],
+      canonicalByLabel,
+      model.model,
+      unit
+    );
+
+    // Resolve the target's canonical id to its most-recently-logged label so callers can
+    // index `snapshot` (label-keyed) correctly.
+    let targetLabel: string | undefined;
+    let targetDate = -Infinity;
+    for (const r of model.tagged) {
+      if (r.canonical !== targetCanonical || !matches(r.tags, { all: [`lift:${liftType}`] })) {
+        continue;
+      }
+      if (r.date > targetDate) {
+        targetDate = r.date;
+        targetLabel = r.meta?.rawExercise ?? r.canonical;
+      }
+    }
+
     return {
       snapshot,
+      normalizedSnapshot,
       lastSessionByLabel,
+      targetLabel,
+      canonicalByLabel,
     };
-  }, [status, model, datasets, unit, liftType]);
+  }, [status, model, datasets, unit, liftType, targetCanonical]);
 }

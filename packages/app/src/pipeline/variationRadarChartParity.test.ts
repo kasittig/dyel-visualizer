@@ -7,6 +7,7 @@ import {
   tagRecords,
   ParserRegistry,
   csvParser,
+  matches,
 } from '@dyel/pipeline';
 import type { SetRecord } from '@dyel/pipeline';
 import type { ConjugateExercise, TrainingSession } from '@dyel/core';
@@ -16,6 +17,7 @@ import {
   snapshotVariationsFromPipeline,
   diffVariationSnapshots,
 } from '../testUtils/diffVariationSnapshot';
+import { snapshotNormalizedVariationsFromPipeline } from '../utils/variationSnapshot';
 import { buildRawInput, PLACEHOLDER_ATHLETE } from '../utils/rawInputUtils';
 import { extractPairs, buildTabRows, computeEffectiveNames } from '../utils/appDataUtils';
 import { distinctDisplayNames } from '../utils/appUtils';
@@ -32,6 +34,7 @@ describe('VariationRadarChart core-vs-pipeline parity', () => {
   const legacySnapshots: Record<string, SnapshotDict> = {};
   const legacyRawSnapshots: Record<string, SnapshotDict> = {};
   const pipelineSnapshots: Record<string, SnapshotDict> = {};
+  const pipelineNormalizedSnapshots: Record<string, SnapshotDict> = {};
   const legacyLastSessions: Record<string, Map<string, TrainingSession>> = {};
   const pipelineLastSessions: Record<
     string,
@@ -79,6 +82,32 @@ describe('VariationRadarChart core-vs-pipeline parity', () => {
       // values (~2.2x inflation). Passing the raw dataset directly fixes both.
       pipelineSnapshots[lift] = snapshotVariationsFromPipeline(
         res.datasets.variations ?? [],
+        'lbs'
+      ) as SnapshotDict;
+
+      // Build canonicalByLabel map: each variation label -> its most-recently-logged canonical id.
+      // This mirrors usePipelineVariationRadarData's own canonicalByLabel resolution pattern.
+      const canonicalByLabel = new Map<string, string>();
+      const dateByLabel = new Map<string, number>();
+      for (const r of tagged) {
+        if (!matches(r.tags, { all: [`lift:${lift}`] })) {
+          continue;
+        }
+        const label = r.meta?.rawExercise ?? r.canonical;
+        const currentDate = dateByLabel.get(label) ?? -Infinity;
+        if (r.date > currentDate) {
+          dateByLabel.set(label, r.date);
+          canonicalByLabel.set(label, r.canonical);
+        }
+      }
+
+      // Build normalized snapshot: cross-exercise normalization via the pipeline's NormalizationModel
+      // (baseline-only, using the model's fixed lift-family baseline canonical, not arbitrary targets).
+      // Use variationsAdjusted (offset-corrected) to match the production hook's new behavior.
+      pipelineNormalizedSnapshots[lift] = snapshotNormalizedVariationsFromPipeline(
+        res.datasets.variationsAdjusted ?? [],
+        canonicalByLabel,
+        res.model,
         'lbs'
       ) as SnapshotDict;
 
@@ -143,13 +172,21 @@ describe('VariationRadarChart core-vs-pipeline parity', () => {
     }
   });
 
-  // VariationRadarChart.tsx no longer consumes this normalized value in production as of this
-  // swap (closes #460) — it's retained purely as a tracked/historical divergence measurement,
-  // mirroring how ConjugateCharts' own pre-deprecation divergence numbers were retained for
-  // documentation purposes after that component's dropdown was deprecated (see migration/ConjugateCharts.md).
+  // VariationRadarChart.tsx now consumes normalized variation snapshots in production via
+  // usePipelineVariationRadarData's `normalizedSnapshot` field, applying `normalizeE1rm`
+  // against the model's fixed lift-family baseline canonical (not an arbitrary per-variant
+  // target — that stays deprecated per ConjugateCharts.md's #459 "Scope change" section,
+  // which established the baseline-only normalization precedent this reuses).
+  //
+  // This test compares legacy normalized (via @dyel/core's normalizeToBaseE1RM) against
+  // pipeline normalized (via @dyel/pipeline's snapshotNormalizedVariationsFromPipeline)
+  // as a true apples-to-apples normalized-vs-normalized check. Known, precedented residual:
+  // squat 0.0%, bench 0.7%, deadlift 0.4% (addlWtOffset e1RM-space approximation gap,
+  // already accepted by TotalChart/ConjugateCharts as soft-warn, per migration/ConjugateCharts.md
+  // "Corrected parity numbers (post-fix)").
   it.each(LIFT_TYPES)('%s: normalized variation snapshots', (lift: string) => {
     const lSnap = legacySnapshots[lift],
-      pSnap = pipelineSnapshots[lift];
+      pSnap = pipelineNormalizedSnapshots[lift];
     const hasL = !!(
       lSnap &&
       Object.values(lSnap).some((v: unknown) => {
@@ -165,15 +202,31 @@ describe('VariationRadarChart core-vs-pipeline parity', () => {
     expect(hasL || hasP).toBe(true);
 
     if (hasL && hasP && lSnap && pSnap) {
-      diffVariationSnapshots(lSnap, pSnap).forEach((d) => {
+      const diffs = diffVariationSnapshots(lSnap, pSnap);
+      const maxRelDiff = Math.max(
+        ...diffs
+          .filter((d) => d.legacyValue !== undefined && d.pipelineValue !== undefined)
+          .map((d) => d.relDiff)
+      );
+
+      diffs.forEach((d) => {
         if (d.legacyValue !== undefined && d.pipelineValue !== undefined) {
           console.warn(
-            `core-vs-pipeline ${lift} ${d.variationName}: legacy=${d.legacyValue} pipeline=${d.pipelineValue} absDiff=${d.absDiff} relDiff=${(d.relDiff * 100).toFixed(1)}%`
+            `core-vs-pipeline-normalized ${lift} ${d.variationName}: legacy=${d.legacyValue} pipeline=${d.pipelineValue} absDiff=${d.absDiff} relDiff=${(d.relDiff * 100).toFixed(1)}%`
           );
         }
       });
+
+      // Soft-warn tier: known, precedented residual from addlWtOffset e1RM-space approximation
+      // gap (see migration/ConjugateCharts.md "Corrected parity numbers (post-fix)"). This is
+      // the same residual already accepted by TotalChart/ConjugateCharts normalization.
+      console.warn(
+        `core-vs-pipeline-normalized ${lift}: maxRelDiff=${(maxRelDiff * 100).toFixed(1)}% (soft-warn tier, expected ~squat 0.0% / bench 0.7% / deadlift 0.4%)`
+      );
     } else if (hasL || hasP) {
-      console.warn(`core-vs-pipeline ${lift}: one-sided data (legacy=${hasL}, pipeline=${hasP})`);
+      console.warn(
+        `core-vs-pipeline-normalized ${lift}: one-sided data (legacy=${hasL}, pipeline=${hasP})`
+      );
     }
   });
 

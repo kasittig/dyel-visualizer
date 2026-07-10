@@ -19,5 +19,20 @@ export function conjugateChartSpecs(liftType: string): DatasetSpec[] {
       normalize: true,
       combine: 'sum',
     },
+    // Offset-corrected raw e1RM values for VariationRadarChart's cross-exercise normalization step.
+    // This sources from the pipeline's pointsByLabelByDeriverAdjusted map (with addlWtOffset
+    // correction applied) instead of raw pointsByLabelByDeriver. The normalized snapshot
+    // computation in usePipelineVariationRadarData then applies normalizeE1rm's variantFactor
+    // division on top of these offset-corrected values, avoiding double-counting of equipment
+    // effects (bands/chains/slingshot addlWt). The raw 'variations' spec stays untouched for
+    // per-variation raw display and the un-normalized snapshot.
+    {
+      id: 'variationsAdjusted',
+      kind: 'series',
+      include,
+      derive: 'e1rm-max-effort',
+      groupBy: 'label',
+      normalize: true,
+    },
   ];
 }

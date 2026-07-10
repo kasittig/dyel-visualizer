@@ -16,6 +16,10 @@ export interface SeriesSpec {
   // (e.g., ConjugateCharts showing "Bench (1 board)" vs "Bench (2 board)" as distinct lines).
   // Default (omitted) = canonical grouping, preserving existing behavior unchanged.
   groupBy?: 'label';
+  // When true, applies weight-space offset correction (offsetAdjustRecords) before derivation,
+  // normalizing for fitted addlWt (chains/bands/etc) corrections. Only meaningful when combined
+  // with groupBy: 'label'; composite specs handle this separately via pointsByDeriverAdjusted.
+  normalize?: true;
 }
 export interface CompositeSpec {
   id: string;

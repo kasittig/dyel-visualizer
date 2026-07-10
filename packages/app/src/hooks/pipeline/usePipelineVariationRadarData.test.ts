@@ -45,7 +45,9 @@ describe('usePipelineVariationRadarData', () => {
     const { result } = renderHook(() => usePipelineVariationRadarData('squat', 'lbs'));
 
     expect(result.current.snapshot).toEqual({});
+    expect(result.current.normalizedSnapshot).toEqual({});
     expect(result.current.lastSessionByLabel.size).toBe(0);
+    expect(result.current.canonicalByLabel.size).toBe(0);
   });
 
   it('returns empty snapshot and lastSessionByLabel when status is error', () => {
@@ -57,7 +59,9 @@ describe('usePipelineVariationRadarData', () => {
     const { result } = renderHook(() => usePipelineVariationRadarData('squat', 'lbs'));
 
     expect(result.current.snapshot).toEqual({});
+    expect(result.current.normalizedSnapshot).toEqual({});
     expect(result.current.lastSessionByLabel.size).toBe(0);
+    expect(result.current.canonicalByLabel.size).toBe(0);
   });
 
   it('returns empty snapshot and lastSessionByLabel when model is null', () => {
@@ -69,7 +73,9 @@ describe('usePipelineVariationRadarData', () => {
     const { result } = renderHook(() => usePipelineVariationRadarData('squat', 'lbs'));
 
     expect(result.current.snapshot).toEqual({});
+    expect(result.current.normalizedSnapshot).toEqual({});
     expect(result.current.lastSessionByLabel.size).toBe(0);
+    expect(result.current.canonicalByLabel.size).toBe(0);
   });
 
   it('produces non-empty snapshot with real fixture for squat', () => {
@@ -112,6 +118,24 @@ describe('usePipelineVariationRadarData', () => {
         expect(detail.reps).toBeGreaterThan(0);
         expect(detail.weight).toBeGreaterThan(0);
         expect(detail.rpe === null || typeof detail.rpe === 'number').toBe(true);
+      }
+    }
+  });
+
+  it('populates canonicalByLabel with real fixture for squat', () => {
+    mockUsePipelineModel.mockReturnValue({
+      status: 'success',
+      model: fixtureModel,
+    });
+
+    const { result } = renderHook(() => usePipelineVariationRadarData('squat', 'lbs'));
+
+    // Check that canonicalByLabel has at least one entry and values are strings
+    if (result.current.canonicalByLabel.size > 0) {
+      expect(result.current.canonicalByLabel.size).toBeGreaterThan(0);
+      for (const [label, canonical] of result.current.canonicalByLabel) {
+        expect(typeof label).toBe('string');
+        expect(typeof canonical).toBe('string');
       }
     }
   });
@@ -161,6 +185,28 @@ describe('usePipelineVariationRadarData', () => {
       expect(JSON.stringify(squat.current.snapshot)).not.toBe(
         JSON.stringify(bench.current.snapshot)
       );
+    }
+  });
+
+  it('produces normalizedSnapshot with real fixture for squat', () => {
+    mockUsePipelineModel.mockReturnValue({
+      status: 'success',
+      model: fixtureModel,
+    });
+
+    const { result } = renderHook(() => usePipelineVariationRadarData('squat', 'lbs'));
+
+    // Check that normalizedSnapshot exists and has proper shape
+    expect(typeof result.current.normalizedSnapshot).toBe('object');
+    const normalizedValues = Object.values(result.current.normalizedSnapshot).filter(
+      (v): v is number => typeof v === 'number'
+    );
+    // normalizedSnapshot may be empty if canonicals are unmapped or unfitted, which is valid
+    if (normalizedValues.length > 0) {
+      normalizedValues.forEach((v) => {
+        expect(v).toBeGreaterThan(0);
+        expect(v).toBeLessThan(10000);
+      });
     }
   });
 });

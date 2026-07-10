@@ -37,6 +37,7 @@ export interface PipelineModel {
   pointsByDeriver: Map<string, Point[]>;
   pointsByLabelByDeriver: Map<string, Point[]>;
   pointsByDeriverAdjusted: Map<string, Point[]>;
+  pointsByLabelByDeriverAdjusted: Map<string, Point[]>;
   // Tagged, canonicalized set records prior to any deriver aggregation -- exposed for
   // callers that need per-set detail (sets/reps/weight/rpe) rather than a day-collapsed
   // Point, e.g. building a per-variation/per-date "best set" lookup for chart tooltips.
@@ -150,6 +151,22 @@ export function runPipelineModel(
     })
   );
 
+  // pointsByLabelByDeriverAdjusted: offset-adjusted by-label points for specs that opt into
+  // normalization. Unlike pointsByDeriverAdjusted (canonical-grouped), here we can't use the
+  // filter-by-canonical-and-merge-back optimization because points are label-keyed, not
+  // canonical-keyed. Instead, we directly recompute from offset-adjusted records — offsets for
+  // canonicals with no fitted offset are applied as no-ops (offsetAdjustRecords passes them
+  // through unchanged), making this a complete, correct implementation without the merge trick.
+  const pointsByLabelByDeriverAdjusted = new Map(
+    allDeriverIds.map((id) => {
+      const original = pointsByLabelByDeriver.get(id)!;
+      if (addlWtCanonicals.size === 0) {
+        return [id, original];
+      }
+      return [id, buildPointsByLabel(offsetAdjustRecords(tagged, model), id)];
+    })
+  );
+
   const unnormalized = [
     ...Map.groupBy(e1rmPoints, (p) => {
       return p.series;
@@ -209,6 +226,7 @@ export function runPipelineModel(
     pointsByDeriver,
     pointsByLabelByDeriver,
     pointsByDeriverAdjusted,
+    pointsByLabelByDeriverAdjusted,
     tagged,
     athlete,
   };
@@ -224,9 +242,11 @@ export function buildDatasetsFromModel(
       const pts =
         s.kind === 'composite'
           ? pipelineModel.pointsByDeriverAdjusted.get(s.derive)!
-          : s.kind === 'series' && s.groupBy === 'label'
-            ? pipelineModel.pointsByLabelByDeriver.get(s.derive)!
-            : pipelineModel.pointsByDeriver.get(s.derive)!;
+          : s.kind === 'series' && s.groupBy === 'label' && s.normalize
+            ? pipelineModel.pointsByLabelByDeriverAdjusted.get(s.derive)!
+            : s.kind === 'series' && s.groupBy === 'label'
+              ? pipelineModel.pointsByLabelByDeriver.get(s.derive)!
+              : pipelineModel.pointsByDeriver.get(s.derive)!;
       return [s.id, buildDataset(pts, s, ui, pipelineModel.model, pipelineModel.athlete)];
     })
   );

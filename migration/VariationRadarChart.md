@@ -189,3 +189,123 @@ components/pages/LiftTabPanel.tsx` returns only `LiftTabPanel.tsx`'s two remaini
 imports (`DeadliftStancePreference`, `LiftType`), not runtime business logic.
 
 `LiftTabPanel.md` (`MIGRATION_PLAN.md` item #2, composition-root migration) is now unblocked.
+
+## Target-ring canonical/label key mismatch fixed (2026-07-09)
+
+A regression from the swap-over above: `App.tsx` passes `targetName` as a **canonical id**
+(`effectiveTargetCanonicals`, from `defaultCompExerciseCanonical`), but
+`usePipelineVariationRadarData`'s `snapshot` is keyed by **label** (raw logged exercise
+string, per `conjugateChartSpecs`'s `groupBy: 'label'`). `VariationRadarChart.tsx` was
+indexing `snapshot[targetName]` directly — a canonical id almost never equals its own
+label — so `targetE1rm` was always `undefined`, `showTargetRing` was always `false`, and
+the pink dashed target-value ring silently stopped rendering. Not caught by
+`variationRadarChartParity.test.ts` because that test never exercised the target-overlay
+resolution path, only per-variation snapshot values.
+
+**Fix**: `usePipelineVariationRadarData` now resolves `targetCanonical` to its
+most-recently-logged label (mirroring `@dyel/pipeline`'s own `displayNameLatest`
+most-recent-wins pattern in `pipeline.ts`) and returns `targetLabel`;
+`VariationRadarChart.tsx` indexes `snapshot[targetLabel]` instead of
+`snapshot[targetName]` (later updated to `normalizedSnapshot[targetLabel]` once
+normalization was reintroduced — see below). Verified via
+`usePipelineVariationRadarData.test.ts` and `variationRadarChartParity.test.ts`; full app
+suite green, `tsc -b` clean.
+
+## Cross-exercise normalization reintroduced, baseline-only (2026-07-09)
+
+The "deprecated, not ported" decision above (raw e1RM only) has been revisited: since
+`@dyel/pipeline` already has a fitted `NormalizationModel`/`normalizeE1rm` primitive
+(the same one `ConjugateCharts`' `normalized` composite already uses), reintroducing
+per-variation normalization for `VariationRadarChart` turned out to be feasible without
+inventing new pipeline math — **baseline-only** (normalizing to the model's fixed
+lift-family competition canonical, not an arbitrary per-variant target — the old
+`normalizeToBaseE1RM` dropdown-driven arbitrary-target behavior stays deprecated, per
+the `ConjugateCharts.md` #459 precedent; `VariationRadarChart` never exposed a target
+picker in the first place, so this isn't a UX regression).
+
+### Implementation
+
+- **`packages/app/src/hooks/pipeline/usePipelineVariationRadarData.ts`**: now also
+  returns `canonicalByLabel: Map<string, string>` (each variation label's
+  most-recently-logged canonical id) and `normalizedSnapshot: Record<string, number |
+undefined>` (per-label cross-exercise-normalized e1RM).
+- **`packages/app/src/utils/variationSnapshot.ts`**: new
+  `snapshotNormalizedVariationsFromPipeline(variationRows, canonicalByLabel,
+normalizationModel, unit)`, sharing a `latestRawValuesByLabel` helper with the
+  existing raw-snapshot function. Applies `normalizeE1rm` per label; labels with no
+  canonical mapping or an unfitted (`null`) result are silently excluded, never shown
+  with a misleading raw value (mirrors `derive/normalize.ts`'s "null = unfitted, never
+  fall back to factor 1.0" invariant).
+- **`components/charts/VariationRadarChart.tsx`**: radar spokes (the `e1rm` data field
+  BaseRadarChart's primary cyan series reads) are now sourced directly from
+  `normalizedSnapshot` — raw last-session e1RM is no longer displayed at all (initial
+  implementation briefly rendered both raw and normalized as two overlaid series via a
+  `secondarySeries` prop on `BaseRadarChart`; per explicit direction this was simplified
+  to normalized-only, since showing both was more confusing than useful — see "Raw
+  display removed" below). The pink dashed target-value ring now also sources from
+  `normalizedSnapshot[targetLabel]` (previously the raw `snapshot`) for consistency —
+  mathematically equivalent for the target/baseline canonical itself, since
+  `normalizeE1rm` always returns factor 1 for the baseline. Section label reverted to
+  `"Normalized e1RM by variation"` (the pre-#460-swap wording) since the displayed metric
+  is normalized again.
+- `usePipelineVariationRadarData`'s `snapshot` (raw) field is retained on the hook's
+  return (not removed) — used to cross-check `normalizedSnapshot`'s correctness in
+  `variationRadarChartParity.test.ts`'s raw-snapshot test, and available for any future
+  consumer — but `VariationRadarChart.tsx` itself no longer reads it.
+
+### Raw display removed (2026-07-09, same-day follow-up)
+
+Per explicit direction, the raw e1RM series was removed from the chart entirely rather
+than kept alongside the normalized one. `BaseRadarChart.tsx`'s `secondarySeries` prop
+(added to support the brief dual-series version above) was removed as dead code — it had
+exactly one caller, which no longer needs it, and no other `BaseRadarChart` consumer
+(`SigmaChart`) ever used it. `VariationRadarChart.tsx` now has a single radar series
+(`e1rm` = normalized value) plus the pre-existing pink target-ring overlay; tooltip shows
+one "Normalized e1RM: ..." line instead of separate "Raw e1RM"/"Normalized e1RM" lines.
+Variations with no fitted normalization factor (or no canonical mapping) are simply
+absent from the chart now, rather than shown with an un-normalized fallback value — this
+follows `snapshotNormalizedVariationsFromPipeline`'s existing "silently exclude, never
+fall back" omission rule.
+
+### Real bug caught mid-implementation: missing addlWtOffset correction
+
+Initial wiring (normalizing `datasets.variations`' raw values directly via
+`normalizeE1rm`) produced way-outside-precedent divergence from legacy — bench 23.7%,
+deadlift 21.7% (expected ~0.7%/0.4%) — concentrated entirely on addlWt (equipment:
+bands/chains/slingshot) variations; squat (no addlWt variants in the fixture) was exact.
+Root cause: `conjugateChartSpecs`'s `variations` spec (`kind: 'series', groupBy:
+'label'`) sources from `pipeline.ts`'s `pointsByLabelByDeriver` — raw, **not**
+offset-adjusted. `ConjugateCharts`' `normalized` composite, by contrast, sources from
+`pointsByDeriverAdjusted`, which pre-applies `offsetAdjustRecords` (the weight-space
+correction addlWt canonicals need) before deriving e1RM. `normalizeE1rm` alone (the
+post-hoc variantFactor division) is not the full correction for addlWt canonicals — they
+need both the weight-space offset (pre-derivation) and the factor division, and the
+by-label series path was only getting the latter.
+
+**Fixed in `@dyel/pipeline`** (`packages/pipeline/src/pipeline.ts`): added
+`pointsByLabelByDeriverAdjusted` (offset-adjusted by-label points) and an opt-in
+`normalize?: true` field on `SeriesSpec` (`dataset/build.ts`, only meaningful combined
+with `groupBy: 'label'`), routed in `buildDatasetsFromModel`. Unlike
+`pointsByDeriverAdjusted`'s canonical-keyed filter-and-merge-back optimization (which
+doesn't translate to label-keyed points), this recomputes directly via
+`buildPointsByLabel(offsetAdjustRecords(tagged, model), id)` — correct on its own since
+`offsetAdjustRecords` is a safe per-record passthrough for canonicals with no fitted
+offset. Purely additive: the existing `variations` spec (raw, used by `ConjugateCharts`'
+per-variation lines and `VariationRadarChart`'s own raw snapshot) is untouched.
+`conjugateChartSpecs.ts` gained a third spec, `variationsAdjusted` (`variations` +
+`normalize: true`), consumed only by the new normalized-snapshot path.
+
+### Verification
+
+`variationRadarChartParity.test.ts`'s normalized-snapshot test now diffs legacy's
+`normalizeToBaseE1RM` output against the pipeline's `snapshotNormalizedVariationsFromPipeline`
+(sourced from `variationsAdjusted`) — soft-warn tier (`console.warn`, not hard-asserted,
+consistent with `TotalChart`/`ConjugateCharts`' accepted residual). Post-fix numbers:
+**squat 0.0%, bench 0.7%, deadlift 0.0%** — matches/beats the precedented
+`TotalChart`/`ConjugateCharts` ~0.7%/0.4% baseline (the residual bench 0.7% is the
+already-documented rounding-boundary unit-conversion artifact from the raw-snapshot
+test, not the addlWtOffset bug).
+
+Full verification: `npm test -w packages/pipeline` (176/176), `npm run build -w
+packages/pipeline`, `npx vitest run` + `npx tsc -b` in `packages/app` (275/275, clean),
+`npm run build -w packages/app` — all green.

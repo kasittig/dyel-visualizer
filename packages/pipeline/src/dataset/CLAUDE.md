@@ -23,7 +23,9 @@ instead of the canonical slug. This creates one line per exact logged variant
 (e.g., `"Bench (1 board)"` vs `"Bench (2 board)"` as distinct series), matching
 legacy chart grouping granularity for charts requiring per-exact-variant detail
 (e.g., `ConjugateCharts` variations). Default (omitted `groupBy`) preserves canonical
-grouping and existing behavior.
+grouping and existing behavior. Combining `groupBy: 'label'` with `normalize: true`
+applies weight-space offset correction (for fitted addlWt variants) before derivation,
+enabling normalized per-label metrics.
 
 ## CompositeSpec (e.g. estimated total)
 

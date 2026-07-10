@@ -225,6 +225,114 @@ describe('runPipeline (end-to-end)', () => {
     });
   });
 
+  describe('pointsByLabelByDeriverAdjusted (by-label offset-adjusted points)', () => {
+    it('produces offset-adjusted e1RM for addlWt labels, identical for non-addlWt', () => {
+      const csv = [
+        'Date,Exercise,Reps,Weight (lbs),RPE',
+        '2026-01-10,Bench,5,315,',
+        '2026-01-10,Bench (chains),3,245,',
+        '2026-01-15,Bench,3,335,',
+        '2026-01-15,Bench (chains),2,270,',
+      ].join('\n');
+      const model = runPipelineModel([{ name: 'test.csv', content: csv }], athlete);
+
+      expect(model.model.addlWtOffset['bench-chains']).toMatchObject({
+        offsetKg: expect.any(Number),
+      });
+
+      const e1rmDeriver = 'e1rm';
+      const rawByLabel = model.pointsByLabelByDeriver.get(e1rmDeriver)!;
+      const adjustedByLabel = model.pointsByLabelByDeriverAdjusted.get(e1rmDeriver)!;
+
+      // Both should have same timestamps and series (labels)
+      expect(rawByLabel.length).toBe(adjustedByLabel.length);
+
+      // Find points for "Bench" and "Bench (chains)"
+      const rawBench = rawByLabel.filter((p) => p.series === 'Bench');
+      const adjustedBench = adjustedByLabel.filter((p) => p.series === 'Bench');
+      const rawChains = rawByLabel.filter((p) => p.series === 'Bench (chains)');
+      const adjustedChains = adjustedByLabel.filter((p) => p.series === 'Bench (chains)');
+
+      // Non-addlWt "Bench" should be identical
+      expect(rawBench.length).toBeGreaterThan(0);
+      expect(adjustedBench.length).toBe(rawBench.length);
+      rawBench.forEach((rawPoint, i) => {
+        expect(adjustedBench[i].v).toBe(rawPoint.v);
+      });
+
+      // AddlWt "Bench (chains)" should differ (adjusted should be higher due to offset)
+      expect(rawChains.length).toBeGreaterThan(0);
+      expect(adjustedChains.length).toBe(rawChains.length);
+      rawChains.forEach((rawPoint, i) => {
+        expect(adjustedChains[i].v).toBeGreaterThan(rawPoint.v);
+      });
+    });
+
+    it('sources normalized by-label series from pointsByLabelByDeriverAdjusted via buildDatasetsFromModel', () => {
+      const csv = [
+        'Date,Exercise,Reps,Weight (lbs),RPE',
+        '2026-01-10,Bench,5,315,',
+        '2026-01-10,Bench (chains),3,245,',
+        '2026-01-15,Bench,3,335,',
+        '2026-01-15,Bench (chains),2,270,',
+      ].join('\n');
+      const model = runPipelineModel([{ name: 'test.csv', content: csv }], athlete);
+
+      // Spec without normalize: true (raw)
+      const rawSpec: DatasetSpec[] = [
+        {
+          id: 'by-label-raw',
+          kind: 'series',
+          include: { any: ['lift:bench'] },
+          derive: 'e1rm',
+          groupBy: 'label',
+        },
+      ];
+
+      // Spec with normalize: true (adjusted)
+      const normalizedSpec: DatasetSpec[] = [
+        {
+          id: 'by-label-normalized',
+          kind: 'series',
+          include: { any: ['lift:bench'] },
+          derive: 'e1rm',
+          groupBy: 'label',
+          normalize: true,
+        },
+      ];
+
+      const rawDatasets = buildDatasetsFromModel(model, rawSpec, {});
+      const normalizedDatasets = buildDatasetsFromModel(model, normalizedSpec, {});
+
+      // Both should produce rows
+      expect(rawDatasets['by-label-raw'].length).toBeGreaterThan(0);
+      expect(normalizedDatasets['by-label-normalized'].length).toBeGreaterThan(0);
+
+      // Both should have same length (same timestamps)
+      expect(rawDatasets['by-label-raw'].length).toBe(
+        normalizedDatasets['by-label-normalized'].length
+      );
+
+      // Find a timestamp that has both "Bench" and "Bench (chains)"
+      const rawRows = rawDatasets['by-label-raw'];
+      const normalizedRows = normalizedDatasets['by-label-normalized'];
+
+      rawRows.forEach((rawRow, i) => {
+        const normalizedRow = normalizedRows[i];
+
+        // "Bench" should be identical
+        if (rawRow['Bench'] !== undefined) {
+          expect(normalizedRow['Bench']).toBe(rawRow['Bench']);
+        }
+
+        // "Bench (chains)" should differ (normalized should be higher)
+        if (rawRow['Bench (chains)'] !== undefined) {
+          expect(normalizedRow['Bench (chains)']).toBeGreaterThan(rawRow['Bench (chains)']);
+        }
+      });
+    });
+  });
+
   describe('parity: runPipeline vs runPipelineModel + buildDatasetsFromModel', () => {
     it('produces identical output through both paths', () => {
       const raw = FIXTURE_NAMES.map(loadFixture);
