@@ -6,6 +6,7 @@ export interface SheetRef {
 }
 export type PageTab = LiftType | 'calculator' | 'sigma';
 export type InputMode = 'url' | 'text';
+export type DeadliftStancePreference = 'sumo' | 'conventional';
 
 export const MAIN_TABS = [
   { id: 'squat' as LiftType, label: 'Squat' },

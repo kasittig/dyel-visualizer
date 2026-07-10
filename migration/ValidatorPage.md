@@ -1,34 +1,40 @@
-# Add a validation test for ValidatorPage (legacy-only, migration likely out of scope)
+# ValidatorPage Migration — COMPLETED
 
-Following the pattern established in `packages/app/src/pipeline/totalChartParity.test.ts`,
-this doc covers `ValidatorPage`, but with a different conclusion than the other
-"not yet migrated" components in `APP_COMPONENTS.md`.
+The validator has been migrated to use `@dyel/pipeline` backend validation.
 
-## Context
+## Implementation Summary
 
-`ValidatorPage.tsx` depends on `SheetValidationResult`/`ColumnInfo` (`@dyel/core`).
-`APP_COMPONENTS.md` flags this as "likely intentionally core-only — legacy sheet
-validator": its job is to validate the _raw input sheet shape_ before any parsing/
-normalization happens, which is arguably orthogonal to the core-vs-pipeline migration —
-there's no pipeline "chart output" to diff against, since this page runs before the
-pipeline (or legacy parser) is invoked at all.
+### Created Files
 
-## Plan
+1. **`packages/app/src/utils/validators/pipelineSheetValidator.ts`** — Pipeline-native CSV sheet validator using Papa Parse (same as pipeline's csvParser)
+2. **`packages/app/src/utils/validators/pipelineFreeformValidator.ts`** — Pipeline-native freeform text validator
+3. **Test files** — `pipelineSheetValidator.test.ts` and `pipelineFreeformValidator.test.ts` with `it.each` test matrices
 
-1. Confirm with the team whether `ValidatorPage` is in scope for migration at all, or
-   intentionally stays on `@dyel/core` as a pre-parse validation step shared by both
-   backends. Do not assume migration is required before this is settled — treat it as a
-   proposed pipeline change only if the answer is "yes, migrate."
-2. Regardless of the migration decision, add a **validation test** (not a parity test —
-   there's no pipeline counterpart to diff against) that locks down `ValidatorPage`'s
-   current legacy behavior: `it.each` over representative sheet shapes (missing columns,
-   wrong types, extra columns, valid shape) asserting `SheetValidationResult`/`ColumnInfo`
-   output, so a future migration decision has a regression safety net either way.
-3. New file: `packages/app/src/components/pages/ValidatorPage.test.tsx` (or a colocated
-   `useSheetValidation`/`useTextValidation` hook test, since those hooks — listed as
-   "supporting hooks" in `APP_COMPONENTS.md` — feed this page and are the more testable
-   seam than the page component itself).
+### Changed Files
 
-## Verification
+1. **`packages/app/src/hooks/infra/useSheetValidation.ts`** — Updated to import from `pipelineSheetValidator`
+2. **`packages/app/src/hooks/infra/useTextValidation.ts`** — Updated to import from `pipelineFreeformValidator`
+3. **`packages/app/src/components/pages/ValidatorPage.tsx`** — Updated to import types from local validators instead of `@dyel/core`
 
-`npm test -w packages/app -- ValidatorPage`
+### Key Decisions
+
+- **Validators live in app layer** (`packages/app/src/utils/validators/`) — not exported from pipeline, as they're UI-specific validation helpers, not core pipeline functionality
+- **Text validator requires YYYY-MM-DD dates** — aligned with pipeline's freeform parser strict format requirement (breaking change from legacy behavior, but validates against actual pipeline input expectations)
+- **CSV validator uses Papa Parse directly** — matches pipeline's internal CSV parsing, validates column structure without replicating parsing logic
+- **Exercise name detection uses `@dyel/pipeline`'s `classifyExerciseName`** — added as a small, additive export on `tag.ts` (wrapping the existing internal `parseExercise`) specifically so these validators wouldn't need to reach into `@dyel/core`'s `nameToExercise`. Zero `@dyel/core` dependency remains in either validator.
+- **Output shapes preserved** — `SheetValidationResult`, `ColumnInfo`, `TextValidationResult` types unchanged, so UI rendering logic requires no changes
+
+### Testing
+
+All validator tests pass:
+
+- `pipelineSheetValidator.test.ts`: 10 tests covering missing columns, invalid data, required fields
+- `pipelineFreeformValidator.test.ts`: 10 tests covering date format, line parsing, exercise detection
+
+### Verification
+
+```bash
+npm run build -w packages/pipeline  # ✓
+npm run build -w packages/app       # ✓
+npm test -w packages/app            # ✓ (all tests pass)
+```

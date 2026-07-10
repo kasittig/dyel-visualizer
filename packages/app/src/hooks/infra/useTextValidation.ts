@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { validateTextData } from '@dyel/core';
-import type { TextValidationResult } from '@dyel/core';
+import type { TextValidationResult } from '../../utils/validators/pipelineFreeformValidator';
+import { validateTextData } from '../../utils/validators/pipelineFreeformValidator';
 
 type TextValidationState = { status: 'idle' } | { status: 'success'; result: TextValidationResult };
 

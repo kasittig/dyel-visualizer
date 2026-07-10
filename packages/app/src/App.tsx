@@ -17,11 +17,10 @@ import {
   groupByLiftType,
   defaultCompExerciseCanonical,
 } from '@dyel/api';
-import type { DeadliftStancePreference } from '@dyel/core';
 import type { LiftType } from '@dyel/api';
 import { useLocalStorageState } from './hooks/infra/useLocalStorageState';
 import { extractSheetRef, MAIN_TABS, LIFT_TABS } from './utils/appUtils';
-import type { InputMode, PageTab } from './utils/appUtils';
+import type { InputMode, PageTab, DeadliftStancePreference } from './utils/appUtils';
 import { useResolvedRawInput } from './utils/rawInputUtils';
 import { serializeSheetCache, deserializeSheetCache } from './utils/sheetCacheUtils';
 import type { CachedSheetData } from './utils/sheetCacheUtils';

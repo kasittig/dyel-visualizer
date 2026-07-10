@@ -1,4 +1,4 @@
-import { parseIndexCsv, type IndexEntry } from '@dyel/core';
+import { parseIndexCsv, type IndexEntry } from '../../utils/parseIndexCsv';
 import { publishedCsvUrl } from '../../utils/sheetFetch';
 import { useCsvResource } from '../infra/useCsvResource';
 

@@ -8,6 +8,7 @@ import type {
   ConjugateEquipment,
   ConjugateAddlWt,
   ParsedExercise,
+  LiftType,
 } from './detect/conjugate-types';
 
 export type TaggedSetRecord = SetRecord & {
@@ -25,6 +26,21 @@ function isUnknown(ex: ParsedExercise): boolean {
     ex.equipment === null &&
     ex.addlWts.length === 0
   );
+}
+
+/**
+ * Classifies a single exercise name string by parsing it and returning its lift type
+ * and unknown status. Useful for simple exercise-name-to-type lookups (e.g., validators).
+ *
+ * A result is marked unknown when the exercise name does not match any recognized pattern
+ * (is an unrecognized accessory or mistyped name).
+ */
+export function classifyExerciseName(name: string): { type: LiftType; isUnknown: boolean } {
+  const ex = parseExercise(name);
+  return {
+    type: ex.type,
+    isUnknown: isUnknown(ex),
+  };
 }
 
 export function resolveCanonicalNames(records: SetRecord[]) {

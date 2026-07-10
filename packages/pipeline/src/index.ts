@@ -10,6 +10,7 @@ export {
   matches,
   facetsFromTags,
   facetFamilyKey,
+  classifyExerciseName,
 } from './tag/tag';
 export type {
   ConjugateBar,

@@ -1,6 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import type { SetRecord } from '../types';
-import { tagRecords, resolveCanonicalNames, matches, facetsFromTags, facetFamilyKey } from './tag';
+import {
+  tagRecords,
+  resolveCanonicalNames,
+  matches,
+  facetsFromTags,
+  facetFamilyKey,
+  classifyExerciseName,
+} from './tag';
 
 describe('resolveCanonicalNames', () => {
   it('rewrites exercise, deduplicates unresolved entries, and matches keys', () => {
@@ -255,5 +262,19 @@ describe('facetFamilyKey', () => {
     const familyKey3 = facetFamilyKey('bench-board');
     expect(familyKey1).not.toBe(familyKey2);
     expect(familyKey1).not.toBe(familyKey3);
+  });
+});
+
+describe('classifyExerciseName', () => {
+  it.each([
+    ['recognized comp-lift name', 'Squat', 'squat', false],
+    ['recognized comp-lift with modifier', 'Bench (CG)', 'bench', false],
+    ['recognized deadlift variant', 'Sumo Deadlift', 'deadlift', false],
+    ['unrecognized accessory name', 'Face Pulls', 'accessory', true],
+    ['another unrecognized name', 'Unknown Exercise', 'accessory', true],
+  ])('classifies %s "%s" as type %s, isUnknown %s', (_, name, expectedType, expectedIsUnknown) => {
+    const result = classifyExerciseName(name);
+    expect(result.type).toBe(expectedType);
+    expect(result.isUnknown).toBe(expectedIsUnknown);
   });
 });
