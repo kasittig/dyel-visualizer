@@ -12,7 +12,7 @@ export interface DiagnosticVariant {
   staleDays: number;
   averageIndex: number;
   expectedBaseline: string | null;
-  addlWtOffset?: { offsetLbs: number; n: number };
+  addlWtOffset?: { offsetKg: number; n: number };
 }
 
 export interface DiagnosticResult {

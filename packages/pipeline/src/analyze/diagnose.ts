@@ -21,9 +21,10 @@ export interface VariantAssessment {
   expectedBaseline: string | null;
   staleDays: number;
   effects: Quality[];
-  /** Additional weight offset in lbs with sample count. Only present when the canonical
-   *  has a fitted offset with n > 0 (e.g. chains/bands resistance offset). */
-  addlWtOffset?: { offsetLbs: number; n: number };
+  /** Additional weight offset in kg with sample count. Only present when the canonical
+   *  has a fitted offset with n > 0 (e.g. chains/bands resistance offset). Stays in kg;
+   *  display-unit conversion is the app's job. */
+  addlWtOffset?: { offsetKg: number; n: number };
 }
 
 export interface DiagnosticsReport {
@@ -110,7 +111,7 @@ export function diagnose(
       staleDays: (now - latest.t) / DAY_MS,
       effects: effectsByCanonical.get(canonical) ?? [],
       ...(addlWt && addlWt.n > 0
-        ? { addlWtOffset: { offsetLbs: addlWt.offsetKg * 2.20462262185, n: addlWt.n } }
+        ? { addlWtOffset: { offsetKg: addlWt.offsetKg, n: addlWt.n } }
         : {}),
     };
     variants.push(v);

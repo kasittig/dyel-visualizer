@@ -3,10 +3,10 @@ import { usePipelineVariationRadarData } from '../../hooks/pipeline/usePipelineV
 import { BaseRadarChart } from './BaseRadarChart';
 import { ChartTooltip, type TooltipLine } from './TooltipCard';
 import { CollapsibleSection } from '../shared/CollapsibleSection';
+import { roundWeight } from '../../utils/weightUnit';
 import styles from './VariationRadarChart.module.css';
 
 const MIN_VARIATIONS = 3;
-const KG_TO_LBS = 2.20462262185;
 
 export function VariationRadarChart({
   liftType,
@@ -79,11 +79,7 @@ export function VariationRadarChart({
                       year: 'numeric',
                     })
                   : 'Never';
-                const displayWeight = lastSession
-                  ? unit === 'lbs'
-                    ? Math.round(lastSession.weight * KG_TO_LBS)
-                    : lastSession.weight
-                  : 0;
+                const displayWeight = lastSession ? roundWeight(lastSession.weight, unit) : 0;
                 const lines: TooltipLine[] = [
                   {
                     key: name,

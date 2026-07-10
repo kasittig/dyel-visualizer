@@ -6,10 +6,9 @@ import { usePipelineDatasets } from './usePipelineDatasets';
 import { conjugateChartSpecs } from '../../pipeline/conjugateChartSpecs';
 import { buildBestSetByLabelAndDate, type BestSet } from '../../pipeline/conjugateBestSet';
 import { mergeWideRechartsRows } from '../../utils/pipelineChartUtils';
+import { roundWeight } from '../../utils/weightUnit';
 
 export const NORMALIZED_KEY = 'normalized';
-
-const KG_TO_LBS = 2.20462262185;
 
 export interface PipelineConjugateChartData {
   variations: string[];
@@ -76,11 +75,15 @@ export function usePipelineConjugateChartData(
     const data = mergeWideRechartsRows([...combinedByT.values()], unit);
 
     const bestSetByLabelAndDateKg = buildBestSetByLabelAndDate(model.tagged, liftType);
-    const convert = unit === 'lbs' ? (v: number) => Math.round(v * KG_TO_LBS) : Math.round;
     const bestSetByLabelAndDate = new Map(
       [...bestSetByLabelAndDateKg].map(([label, byDate]) => [
         label,
-        new Map([...byDate].map(([date, set]) => [date, { ...set, weight: convert(set.weight) }])),
+        new Map(
+          [...byDate].map(([date, set]) => [
+            date,
+            { ...set, weight: roundWeight(set.weight, unit) },
+          ])
+        ),
       ])
     );
 

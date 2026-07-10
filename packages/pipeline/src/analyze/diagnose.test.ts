@@ -149,7 +149,7 @@ describe('diagnose', () => {
       [
         'present with n > 0',
         { 'bench-chains': { offsetKg: 11.34, n: 5 } },
-        { offsetLbs: 25, n: 5 },
+        { offsetKg: 11.34, n: 5 },
       ],
       ['absent', {}, undefined],
       ['present but n === 0', { 'bench-chains': { offsetKg: 11.34, n: 0 } }, undefined],
@@ -162,7 +162,7 @@ describe('diagnose', () => {
       if (expected === undefined) {
         expect(variant.addlWtOffset).toBeUndefined();
       } else {
-        expect(variant.addlWtOffset?.offsetLbs).toBeCloseTo(expected.offsetLbs, 1);
+        expect(variant.addlWtOffset?.offsetKg).toBe(expected.offsetKg);
         expect(variant.addlWtOffset?.n).toBe(expected.n);
       }
     });

@@ -21,7 +21,7 @@ const buildFixtureVariant = (overrides?: Partial<VariantAssessment>): VariantAss
   expectedBaseline: '90-110%',
   staleDays: 3,
   effects: ['hypertrophy'],
-  addlWtOffset: { offsetLbs: 5, n: 10 },
+  addlWtOffset: { offsetKg: 5, n: 10 },
   ...overrides,
 });
 
@@ -77,7 +77,7 @@ describe('usePipelineDiagnostics', () => {
       expectedBaseline: '95-105%',
       staleDays: 1,
       effects: ['hypertrophy', 'strength'],
-      addlWtOffset: { offsetLbs: 10, n: 20 },
+      addlWtOffset: { offsetKg: 10, n: 20 },
     });
 
     const fixtureModel = buildFixtureModel({
@@ -108,7 +108,7 @@ describe('usePipelineDiagnostics', () => {
     expect(mappedVariant.expectedBaseline).toBe('95-105%');
     expect(mappedVariant.staleDays).toBe(1);
     expect(mappedVariant.effects).toEqual(['hypertrophy', 'strength']);
-    expect(mappedVariant.addlWtOffset).toEqual({ offsetLbs: 10, n: 20 });
+    expect(mappedVariant.addlWtOffset).toEqual({ offsetKg: 10, n: 20 });
   });
 
   it('handles optional addlWtOffset correctly when undefined', () => {
@@ -269,7 +269,7 @@ describe('usePipelineDiagnostics', () => {
         lift: 'lift:squat',
         status: 'optimal',
         expectedBaseline: '90-110%',
-        addlWtOffset: { offsetLbs: 5, n: 10 },
+        addlWtOffset: { offsetKg: 5, n: 10 },
       }),
       buildFixtureVariant({
         canonical: 'bench',
@@ -285,7 +285,7 @@ describe('usePipelineDiagnostics', () => {
         lift: 'lift:deadlift',
         status: 'overperforming',
         expectedBaseline: '95-105%',
-        addlWtOffset: { offsetLbs: 15, n: 8 },
+        addlWtOffset: { offsetKg: 15, n: 8 },
       }),
     ];
 
@@ -310,7 +310,7 @@ describe('usePipelineDiagnostics', () => {
     // Verify each variant maintains its own properties
     expect(result.current.variants[0].displayName).toBe('Squat');
     expect(result.current.variants[0].expectedBaseline).toBe('90-110%');
-    expect(result.current.variants[0].addlWtOffset).toEqual({ offsetLbs: 5, n: 10 });
+    expect(result.current.variants[0].addlWtOffset).toEqual({ offsetKg: 5, n: 10 });
 
     expect(result.current.variants[1].displayName).toBe('Bench Press');
     expect(result.current.variants[1].expectedBaseline).toBeNull();
@@ -318,6 +318,6 @@ describe('usePipelineDiagnostics', () => {
 
     expect(result.current.variants[2].displayName).toBe('Deadlift');
     expect(result.current.variants[2].expectedBaseline).toBe('95-105%');
-    expect(result.current.variants[2].addlWtOffset).toEqual({ offsetLbs: 15, n: 8 });
+    expect(result.current.variants[2].addlWtOffset).toEqual({ offsetKg: 15, n: 8 });
   });
 });

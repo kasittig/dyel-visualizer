@@ -1,6 +1,7 @@
 import { useMemo, useState, type CSSProperties } from 'react';
 import type { DeadliftStancePreference } from '@dyel/core';
 import { usePipelineDiagnostics } from '../../hooks/pipeline/usePipelineDiagnostics';
+import { convertWeight, type DisplayUnit } from '../../utils/weightUnit';
 import { CollapsibleSection } from './CollapsibleSection';
 import styles from './DiagnosticsPanel.module.css';
 
@@ -11,9 +12,11 @@ function formatEffect(effect: string): string {
     .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-function formatAddlWtOffset(offsetLbs: number): string {
-  const sign = offsetLbs >= 0 ? '+' : '-';
-  return `${sign}${Math.abs(offsetLbs).toFixed(1)}lbs`;
+function formatAddlWtOffset(offsetKg: number, unit: DisplayUnit): string {
+  const converted = convertWeight(offsetKg, unit);
+  const sign = converted >= 0 ? '+' : '-';
+  const suffix = unit === 'lbs' ? 'lbs' : 'kg';
+  return `${sign}${Math.abs(converted).toFixed(1)}${suffix}`;
 }
 
 export function DiagnosticsPanel({
@@ -22,12 +25,14 @@ export function DiagnosticsPanel({
   onVariationClick,
   highlightedVariation,
   liftType,
+  unit,
 }: {
   deadliftStance: DeadliftStancePreference;
   onDeadliftStanceChange: (s: DeadliftStancePreference) => void;
   onVariationClick?: (name: string | null) => void;
   highlightedVariation?: string | null;
   liftType: string;
+  unit: DisplayUnit;
 }) {
   const [activeEffect, setActiveEffect] = useState<string | null>(null);
 
@@ -174,7 +179,7 @@ export function DiagnosticsPanel({
                         {[
                           ...r.effects.map(formatEffect),
                           ...(r.addlWtOffset !== undefined
-                            ? [formatAddlWtOffset(r.addlWtOffset.offsetLbs)]
+                            ? [formatAddlWtOffset(r.addlWtOffset.offsetKg, unit)]
                             : []),
                         ].join(', ')}
                       </td>

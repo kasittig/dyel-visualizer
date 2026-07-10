@@ -58,6 +58,7 @@ export function LiftTabPanel({
         onDeadliftStanceChange={onDeadliftStanceChange}
         onVariationClick={handleVariationClick}
         highlightedVariation={selectedVariation}
+        unit={unit}
       />
     </>
   );

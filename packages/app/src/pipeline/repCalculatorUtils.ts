@@ -1,5 +1,6 @@
 import type { Point, NormalizationModel } from '@dyel/pipeline';
 import { invertE1RM, projectE1RMToDate } from '@dyel/pipeline';
+import { convertWeight } from '../utils/weightUnit';
 
 export interface E1RMEstimate {
   e1rm: number;
@@ -75,10 +76,8 @@ export function predictRepsForWeight(e1rm: number, weight: number): number {
 
 // Pipeline output is always kg (see packages/pipeline/src/dataset/CLAUDE.md); display-unit
 // conversion is the app's job.
-const KG_TO_LBS = 2.20462262185;
-
 export function convertE1RMToDisplayUnit(e1rmKg: number, unit: 'lbs' | 'kg'): number {
-  return unit === 'lbs' ? e1rmKg * KG_TO_LBS : e1rmKg;
+  return convertWeight(e1rmKg, unit);
 }
 
 export function resolveE1RMEstimate(params: {

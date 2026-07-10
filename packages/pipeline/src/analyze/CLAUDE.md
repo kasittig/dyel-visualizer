@@ -36,9 +36,10 @@ run and NEVER stored on identity types.
     compute `ratio`, `averageIndex`, and `expectedBaseline` normally (useful for
     display), but do not contribute votes to weakness aggregation.
 - `VariantAssessment.addlWtOffset` (optional, only present when sample count > 0):
-  supplementary weight offset extracted from `model.addlWtOffset[canonical]`, converted
-  from kg to lbs. Consistent with the outputs-computed-fresh-every-run boundary:
-  never stored on identity types, always derived from normalized model state.
+  supplementary weight offset extracted from `model.addlWtOffset[canonical]`, stays in kg.
+  Diagnostic display strings are the app's job; emit structured fields only. Consistent with
+  the outputs-computed-fresh-every-run boundary: never stored on identity types, always
+  derived from normalized model state.
 - Weakness aggregation is a SIGNED VOTE COUNT per quality: each non-stale 'weakness'
   variant with the quality → +1, each non-stale 'overperforming' variant → −1,
   'optimal' → 0, 'stale' → 0 (no votes). Report qualities with score > 0; evidence

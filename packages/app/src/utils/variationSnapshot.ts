@@ -1,15 +1,7 @@
 import type { RechartsRow } from '@dyel/pipeline';
 import type { NormalizationModel } from '@dyel/pipeline';
 import { normalizeE1rm } from '@dyel/pipeline';
-
-const KG_TO_LBS = 2.20462262185;
-
-/**
- * Converts a unit enum to a converter function.
- * Pipeline data is always in kg; this converts to the target display unit.
- */
-const getConverter = (unit: 'lbs' | 'kg') =>
-  unit === 'lbs' ? (v: number) => Math.round(v * KG_TO_LBS) : (v: number) => v;
+import { roundWeight } from './weightUnit';
 
 /**
  * Extracts the latest per-label raw kg value from a variations dataset.
@@ -61,11 +53,10 @@ export function snapshotVariationsFromPipeline(
   variationRows: RechartsRow[],
   unit: 'lbs' | 'kg' = 'lbs'
 ): Record<string, number | undefined> {
-  const conv = getConverter(unit);
   const result: Record<string, number> = {};
 
   for (const [label, rawKgValue] of latestRawValuesByLabel(variationRows)) {
-    result[label] = Math.round(conv(rawKgValue));
+    result[label] = roundWeight(rawKgValue, unit);
   }
 
   return result;
@@ -99,7 +90,6 @@ export function snapshotNormalizedVariationsFromPipeline(
   normalizationModel: NormalizationModel,
   unit: 'lbs' | 'kg' = 'lbs'
 ): Record<string, number | undefined> {
-  const conv = getConverter(unit);
   const result: Record<string, number> = {};
 
   for (const [label, rawKgValue] of latestRawValuesByLabel(variationRows)) {
@@ -115,7 +105,7 @@ export function snapshotNormalizedVariationsFromPipeline(
       continue;
     }
 
-    result[label] = Math.round(conv(normalizedKgValue));
+    result[label] = roundWeight(normalizedKgValue, unit);
   }
 
   return result;
