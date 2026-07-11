@@ -1,10 +1,9 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import clsx from 'clsx';
-import { computeStrengthScores } from '@dyel/api';
+import { strengthTierForPercentile } from '@dyel/api';
+import { useStrengthScores } from '../../hooks/pipeline/useStrengthScores';
 import { CollapsibleSection } from './CollapsibleSection';
 import styles from './StrengthScoreCalculator.module.css';
-import { getCompetitionTotal } from '@dyel/api';
-import { usePipelineModel } from '../../context/PipelineContext.tsx';
 import type { DateRange } from 'react-day-picker';
 
 type Gender = 'male' | 'female';
@@ -15,20 +14,20 @@ function ordinal(n: number): string {
   return n + (s[(v - 20) % 10] ?? s[v] ?? s[0]);
 }
 
-function tierInfo(percentile: number): { label: string; color: string } {
+function tierColor(percentile: number): string {
   if (percentile >= 99) {
-    return { label: 'World class', color: 'var(--text-h)' };
+    return 'var(--text-h)';
   }
   if (percentile >= 90) {
-    return { label: 'Elite', color: 'var(--accent)' };
+    return 'var(--accent)';
   }
   if (percentile >= 60) {
-    return { label: 'Advanced', color: 'var(--success)' };
+    return 'var(--success)';
   }
   if (percentile >= 30) {
-    return { label: 'Intermediate', color: 'var(--warning)' };
+    return 'var(--warning)';
   }
-  return { label: 'Novice', color: 'var(--text)' };
+  return 'var(--text)';
 }
 
 const METRICS = [
@@ -47,17 +46,14 @@ export function StrengthScoreCalculator({
   const [bodyweight, setBodyweight] = useState('');
   const [unit, setUnit] = useState<'lbs' | 'kg'>('lbs');
   const [gender, setGender] = useState<Gender>('female');
-  const model = usePipelineModel().model;
-  const competitionTotal = model !== null ? getCompetitionTotal(model, dateRange, dataUnit) : 0;
 
-  const bodyweightNum = parseFloat(bodyweight);
-
-  const scores = useMemo(() => {
-    if (competitionTotal === null || !bodyweight || bodyweightNum <= 0 || isNaN(bodyweightNum)) {
-      return null;
-    }
-    return computeStrengthScores(bodyweightNum, competitionTotal, gender === 'female', unit);
-  }, [competitionTotal, bodyweight, bodyweightNum, unit, gender]);
+  const { competitionTotal, scores } = useStrengthScores(
+    bodyweight,
+    unit,
+    gender,
+    dateRange,
+    dataUnit
+  );
 
   const totalDisplay =
     competitionTotal !== null ? `${Math.round(competitionTotal)} ${dataUnit}` : '—';
@@ -124,18 +120,16 @@ export function StrengthScoreCalculator({
               scores !== null
                 ? (scores[`${key}Percentile` as keyof typeof scores] as number)
                 : null;
-            const tier = pct !== null ? tierInfo(pct) : null;
+            const tierLabel = pct !== null ? strengthTierForPercentile(pct) : 'Novice';
+            const tierCol = pct !== null ? tierColor(pct) : 'transparent';
             const barWidth = pct ?? 0;
 
             return (
               <div key={key} className={clsx(styles.scoreRow, isLast && styles.scoreRowLast)}>
                 <div className={styles.scoreHeader}>
                   <span className={styles.metricLabel}>{label}</span>
-                  <span
-                    className={styles.tierLabel}
-                    style={{ color: tier ? tier.color : 'transparent' }}
-                  >
-                    {tier ? tier.label : 'Novice'}
+                  <span className={styles.tierLabel} style={{ color: tierCol }}>
+                    {tierLabel}
                   </span>
                 </div>
                 <div

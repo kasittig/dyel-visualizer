@@ -7,3 +7,4 @@ export {
 } from './usePipelineVariationRadarData';
 export { usePipelineDiagnostics } from './usePipelineDiagnostics';
 export { usePipelineRepCalculator } from './usePipelineRepCalculator';
+export { useStrengthScores, type StrengthScoresResult } from './useStrengthScores';
