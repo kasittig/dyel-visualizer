@@ -4,6 +4,7 @@ import {
   selectBestE1RMPoint,
   findBestE1RMFromPipeline,
   resolveE1RMEstimate,
+  roundTo5,
 } from './repCalculatorUtils';
 
 // Mock factory functions
@@ -226,5 +227,23 @@ describe('resolveE1RMEstimate', () => {
     } else {
       expect(result).toEqual(expected);
     }
+  });
+});
+
+describe('roundTo5', () => {
+  it.each([
+    ['exact multiple', 25, 25],
+    ['exact multiple 100', 100, 100],
+    ['rounds down 22', 22, 20],
+    ['rounds up 23', 23, 25],
+    ['rounds up 27', 27, 25],
+    ['rounds down 28', 28, 30],
+    ['zero', 0, 0],
+    ['negative rounds down', -22, -20],
+    ['negative rounds up', -23, -25],
+    ['decimal 22.4', 22.4, 20],
+    ['decimal 22.6', 22.6, 25],
+  ])('%s', (_, input, expected) => {
+    expect(roundTo5(input)).toBe(expected);
   });
 });

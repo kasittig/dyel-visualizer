@@ -13,9 +13,11 @@
     "dist"
   ],
   "dependencies": {
-    "@dyel/pipeline": "*"
+    "@dyel/pipeline": "*",
+    "papaparse": "^5.5.3"
   },
   "devDependencies": {
+    "@types/papaparse": "^5.5.2",
     "typescript": "~6.0.2",
     "vitest": "^3.2.6"
   }

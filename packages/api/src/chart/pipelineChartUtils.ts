@@ -4,6 +4,34 @@ import { roundWeight } from '../weightUnit';
 // Pipeline output is always kg (see packages/pipeline/src/dataset/CLAUDE.md); display-unit
 // conversion is the app's job, so lbs-displaying callers convert here at the merge boundary.
 
+export function latestLiftE1RMs(data: ChartPoint[]): {
+  squat?: number;
+  bench?: number;
+  deadlift?: number;
+} {
+  let lastSquat: number | undefined;
+  let lastBench: number | undefined;
+  let lastDeadlift: number | undefined;
+
+  for (const point of data) {
+    if (point.squat !== undefined) {
+      lastSquat = point.squat as number;
+    }
+    if (point.bench !== undefined) {
+      lastBench = point.bench as number;
+    }
+    if (point.deadlift !== undefined) {
+      lastDeadlift = point.deadlift as number;
+    }
+  }
+
+  return {
+    ...(lastSquat !== undefined && { squat: lastSquat }),
+    ...(lastBench !== undefined && { bench: lastBench }),
+    ...(lastDeadlift !== undefined && { deadlift: lastDeadlift }),
+  };
+}
+
 export function mergeRechartsRowsToChartPoints(
   datasets: Record<string, RechartsRow[]>,
   ids: string[],

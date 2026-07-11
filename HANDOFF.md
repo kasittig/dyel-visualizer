@@ -242,6 +242,40 @@ build -w packages/app`: all clean, 0 TypeScript errors
   doc-comment mentions): only the two documented exceptions (`App.tsx`,
   `usePipelineValidation.ts`)
 
+## App Refactor Migration — Phase 1: DONE (on `migration-phase-1`)
+
+New 5-phase migration (feature organization + unidirectional data flow); plan lives in
+`migration/README.md` + `migration/phase-1-api-additions.md` … `phase-5-enforcement-docs.md`
+(supersedes the deleted `migration/API_PHASE_*.md`, whose content is fully recorded above).
+
+Phase 1 added every function the app will need to `@dyel/api`, **without touching
+`packages/app`** (validators were COPIED, not moved; `git status --short packages/app`
+verified empty after every task and at phase end):
+
+- Barrel-exported `convertWeight`/`roundWeight`/`formatWeight`/`DisplayUnit` + copied test
+- New modules: `dateRange/dateRangeUtils`, `model/modelSelectors`,
+  `diagnostics/{diagnosticsSelectors,diagnosticsUtils}`, `conjugate/conjugateChartData`,
+  `validation/validationVerdict`, `pipeline/{buildPipelineModel,validatePipelineRun}`
+  (documented raw-input entry points), copied `validation/{pipelineSheetValidator,pipelineFreeformValidator}`
+- Additions to existing modules: `latestLiftE1RMs` (chart), `buildRadarRows` (variation),
+  `strengthTierForPercentile` (strengthScores), `roundTo5` (repCalculator — audited vs
+  `roundWeight`, semantics differ so it was added rather than reused)
+- `papaparse`/`@types/papaparse` added to `packages/api` deps (versions match pipeline)
+
+**Test-count delta:** `packages/api` 125 → **322** (+197; 22 files). App 133 and pipeline
+157 unchanged. All three packages build; `npx eslint packages/app packages/api` clean.
+
+**Process notes:** two delegated modules initially failed `tsc`/ESLint despite green
+vitest runs (vitest doesn't type-check as strictly) — fixed at phase verification:
+`latestLiftE1RMs` ChartPoint narrowing, `validatePipelineRun` rewritten to `runPipeline`'s
+real signature `(raw, [], athlete, {})`, `buildRadarRows` single-pass filter typing,
+`no-explicit-any` in two test files. Worth telling implementer agents to run
+`npm run build -w packages/api` in addition to tests. Also fixed a pre-existing doc gap:
+`buildChartDatasets` was missing from the `packages/api/CLAUDE.md` export table.
+
+Next: Phase 2 (`migration/phase-2-render-only-components.md`) — repoint app hooks +
+components at the new API functions; new branch off `main` after this phase's PR lands.
+
 ## Next
 
 The `@dyel/api`-as-sole-boundary migration is complete. Two smaller follow-up items

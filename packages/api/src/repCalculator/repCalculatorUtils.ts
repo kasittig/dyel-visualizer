@@ -80,6 +80,11 @@ export function convertE1RMToDisplayUnit(e1rmKg: number, unit: 'lbs' | 'kg'): nu
   return convertWeight(e1rmKg, unit);
 }
 
+// Round to the nearest multiple of 5. Useful for weight suggestions to avoid odd plate loads.
+export function roundTo5(n: number): number {
+  return Math.round(n / 5) * 5;
+}
+
 export function resolveE1RMEstimate(params: {
   liftType: string;
   targetCanonical: string;

@@ -1,8 +1,52 @@
 import { describe, it, expect } from 'vitest';
-import { mergeRechartsRowsToChartPoints, mergeWideRechartsRows } from './pipelineChartUtils';
-import type { RechartsRow } from '@dyel/pipeline';
+import {
+  latestLiftE1RMs,
+  mergeRechartsRowsToChartPoints,
+  mergeWideRechartsRows,
+} from './pipelineChartUtils';
+import type { RechartsRow, ChartPoint } from '@dyel/pipeline';
 
 const row = (t: number, id: string, v: number): RechartsRow => ({ t, [id]: v });
+const point = (t: number, overrides?: Partial<ChartPoint>): ChartPoint => ({
+  date: new Date(t).toISOString(),
+  ...overrides,
+});
+
+describe('latestLiftE1RMs', () => {
+  it.each([
+    ['empty data', [], { squat: undefined, bench: undefined, deadlift: undefined }],
+    [
+      'single lift type',
+      [point(1000, { squat: 300 })],
+      { squat: 300, bench: undefined, deadlift: undefined },
+    ],
+    [
+      'forward-fills last value per lift',
+      [
+        point(1000, { squat: 300 }),
+        point(2000, { squat: 310, bench: 200 }),
+        point(3000, { deadlift: 450 }),
+      ],
+      { squat: 310, bench: 200, deadlift: 450 },
+    ],
+    [
+      'only includes defined lifts',
+      [point(1000, { bench: 200, deadlift: 400 })],
+      { squat: undefined, bench: 200, deadlift: 400 },
+    ],
+    [
+      'picks latest value for each lift across multiple points',
+      [
+        point(1000, { squat: 280, bench: 180 }),
+        point(2000, { squat: 300 }),
+        point(3000, { bench: 200, deadlift: 450 }),
+      ],
+      { squat: 300, bench: 200, deadlift: 450 },
+    ],
+  ])('latestLiftE1RMs: %s', (_, data, expected) => {
+    expect(latestLiftE1RMs(data)).toEqual(expected);
+  });
+});
 
 describe('mergeRechartsRowsToChartPoints', () => {
   it.each([

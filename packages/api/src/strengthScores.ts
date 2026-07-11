@@ -422,6 +422,22 @@ function calculateSchwartzMalone(bw: number, total: number, coefficients: SMAnch
   return Number(formulaTotal.toFixed(4));
 }
 
+export function strengthTierForPercentile(percentile: number): string {
+  if (percentile >= 99) {
+    return 'World class';
+  }
+  if (percentile >= 90) {
+    return 'Elite';
+  }
+  if (percentile >= 60) {
+    return 'Advanced';
+  }
+  if (percentile >= 30) {
+    return 'Intermediate';
+  }
+  return 'Novice';
+}
+
 export function computeStrengthScores(
   bodyweight: number,
   total: number,

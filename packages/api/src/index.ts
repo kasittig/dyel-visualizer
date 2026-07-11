@@ -3,7 +3,9 @@ export { calculateVolumeCorrelationFromTagged } from './volume/volume';
 export { parseTextData } from './text/parseTextData';
 export { TOTAL_CHART_SPECS } from './totalChartSpecs';
 export { buildChartDatasets } from './chart/buildChartDatasets';
+export { convertWeight, roundWeight, formatWeight } from './weightUnit';
 export type { SplitRows } from './sheet/parseSheetData';
+export type { DisplayUnit } from './weightUnit';
 export type {
   PipelineModel,
   AthleteContext,
@@ -20,6 +22,8 @@ export type {
   LiftType,
 } from '@dyel/pipeline';
 export { parseSheetData, groupByLiftType } from './sheet/parseSheetData';
+export { buildPipelineModel } from './pipeline/buildPipelineModel';
+export { validatePipelineRun } from './pipeline/validatePipelineRun';
 export {
   CONJUGATE_BARS,
   CONJUGATE_STANCES,
@@ -35,20 +39,40 @@ export type {
   ConjugateAddlWt,
 } from '@dyel/pipeline';
 export { defaultCompExerciseCanonical } from './sheet/defaultExercise';
-export { computeStrengthScores } from './strengthScores';
+export { computeStrengthScores, strengthTierForPercentile } from './strengthScores';
 export { LINE_COLORS } from './colors';
 export { classifyExerciseName } from './validation/classifyExerciseName';
+export { classifyPipelineVerdict } from './validation/validationVerdict';
+export { validateSheetCsv } from './validation/pipelineSheetValidator';
+export type {
+  SheetValidationResult,
+  SheetValidationIssue,
+  ColumnInfo,
+} from './validation/pipelineSheetValidator';
+export { validateTextData } from './validation/pipelineFreeformValidator';
+export type {
+  TextValidationResult,
+  TextValidationIssue,
+} from './validation/pipelineFreeformValidator';
 export { buildBestSetByLabelAndDate } from './conjugate/conjugateBestSet';
 export type { BestSet } from './conjugate/conjugateBestSet';
 export { conjugateChartSpecs } from './conjugate/conjugateChartSpecs';
+export { buildConjugateChartData, roundBestSetsForDisplay } from './conjugate/conjugateChartData';
+export type { ConjugateChartData } from './conjugate/conjugateChartData';
 export { buildLastSessionDetail } from './session/lastSessionDetail';
 export type { LastSessionDetail } from './session/lastSessionDetail';
 export {
   snapshotVariationsFromPipeline,
   snapshotNormalizedVariationsFromPipeline,
 } from './variation/variationSnapshot';
-export { buildCanonicalByLabel, resolveTargetLabel } from './variation/variationRadarSelectors';
 export {
+  buildCanonicalByLabel,
+  resolveTargetLabel,
+  buildRadarRows,
+} from './variation/variationRadarSelectors';
+export type { RadarRow } from './variation/variationRadarSelectors';
+export {
+  latestLiftE1RMs,
   mergeRechartsRowsToChartPoints,
   mergeWideRechartsRows,
   mergeVolumeIntoChartPoints,
@@ -61,6 +85,7 @@ export {
   predictRepsForWeight,
   convertE1RMToDisplayUnit,
   resolveE1RMEstimate,
+  roundTo5,
 } from './repCalculator/repCalculatorUtils';
 export type { E1RMEstimate } from './repCalculator/repCalculatorUtils';
 export {
@@ -68,3 +93,25 @@ export {
   exercisesForLiftType,
   resolveEffectiveCanonical,
 } from './repCalculator/repCalculatorSelectors';
+export {
+  dateRangeToRenderParams,
+  isRecordInDateRange,
+  presetDateRange,
+  activePreset,
+  defaultDateRangeFromLastSession,
+  type PresetId,
+} from './dateRange/dateRangeUtils';
+export {
+  detectDataUnit,
+  collectSessionDates,
+  collectVolumeRecords,
+  defaultCanonicalsByLift,
+  visibleLiftTypes,
+} from './model/modelSelectors';
+export {
+  selectDiagnosticVariants,
+  summarizeEffects,
+  type DiagnosticVariant,
+  type EffectSummary,
+} from './diagnostics/diagnosticsSelectors';
+export { formatEffect, formatAddlWtOffset } from './diagnostics/diagnosticsUtils';

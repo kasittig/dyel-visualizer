@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { buildCanonicalByLabel, resolveTargetLabel } from './variationRadarSelectors';
+import {
+  buildCanonicalByLabel,
+  resolveTargetLabel,
+  buildRadarRows,
+} from './variationRadarSelectors';
 import type { TaggedSetRecord } from '@dyel/pipeline';
 
 const createRecord = (overrides?: Partial<TaggedSetRecord>): TaggedSetRecord => ({
@@ -147,5 +151,56 @@ describe('resolveTargetLabel', () => {
   ])('resolveTargetLabel: %s', (_, tagged, liftType, targetCanonical, expected) => {
     const result = resolveTargetLabel(tagged, liftType, targetCanonical);
     expect(result).toBe(expected);
+  });
+});
+
+describe('buildRadarRows', () => {
+  it.each([
+    ['empty snapshot', {}, undefined, []],
+    [
+      'single variation',
+      { 'Variation A': 300 },
+      undefined,
+      [{ variation: 'Variation A', e1rm: 300, targetE1rm: undefined }],
+    ],
+    [
+      'multiple variations sorted alphabetically',
+      { 'Variation C': 250, 'Variation A': 320, 'Variation B': 280 },
+      undefined,
+      [
+        { variation: 'Variation A', e1rm: 320, targetE1rm: undefined },
+        { variation: 'Variation B', e1rm: 280, targetE1rm: undefined },
+        { variation: 'Variation C', e1rm: 250, targetE1rm: undefined },
+      ],
+    ],
+    [
+      'excludes variations with undefined e1rm',
+      { 'Variation A': 300, 'Variation B': undefined, 'Variation C': 280 },
+      undefined,
+      [
+        { variation: 'Variation A', e1rm: 300, targetE1rm: undefined },
+        { variation: 'Variation C', e1rm: 280, targetE1rm: undefined },
+      ],
+    ],
+    [
+      'includes targetE1rm when targetLabel matches a variation',
+      { 'Variation A': 300, 'Variation B': 280 },
+      'Variation A',
+      [
+        { variation: 'Variation A', e1rm: 300, targetE1rm: 300 },
+        { variation: 'Variation B', e1rm: 280, targetE1rm: 300 },
+      ],
+    ],
+    [
+      'targetE1rm is undefined when targetLabel does not match',
+      { 'Variation A': 300, 'Variation B': 280 },
+      'Variation C',
+      [
+        { variation: 'Variation A', e1rm: 300, targetE1rm: undefined },
+        { variation: 'Variation B', e1rm: 280, targetE1rm: undefined },
+      ],
+    ],
+  ])('buildRadarRows: %s', (_, snapshot, targetLabel, expected) => {
+    expect(buildRadarRows(snapshot, targetLabel)).toEqual(expected);
   });
 });
