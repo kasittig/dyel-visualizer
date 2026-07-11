@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useIndexData } from '../../hooks/data/useIndexData';
+import { useIndexData } from '../index-page/useIndexData';
 import { EXAMPLE_SHEET_URL, EXAMPLE_VISUALIZER_URL } from './sheetRef';
 import type { InputMode } from '../../app/appTabs';
 import { InputModeToggle } from './InputModeToggle';

@@ -1,1 +1,1 @@
-export { IndexPage } from './IndexPage';
+// IndexPage moved to features/index-page/

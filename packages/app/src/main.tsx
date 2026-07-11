@@ -6,13 +6,13 @@ import { App } from './app/App.tsx';
 import { ErrorBoundary } from './shared/components/ErrorBoundary.tsx';
 
 const ConjugateInfoPage = lazy(() =>
-  import('./components/conjugate/ConjugateInfoPage.tsx').then((m) => ({
+  import('./features/conjugate-info/ConjugateInfoPage.tsx').then((m) => ({
     default: m.ConjugateInfoPage,
   }))
 );
 
 const IndexPage = lazy(() =>
-  import('./components/pages/IndexPage.tsx').then((m) => ({ default: m.IndexPage }))
+  import('./features/index-page/IndexPage.tsx').then((m) => ({ default: m.IndexPage }))
 );
 
 const ValidatorPage = lazy(() =>

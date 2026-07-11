@@ -1,2 +1,1 @@
-export { useIndexData } from './useIndexData';
-export type { IndexEntry } from './useIndexData';
+// useIndexData moved to features/index-page/

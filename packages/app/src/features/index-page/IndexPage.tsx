@@ -1,4 +1,4 @@
-import { useIndexData } from '../../hooks/data/useIndexData';
+import { useIndexData } from './useIndexData';
 import styles from './IndexPage.module.css';
 
 export function IndexPage() {
