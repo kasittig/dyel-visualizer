@@ -1,9 +1,8 @@
-import { useMemo } from 'react';
 import { usePipelineVariationRadarData } from '../../hooks/pipeline/usePipelineVariationRadarData';
 import { BaseRadarChart } from './BaseRadarChart';
 import { ChartTooltip, type TooltipLine } from './TooltipCard';
 import { CollapsibleSection } from '../shared/CollapsibleSection';
-import { roundWeight } from '@dyel/api';
+import { buildRadarRows, roundWeight } from '@dyel/api';
 import styles from './VariationRadarChart.module.css';
 
 const MIN_VARIATIONS = 3;
@@ -30,21 +29,7 @@ export function VariationRadarChart({
   // with no fitted normalization factor are silently excluded (see
   // snapshotNormalizedVariationsFromPipeline's omission rule) rather than shown with a
   // misleading raw value.
-  const data = useMemo(() => {
-    const targetE1rm = targetLabel ? normalizedSnapshot[targetLabel] : undefined;
-    const variationNames = Object.keys(normalizedSnapshot).sort();
-
-    return variationNames
-      .map((name) => ({
-        variation: name,
-        e1rm: normalizedSnapshot[name],
-        targetE1rm,
-      }))
-      .filter(
-        (d): d is { variation: string; e1rm: number; targetE1rm: number | undefined } =>
-          d.e1rm !== undefined
-      );
-  }, [normalizedSnapshot, targetLabel]);
+  const data = buildRadarRows(normalizedSnapshot, targetLabel);
 
   if (data.length < MIN_VARIATIONS) {
     return null;
