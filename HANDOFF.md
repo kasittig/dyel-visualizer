@@ -525,11 +525,141 @@ checklist item 5) — pending user direction on target branch, since Phase 1's P
 `main` is still open and this phase stacks on `migration-phase-1` rather than `main`,
 same situation as Phases 2/3 before their consolidation.
 
+## App Refactor Migration — Phase 5: DONE (on `app-refactor-phase-5`) — migration complete
+
+New branch `app-refactor-phase-5` cut from `app-refactor-phase-4` (`516e6c7`, since Phase
+4's PR to `main` hadn't landed yet — same stacking pattern as every prior phase in this
+migration). Baseline re-verified clean before starting: builds all clean, tests pipeline
+157/157, api 322/322, app 76/76 — matches Phase 4's documented final state exactly.
+
+All 5 tasks from `migration/phase-5-enforcement-docs.md` landed. This is the last phase of
+the App Refactor migration — machine-enforcing the unidirectional-flow rules the prior four
+phases built, and rewriting the docs so the architecture is followed by default rather than
+by convention alone.
+
+**Pre-delegation audits caught two real gaps the phase doc didn't anticipate** (same
+practice as every prior phase — a fresh grep sweep before trusting the doc's assumptions):
+
+- **Task 5.1's real scope was bigger than "add an ESLint rule."** The doc assumed only
+  `shared/charts/**` needed a display-helper exception. A `grep -rn "from '@dyel/api'"
+packages/app/src/**/*.tsx` found 6 components still calling `@dyel/api` derivation
+  functions directly instead of via a hook — a Phase 2 leftover (`SigmaChart` →
+  `latestLiftE1RMs`, `VariationRadarChart` → `buildRadarRows`, `StrengthScoreCalculator` →
+  `strengthTierForPercentile`, `RepCalculator` → `convertE1RMToDisplayUnit`,
+  `PipelineValidationPage` → `classifyPipelineVerdict`, `DiagnosticsPanel` →
+  `summarizeEffects`). Relocated all 6 into their owning feature hooks (zero behavior
+  change) before adding the lint rule, then allowlisted 7 files for genuinely display-only
+  imports (formatters/constants, not derivation) with an explanatory comment each — matching
+  the phase doc's own "allowlist explicitly rather than weaken the rule" guidance.
+- **Task 5.2 found 5 existing cross-feature imports that bypassed the target feature's
+  barrel** (`SheetUrlPanel.tsx` → `../index-page/useIndexData`, two `features/lift/*`
+  files → `../sigma/usePipelineDatasets`, two `features/validation/*` files →
+  `../data-source/{sheetRef,sheetFetch,rawInput}`). Fixed all 5 to import via the barrel —
+  pure import-path swaps, every export was already barrel-exported.
+
+**Two real regressions caught during independent re-verification (not just agent
+self-report), both from Task 5.2's barrel-import fixes, fixed directly by the
+coordinator:**
+
+1. Barrel-importing `usePipelineDatasets` via `../sigma` in `features/lift/`'s two hooks
+   pulled `SigmaChart.tsx`/`TotalChart.tsx`/`SessionBarChart.tsx` (and therefore `recharts`)
+   into `usePipelineVariationRadarData.test.ts`'s module graph, and `recharts`' CJS build
+   has a broken transitive dependency on `@reduxjs/toolkit`'s ESM-only dist that Vitest
+   can't parse — the whole suite failed to load (`app` test count silently dropped 77→67,
+   one file failing to even collect). A `vitest.config.ts`-level `deps.inline` fix was
+   tried first and did **not** work (same error persisted through several variations); the
+   actual fix was `vi.mock('recharts', () => ({}))` at the top of that one test file,
+   since it never renders any chart component — reverted the `vitest.config.ts` change
+   once the targeted mock worked. Caught only because the coordinator re-ran
+   `npm test -w packages/app` directly instead of trusting the agent's "unchanged" claim
+   (which was flatly wrong — 67 ≠ 77).
+2. Barrel-importing `useIndexData` via `../index-page` in the always-eagerly-loaded
+   `SheetUrlPanel.tsx` statically pulled the `IndexPage` page component into it — `main.tsx`
+   lazy-loads `IndexPage` for code-splitting, so this silently defeated that split (Vite's
+   build emitted an `INEFFECTIVE_DYNAMIC_IMPORT` warning that the delegated agent's report
+   didn't mention checking for). Fixed by reverting `SheetUrlPanel.tsx` to its original deep
+   import with an explanatory comment, and adding a matching one-file ESLint allowlist
+   override — the same "documented exception" pattern used throughout this migration when a
+   blanket rule conflicts with a real, legitimate constraint.
+
+**Task 5.4's agent self-report was also caught as inaccurate**, same "verify, don't trust"
+practice as every prior phase: it claimed to add a `papaparse` dependency note to
+`packages/api/CLAUDE.md`, but `git status`/`git diff` showed the file completely
+unmodified — the edit was never actually written. Added the missing section directly
+after confirming (independently) that the export table itself genuinely was already
+complete (every `packages/api/src/index.ts` export has a matching table row — no rows
+were actually missing, contrary to nothing needing fixing there).
+
+**Task 5.3** (rewriting `packages/app/CLAUDE.md`'s MVC section into a "Data flow contract"
+section) landed cleanly; the only fix made directly was removing hardcoded `eslint.config.js`
+line-number references the agent added (e.g. "lines 90–138") — these drift immediately on
+any unrelated edit to that file, so replaced with descriptions of which rule block to look
+for instead.
+
+**Root `CLAUDE.md` was also found stale** (Task 5.5, this section) beyond what the phase
+doc anticipated ("update if it references paths that moved") — its "Workspace Architecture"
+section predated the `@dyel/api` package's existence entirely: it listed a nonexistent
+`@dyel/app` package name (the actual npm package name is `dyel-visualizer`, no scoped
+alias) and never mentioned `@dyel/api` at all, and "Strict Importing Rules" said nothing
+about the sole-boundary rule this entire migration exists to enforce. Rewrote both sections
+to name all three packages accurately and state the actual enforced rules (sole-boundary,
+component render-only, feature-barrel-only), pointing at `eslint.config.js` and each
+package's own `CLAUDE.md` as the source of truth rather than duplicating specifics that
+will drift.
+
+**Final verification (independently re-run by the coordinator, not just agent-reported,
+per this repo's standing practice across all 5 phases):**
+
+- `npm run build -w packages/pipeline && npm run build -w packages/api && npm run build
+-w packages/app`: all clean, 0 TypeScript errors
+- `npm test -w packages/pipeline`: **157/157** (unchanged)
+- `npm test -w packages/api`: **322/322** (unchanged)
+- `npm test -w packages/app`: **77/77** (up from the Phase 4 baseline of 76 — +1 from a
+  hook-relocation test gaining coverage in Task 5.1, not a deletion)
+- `npx eslint packages/app packages/api`: clean
+- `grep -rn "from '@dyel/pipeline'" packages/app/src` (excluding `.test.` files): zero
+  hits — even the one previously-documented test-only exception
+  (`features/lift/usePipelineVariationRadarData.test.ts`) is excluded by that filter, i.e.
+  it's still the _only_ file in `packages/app/src` importing `@dyel/pipeline` at all
+- Both deliberate-violation checks performed and reverted: a component-level
+  `@dyel/api` value import in a non-allowlisted file (`TotalChart.tsx`) fails lint; a
+  deep cross-feature import (`../sigma/SigmaChart` from `features/lift/`) fails lint
+- `git status --short`: clean working tree at time of this write-up
+- `?page=` route smoke (HTTP-level only, via the already-running dev server — no
+  browser-automation tool available this session, same caveat as Phase 4's check): all 5
+  routes (`/`, `?page=validator`, `?page=pipeline-validation`, `?page=conjugate`,
+  `?page=index`) return 200. Given this phase's changes are lint/docs plus zero-behavior-
+  change hook relocations (already covered by the unchanged/incremented test suite above),
+  this HTTP-level check plus the full build/test/lint regression is treated as sufficient
+  sign-off; dev server left running at localhost:5173 per this repo's convention.
+
+**Test-count delta for the whole App Refactor migration (Phases 1-5, against the
+migration-start baselines recorded in `migration/README.md`):** pipeline 157→157
+(unchanged — this migration never touched `packages/pipeline` except Task 36 of the prior
+`@dyel/api` migration, already reflected in the 157 baseline), api 125→322 (+197, all in
+Phase 1), app 133→77 (−56, net across Phases 1-2's dedup/deletion work plus Phase 5's +1).
+
+Not yet done: PR opened to `main` for this phase — same situation as every prior phase in
+this migration, pending user direction on target branch/consolidation strategy since none
+of Phases 1-4's PRs to `main` have merged yet.
+
+`migration/README.md`'s per-phase checklist item 5 offered "optionally delete `migration/`
+or mark it done." Chose **mark done, don't delete** — consistent with the more cautious
+precedent set for the `@dyel/api` migration's own `API_PHASE_1.md`–`API_PHASE_4.md` docs
+(explicitly deferred rather than deleted, to preserve the audit trail). `migration/README.md`
+and `migration/phase-1-api-additions.md` through `migration/phase-5-enforcement-docs.md` are
+now candidates for deletion in a future deliberate cleanup pass, once this phase's PR
+actually lands on `main` and the whole migration is confirmed stable in production use — not
+bundled into this update.
+
 ## Next
 
-The `@dyel/api`-as-sole-boundary migration is complete. One smaller follow-up item was
-deferred out of this migration's scope (recorded here per Phase 4's Task 35, not yet
-started):
+The `@dyel/api`-as-sole-boundary migration (its own separate, earlier 4-phase migration)
+and the App Refactor migration (feature organization + unidirectional data flow, Phases
+1-5, see above) are both now complete in the working tree on `app-refactor-phase-5`,
+pending only PRs landing on `main`. One smaller follow-up item was deferred out of the
+`@dyel/api`-as-sole-boundary migration's scope (recorded here per Phase 4's Task 35, not
+yet started):
 
 1. **`LiftType` dedupe:** `@dyel/api` independently defines a `LiftType` literal type
    rather than re-exporting `@dyel/pipeline`'s structurally identical one (flagged in
