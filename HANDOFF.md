@@ -414,8 +414,10 @@ once by a `qa-reviewer` agent, per this repo's standing practice):**
   reload, refresh button, mode switching, default 3-month range, tab visibility vs.
   date range).
 
-Next: human sign-off on the manual smoke check above, then PR to `main` (stacked on
-Phase 2's still-open PR #468). After that: Phase 4
+PR #469 opened against `app-refactor-phase-2` (stacked, since Phase 2's PR #468 hasn't
+merged to `main` yet — will need retargeting to `main` once #468 lands, same as Phase
+2's own stacking note). Manual dev-server smoke sign-off (checklist above) is the one
+remaining item before this phase is fully done. After that: Phase 4
 (`migration/phase-4-feature-restructure.md`) — file moves only, new branch off `main`
 once Phase 3's PR lands.
 
