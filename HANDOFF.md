@@ -424,16 +424,106 @@ merge. `origin/migration-phase-1` (`4623408`) diffs empty against Phase 3's tip
 GitHub on merge (`delete_branch_on_merge` is on for this repo, independent of the
 `gh pr merge --delete-branch=false` flag used).
 
-## App Refactor Migration — Phase 4: IN PROGRESS (on `app-refactor-phase-4`)
+## App Refactor Migration — Phase 4: DONE (on `app-refactor-phase-4`)
 
 New branch `app-refactor-phase-4` cut from `origin/migration-phase-1` (`4623408`, the
 consolidated Phase 1-3 tip — see note above; not `main`, per user direction). Baseline
 re-verified clean before starting: builds all clean, tests pipeline 157/157, api
 322/322, app 76/76 — matches Phase 3's documented final state exactly.
 
-Working from `migration/phase-4-feature-restructure.md` (file moves only, zero logic
-change, tasks 4.1-4.9 restructuring `packages/app/src` into `app/`, `features/*/`,
-`shared/` per the target tree in that doc).
+All 9 tasks from `migration/phase-4-feature-restructure.md` landed as one commit each
+(git mv only, zero logic change — every task independently verified via non-import-line
+diff review against a pre-move baseline, not just build/test passing). Delegated to
+`feature-implementer` agents, executed in dependency order rather than doc order (4.1,
+then 4.7, then 4.2-4.6, then 4.8) since the feature dirs (4.2-4.6) needed `shared/charts/`
+(4.7) to exist first for `charts.module.css` repointing:
+
+- **4.1** — App.tsx(+css), PipelineContext(+test), the three `hooks/app/*` hooks, and
+  `appTabs.ts` moved into new `src/app/`.
+- **4.7** — Chart primitives (BaseRadarChart, DateLineChart, TooltipCard, colors.ts,
+  CONVENTIONS.md) into `shared/charts/`; CollapsibleSection/ErrorBoundary/
+  EditableDateChip/DateRangePicker into `shared/components/`; useCsvResource/
+  useLocalStorageState into `shared/hooks/`; dateUtils.ts into `shared/`. Notably moved
+  `charts.module.css` (a shared CSS module referenced by 8 different consumer
+  `.module.css` files, not explicitly named in the phase doc's target tree) into
+  `shared/charts/` and repointed all 8 consumers' `composes: ... from` paths — including
+  5 consumers that hadn't physically moved yet at that point in the sequence, since
+  their relative path to `shared/charts/` was still resolvable from their pre-move
+  location.
+- **4.2-4.6** — `features/data-source/`, `features/validation/`, `features/calculator/`,
+  `features/sigma/` + `features/lift/`, `features/conjugate-info/` +
+  `features/index-page/` populated per the doc's target tree. `main.tsx`'s `?page=`
+  lazy-import paths and the `eslint.config.js` `no-restricted-imports` allowlist path
+  (which points at `usePipelineVariationRadarData.test.ts`) updated as their owning
+  files moved. `ConjugateInfoPage.tsx`'s `../../../CONJUGATE.md?raw` relative import
+  verified unchanged — both its old and new locations sit 2 directories deep inside
+  `src/`, so the depth to `packages/app/CONJUGATE.md` didn't change.
+- **4.8** — `index.ts` barrels added to every `features/*/` and `shared/*/` dir (contents
+  verified against each source file's actual exports, not assumed from the plan doc);
+  the 8 old `components/*/CLAUDE.md`/`hooks/*/CLAUDE.md` docs redistributed into 11 new
+  per-directory `CLAUDE.md` files matching the new feature boundaries; the now-fully-empty
+  legacy `components/`, `hooks/`, `utils/`, `context/` directories deleted.
+- **4.9** — sweep + final verification (below).
+
+**Process notes:**
+
+- A stray `packages/app/test-output.txt` was left behind by Task 4.4's implementer agent
+  (redirected test output to a file instead of just running it — the exact anti-pattern
+  already flagged in this doc's Phase 2 process notes). Caught via `git status --short`
+  before committing, deleted, not staged. Every subsequent task prompt in this phase got
+  an explicit "do not redirect command output to a file" instruction; no further
+  occurrences.
+- Every task's diff was independently re-verified (not just agent self-report) via
+  `git status --short packages/app/src` (confirming only the assigned files changed —
+  no scope creep across any of the 8 delegated tasks) plus a direct re-run of
+  build/test/lint and a grep sweep for leftover old-path imports, before committing.
+- Zero-logic-change claim independently spot-checked at Task 4.9 (not just assumed from
+  "it's a file move"): diffed 5 representative moved files (`App.tsx`, `DiagnosticsPanel.tsx`,
+  `usePipelineDiagnostics.ts`, `VariationRadarChart.tsx`, `dateUtils.ts`) against their
+  `origin/migration-phase-1` pre-move content with import lines stripped out — all 5
+  came back byte-identical outside their import blocks.
+- `git log --follow` on `RepCalculator.tsx` and `App.tsx` both walk cleanly back through
+  every prior rename/refactor to their original creation commits, confirming git's rename
+  detection tracked every move in this phase correctly. Two small CSS files
+  (`BaseRadarChart.module.css`, `DateLineChart.module.css`, moved in Task 4.7) fell below
+  git's similarity threshold and recorded as delete+create rather than rename — cosmetic,
+  doesn't affect correctness, just slightly weaker `git blame`/`--follow` on those two
+  files specifically.
+- The dev server (left running per this repo's convention at the start of this session)
+  was found stopped partway through this phase — likely killed incidentally by one of
+  the delegated agents' shell commands. Restarted before the final `?page=` route smoke
+  check; all five routes (`/`, `?page=validator`, `?page=pipeline-validation`,
+  `?page=conjugate`, `?page=index`) return 200 and serve the SPA shell correctly. This
+  was an HTTP-level check only (curl), not a full interactive/console-error browser
+  smoke test — no browser-automation tool was available this session. Each route's lazy
+  chunk (`IndexPage`, `ConjugateInfoPage`, `PipelineValidationPage`, `ValidatorPage`)
+  did build successfully in every `npm run build -w packages/app` run across all 9
+  tasks, which is reasonable but not equivalent evidence that the module graph for each
+  route is intact.
+
+**Final verification (independently re-run twice — once directly by the coordinator,
+once by a `qa-reviewer` agent, per this repo's standing practice):**
+
+- `npm run build -w packages/pipeline && npm run build -w packages/api && npm run build
+-w packages/app`: all clean, 0 TypeScript errors
+- `npm test -w packages/pipeline`: **157/157** (unchanged)
+- `npm test -w packages/api`: **322/322** (unchanged)
+- `npm test -w packages/app`: **76/76** (unchanged — pure file-move phase, no tests
+  added/removed/renamed net)
+- `npx eslint packages/app packages/api`: clean
+- `grep -rn "from '@dyel/pipeline'" packages/app/src`: exactly one file,
+  `features/lift/usePipelineVariationRadarData.test.ts` (moved from its old
+  `hooks/pipeline/` location, same single documented exception as every prior phase)
+- `find packages/app/src/components packages/app/src/hooks packages/app/src/utils
+packages/app/src/context`: all four report "No such file or directory" — legacy dirs
+  fully deleted
+- `git status --short`: clean working tree, everything committed
+- `?page=` route smoke (HTTP-level, see process notes above): all 5 routes return 200
+
+Not yet done: PR opened to `main` for this phase (per `migration/README.md`'s per-phase
+checklist item 5) — pending user direction on target branch, since Phase 1's PR #467 to
+`main` is still open and this phase stacks on `migration-phase-1` rather than `main`,
+same situation as Phases 2/3 before their consolidation.
 
 ## Next
 
