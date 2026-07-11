@@ -4,10 +4,10 @@ import { buildChartDatasets } from '@dyel/api';
 import type { PipelineModel, DatasetSpec, RenderParams, Point } from '@dyel/api';
 import { usePipelineDatasets } from './usePipelineDatasets';
 
-vi.mock('../../context/PipelineContext');
+vi.mock('../../app/PipelineContext');
 
 const mockUsePipelineModel = vi.mocked(
-  (await import('../../context/PipelineContext')).usePipelineModel
+  (await import('../../app/PipelineContext')).usePipelineModel
 );
 
 const buildFixtureModel = (overrides?: Partial<PipelineModel>): PipelineModel => {

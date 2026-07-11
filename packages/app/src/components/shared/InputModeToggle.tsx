@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import type { InputMode } from '../../utils/appTabs';
+import type { InputMode } from '../../app/appTabs';
 import styles from './InputModeToggle.module.css';
 
 export function InputModeToggle({

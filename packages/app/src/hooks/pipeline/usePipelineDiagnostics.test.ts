@@ -3,10 +3,10 @@ import { renderHook } from '@testing-library/react';
 import type { PipelineModel, VariantAssessment } from '@dyel/api';
 import { usePipelineDiagnostics } from './usePipelineDiagnostics';
 
-vi.mock('../../context/PipelineContext');
+vi.mock('../../app/PipelineContext');
 
 const mockUsePipelineModel = vi.mocked(
-  (await import('../../context/PipelineContext')).usePipelineModel
+  (await import('../../app/PipelineContext')).usePipelineModel
 );
 
 const buildVariant = (overrides?: Partial<VariantAssessment>): VariantAssessment => ({

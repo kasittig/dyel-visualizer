@@ -4,7 +4,7 @@ import { useSheetValidation } from '../../hooks/infra/useSheetValidation';
 import { useTextValidation } from '../../hooks/infra/useTextValidation';
 import type { SheetValidationResult, ColumnInfo } from '@dyel/api';
 import { EXAMPLE_SHEET_URL } from '../../utils/sheetRef';
-import type { InputMode } from '../../utils/appTabs';
+import type { InputMode } from '../../app/appTabs';
 import { InputModeToggle } from '../shared/InputModeToggle';
 import styles from './ValidatorPage.module.css';
 

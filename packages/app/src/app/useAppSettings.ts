@@ -1,8 +1,8 @@
 import { useState, useMemo, useEffect } from 'react';
 import type { DateRange } from 'react-day-picker';
 import type { AthleteContext } from '@dyel/api';
-import { useLocalStorageState } from '../infra/useLocalStorageState';
-import type { InputMode, PageTab, DeadliftStancePreference } from '../../utils/appTabs';
+import { useLocalStorageState } from '../hooks/infra/useLocalStorageState';
+import type { InputMode, PageTab, DeadliftStancePreference } from './appTabs';
 
 /**
  * Extracts all settings state from App.tsx: localStorage-backed settings (url, inputMode,

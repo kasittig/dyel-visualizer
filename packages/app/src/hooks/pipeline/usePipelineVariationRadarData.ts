@@ -9,7 +9,7 @@ import {
   conjugateChartSpecs,
   type LastSessionDetail,
 } from '@dyel/api';
-import { usePipelineModel } from '../../context/PipelineContext';
+import { usePipelineModel } from '../../app/PipelineContext';
 import { usePipelineDatasets } from './usePipelineDatasets';
 
 export interface PipelineVariationRadarData {

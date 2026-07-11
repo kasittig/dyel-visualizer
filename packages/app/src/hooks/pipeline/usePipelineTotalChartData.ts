@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import type { DateRange } from 'react-day-picker';
 import type { RenderParams, ChartPoint } from '@dyel/api';
-import { usePipelineModel } from '../../context/PipelineContext';
+import { usePipelineModel } from '../../app/PipelineContext';
 import { usePipelineDatasets } from './usePipelineDatasets';
 import {
   TOTAL_CHART_SPECS,

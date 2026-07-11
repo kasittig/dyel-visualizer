@@ -18,7 +18,7 @@ import type {
   ConjugateEquipment,
   ConjugateStance,
 } from '@dyel/api';
-import { usePipelineModel } from '../../context/PipelineContext';
+import { usePipelineModel } from '../../app/PipelineContext';
 
 /**
  * Controller hook for the Rep Calculator: owns all interactive state (lift type, exercise

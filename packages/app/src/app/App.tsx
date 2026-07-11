@@ -1,20 +1,20 @@
 import { useEffect } from 'react';
 import clsx from 'clsx';
-import { PipelineProvider } from './context/PipelineContext';
-import { RepCalculator } from './components/shared/RepCalculator';
-import { StrengthScoreCalculator } from './components/shared/StrengthScoreCalculator';
-import { SigmaTab } from './components/pages/SigmaTab';
-import { LiftTabPanel } from './components/pages/LiftTabPanel';
-import { SheetUrlPanel } from './components/shared/SheetUrlPanel';
-import { GettingStarted } from './components/pages/GettingStarted';
-import { DateRangePicker } from './components/shared/DateRangePicker';
+import { PipelineProvider } from './PipelineContext';
+import { RepCalculator } from '../components/shared/RepCalculator';
+import { StrengthScoreCalculator } from '../components/shared/StrengthScoreCalculator';
+import { SigmaTab } from '../components/pages/SigmaTab';
+import { LiftTabPanel } from '../components/pages/LiftTabPanel';
+import { SheetUrlPanel } from '../components/shared/SheetUrlPanel';
+import { GettingStarted } from '../components/pages/GettingStarted';
+import { DateRangePicker } from '../components/shared/DateRangePicker';
 import { defaultDateRangeFromLastSession } from '@dyel/api';
 import type { LiftType } from '@dyel/api';
-import { MAIN_TABS } from './utils/appTabs';
-import type { PageTab } from './utils/appTabs';
-import { useAppSettings } from './hooks/app/useAppSettings';
-import { usePipelineOrchestration } from './hooks/app/usePipelineOrchestration';
-import { useVisualizerData } from './hooks/app/useVisualizerData';
+import { MAIN_TABS } from './appTabs';
+import type { PageTab } from './appTabs';
+import { useAppSettings } from './useAppSettings';
+import { usePipelineOrchestration } from './usePipelineOrchestration';
+import { useVisualizerData } from './useVisualizerData';
 import styles from './App.module.css';
 
 export function App() {

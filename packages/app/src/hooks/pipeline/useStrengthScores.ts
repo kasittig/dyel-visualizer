@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { computeStrengthScores, getCompetitionTotal } from '@dyel/api';
 import type { DateRange } from 'react-day-picker';
-import { usePipelineModel } from '../../context/PipelineContext';
+import { usePipelineModel } from '../../app/PipelineContext';
 
 export interface StrengthScoresResult {
   competitionTotal: number | null;

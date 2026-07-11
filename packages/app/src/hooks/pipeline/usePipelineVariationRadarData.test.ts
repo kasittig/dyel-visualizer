@@ -7,10 +7,10 @@ import { runPipelineModel } from '@dyel/pipeline';
 import { usePipelineVariationRadarData } from './usePipelineVariationRadarData';
 import { buildRawInput, PLACEHOLDER_ATHLETE } from '../../utils/rawInput';
 
-vi.mock('../../context/PipelineContext');
+vi.mock('../../app/PipelineContext');
 
 const mockUsePipelineModel = vi.mocked(
-  (await import('../../context/PipelineContext')).usePipelineModel
+  (await import('../../app/PipelineContext')).usePipelineModel
 );
 
 describe('usePipelineVariationRadarData', () => {

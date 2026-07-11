@@ -3,10 +3,10 @@ import { act, renderHook } from '@testing-library/react';
 import type { PipelineModel, TaggedSetRecord, SplitRows, LiftType } from '@dyel/api';
 import { usePipelineRepCalculator } from './usePipelineRepCalculator';
 
-vi.mock('../../context/PipelineContext');
+vi.mock('../../app/PipelineContext');
 
 const mockUsePipelineModel = vi.mocked(
-  (await import('../../context/PipelineContext')).usePipelineModel
+  (await import('../../app/PipelineContext')).usePipelineModel
 );
 
 const record = (overrides?: Partial<TaggedSetRecord>): TaggedSetRecord => ({

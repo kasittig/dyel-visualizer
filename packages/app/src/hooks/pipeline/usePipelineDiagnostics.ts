@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { usePipelineModel } from '../../context/PipelineContext';
+import { usePipelineModel } from '../../app/PipelineContext';
 import { selectDiagnosticVariants, type DiagnosticVariant } from '@dyel/api';
 
 export type { DiagnosticVariant } from '@dyel/api';

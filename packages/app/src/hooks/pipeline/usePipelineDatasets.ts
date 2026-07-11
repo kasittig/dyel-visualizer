@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { buildChartDatasets } from '@dyel/api';
 import type { DatasetSpec, RenderParams, RechartsRow } from '@dyel/api';
-import { usePipelineModel } from '../../context/PipelineContext';
+import { usePipelineModel } from '../../app/PipelineContext';
 
 /**
  * Hook that builds datasets from a pipeline model and dataset specs.
