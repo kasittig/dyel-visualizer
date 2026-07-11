@@ -52,7 +52,7 @@ export function validateTextData(text: string): TextValidationResult {
     const lineNum = i + 1;
 
     // Validate YYYY-MM-DD date format at start of line
-    const dateMatch = line.match(/^(\d{4}-\d{2}-\d{2})\s+(.+)$/);
+    const dateMatch = line.match(/^(\d{4}-\d{2}-\d{2})\s+(\S.*)$/);
 
     if (!dateMatch) {
       linesFailed++;
