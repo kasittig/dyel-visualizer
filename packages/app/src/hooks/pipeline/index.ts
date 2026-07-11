@@ -1,5 +1,6 @@
 export { usePipelineDatasets } from './usePipelineDatasets';
 export { usePipelineTotalChartData } from './usePipelineTotalChartData';
+export { useSigmaChartData } from './useSigmaChartData';
 export { usePipelineConjugateChartData } from './usePipelineConjugateChartData';
 export {
   usePipelineVariationRadarData,
