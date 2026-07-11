@@ -1,4 +1,8 @@
 import { useState } from 'react';
+// Deep import (not the `../index-page` barrel) is intentional: index-page/index.ts also
+// re-exports the `IndexPage` page component, which main.tsx lazy-loads for code-splitting.
+// Barrel-importing here would statically pull IndexPage into the main bundle and defeat that
+// split. Allowlisted in root eslint.config.js's feature-barrel rule with the same reasoning.
 import { useIndexData } from '../index-page/useIndexData';
 import { EXAMPLE_SHEET_URL, EXAMPLE_VISUALIZER_URL } from './sheetRef';
 import type { InputMode } from '../../app/appTabs';
