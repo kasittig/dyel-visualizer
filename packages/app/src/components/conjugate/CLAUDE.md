@@ -1,9 +1,0 @@
-# components/conjugate
-
-Components specific to the conjugate method feature area.
-
-| File                           | Purpose                                                                                                                                                                                                                                                                                                                                            |
-| ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ConjugateCharts.tsx`          | Presentation-only chart for one lift type; pipeline-native, data aggregation lives in `hooks/pipeline/usePipelineConjugateChartData.ts`. Takes `liftType`/`dateRange`/`unit` props — no `targetName`/`onTargetChange`; the "Competition variation" normalization-target dropdown was deprecated when this component was migrated off `@dyel/core`. |
-| `ConjugateInfoPage.tsx`        | Static info page that renders `CONJUGATE.md` as markdown                                                                                                                                                                                                                                                                                           |
-| `ConjugateInfoPage.module.css` | Styles scoped to `ConjugateInfoPage`                                                                                                                                                                                                                                                                                                               |

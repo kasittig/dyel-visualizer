@@ -22,58 +22,35 @@ Single-page React app with no backend. Data comes from either a user-supplied Go
 - `?page=pipeline-validation` (or `/pipeline-validation`) → `PipelineValidationPage` (parse errors, unknown exercises, normalization issues via `runPipeline`)
 - no `?page=` → `App` (main visualizer)
 
-**Data flow (`App.tsx` composing `hooks/app/*`):**
+**Data flow (`app/App.tsx` composing `app/*` hooks):**
 
 1. `useAppSettings()` owns all settings state (`url`, `inputMode`, `pastedText`, `activeTab`, `deadliftStance`, date range, transient UI state), the query-param → localStorage reconciliation, the URL-sync effect, and the `athlete` memo.
-2. `usePipelineOrchestration(inputMode, url, pastedText, refreshToken, athlete)` resolves a `RawInput[]` via `useResolvedRawInput` (URL mode calls `fetchSheetCsv` to retrieve the published CSV, using the dev proxy `/sheets-proxy/` during development to handle CORS; text mode directly wraps the pasted text into a `RawInput`), then passes it to `buildPipelineModel(raw, athlete)` from `@dyel/api` (a thin wrapper over `@dyel/pipeline`'s `runPipelineModel`, which performs all parsing, normalization, tagging, and diagnostic computation in a single call), returning a `PipelineModel`. It also owns the raw-data cache (keyed by sheet URL, persisted to `localStorage`) so a revisit renders the last sheet's data instantly instead of a blank/loading state — explicit `?sheet=`/`?mode=`/`?text=` query params always override cached settings.
+2. `usePipelineOrchestration(inputMode, url, pastedText, refreshToken, athlete)` resolves a `RawInput[]` via `useResolvedRawInput` (`features/data-source/`) (URL mode calls `fetchSheetCsv` to retrieve the published CSV, using the dev proxy `/sheets-proxy/` during development to handle CORS; text mode directly wraps the pasted text into a `RawInput`), then passes it to `buildPipelineModel(raw, athlete)` from `@dyel/api` (a thin wrapper over `@dyel/pipeline`'s `runPipelineModel`, which performs all parsing, normalization, tagging, and diagnostic computation in a single call), returning a `PipelineModel`. It also owns the raw-data cache (keyed by sheet URL, persisted to `localStorage`) so a revisit renders the last sheet's data instantly instead of a blank/loading state — explicit `?sheet=`/`?mode=`/`?text=` query params always override cached settings.
 3. `useVisualizerData(model, dateRange, deadliftStance)` derives `tabRows`, visible-lift-type filtering, default canonicals, display unit, and volume/session-date data via `@dyel/api` selectors.
-4. The `PipelineModel` is stored in context via `PipelineProvider` and accessed downstream via the `usePipelineModel()` hook. Child components use selector hooks (e.g., `usePipelineConjugateChartData`, `usePipelineTotalChartData`) to derive display-ready data from the model, eliminating intermediate hook-computed pair structures.
-5. Exercise-type tabs (squat / bench / deadlift / accessory) and `LiftTabPanel` (which composes `ConjugateCharts` + `VariationRadarChart` + `DiagnosticsPanel`) consume the derived data from selectors.
-6. `ErrorBoundary` wraps the root in `main.tsx`.
+4. The `PipelineModel` is stored in context via `PipelineProvider` and accessed downstream via the `usePipelineModel()` hook (both in `app/PipelineContext.tsx`). Child components use selector hooks from their owning feature directory (e.g., `features/lift/usePipelineConjugateChartData`, `features/sigma/usePipelineTotalChartData`) to derive display-ready data from the model.
+5. Exercise-type tabs (squat / bench / deadlift / accessory) render `features/lift/LiftTabPanel` (which composes `ConjugateCharts` + `VariationRadarChart` + `DiagnosticsPanel`, all colocated in `features/lift/`) consuming the derived data from selectors.
+6. `shared/components/ErrorBoundary` wraps the root in `main.tsx`.
 
-**Tab state:** `App.tsx` owns a single `activeTab: PageTab` state variable that tracks the current tab. Valid values are lift types (`'squat'`, `'bench'`, `'deadlift'`, `'accessory'`) or non-lift tabs (`'sigma'` for the competition-total overview, `'calculator'` for the rep/strength-score calculators). The active tab is persisted to localStorage and restored on revisit.
+**Tab state:** `app/App.tsx` owns a single `activeTab: PageTab` state variable that tracks the current tab. Valid values are lift types (`'squat'`, `'bench'`, `'deadlift'`, `'accessory'`) or non-lift tabs (`'sigma'` for the competition-total overview, `'calculator'` for the rep/strength-score calculators). The active tab is persisted to localStorage and restored on revisit.
 
-**Component subdirectories** (`src/components/`):
+**Directory layout** (`src/`, per-feature, flat — no `components/`/`hooks/` subdirs within a feature):
 
-| Subdirectory | Contents                                                                                                                                             |
-| ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `charts/`    | Reusable Recharts components: `BaseRadarChart`, `DateLineChart`, `SessionBarChart`, `SigmaChart`, `TooltipCard`, `TotalChart`, `VariationRadarChart` |
-| `conjugate/` | Conjugate-feature components: `ConjugateCharts`, `ConjugateInfoPage`                                                                                 |
-| `pages/`     | Page/tab-panel entry points: `GettingStarted`, `IndexPage`, `LiftTabPanel`, `PipelineValidationPage`, `SigmaTab`, `ValidatorPage`                    |
-| `shared/`    | Cross-feature UI: `DateRangePicker`, `DiagnosticsPanel`, `ErrorBoundary`, `RepCalculator`, `SheetUrlPanel`, `StrengthScoreCalculator`                |
+| Directory                  | Contents                                                                                                                                                                                                                                        |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `app/`                     | `App.tsx`, `PipelineContext.tsx` (`PipelineProvider`/`usePipelineModel`), `useAppSettings`, `usePipelineOrchestration`, `useVisualizerData`, `appTabs.ts` (`PageTab`/`InputMode`/`DeadliftStancePreference` types + `MAIN_TABS`)                |
+| `features/data-source/`    | `SheetUrlPanel`, `InputModeToggle`, `GettingStarted`, `useResolvedRawInput`, `rawInput.ts`, `sheetRef.ts`, `sheetFetch.ts`, `sheetCacheUtils.ts`                                                                                                |
+| `features/validation/`     | `ValidatorPage`, `PipelineValidationPage`, `useSheetValidation`, `useTextValidation`, `usePipelineValidation`                                                                                                                                   |
+| `features/calculator/`     | `RepCalculator`, `usePipelineRepCalculator`, `StrengthScoreCalculator`, `useStrengthScores`                                                                                                                                                     |
+| `features/sigma/`          | `SigmaTab`, `SigmaChart`, `TotalChart`, `SessionBarChart`, `usePipelineTotalChartData`, `usePipelineDatasets`, `useSigmaChartData`                                                                                                              |
+| `features/lift/`           | `LiftTabPanel`, `ConjugateCharts`, `usePipelineConjugateChartData`, `VariationRadarChart`, `usePipelineVariationRadarData`, `DiagnosticsPanel`, `usePipelineDiagnostics`                                                                        |
+| `features/conjugate-info/` | `ConjugateInfoPage`                                                                                                                                                                                                                             |
+| `features/index-page/`     | `IndexPage`, `useIndexData`, `parseIndexCsv`                                                                                                                                                                                                    |
+| `shared/charts/`           | Reusable Recharts components: `BaseRadarChart`, `DateLineChart` (+`ChartEmpty`), `TooltipCard` (+`ChartTooltip`), `colors.ts`, `CONVENTIONS.md`, `charts.module.css` (shared CSS module `composes`d by feature-owned chart `.module.css` files) |
+| `shared/components/`       | Cross-feature UI: `CollapsibleSection`, `DateRangePicker`, `EditableDateChip`, `ErrorBoundary`                                                                                                                                                  |
+| `shared/hooks/`            | `useCsvResource`, `useLocalStorageState`                                                                                                                                                                                                        |
+| `shared/dateUtils.ts`      | Pure date-formatting helpers — no React dependency                                                                                                                                                                                              |
 
-Each subdirectory has an `index.ts` barrel and a `CLAUDE.md` with per-file descriptions.
-
-**Hook subdirectories** (`src/hooks/`):
-
-| Subdirectory | Contents                                                                                                                                                                                                                                                                                   |
-| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `app/`       | `useAppSettings` (settings state + localStorage sync + handlers), `usePipelineOrchestration` (raw input → `buildPipelineModel` → effective status/model), `useVisualizerData` (tabRows/canonicals/date-filtered visibility/volume/session-date derivations) — all extracted from `App.tsx` |
-| `data/`      | `useIndexData`                                                                                                                                                                                                                                                                             |
-| `infra/`     | `useCsvResource`, `useSheetValidation`, `useTextValidation`, `usePipelineValidation`, `useLocalStorageState`                                                                                                                                                                               |
-| `pipeline/`  | `usePipelineDatasets`, `usePipelineConjugateChartData`, `usePipelineVariationRadarData`, `usePipelineDiagnostics`, `usePipelineRepCalculator`, `usePipelineTotalChartData` (`usePipelineModel` itself lives in `src/context/PipelineContext.tsx`, not this directory)                      |
-
-Each subdirectory has an `index.ts` barrel and a `CLAUDE.md` with per-file descriptions.
-
-**Key modules:**
-
-| Path                                                  | Purpose                                                                                                                                                                                                                |
-| ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `src/utils/sheetRef.ts`                               | Pure `extractSheetRef` helper + example sheet URL constants — no React dependency                                                                                                                                      |
-| `src/utils/appTabs.ts`                                | UI type aliases (`PageTab`, `InputMode`, `DeadliftStancePreference`) and the `MAIN_TABS` tab-nav constant — no React dependency                                                                                        |
-| `src/utils/rawInput.ts`                               | Pure `buildRawInput`/`PLACEHOLDER_ATHLETE` — no React dependency                                                                                                                                                       |
-| `src/utils/useResolvedRawInput.ts`                    | React hook resolving `RawInput[]` from either input mode (CSV fetch or pasted text)                                                                                                                                    |
-| `src/components/charts/BaseRadarChart.tsx`            | Shared Recharts radar wrapper; accepts `angleKey`, `unit`, `tooltip`, optional `onClick`                                                                                                                               |
-| `src/components/pages/SigmaTab.tsx`                   | "Σ" overview tab: `TotalChart` + `SessionBarChart` + `SigmaChart` across all lift types                                                                                                                                |
-| `src/components/pages/LiftTabPanel.tsx`               | Per-lift tab content: `ConjugateCharts` + `VariationRadarChart` with shared variation-highlight state                                                                                                                  |
-| `src/components/shared/RepCalculator.tsx`             | Calculator tab: render-only component displaying Rep Calculator UI; logic (state, e1RM estimation, weight-for-reps/reps-for-weight derivation) owned by `usePipelineRepCalculator` hook via `@dyel/api`                |
-| `src/components/shared/DiagnosticsPanel.tsx`          | Diagnostics panel using `usePipelineDiagnostics()` (pipeline-native, all-time not date-range-filtered; surfaces `'stale'` status for variants past the staleness threshold)                                            |
-| `src/components/shared/DateRangePicker.tsx`           | Date range input using `react-day-picker` + Radix Popover                                                                                                                                                              |
-| `src/components/pages/IndexPage.tsx`                  | Landing page listing linked sheets; fetches from a hardcoded published index sheet via `useIndexData`                                                                                                                  |
-| `src/hooks/pipeline/usePipelineConjugateChartData.ts` | All data aggregation for `ConjugateCharts` (grouping, normalization, forward-fill); the component itself is presentation-only                                                                                          |
-| `src/hooks/data/useIndexData.ts`                      | Fetches and parses the published index sheet CSV; returns `IndexEntry[]`                                                                                                                                               |
-| `src/utils/sheetCacheUtils.ts`                        | Pure serialize/deserialize helpers for caching resolved `RawInput[]` to localStorage (handles `Date` round-tripping)                                                                                                   |
-| `src/utils/sheetFetch.ts`                             | CSV fetching utilities: `sheetCsvUrl` constructs the appropriate Google Sheets URL (dev proxy or production), `fetchSheetCsv` retrieves the CSV with error handling, `csvFetchError` maps HTTP status to user messages |
+Each `features/*/` and `shared/*/` directory has an `index.ts` barrel and a `CLAUDE.md` with per-file descriptions.
 
 **Dev proxy:** `vite.config.ts` defines a `sheetsProxyPlugin` that forwards `/sheets-proxy/*` to `https://docs.google.com/*` using Node's `fetch`, which follows redirects server-side and avoids CORS issues. In production `fetchSheetCsv` hits Google directly — this only works with published sheets.
 
@@ -81,14 +58,15 @@ Each subdirectory has an `index.ts` barrel and a `CLAUDE.md` with per-file descr
 
 The app follows an MVC-like separation:
 
-- **Model** = `@dyel/api`'s `buildPipelineModel(raw, athlete): PipelineModel` (thin wrapper over `@dyel/pipeline`'s `runPipelineModel`; parse → tag → normalize → diagnose), executed once per raw-input/athlete change inside `hooks/app/usePipelineOrchestration.ts`. Owned by `PipelineProvider` in `src/context/PipelineContext.tsx` and accessed via the `usePipelineModel()` hook.
-- **Controller** = `hooks/app/*` (settings/orchestration/visualizer-data, called from `App.tsx`) and `hooks/pipeline/*` selector hooks (e.g. `usePipelineDatasets`, `usePipelineTotalChartData`, `usePipelineDiagnostics`, `usePipelineRepCalculator`) that consume the shared `PipelineModel` and delegate their actual derivation logic to `@dyel/api`. They act as thin wrappers around `@dyel/api` selectors and utilities, handling React state/lifecycle while `@dyel/api` owns business logic. `@dyel/api` is now the sole boundary — no `packages/app` production file imports `@dyel/pipeline` directly (only `hooks/pipeline/usePipelineVariationRadarData.test.ts` does, for real-fixture `PipelineModel` test coverage).
-- **View** = `components/**`, render-only, no direct `@dyel/pipeline` imports.
+- **Model** = `@dyel/api`'s `buildPipelineModel(raw, athlete): PipelineModel` (thin wrapper over `@dyel/pipeline`'s `runPipelineModel`; parse → tag → normalize → diagnose), executed once per raw-input/athlete change inside `app/usePipelineOrchestration.ts`. Owned by `PipelineProvider` in `app/PipelineContext.tsx` and accessed via the `usePipelineModel()` hook.
+- **Controller** = `app/*` (settings/orchestration/visualizer-data, called from `App.tsx`) and each feature directory's `use*` selector hooks (e.g. `features/sigma/usePipelineDatasets`, `features/sigma/usePipelineTotalChartData`, `features/lift/usePipelineDiagnostics`, `features/calculator/usePipelineRepCalculator`) that consume the shared `PipelineModel` and delegate their actual derivation logic to `@dyel/api`. They act as thin wrappers around `@dyel/api` selectors and utilities, handling React state/lifecycle while `@dyel/api` owns business logic. `@dyel/api` is now the sole boundary — no `packages/app` production file imports `@dyel/pipeline` directly (only `features/lift/usePipelineVariationRadarData.test.ts` does, for real-fixture `PipelineModel` test coverage; allowlisted in `eslint.config.js`).
+- **View** = feature components and `shared/charts/`, `shared/components/`, render-only, no direct `@dyel/pipeline` imports.
 
-`src/pipeline/` (the non-hook view-derivation helpers this paragraph used to describe) was
-deleted in Phase 2 of the `@dyel/api`-as-sole-boundary migration (see `HANDOFF.md`) — that
-logic now lives in `@dyel/api`. `src/hooks/pipeline/` (the Controller hooks directory) is
-unaffected and keeps its name.
+This directory layout (`app/`, `features/*/`, `shared/*/`) is the result of Phase 4 of the
+App Refactor migration (file moves only, see `HANDOFF.md`) — it replaced the earlier
+`src/components/`, `src/hooks/`, `src/context/`, `src/utils/` structure. `src/pipeline/`
+(an even earlier, non-hook view-derivation helpers directory) was deleted in Phase 2 of the
+`@dyel/api`-as-sole-boundary migration; that logic now lives in `@dyel/api`.
 
 ## Constraints
 
