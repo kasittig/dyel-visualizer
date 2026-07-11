@@ -39,4 +39,36 @@ export default defineConfig([
       'no-restricted-syntax': 'off',
     },
   },
+  {
+    // Enforce the @dyel/api boundary: packages/app/src must not import @dyel/pipeline directly,
+    // except for the small set of files with a documented reason to do so (see below).
+    files: ['packages/app/src/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: '@dyel/pipeline',
+              message:
+                'packages/app must consume @dyel/pipeline only through @dyel/api. See root CLAUDE.md "Strict Importing Rules".',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    // Allowlisted exceptions: these are the only packages/app/src files permitted to import
+    // @dyel/pipeline directly (App.tsx and usePipelineValidation.ts for production wiring;
+    // the radar data test for real-fixture PipelineModel coverage).
+    files: [
+      'packages/app/src/App.tsx',
+      'packages/app/src/hooks/infra/usePipelineValidation.ts',
+      'packages/app/src/hooks/pipeline/usePipelineVariationRadarData.test.ts',
+    ],
+    rules: {
+      'no-restricted-imports': 'off',
+    },
+  },
 ]);
