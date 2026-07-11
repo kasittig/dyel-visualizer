@@ -407,19 +407,33 @@ once by a `qa-reviewer` agent, per this repo's standing practice):**
 - `npx eslint packages/app packages/api`: clean
 - `grep -rn "from '@dyel/pipeline'" packages/app/src`: exactly one file,
   `hooks/pipeline/usePipelineVariationRadarData.test.ts`
-- Manual dev-server smoke: **not yet done as of this update** — dev server is running
-  at `localhost:5173` (left running per this repo's convention) for human sign-off on
-  the state-plumbing checklist from `phase-3-app-decomposition.md`'s Verification
-  section (`?sheet=`/`?mode=text&text=` overrides, cached-sheet instant restore on
-  reload, refresh button, mode switching, default 3-month range, tab visibility vs.
-  date range).
+- Manual dev-server smoke: **DONE.** Human ran the state-plumbing checklist from
+  `phase-3-app-decomposition.md`'s Verification section (`?sheet=`/`?mode=text&text=`
+  overrides, cached-sheet instant restore on reload, refresh button, mode switching,
+  default 3-month range, tab visibility vs. date range) against the dev server and
+  confirmed it's fine. Phase 3 is now fully signed off.
 
-PR #469 opened against `app-refactor-phase-2` (stacked, since Phase 2's PR #468 hasn't
-merged to `main` yet — will need retargeting to `main` once #468 lands, same as Phase
-2's own stacking note). Manual dev-server smoke sign-off (checklist above) is the one
-remaining item before this phase is fully done. After that: Phase 4
-(`migration/phase-4-feature-restructure.md`) — file moves only, new branch off `main`
-once Phase 3's PR lands.
+PR #469 (Phase 3, → `app-refactor-phase-2`) and PR #468 (Phase 2, →
+`migration-phase-1`) were both merged with `gh pr merge --merge` (merge commit, matching
+this repo's existing merge-commit convention, not squash/rebase). Per explicit user
+direction, Phases 1-3 were consolidated onto `migration-phase-1` (not `main` — PR #467,
+Phase 1 → `main`, is still open) so Phase 4 could start without waiting on that final
+merge. `origin/migration-phase-1` (`4623408`) diffs empty against Phase 3's tip
+(`575d861`), confirming the merge chain carried everything forward losslessly. Both
+`app-refactor-phase-2` and `app-refactor-phase-3` remote branches were auto-deleted by
+GitHub on merge (`delete_branch_on_merge` is on for this repo, independent of the
+`gh pr merge --delete-branch=false` flag used).
+
+## App Refactor Migration — Phase 4: IN PROGRESS (on `app-refactor-phase-4`)
+
+New branch `app-refactor-phase-4` cut from `origin/migration-phase-1` (`4623408`, the
+consolidated Phase 1-3 tip — see note above; not `main`, per user direction). Baseline
+re-verified clean before starting: builds all clean, tests pipeline 157/157, api
+322/322, app 76/76 — matches Phase 3's documented final state exactly.
+
+Working from `migration/phase-4-feature-restructure.md` (file moves only, zero logic
+change, tasks 4.1-4.9 restructuring `packages/app/src` into `app/`, `features/*/`,
+`shared/` per the target tree in that doc).
 
 ## Next
 
