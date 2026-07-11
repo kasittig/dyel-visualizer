@@ -54,19 +54,62 @@ Each `features/*/` and `shared/*/` directory has an `index.ts` barrel and a `CLA
 
 **Dev proxy:** `vite.config.ts` defines a `sheetsProxyPlugin` that forwards `/sheets-proxy/*` to `https://docs.google.com/*` using Node's `fetch`, which follows redirects server-side and avoids CORS issues. In production `fetchSheetCsv` hits Google directly — this only works with published sheets.
 
-## MVC mapping
+## Data flow contract
 
-The app follows an MVC-like separation:
+The app enforces a unidirectional data flow: **data source → `usePipelineOrchestration` (calls `@dyel/api`'s `buildPipelineModel`) → `PipelineModel` held in `PipelineContext` → feature selector hooks (call `@dyel/api` derivation functions) → render-only components → user events → state updates in `app/useAppSettings` or feature-local state → re-render**.
 
-- **Model** = `@dyel/api`'s `buildPipelineModel(raw, athlete): PipelineModel` (thin wrapper over `@dyel/pipeline`'s `runPipelineModel`; parse → tag → normalize → diagnose), executed once per raw-input/athlete change inside `app/usePipelineOrchestration.ts`. Owned by `PipelineProvider` in `app/PipelineContext.tsx` and accessed via the `usePipelineModel()` hook.
-- **Controller** = `app/*` (settings/orchestration/visualizer-data, called from `App.tsx`) and each feature directory's `use*` selector hooks (e.g. `features/sigma/usePipelineDatasets`, `features/sigma/usePipelineTotalChartData`, `features/lift/usePipelineDiagnostics`, `features/calculator/usePipelineRepCalculator`) that consume the shared `PipelineModel` and delegate their actual derivation logic to `@dyel/api`. They act as thin wrappers around `@dyel/api` selectors and utilities, handling React state/lifecycle while `@dyel/api` owns business logic. `@dyel/api` is now the sole boundary — no `packages/app` production file imports `@dyel/pipeline` directly (only `features/lift/usePipelineVariationRadarData.test.ts` does, for real-fixture `PipelineModel` test coverage; allowlisted in `eslint.config.js`).
-- **View** = feature components and `shared/charts/`, `shared/components/`, render-only, no direct `@dyel/pipeline` imports.
+This separation ensures business logic stays in `@dyel/api`, React lifecycle stays in feature hooks, and components remain pure rendering functions. ESLint rules in `eslint.config.js` enforce this contract via static analysis.
 
-This directory layout (`app/`, `features/*/`, `shared/*/`) is the result of Phase 4 of the
-App Refactor migration (file moves only, see `HANDOFF.md`) — it replaced the earlier
-`src/components/`, `src/hooks/`, `src/context/`, `src/utils/` structure. `src/pipeline/`
-(an even earlier, non-hook view-derivation helpers directory) was deleted in Phase 2 of the
-`@dyel/api`-as-sole-boundary migration; that logic now lives in `@dyel/api`.
+### Component rules (`.tsx` files in `features/*/` and `shared/*/`)
+
+- Render props and hook results only
+- Never call `useMemo` or `useState` to re-derive business data — do that in a feature hook instead
+- Never import **value** exports from `@dyel/api` (type imports are fine); get derived data by calling a feature hook instead
+- Never call `usePipelineModel()` directly — only feature hooks do that
+- Feature-local UI state (a popover's open/closed toggle, in-progress calculator inputs, which variation is highlighted) stays colocated in the owning component or feature hook
+
+A small set of display-only helpers and constants are allowlisted to import from `@dyel/api` — these are pure formatters/constants with no business logic (e.g., `shared/charts/**` for chart formatting, `features/lift/DiagnosticsPanel.tsx` for display formatters like `formatEffect`, `features/calculator/RepCalculator.tsx` for facet option constants). See the `@typescript-eslint/no-restricted-imports` block and its per-file overrides in root `eslint.config.js` for the current allowlist; that file is the source of truth, not this line count (which will drift).
+
+### Feature hook rules (`use*.ts` in `features/*/`)
+
+- The only consumers of `usePipelineModel()` and `PipelineContext`
+- Call `@dyel/api` derivation functions (selectors, utilities) to compute all business logic from the model
+- Own React lifecycle (`useState`, `useEffect`, `useMemo`) and return display-ready data for components to render
+- Thin adapters between the shared model and components; delegate all derivation to `@dyel/api`
+
+### State layering
+
+- **App-wide state** (`app/useAppSettings`): settings, date range, active tab, UI preferences like deadlift stance; persisted to localStorage and restored on revisit
+- **Feature-local state**: a popover's open/closed flag, in-progress form inputs, transient selections — stays in the owning component or feature hook; never moved to app-wide state
+
+### Cross-feature imports
+
+- Features may import sibling features only via their `index.ts` barrel (e.g., `import { usePipelineDatasets } from '../sigma'`)
+- Never deep imports like `../sigma/usePipelineDatasets`
+- ESLint blocks deep imports to enforce explicit barrel exports and prevent accidental static inclusion of lazy-loaded page components
+
+**Exception:** `features/data-source/SheetUrlPanel.tsx` keeps a deep import of `../index-page/useIndexData` because barrel-importing `../index-page` would statically pull the lazy-loaded `IndexPage` component into the main bundle and defeat `main.tsx`'s code-splitting. See the comment in that file and its matching per-file allowlist override in root `eslint.config.js`.
+
+### Process for adding a new derivation
+
+1. Add the function to `@dyel/api` with colocated tests
+2. Export it from `packages/api/src/index.ts` (the public barrel)
+3. Add a row to `packages/api/CLAUDE.md`'s export table describing it
+4. Write a thin feature hook in `packages/app/src/features/*/use*.ts` that calls it
+5. Components call that hook; never call `@dyel/api` directly
+
+### Directory summary
+
+- `app/`: `App.tsx`, settings/orchestration/visualizer-data hooks, `PipelineContext.tsx` with `PipelineProvider`/`usePipelineModel()`
+- `features/*/`: feature hooks and components; each has an `index.ts` barrel and `CLAUDE.md`
+- `shared/charts/`: reusable Recharts components and chart color constants
+- `shared/components/`: cross-feature UI primitives (DateRangePicker, ErrorBoundary, etc.)
+- `shared/hooks/`: cross-feature React hooks (useCsvResource, useLocalStorageState)
+- `shared/dateUtils.ts`: pure date-formatting helpers
+
+See the **Directory layout** table above for complete per-directory file listings.
+
+**Boundary:** `@dyel/api` is the sole business-logic boundary — the app never imports `@dyel/pipeline` directly (only `features/lift/usePipelineVariationRadarData.test.ts` does for real-fixture test coverage, allowlisted in `eslint.config.js`). This directory layout resulted from Phase 4 of the App Refactor migration (see `HANDOFF.md`), which reorganized `src/components/`, `src/hooks/`, `src/context/`, `src/utils/` into feature-based directories. Earlier, Phase 2 deleted `src/pipeline/` (non-hook derivation helpers) and moved that logic into `@dyel/api`.
 
 ## Constraints
 
