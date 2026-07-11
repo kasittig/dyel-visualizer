@@ -34,6 +34,12 @@ rule for any other use case. Since `packages/app` needs `classifyExerciseName` d
 validators, this minimal pass-through is the necessary exception, in the same category as
 the raw-input entry points above (an unavoidable boundary-crossing for legitimate reasons).
 
+## Dependencies
+
+`papaparse` (+ `@types/papaparse`) is a direct dependency of this package, used by
+`validation/pipelineSheetValidator.ts` (`validateSheetCsv`) to parse sheet CSV structurally
+ahead of the pipeline run. `validateTextData` (pasted free-text) does not use it.
+
 ## Exports (`src/index.ts`)
 
 | Export                                                                                                                                                                                                         | File                                      | Signature                                                                                                                                                                                                                                                                                                                |
