@@ -3,7 +3,7 @@ import clsx from 'clsx';
 import { classifyPipelineVerdict } from '@dyel/api';
 import { usePipelineValidation } from '../../hooks/infra/usePipelineValidation';
 import type { InputMode } from '../../app/appTabs';
-import { InputModeToggle } from '../shared/InputModeToggle';
+import { InputModeToggle } from '../../features/data-source/InputModeToggle';
 import styles from './PipelineValidationPage.module.css';
 
 function VerdictBanner({ verdict }: { verdict: 'ok' | 'warning' | 'error' }) {

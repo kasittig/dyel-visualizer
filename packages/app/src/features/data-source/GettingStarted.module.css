@@ -15,10 +15,14 @@
   padding-left: 1.4rem;
   margin: 0;
 }
-.step { margin-bottom: 0.5rem; }
+.step {
+  margin-bottom: 0.5rem;
+}
 .footer {
   margin-top: 0.85rem;
   margin-bottom: 0;
   color: var(--text);
 }
-.accentLink { color: var(--accent); }
+.accentLink {
+  color: var(--accent);
+}

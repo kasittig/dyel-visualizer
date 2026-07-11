@@ -1,5 +1,5 @@
 import type { AthleteContext, RawInput } from '@dyel/api';
-import type { InputMode } from '../app/appTabs';
+import type { InputMode } from '../../app/appTabs';
 
 export const PLACEHOLDER_ATHLETE: AthleteContext = {
   sex: 'M',

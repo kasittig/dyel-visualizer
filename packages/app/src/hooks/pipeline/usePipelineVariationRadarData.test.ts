@@ -5,7 +5,7 @@ import { join } from 'path';
 import type { PipelineModel } from '@dyel/pipeline';
 import { runPipelineModel } from '@dyel/pipeline';
 import { usePipelineVariationRadarData } from './usePipelineVariationRadarData';
-import { buildRawInput, PLACEHOLDER_ATHLETE } from '../../utils/rawInput';
+import { buildRawInput, PLACEHOLDER_ATHLETE } from '../../features/data-source/rawInput';
 
 vi.mock('../../app/PipelineContext');
 

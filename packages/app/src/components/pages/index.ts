@@ -1,4 +1,3 @@
-export { GettingStarted } from './GettingStarted';
 export { IndexPage } from './IndexPage';
 export { LiftTabPanel } from './LiftTabPanel';
 export { PipelineValidationPage } from './PipelineValidationPage';

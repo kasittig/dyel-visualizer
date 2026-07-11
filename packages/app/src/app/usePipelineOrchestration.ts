@@ -2,10 +2,13 @@ import { useMemo, useEffect } from 'react';
 import type { AthleteContext, PipelineModel } from '@dyel/api';
 import { buildPipelineModel, parseTextData } from '@dyel/api';
 import type { InputMode } from './appTabs';
-import { extractSheetRef } from '../utils/sheetRef';
-import { serializeSheetCache, deserializeSheetCache } from '../utils/sheetCacheUtils';
-import type { CachedSheetData } from '../utils/sheetCacheUtils';
-import { useResolvedRawInput } from '../utils/useResolvedRawInput';
+import { extractSheetRef } from '../features/data-source/sheetRef';
+import {
+  serializeSheetCache,
+  deserializeSheetCache,
+} from '../features/data-source/sheetCacheUtils';
+import type { CachedSheetData } from '../features/data-source/sheetCacheUtils';
+import { useResolvedRawInput } from '../features/data-source/useResolvedRawInput';
 import { useLocalStorageState } from '../shared/hooks/useLocalStorageState';
 
 export interface PipelineOrchestrationReturn {

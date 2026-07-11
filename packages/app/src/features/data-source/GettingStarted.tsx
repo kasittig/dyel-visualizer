@@ -1,4 +1,4 @@
-import { EXAMPLE_SHEET_URL } from '../../utils/sheetRef';
+import { EXAMPLE_SHEET_URL } from './sheetRef';
 import type { InputMode } from '../../app/appTabs';
 import styles from './GettingStarted.module.css';
 

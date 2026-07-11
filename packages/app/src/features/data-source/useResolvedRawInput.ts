@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { RawInput } from '@dyel/api';
-import type { InputMode } from '../app/appTabs';
+import type { InputMode } from '../../app/appTabs';
 import { extractSheetRef } from './sheetRef';
 import { sheetCsvUrl, fetchSheetCsv } from './sheetFetch';
 import { buildRawInput } from './rawInput';
