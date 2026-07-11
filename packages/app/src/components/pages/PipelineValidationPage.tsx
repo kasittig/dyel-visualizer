@@ -1,5 +1,6 @@
 import { useState, type CSSProperties } from 'react';
 import clsx from 'clsx';
+import { classifyPipelineVerdict } from '@dyel/api';
 import { usePipelineValidation } from '../../hooks/infra/usePipelineValidation';
 import type { InputMode } from '../../utils/appUtils';
 import { InputModeToggle } from '../shared/InputModeToggle';
@@ -111,13 +112,7 @@ export function PipelineValidationPage() {
         ? state.result
         : null;
 
-  const verdict = activeResult
-    ? activeResult.parseErrors.length > 0
-      ? 'error'
-      : activeResult.unknownExercises.length > 0 || activeResult.unnormalized.length > 0
-        ? 'warning'
-        : 'ok'
-    : null;
+  const verdict = activeResult ? classifyPipelineVerdict(activeResult) : null;
 
   return (
     <main className={styles.main}>
