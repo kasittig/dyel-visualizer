@@ -1,7 +1,7 @@
-import type { AthleteContext, RawInput, TaggedSetRecord } from '@dyel/pipeline';
+import type { AthleteContext, LiftType, RawInput, TaggedSetRecord } from '@dyel/pipeline';
 import { runPipelineModel } from '@dyel/pipeline';
 
-export type LiftType = 'squat' | 'bench' | 'deadlift' | 'accessory';
+export type { LiftType } from '@dyel/pipeline';
 
 export interface SplitRows {
   all: TaggedSetRecord[];

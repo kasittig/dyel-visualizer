@@ -3,7 +3,7 @@ export { calculateVolumeCorrelationFromTagged } from './volume/volume';
 export { parseTextData } from './text/parseTextData';
 export { TOTAL_CHART_SPECS } from './totalChartSpecs';
 export { buildChartDatasets } from './chart/buildChartDatasets';
-export type { LiftType, SplitRows } from './sheet/parseSheetData';
+export type { SplitRows } from './sheet/parseSheetData';
 export type {
   PipelineModel,
   AthleteContext,
@@ -17,6 +17,7 @@ export type {
   PipelineResult,
   VariantAssessment,
   TaggedSetRecord,
+  LiftType,
 } from '@dyel/pipeline';
 export { parseSheetData, groupByLiftType } from './sheet/parseSheetData';
 export {

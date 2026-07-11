@@ -1,8 +1,8 @@
+import type { LiftType } from '@dyel/pipeline';
 import { classifyExerciseName, calcE1RM } from '@dyel/pipeline';
 
 // Local type definitions matching the expected return structure.
 // These replace @dyel/core's ConjugateExercise and TrainingSession.
-type LiftType = 'squat' | 'bench' | 'deadlift' | 'accessory';
 type LiftUnits = 'lbs' | 'kg';
 
 interface ParsedExercise {
@@ -123,9 +123,7 @@ function tryRepMaxGrammar(
 /**
  * Detects sets-by-reps format: "exercise [optional-dash] NxN @ weight[unit]"
  */
-function trySetsxRepsGrammar(
-  tokens: string[]
-): {
+function trySetsxRepsGrammar(tokens: string[]): {
   exercise: string;
   weight: number;
   unit: string | undefined;
