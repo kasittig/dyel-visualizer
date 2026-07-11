@@ -62,7 +62,7 @@ Each subdirectory has an `index.ts` barrel and a `CLAUDE.md` with per-file descr
 | `src/components/charts/BaseRadarChart.tsx`            | Shared Recharts radar wrapper; accepts `angleKey`, `unit`, `tooltip`, optional `onClick`                                                                                                                               |
 | `src/components/pages/SigmaTab.tsx`                   | "Σ" overview tab: `TotalChart` + `SessionBarChart` + `SigmaChart` across all lift types                                                                                                                                |
 | `src/components/pages/LiftTabPanel.tsx`               | Per-lift tab content: `ConjugateCharts` + `VariationRadarChart` with shared variation-highlight state                                                                                                                  |
-| `src/components/shared/RepCalculator.tsx`             | Calculator tab: predicts weight-for-reps and reps-for-weight using pipeline-native `findBestE1RMFromPipeline` via `usePipelineModel()`                                                                                 |
+| `src/components/shared/RepCalculator.tsx`             | Calculator tab: render-only component displaying Rep Calculator UI; logic (state, e1RM estimation, weight-for-reps/reps-for-weight derivation) owned by `usePipelineRepCalculator` hook via `@dyel/api`                |
 | `src/components/shared/DiagnosticsPanel.tsx`          | Diagnostics panel using `usePipelineDiagnostics()` (pipeline-native, all-time not date-range-filtered; surfaces `'stale'` status for variants past the staleness threshold)                                            |
 | `src/components/shared/DateRangePicker.tsx`           | Date range input using `react-day-picker` + Radix Popover                                                                                                                                                              |
 | `src/components/pages/IndexPage.tsx`                  | Landing page listing linked sheets; fetches from a hardcoded published index sheet via `useIndexData`                                                                                                                  |
@@ -78,10 +78,13 @@ Each subdirectory has an `index.ts` barrel and a `CLAUDE.md` with per-file descr
 The app follows an MVC-like separation:
 
 - **Model** = `@dyel/pipeline`'s `runPipelineModel(raw, athlete): PipelineModel` (parse → tag → normalize → diagnose), executed once per raw-input/athlete change. Owned by `PipelineProvider` in `src/context/PipelineContext.tsx` and accessed via the `usePipelineModel()` hook.
-- **Controller** = `hooks/pipeline/*` selectors (e.g. `usePipelineDatasets`, `usePipelineTotalChartData`, `usePipelineDiagnostics`, `usePipelineRepCalculator`) that read the shared `PipelineModel`, plus non-hook view-derivation helpers in `src/pipeline/*.ts` (chart specs, `lastSessionDetail.ts`, `repCalculatorUtils.ts`, `variationSnapshot.ts`). These are pure functions with no React dependency.
+- **Controller** = `hooks/pipeline/*` selector hooks (e.g. `usePipelineDatasets`, `usePipelineTotalChartData`, `usePipelineDiagnostics`, `usePipelineRepCalculator`) that consume the shared `PipelineModel` and delegate their actual derivation logic to `@dyel/api`. They act as thin wrappers around `@dyel/api` selectors and utilities, handling React state/lifecycle while `@dyel/api` owns business logic. Exception: `App.tsx` and `hooks/infra/usePipelineValidation.ts` are the only two remaining `packages/app` files that legitimately import `@dyel/pipeline` (for `runPipelineModel`, `AthleteContext`, and `runPipeline` respectively); all other app logic goes through `@dyel/api`.
 - **View** = `components/**`, render-only, no direct `@dyel/pipeline` imports.
 
-The `src/pipeline/` directory remains named `pipeline/` and is not renamed to `views/` or `selectors/` — subdirectories are documented per-file via existing `CLAUDE.md` files, and a rename would unnecessarily churn history for no functional gain.
+`src/pipeline/` (the non-hook view-derivation helpers this paragraph used to describe) was
+deleted in Phase 2 of the `@dyel/api`-as-sole-boundary migration (see `HANDOFF.md`) — that
+logic now lives in `@dyel/api`. `src/hooks/pipeline/` (the Controller hooks directory) is
+unaffected and keeps its name.
 
 ## Constraints
 

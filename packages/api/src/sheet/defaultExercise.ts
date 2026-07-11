@@ -1,5 +1,5 @@
 import type { TaggedSetRecord } from '@dyel/pipeline';
-import { facetsFromTags } from '@dyel/pipeline';
+import { facetsFromTags } from '../conjugate/facets';
 import { liftTypeOf } from './parseSheetData';
 
 /**

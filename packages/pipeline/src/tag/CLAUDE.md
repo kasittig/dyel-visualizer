@@ -16,15 +16,11 @@ one-time copy, never a dependency — pipeline never imported from `@dyel/core`,
       { tagged: TaggedSetRecord[]; unknown: string[] };
     function matches(tags: ReadonlySet<string>, q: TagQuery): boolean;  // all/any/none
     function classifyExerciseName(name: string): { type: LiftType; isUnknown: boolean };
-    function facetsFromTags(tags: ReadonlySet<string>): { bar; stance; equipment; equipmentMagnitude; addlWts };
-    function facetFamilyKey(canonical: string): string;
 
 `classifyExerciseName` is a small additive export (wraps `parseExercise`) for callers that
 just need a lift-type/unknown classification without going through the full
 `resolveCanonicalNames`/`tagRecords` pipeline — e.g. `packages/app`'s sheet/freeform
-validators and `packages/api`'s `parseTextData`. `facetsFromTags`/`facetFamilyKey` parse
-tag strings back into structured facets (used by `packages/api/src/sheet/defaultExercise.ts`)
-— see their doc comments in `tag.ts` for details.
+validators and `packages/api`'s `parseTextData`.
 
 `resolveCanonicalNames` runs first (raw name → canonical via `detect/parseExercise.ts` +
 `detect/canonical.ts`'s `buildCanonical`), then `tagRecords` (canonical → tags/effects via

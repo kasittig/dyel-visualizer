@@ -12,21 +12,6 @@ export type ConjugateBar =
   | 'belt'
   | 'goblet';
 
-export const CONJUGATE_BARS = [
-  'ssb',
-  'american',
-  'swiss',
-  'cambered',
-  'standard',
-  'trap',
-  'zercher',
-  'duffalo',
-  'dumbbell',
-  'bamboo',
-  'belt',
-  'goblet',
-] as const satisfies readonly ConjugateBar[];
-
 export type ConjugateStance =
   | 'close'
   | 'narrow'
@@ -41,21 +26,6 @@ export type ConjugateStance =
   | 'slingshot'
   | 'builder';
 
-export const CONJUGATE_STANCES = [
-  'close',
-  'narrow',
-  'sumo',
-  'conventional',
-  'competition',
-  'front',
-  'opposite',
-  'medium',
-  'wide',
-  'romanian',
-  'slingshot',
-  'builder',
-] as const satisfies readonly ConjugateStance[];
-
 export type ConjugateEquipment =
   | 'incline'
   | 'decline'
@@ -67,25 +37,7 @@ export type ConjugateEquipment =
   | 'box'
   | 'rack';
 
-export const CONJUGATE_EQUIPMENT = [
-  'incline',
-  'decline',
-  'blocks',
-  'deficit',
-  'board',
-  'pause',
-  'floor',
-  'box',
-  'rack',
-] as const satisfies readonly ConjugateEquipment[];
-
 export type ConjugateAddlWt = 'bands' | 'rev. bands' | 'chains';
-
-export const CONJUGATE_ADDL_WTS = [
-  'bands',
-  'rev. bands',
-  'chains',
-] as const satisfies readonly ConjugateAddlWt[];
 
 export interface ParsedAddlWt {
   kind: ConjugateAddlWt;

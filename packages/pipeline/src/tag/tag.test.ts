@@ -1,13 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { SetRecord } from '../types';
-import {
-  tagRecords,
-  resolveCanonicalNames,
-  matches,
-  facetsFromTags,
-  facetFamilyKey,
-  classifyExerciseName,
-} from './tag';
+import { tagRecords, resolveCanonicalNames, matches, classifyExerciseName } from './tag';
 
 describe('resolveCanonicalNames', () => {
   it('rewrites exercise, deduplicates unresolved entries, and matches keys', () => {
@@ -154,114 +147,6 @@ describe('matches', () => {
     expect(matches(t, { all: ['lift:bench'], any: ['comp-lift'], none: ['comp-lift'] })).toBe(
       false
     );
-  });
-});
-
-describe('facetsFromTags', () => {
-  it('parses comp-lift (all defaults) as nulls and empty addlWts', () => {
-    const tags = new Set(['lift:bench', 'comp-lift']);
-    const facets = facetsFromTags(tags);
-    expect(facets).toEqual({
-      bar: null,
-      stance: null,
-      equipment: null,
-      equipmentMagnitude: null,
-      addlWts: [],
-    });
-  });
-
-  it('parses individual facet tags correctly', () => {
-    const tags = new Set(['lift:bench', 'bar:ssb', 'stance:close', 'equip:board']);
-    const facets = facetsFromTags(tags);
-    expect(facets).toEqual({
-      bar: 'ssb',
-      stance: 'close',
-      equipment: 'board',
-      equipmentMagnitude: null,
-      addlWts: [],
-    });
-  });
-
-  it('parses equipment magnitude from magnitude-bearing tags', () => {
-    const tags = new Set(['lift:bench', 'equip:board-2']);
-    const facets = facetsFromTags(tags);
-    expect(facets.equipment).toBe('board');
-    expect(facets.equipmentMagnitude).toBe('2');
-  });
-
-  it('returns equipmentMagnitude: null for bare equipment tags (default magnitude)', () => {
-    // A bare equip tag without magnitude suffix means default magnitude (1)
-    const tags = new Set(['lift:bench', 'equip:board']);
-    const facets = facetsFromTags(tags);
-    expect(facets.equipment).toBe('board');
-    expect(facets.equipmentMagnitude).toBeNull();
-  });
-
-  it('preserves magnitude when both bare and magnitude-bearing equip tags exist', () => {
-    // When magnitude is non-default, both equip:board and equip:board-2 tags are present
-    const tags = new Set(['lift:bench', 'equip:board', 'equip:board-2']);
-    const facets = facetsFromTags(tags);
-    expect(facets.equipment).toBe('board');
-    expect(facets.equipmentMagnitude).toBe('2');
-  });
-
-  it('collects multiple addl-wt tags', () => {
-    const tags = new Set(['lift:bench', 'addl:chains:1', 'addl:bands:3']);
-    const facets = facetsFromTags(tags);
-    expect(facets.addlWts).toEqual(['chains', 'bands']);
-  });
-
-  it('handles rev-bands slug mapping', () => {
-    const tags = new Set(['lift:deadlift', 'addl:rev-bands:2']);
-    const facets = facetsFromTags(tags);
-    expect(facets.addlWts).toEqual(['rev. bands']);
-  });
-
-  it('ignores unrecognized addl-wt slugs', () => {
-    const tags = new Set(['lift:bench', 'addl:unknown:1']);
-    const facets = facetsFromTags(tags);
-    expect(facets.addlWts).toEqual([]);
-  });
-});
-
-describe('facetFamilyKey', () => {
-  it.each([
-    ['bare comp lift', 'bench', 'bench'],
-    ['with bar and stance', 'bench-close', 'bench-close'],
-    ['with equipment', 'bench-board', 'bench-board'],
-    ['strips single chains', 'bench-chains', 'bench'],
-    ['strips magnitude-suffixed chains', 'bench-chains-2', 'bench'],
-    ['strips multiple addl-wts', 'bench-close-chains-bands-1', 'bench-close'],
-    [
-      'complex variant preserves type+bar+stance+equipment',
-      'squat-ssb-sumo-chains',
-      'squat-ssb-sumo',
-    ],
-    [
-      'preserves equipment magnitude when addl-wts follow',
-      'deadlift-blocks-2-chains',
-      'deadlift-blocks-2',
-    ],
-    ['preserves equipment magnitude when no addl-wts', 'bench-board-2', 'bench-board-2'],
-  ])('%s: %s → %s', (_, canonical, expected) => {
-    expect(facetFamilyKey(canonical)).toBe(expected);
-  });
-
-  it('matches records differing only by addl-wt loading', () => {
-    // Two bench variants with same bar/stance/equipment but different addl-wts
-    const familyKey1 = facetFamilyKey('bench-close-chains');
-    const familyKey2 = facetFamilyKey('bench-close-bands-2');
-    const familyKey3 = facetFamilyKey('bench-close'); // same family, no addl-wts
-    expect(familyKey1).toBe(familyKey2);
-    expect(familyKey1).toBe(familyKey3);
-  });
-
-  it('does not match records differing by bar/stance/equipment', () => {
-    const familyKey1 = facetFamilyKey('bench-close');
-    const familyKey2 = facetFamilyKey('bench-wide');
-    const familyKey3 = facetFamilyKey('bench-board');
-    expect(familyKey1).not.toBe(familyKey2);
-    expect(familyKey1).not.toBe(familyKey3);
   });
 });
 
