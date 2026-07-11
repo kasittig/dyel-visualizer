@@ -276,6 +276,61 @@ real signature `(raw, [], athlete, {})`, `buildRadarRows` single-pass filter typ
 Next: Phase 2 (`migration/phase-2-render-only-components.md`) — repoint app hooks +
 components at the new API functions; new branch off `main` after this phase's PR lands.
 
+## App Refactor Migration — Phase 2: DONE (on `app-refactor-phase-2`)
+
+All 12 tasks from `migration/phase-2-render-only-components.md` landed as one commit
+each (stacked branch off `migration-phase-1`, since Phase 1's PR #467 hadn't merged yet —
+rebase onto `main` + retarget the PR once it does):
+
+- **Deleted app-side duplicates:** `utils/weightUnit.ts` (+test), `utils/validators/`
+  (both validators + tests) — consumers repointed to `@dyel/api`
+  (`convertWeight`/`roundWeight`/`DisplayUnit`, `validateSheetCsv`/`validateTextData`)
+- **Components made render-only:** `SigmaChart` (→ `latestLiftE1RMs`),
+  `VariationRadarChart` (→ `buildRadarRows`), `DiagnosticsPanel` (→ `summarizeEffects`
+  - api `formatEffect`/`formatAddlWtOffset`), `StrengthScoreCalculator`
+    (→ `strengthTierForPercentile` + new hook), `DateRangePicker`
+    (→ `presetDateRange`/`activePreset`), `PipelineValidationPage`
+    (→ `classifyPipelineVerdict`), `SigmaTab` (→ new hook)
+- **Hooks slimmed to thin wrappers:** `usePipelineDiagnostics` (now memoized, →
+  `selectDiagnosticVariants`), `usePipelineConjugateChartData` (→
+  `buildConjugateChartData` + `roundBestSetsForDisplay` + `dateRangeToRenderParams`),
+  `usePipelineTotalChartData` (→ `dateRangeToRenderParams`), `usePipelineRepCalculator`
+  (roundTo5 swap only, per plan)
+- **New hooks:** `useStrengthScores`, `useSigmaChartData` (both in `hooks/pipeline/`,
+  barrel + CLAUDE.md updated)
+
+**Behavior note (DateRangePicker):** ALL TIME now emits `{ from: undefined, to: latest }`
+(the api's `activePreset` semantics) instead of `{ from: earliest, to: latest }` —
+`dateRangeToRenderParams` treats undefined `from` as "no filter", so rendering is
+equivalent; a persisted old-style all-time range will highlight CUSTOM instead of
+ALL TIME (cosmetic, one-time).
+
+**Test-count delta:** `packages/app` 133 → **76** (−57: weightUnit test −26 and the two
+validator tests −20 moved to api in Phase 1; `usePipelineDiagnostics.test.ts` shrunk to
+wiring-level 16 → 5 tests, −11). api 322 and pipeline 157 unchanged. All three packages
+build; `npx eslint packages/app packages/api` clean; `@dyel/pipeline` imports in app
+production code remain only `App.tsx` + `usePipelineValidation.ts`.
+
+**Grep check:** only two `useMemo`s left under `components/**` — SigmaChart's single
+`latestLiftE1RMs` call and DateRangePicker's `latestDate` max (UI concern).
+
+**Smoke (Playwright via run-dyel-visualizer, real test sheet):** Σ tab (e1RM/radar/
+volume), squat/bench/deadlift tabs (chart + radar + diagnostics with api formatters),
+Calculator (rep calc e1RM + strength scores/competition total via `useStrengthScores`),
+date presets incl. ALL TIME active-highlighting, `?page=validator` (150/150 parsed) and
+`?page=pipeline-validation` (warning verdict + unknown/unnormalized lists). Zero console
+or page errors. Dev server left running at localhost:5173.
+
+**Process notes:** two implementer agents left stray `test_output.txt` files in the repo
+root (one nearly got committed — caught via `git status --short` after every task; later
+prompts explicitly banned redirecting test output to files). One agent wrote a
+conditional `useMemo` (after early return) + an `any` in a test — both caught by the
+pre-commit ESLint hook, fixed by team-lead. The per-task `git status --short` scope
+check caught no scope creep across all 12 tasks.
+
+Next: Phase 3 (`migration/phase-3-app-decomposition.md`) — App.tsx decomposition +
+eslint allowlist shrink; new branch off `main` after Phase 2's PR lands.
+
 ## Next
 
 The `@dyel/api`-as-sole-boundary migration is complete. Two smaller follow-up items
