@@ -3,7 +3,11 @@ import type { DateRange } from 'react-day-picker';
 import type { RenderParams, ChartPoint } from '@dyel/api';
 import { usePipelineModel } from '../../context/PipelineContext';
 import { usePipelineDatasets } from './usePipelineDatasets';
-import { TOTAL_CHART_SPECS, mergeRechartsRowsToChartPoints } from '@dyel/api';
+import {
+  TOTAL_CHART_SPECS,
+  mergeRechartsRowsToChartPoints,
+  dateRangeToRenderParams,
+} from '@dyel/api';
 
 const TOTAL_CHART_IDS = ['squat', 'bench', 'deadlift', 'pushPull', 'total'];
 
@@ -21,10 +25,7 @@ export function usePipelineTotalChartData(dateRange: DateRange, unit: 'lbs' | 'k
   const { status } = usePipelineModel();
 
   const ui: RenderParams = useMemo(
-    () =>
-      dateRange.from && dateRange.to
-        ? { dateRange: [dateRange.from.getTime(), dateRange.to.getTime()] }
-        : {},
+    () => dateRangeToRenderParams(dateRange?.from, dateRange?.to),
     [dateRange.from, dateRange.to]
   );
 
