@@ -2,10 +2,7 @@ import { useCallback } from 'react';
 import type { DateRange } from 'react-day-picker';
 import { Line, Tooltip } from 'recharts';
 import { LINE_COLORS } from '@dyel/api';
-import {
-  usePipelineConjugateChartData,
-  NORMALIZED_KEY,
-} from '../../hooks/pipeline/usePipelineConjugateChartData';
+import { usePipelineConjugateChartData, NORMALIZED_KEY } from './usePipelineConjugateChartData';
 import { DateLineChart, ChartEmpty } from '../../shared/charts/DateLineChart';
 import { ChartTooltip } from '../../shared/charts/TooltipCard';
 import styles from './ConjugateCharts.module.css';

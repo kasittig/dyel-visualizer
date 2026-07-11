@@ -63,7 +63,7 @@ export default defineConfig([
     // directly (real-fixture PipelineModel coverage). App.tsx and usePipelineValidation.ts no
     // longer need this exception as of Phase 3 of the App Refactor migration (App Refactor
     // migration's Phase 3, see root HANDOFF.md) — both now go through @dyel/api exclusively.
-    files: ['packages/app/src/hooks/pipeline/usePipelineVariationRadarData.test.ts'],
+    files: ['packages/app/src/features/lift/usePipelineVariationRadarData.test.ts'],
     rules: {
       'no-restricted-imports': 'off',
     },

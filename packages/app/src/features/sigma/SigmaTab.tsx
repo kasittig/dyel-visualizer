@@ -1,10 +1,10 @@
 import type { DateRange } from 'react-day-picker';
 import { CollapsibleSection } from '../../shared/components/CollapsibleSection';
 import { EditableDateChip } from '../../shared/components/EditableDateChip';
-import { useSigmaChartData } from '../../hooks/pipeline/useSigmaChartData';
-import { TotalChart } from '../charts/TotalChart';
-import { SessionBarChart } from '../charts/SessionBarChart';
-import { SigmaChart } from '../charts/SigmaChart';
+import { useSigmaChartData } from './useSigmaChartData';
+import { TotalChart } from './TotalChart';
+import { SessionBarChart } from './SessionBarChart';
+import { SigmaChart } from './SigmaChart';
 
 export function SigmaTab({
   dateRange,

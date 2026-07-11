@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import type { DateRange } from 'react-day-picker';
 import type { ChartPoint } from '@dyel/api';
 import { usePipelineModel } from '../../app/PipelineContext';
-import { usePipelineDatasets } from './usePipelineDatasets';
+import { usePipelineDatasets } from '../sigma/usePipelineDatasets';
 import {
   conjugateChartSpecs,
   buildBestSetByLabelAndDate,

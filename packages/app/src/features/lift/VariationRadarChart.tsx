@@ -1,4 +1,4 @@
-import { usePipelineVariationRadarData } from '../../hooks/pipeline/usePipelineVariationRadarData';
+import { usePipelineVariationRadarData } from './usePipelineVariationRadarData';
 import { BaseRadarChart } from '../../shared/charts/BaseRadarChart';
 import { ChartTooltip, type TooltipLine } from '../../shared/charts/TooltipCard';
 import { CollapsibleSection } from '../../shared/components/CollapsibleSection';

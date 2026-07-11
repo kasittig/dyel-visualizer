@@ -1,6 +1,6 @@
 import { useState, type CSSProperties } from 'react';
 import type { DeadliftStancePreference } from '../../app/appTabs';
-import { usePipelineDiagnostics } from '../../hooks/pipeline/usePipelineDiagnostics';
+import { usePipelineDiagnostics } from './usePipelineDiagnostics';
 import { formatEffect, formatAddlWtOffset, summarizeEffects, type DisplayUnit } from '@dyel/api';
 import { CollapsibleSection } from '../../shared/components/CollapsibleSection';
 import styles from './DiagnosticsPanel.module.css';

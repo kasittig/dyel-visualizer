@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { ConjugateCharts } from '../conjugate/ConjugateCharts';
-import { DiagnosticsPanel } from '../shared/DiagnosticsPanel';
-import { VariationRadarChart } from '../charts/VariationRadarChart';
+import { ConjugateCharts } from './ConjugateCharts';
+import { DiagnosticsPanel } from './DiagnosticsPanel';
+import { VariationRadarChart } from './VariationRadarChart';
 import { CollapsibleSection } from '../../shared/components/CollapsibleSection';
 import { EditableDateChip } from '../../shared/components/EditableDateChip';
 import type { DateRange } from 'react-day-picker';

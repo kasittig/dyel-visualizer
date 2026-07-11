@@ -10,7 +10,7 @@ import {
   type LastSessionDetail,
 } from '@dyel/api';
 import { usePipelineModel } from '../../app/PipelineContext';
-import { usePipelineDatasets } from './usePipelineDatasets';
+import { usePipelineDatasets } from '../sigma/usePipelineDatasets';
 
 export interface PipelineVariationRadarData {
   snapshot: Record<string, number | undefined>;
