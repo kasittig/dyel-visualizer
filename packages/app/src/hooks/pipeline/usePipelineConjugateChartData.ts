@@ -8,8 +8,8 @@ import {
   buildBestSetByLabelAndDate,
   type BestSet,
   mergeWideRechartsRows,
+  roundWeight,
 } from '@dyel/api';
-import { roundWeight } from '../../utils/weightUnit';
 
 export const NORMALIZED_KEY = 'normalized';
 

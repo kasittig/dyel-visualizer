@@ -1,7 +1,7 @@
 import { useMemo, useState, type CSSProperties } from 'react';
 import type { DeadliftStancePreference } from '../../utils/appUtils';
 import { usePipelineDiagnostics } from '../../hooks/pipeline/usePipelineDiagnostics';
-import { convertWeight, type DisplayUnit } from '../../utils/weightUnit';
+import { convertWeight, type DisplayUnit } from '@dyel/api';
 import { CollapsibleSection } from './CollapsibleSection';
 import styles from './DiagnosticsPanel.module.css';
 

@@ -3,7 +3,7 @@ import { usePipelineVariationRadarData } from '../../hooks/pipeline/usePipelineV
 import { BaseRadarChart } from './BaseRadarChart';
 import { ChartTooltip, type TooltipLine } from './TooltipCard';
 import { CollapsibleSection } from '../shared/CollapsibleSection';
-import { roundWeight } from '../../utils/weightUnit';
+import { roundWeight } from '@dyel/api';
 import styles from './VariationRadarChart.module.css';
 
 const MIN_VARIATIONS = 3;
