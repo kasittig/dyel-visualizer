@@ -1,8 +1,8 @@
 import { useState, useRef } from 'react';
 import type { SheetValidationResult } from '@dyel/api';
 import { validateSheetCsv } from '@dyel/api';
-import { extractSheetRef } from '../../features/data-source/sheetRef';
-import { sheetCsvUrl, fetchSheetCsv } from '../../features/data-source/sheetFetch';
+import { extractSheetRef } from '../data-source/sheetRef';
+import { sheetCsvUrl, fetchSheetCsv } from '../data-source/sheetFetch';
 
 type ValidationState =
   | { status: 'idle' }

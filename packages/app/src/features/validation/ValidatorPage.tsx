@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, type CSSProperties } from 'react';
 import clsx from 'clsx';
-import { useSheetValidation } from '../../hooks/infra/useSheetValidation';
-import { useTextValidation } from '../../hooks/infra/useTextValidation';
+import { useSheetValidation } from './useSheetValidation';
+import { useTextValidation } from './useTextValidation';
 import type { SheetValidationResult, ColumnInfo } from '@dyel/api';
 import { EXAMPLE_SHEET_URL } from '../../features/data-source/sheetRef';
 import type { InputMode } from '../../app/appTabs';

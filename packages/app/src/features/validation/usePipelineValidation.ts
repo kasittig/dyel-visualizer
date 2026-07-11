@@ -1,9 +1,9 @@
 import { useState, useRef } from 'react';
 import type { PipelineResult } from '@dyel/api';
 import { validatePipelineRun } from '@dyel/api';
-import { extractSheetRef } from '../../features/data-source/sheetRef';
-import { sheetCsvUrl, fetchSheetCsv } from '../../features/data-source/sheetFetch';
-import { buildRawInput, PLACEHOLDER_ATHLETE } from '../../features/data-source/rawInput';
+import { extractSheetRef } from '../data-source/sheetRef';
+import { sheetCsvUrl, fetchSheetCsv } from '../data-source/sheetFetch';
+import { buildRawInput, PLACEHOLDER_ATHLETE } from '../data-source/rawInput';
 
 type PipelineValidationState =
   | { status: 'idle' }

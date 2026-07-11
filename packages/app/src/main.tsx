@@ -16,11 +16,11 @@ const IndexPage = lazy(() =>
 );
 
 const ValidatorPage = lazy(() =>
-  import('./components/pages/ValidatorPage.tsx').then((m) => ({ default: m.ValidatorPage }))
+  import('./features/validation/ValidatorPage.tsx').then((m) => ({ default: m.ValidatorPage }))
 );
 
 const PipelineValidationPage = lazy(() =>
-  import('./components/pages/PipelineValidationPage.tsx').then((m) => ({
+  import('./features/validation/PipelineValidationPage.tsx').then((m) => ({
     default: m.PipelineValidationPage,
   }))
 );
