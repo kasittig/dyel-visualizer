@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { ConjugateCharts } from '../conjugate/ConjugateCharts';
 import { DiagnosticsPanel } from '../shared/DiagnosticsPanel';
 import { VariationRadarChart } from '../charts/VariationRadarChart';
-import { CollapsibleSection } from '../shared/CollapsibleSection';
-import { EditableDateChip } from '../shared/EditableDateChip';
+import { CollapsibleSection } from '../../shared/components/CollapsibleSection';
+import { EditableDateChip } from '../../shared/components/EditableDateChip';
 import type { DateRange } from 'react-day-picker';
 import type { DeadliftStancePreference } from '../../app/appTabs';
 

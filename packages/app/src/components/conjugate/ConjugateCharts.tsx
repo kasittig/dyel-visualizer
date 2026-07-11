@@ -6,8 +6,8 @@ import {
   usePipelineConjugateChartData,
   NORMALIZED_KEY,
 } from '../../hooks/pipeline/usePipelineConjugateChartData';
-import { DateLineChart, ChartEmpty } from '../charts/DateLineChart';
-import { ChartTooltip } from '../charts/TooltipCard';
+import { DateLineChart, ChartEmpty } from '../../shared/charts/DateLineChart';
+import { ChartTooltip } from '../../shared/charts/TooltipCard';
 import styles from './ConjugateCharts.module.css';
 
 const NORMALIZED_COLOR = 'var(--chart-blue)';

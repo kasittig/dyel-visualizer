@@ -6,7 +6,7 @@ import { extractSheetRef } from '../utils/sheetRef';
 import { serializeSheetCache, deserializeSheetCache } from '../utils/sheetCacheUtils';
 import type { CachedSheetData } from '../utils/sheetCacheUtils';
 import { useResolvedRawInput } from '../utils/useResolvedRawInput';
-import { useLocalStorageState } from '../hooks/infra/useLocalStorageState';
+import { useLocalStorageState } from '../shared/hooks/useLocalStorageState';
 
 export interface PipelineOrchestrationReturn {
   status: 'idle' | 'loading' | 'success' | 'error';

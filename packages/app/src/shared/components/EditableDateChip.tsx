@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import type React from 'react';
 import type { DateRange } from 'react-day-picker';
 import styles from './EditableDateChip.module.css';
-import { formatDate, parseDate } from '../../utils/dateUtils';
+import { formatDate, parseDate } from '../dateUtils';
 
 function shortDate(d: Date | undefined): string {
   if (!d) {

@@ -5,7 +5,7 @@ import type { DateRange } from 'react-day-picker';
 import { presetDateRange, activePreset, type PresetId } from '@dyel/api';
 import 'react-day-picker/style.css';
 import styles from './DateRangePicker.module.css';
-import { formatDate, parseDate } from '../../utils/dateUtils';
+import { formatDate, parseDate } from '../dateUtils';
 
 const PRESETS: {
   label: string;

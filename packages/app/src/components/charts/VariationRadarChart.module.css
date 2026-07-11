@@ -1,15 +1,15 @@
 .card {
-  composes: chartCard from './charts.module.css';
+  composes: chartCard from '../../shared/charts/charts.module.css';
 }
 .section {
-  composes: section from './charts.module.css';
+  composes: section from '../../shared/charts/charts.module.css';
 }
 .label {
-  composes: label from './charts.module.css';
+  composes: label from '../../shared/charts/charts.module.css';
 }
 .chartWrapper {
-  composes: chartWrapper from './charts.module.css';
+  composes: chartWrapper from '../../shared/charts/charts.module.css';
 }
 .sectionLabel {
-  composes: sectionLabel from './charts.module.css';
+  composes: sectionLabel from '../../shared/charts/charts.module.css';
 }

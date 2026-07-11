@@ -1,6 +1,6 @@
 import { parseIndexCsv, type IndexEntry } from '../../utils/parseIndexCsv';
 import { publishedCsvUrl } from '../../utils/sheetFetch';
-import { useCsvResource } from '../infra/useCsvResource';
+import { useCsvResource } from '../../shared/hooks/useCsvResource';
 
 export type { IndexEntry };
 

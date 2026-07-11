@@ -10,11 +10,16 @@ import {
 } from 'recharts';
 import type { ChartPoint } from '@dyel/api';
 import { formatChartDate } from '@dyel/api';
-import { ChartEmpty } from './DateLineChart';
-import { ChartTooltip } from './TooltipCard';
+import { ChartEmpty } from '../../shared/charts/DateLineChart';
+import { ChartTooltip } from '../../shared/charts/TooltipCard';
 import styles from './SessionBarChart.module.css';
 
-import { SQUAT_COLOR, BENCH_COLOR, DEADLIFT_COLOR, PUSH_PULL_COLOR } from './colors.ts';
+import {
+  SQUAT_COLOR,
+  BENCH_COLOR,
+  DEADLIFT_COLOR,
+  PUSH_PULL_COLOR,
+} from '../../shared/charts/colors.ts';
 
 export function SessionBarChart({ chartData, unit }: { chartData: ChartPoint[]; unit: string }) {
   if (chartData.length === 0) {

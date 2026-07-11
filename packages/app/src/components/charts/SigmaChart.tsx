@@ -2,10 +2,10 @@ import { useMemo } from 'react';
 import { PieChart, Pie, Cell, Tooltip, Legend } from 'recharts';
 import type { ChartPoint } from '@dyel/api';
 import { latestLiftE1RMs } from '@dyel/api';
-import { CollapsibleSection } from '../shared/CollapsibleSection';
-import { BaseRadarChart } from './BaseRadarChart';
-import { ChartTooltip } from './TooltipCard';
-import { SQUAT_COLOR, BENCH_COLOR, DEADLIFT_COLOR } from './colors';
+import { CollapsibleSection } from '../../shared/components/CollapsibleSection';
+import { BaseRadarChart } from '../../shared/charts/BaseRadarChart';
+import { ChartTooltip } from '../../shared/charts/TooltipCard';
+import { SQUAT_COLOR, BENCH_COLOR, DEADLIFT_COLOR } from '../../shared/charts/colors';
 import styles from './SigmaChart.module.css';
 
 const LIFT_COLORS: Record<string, string> = {

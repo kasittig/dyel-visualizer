@@ -1,7 +1,7 @@
 import { usePipelineVariationRadarData } from '../../hooks/pipeline/usePipelineVariationRadarData';
-import { BaseRadarChart } from './BaseRadarChart';
-import { ChartTooltip, type TooltipLine } from './TooltipCard';
-import { CollapsibleSection } from '../shared/CollapsibleSection';
+import { BaseRadarChart } from '../../shared/charts/BaseRadarChart';
+import { ChartTooltip, type TooltipLine } from '../../shared/charts/TooltipCard';
+import { CollapsibleSection } from '../../shared/components/CollapsibleSection';
 import { buildRadarRows, roundWeight } from '@dyel/api';
 import styles from './VariationRadarChart.module.css';
 

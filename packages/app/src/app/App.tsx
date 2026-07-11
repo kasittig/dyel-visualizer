@@ -7,7 +7,7 @@ import { SigmaTab } from '../components/pages/SigmaTab';
 import { LiftTabPanel } from '../components/pages/LiftTabPanel';
 import { SheetUrlPanel } from '../components/shared/SheetUrlPanel';
 import { GettingStarted } from '../components/pages/GettingStarted';
-import { DateRangePicker } from '../components/shared/DateRangePicker';
+import { DateRangePicker } from '../shared/components/DateRangePicker';
 import { defaultDateRangeFromLastSession } from '@dyel/api';
 import type { LiftType } from '@dyel/api';
 import { MAIN_TABS } from './appTabs';

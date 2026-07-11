@@ -3,7 +3,7 @@ import { StrictMode, lazy, Suspense } from 'react';
 import { createRoot } from 'react-dom/client';
 import './index.css';
 import { App } from './app/App.tsx';
-import { ErrorBoundary } from './components/shared/ErrorBoundary.tsx';
+import { ErrorBoundary } from './shared/components/ErrorBoundary.tsx';
 
 const ConjugateInfoPage = lazy(() =>
   import('./components/conjugate/ConjugateInfoPage.tsx').then((m) => ({

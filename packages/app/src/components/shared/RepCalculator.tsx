@@ -9,7 +9,7 @@ import type { LiftType, SplitRows, E1RMEstimate } from '@dyel/api';
 import { convertE1RMToDisplayUnit } from '@dyel/api';
 import { usePipelineRepCalculator } from '../../hooks/pipeline/usePipelineRepCalculator';
 import styles from './RepCalculator.module.css';
-import { CollapsibleSection } from './CollapsibleSection.tsx';
+import { CollapsibleSection } from '../../shared/components/CollapsibleSection';
 
 const LIFT_LABELS: Record<LiftType, string> = {
   squat: 'Squat',

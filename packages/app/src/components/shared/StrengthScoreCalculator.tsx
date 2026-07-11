@@ -2,7 +2,7 @@ import { useState } from 'react';
 import clsx from 'clsx';
 import { strengthTierForPercentile } from '@dyel/api';
 import { useStrengthScores } from '../../hooks/pipeline/useStrengthScores';
-import { CollapsibleSection } from './CollapsibleSection';
+import { CollapsibleSection } from '../../shared/components/CollapsibleSection';
 import styles from './StrengthScoreCalculator.module.css';
 import type { DateRange } from 'react-day-picker';
 

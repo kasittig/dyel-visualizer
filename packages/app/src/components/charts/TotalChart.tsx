@@ -1,7 +1,7 @@
 import { Line, Tooltip } from 'recharts';
 import type { ChartPoint } from '@dyel/api';
-import { DateLineChart, ChartEmpty } from './DateLineChart';
-import { ChartTooltip } from './TooltipCard';
+import { DateLineChart, ChartEmpty } from '../../shared/charts/DateLineChart';
+import { ChartTooltip } from '../../shared/charts/TooltipCard';
 import styles from './TotalChart.module.css';
 import {
   SQUAT_COLOR,
@@ -9,7 +9,7 @@ import {
   DEADLIFT_COLOR,
   TOTAL_COLOR,
   PUSH_PULL_COLOR,
-} from './colors.ts';
+} from '../../shared/charts/colors.ts';
 
 export function TotalChart({ chartData, unit }: { chartData: ChartPoint[]; unit: string }) {
   if (chartData.length === 0) {

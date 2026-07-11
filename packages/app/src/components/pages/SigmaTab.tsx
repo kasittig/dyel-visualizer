@@ -1,6 +1,6 @@
 import type { DateRange } from 'react-day-picker';
-import { CollapsibleSection } from '../shared/CollapsibleSection';
-import { EditableDateChip } from '../shared/EditableDateChip';
+import { CollapsibleSection } from '../../shared/components/CollapsibleSection';
+import { EditableDateChip } from '../../shared/components/EditableDateChip';
 import { useSigmaChartData } from '../../hooks/pipeline/useSigmaChartData';
 import { TotalChart } from '../charts/TotalChart';
 import { SessionBarChart } from '../charts/SessionBarChart';

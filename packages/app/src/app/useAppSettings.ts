@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import type { DateRange } from 'react-day-picker';
 import type { AthleteContext } from '@dyel/api';
-import { useLocalStorageState } from '../hooks/infra/useLocalStorageState';
+import { useLocalStorageState } from '../shared/hooks/useLocalStorageState';
 import type { InputMode, PageTab, DeadliftStancePreference } from './appTabs';
 
 /**
