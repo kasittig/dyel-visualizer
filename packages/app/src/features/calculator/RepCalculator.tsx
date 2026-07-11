@@ -7,7 +7,7 @@ import {
 } from '@dyel/api';
 import type { LiftType, SplitRows, E1RMEstimate } from '@dyel/api';
 import { convertE1RMToDisplayUnit } from '@dyel/api';
-import { usePipelineRepCalculator } from '../../hooks/pipeline/usePipelineRepCalculator';
+import { usePipelineRepCalculator } from './usePipelineRepCalculator';
 import styles from './RepCalculator.module.css';
 import { CollapsibleSection } from '../../shared/components/CollapsibleSection';
 

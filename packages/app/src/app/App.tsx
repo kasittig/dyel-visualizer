@@ -1,8 +1,8 @@
 import { useEffect } from 'react';
 import clsx from 'clsx';
 import { PipelineProvider } from './PipelineContext';
-import { RepCalculator } from '../components/shared/RepCalculator';
-import { StrengthScoreCalculator } from '../components/shared/StrengthScoreCalculator';
+import { RepCalculator } from '../features/calculator/RepCalculator';
+import { StrengthScoreCalculator } from '../features/calculator/StrengthScoreCalculator';
 import { SigmaTab } from '../components/pages/SigmaTab';
 import { LiftTabPanel } from '../components/pages/LiftTabPanel';
 import { SheetUrlPanel } from '../features/data-source/SheetUrlPanel';
