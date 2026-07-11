@@ -8,6 +8,7 @@ import {
   predictRepsForWeight,
   resolveE1RMEstimate,
   convertE1RMToDisplayUnit,
+  roundTo5,
 } from '@dyel/api';
 import type {
   LiftType,
@@ -18,10 +19,6 @@ import type {
   ConjugateStance,
 } from '@dyel/api';
 import { usePipelineModel } from '../../context/PipelineContext';
-
-function roundTo5(n: number): number {
-  return Math.round(n / 5) * 5;
-}
 
 /**
  * Controller hook for the Rep Calculator: owns all interactive state (lift type, exercise
