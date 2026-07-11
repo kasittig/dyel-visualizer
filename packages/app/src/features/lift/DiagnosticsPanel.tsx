@@ -1,7 +1,7 @@
 import { useState, type CSSProperties } from 'react';
 import type { DeadliftStancePreference } from '../../app/appTabs';
 import { usePipelineDiagnostics } from './usePipelineDiagnostics';
-import { formatEffect, formatAddlWtOffset, summarizeEffects, type DisplayUnit } from '@dyel/api';
+import { formatEffect, formatAddlWtOffset, type DisplayUnit } from '@dyel/api';
 import { CollapsibleSection } from '../../shared/components/CollapsibleSection';
 import styles from './DiagnosticsPanel.module.css';
 
@@ -27,9 +27,12 @@ export function DiagnosticsPanel({
     onVariationClick?.(null);
   };
 
-  const { variants: results, hasDeadlift } = usePipelineDiagnostics(liftType);
-
-  const { weakEffects, overtrainedEffects } = summarizeEffects(results);
+  const {
+    variants: results,
+    hasDeadlift,
+    weakEffects,
+    overtrainedEffects,
+  } = usePipelineDiagnostics(liftType);
 
   if (results.length === 0) {
     return null;

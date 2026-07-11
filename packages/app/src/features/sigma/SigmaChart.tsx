@@ -1,7 +1,6 @@
-import { useMemo } from 'react';
 import { PieChart, Pie, Cell, Tooltip, Legend } from 'recharts';
 import type { ChartPoint } from '@dyel/api';
-import { latestLiftE1RMs } from '@dyel/api';
+import { useLatestLiftE1RMs } from './useLatestLiftE1RMs';
 import { CollapsibleSection } from '../../shared/components/CollapsibleSection';
 import { BaseRadarChart } from '../../shared/charts/BaseRadarChart';
 import { ChartTooltip } from '../../shared/charts/TooltipCard';
@@ -15,7 +14,7 @@ const LIFT_COLORS: Record<string, string> = {
 };
 
 export function SigmaChart({ chartData, unit }: { chartData: ChartPoint[]; unit: string }) {
-  const latest = useMemo(() => latestLiftE1RMs(chartData), [chartData]);
+  const latest = useLatestLiftE1RMs(chartData);
 
   const data = [
     latest.squat !== undefined ? { lift: 'Squat', e1rm: latest.squat } : null,

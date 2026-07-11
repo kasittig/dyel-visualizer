@@ -1,9 +1,13 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import type { PipelineResult } from '@dyel/api';
-import { validatePipelineRun } from '@dyel/api';
-import { extractSheetRef } from '../data-source/sheetRef';
-import { sheetCsvUrl, fetchSheetCsv } from '../data-source/sheetFetch';
-import { buildRawInput, PLACEHOLDER_ATHLETE } from '../data-source/rawInput';
+import { validatePipelineRun, classifyPipelineVerdict } from '@dyel/api';
+import {
+  extractSheetRef,
+  sheetCsvUrl,
+  fetchSheetCsv,
+  buildRawInput,
+  PLACEHOLDER_ATHLETE,
+} from '../data-source';
 
 type PipelineValidationState =
   | { status: 'idle' }
@@ -15,9 +19,15 @@ export function usePipelineValidation(): {
   state: PipelineValidationState;
   validateUrl: (url: string) => void;
   validateText: (text: string) => void;
+  verdict: 'ok' | 'warning' | 'error' | null;
 } {
   const [state, setState] = useState<PipelineValidationState>({ status: 'idle' });
   const abortRef = useRef<AbortController | null>(null);
+
+  const verdict = useMemo(() => {
+    const activeResult = state.status === 'success' ? state.result : null;
+    return activeResult ? classifyPipelineVerdict(activeResult) : null;
+  }, [state]);
 
   function validateUrl(url: string) {
     const trimmed = url.trim();
@@ -66,5 +76,5 @@ export function usePipelineValidation(): {
     }
   }
 
-  return { state, validateUrl, validateText };
+  return { state, validateUrl, validateText, verdict };
 }

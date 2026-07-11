@@ -56,7 +56,12 @@ describe('usePipelineDiagnostics', () => {
 
     const { result } = renderHook(() => usePipelineDiagnostics());
 
-    expect(result.current).toEqual({ variants: [], hasDeadlift: false });
+    expect(result.current).toEqual({
+      variants: [],
+      hasDeadlift: false,
+      weakEffects: [],
+      overtrainedEffects: [],
+    });
   });
 
   it('wires model through to selector and returns variants', () => {

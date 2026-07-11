@@ -6,7 +6,6 @@ import {
   CONJUGATE_ADDL_WTS,
 } from '@dyel/api';
 import type { LiftType, SplitRows, E1RMEstimate } from '@dyel/api';
-import { convertE1RMToDisplayUnit } from '@dyel/api';
 import { usePipelineRepCalculator } from './usePipelineRepCalculator';
 import styles from './RepCalculator.module.css';
 import { CollapsibleSection } from '../../shared/components/CollapsibleSection';
@@ -57,6 +56,7 @@ export function RepCalculator({
     handleSelectedCanonicalChange,
     unit,
     estimate,
+    displayE1rm,
   } = usePipelineRepCalculator(tabRows, baselineNames);
 
   const hasAccessories = tabRows.accessory.all.length > 0;
@@ -215,7 +215,7 @@ export function RepCalculator({
                 </div>
               ))}
               <div className={styles.e1rmDisplay}>
-                e1RM: {Math.round(convertE1RMToDisplayUnit(estimate.e1rm, unit))} {unit}
+                e1RM: {Math.round(displayE1rm!)} {unit}
               </div>
               <p className={styles.sourceNote}>{sourceNote(estimate)}</p>
             </>

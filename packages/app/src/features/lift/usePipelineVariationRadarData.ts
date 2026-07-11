@@ -7,10 +7,11 @@ import {
   buildCanonicalByLabel,
   resolveTargetLabel,
   conjugateChartSpecs,
+  buildRadarRows,
   type LastSessionDetail,
 } from '@dyel/api';
 import { usePipelineModel } from '../../app/PipelineContext';
-import { usePipelineDatasets } from '../sigma/usePipelineDatasets';
+import { usePipelineDatasets } from '../sigma';
 
 export interface PipelineVariationRadarData {
   snapshot: Record<string, number | undefined>;
@@ -18,6 +19,7 @@ export interface PipelineVariationRadarData {
   lastSessionByLabel: Map<string, LastSessionDetail>;
   targetLabel: string | undefined;
   canonicalByLabel: Map<string, string>;
+  data: ReturnType<typeof buildRadarRows>;
 }
 
 const EMPTY: PipelineVariationRadarData = {
@@ -26,6 +28,7 @@ const EMPTY: PipelineVariationRadarData = {
   lastSessionByLabel: new Map(),
   targetLabel: undefined,
   canonicalByLabel: new Map(),
+  data: [],
 };
 
 /**
@@ -95,12 +98,16 @@ export function usePipelineVariationRadarData(
     // index `snapshot` (label-keyed) correctly.
     const targetLabel = resolveTargetLabel(model.tagged, liftType, targetCanonical);
 
+    // Build radar rows from normalized snapshot
+    const data = buildRadarRows(normalizedSnapshot, targetLabel);
+
     return {
       snapshot,
       normalizedSnapshot,
       lastSessionByLabel,
       targetLabel,
       canonicalByLabel,
+      data,
     };
   }, [status, model, datasets, unit, liftType, targetCanonical]);
 }

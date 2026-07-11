@@ -7,6 +7,12 @@ import { runPipelineModel } from '@dyel/pipeline';
 import { usePipelineVariationRadarData } from './usePipelineVariationRadarData';
 import { buildRawInput, PLACEHOLDER_ATHLETE } from '../../features/data-source/rawInput';
 
+// This hook now imports `usePipelineDatasets` via the `features/sigma` barrel (App Refactor
+// Phase 5's "features import siblings only via their index.ts barrel" rule), which also
+// re-exports recharts-based chart components. recharts' CJS build has a broken transitive
+// dependency on @reduxjs/toolkit's ESM-only dist under Vitest, so it must be mocked here even
+// though this test never renders any chart component.
+vi.mock('recharts', () => ({}));
 vi.mock('../../app/PipelineContext');
 
 const mockUsePipelineModel = vi.mocked(
@@ -206,6 +212,27 @@ describe('usePipelineVariationRadarData', () => {
       normalizedValues.forEach((v) => {
         expect(v).toBeGreaterThan(0);
         expect(v).toBeLessThan(10000);
+      });
+    }
+  });
+
+  it('produces data radar rows with real fixture for squat', () => {
+    mockUsePipelineModel.mockReturnValue({
+      status: 'success',
+      model: fixtureModel,
+    });
+
+    const { result } = renderHook(() => usePipelineVariationRadarData('squat', 'lbs'));
+
+    // Check that data is an array with radar row shape
+    expect(Array.isArray(result.current.data)).toBe(true);
+    // data may be empty if no normalized variations, which is valid
+    if (result.current.data.length > 0) {
+      result.current.data.forEach((row) => {
+        expect(typeof row.variation).toBe('string');
+        expect(typeof row.e1rm).toBe('number');
+        expect(row.e1rm).toBeGreaterThan(0);
+        expect(row.e1rm).toBeLessThan(10000);
       });
     }
   });

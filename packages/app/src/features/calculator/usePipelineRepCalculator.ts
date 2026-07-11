@@ -124,6 +124,13 @@ export function usePipelineRepCalculator(
     });
   }, [effectiveCanonical, pipelineStatus, pipelineModel, baselineNames, liftType]);
 
+  const displayE1rm = useMemo(() => {
+    if (!estimate) {
+      return null;
+    }
+    return convertE1RMToDisplayUnit(estimate.e1rm, unit);
+  }, [estimate, unit]);
+
   // Ref safely managed via mutations during event handlers
   const repsRef = useRef(reps);
 
@@ -179,5 +186,6 @@ export function usePipelineRepCalculator(
     handleSelectedCanonicalChange,
     unit,
     estimate,
+    displayE1rm,
   };
 }

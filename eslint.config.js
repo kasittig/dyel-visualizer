@@ -68,4 +68,110 @@ export default defineConfig([
       'no-restricted-imports': 'off',
     },
   },
+  {
+    // Enforce component render-only constraint: .tsx files in features/*/and shared/* must not
+    // import @dyel/api derivation functions directly — they must be called in feature hooks instead.
+    files: ['packages/app/src/{features,shared}/**/*.tsx'],
+    rules: {
+      '@typescript-eslint/no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: '@dyel/api',
+              message: 'Components must be render-only — derive data via a feature hook, not @dyel/api directly. See packages/app/CLAUDE.md.',
+              allowTypeImports: true,
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    // shared/charts/* imports chart display helpers (formatChartDate, color constants)
+    files: ['packages/app/src/shared/charts/**/*.tsx'],
+    rules: {
+      '@typescript-eslint/no-restricted-imports': 'off',
+    },
+  },
+  {
+    // ConjugateCharts.tsx imports LINE_COLORS (display constant array)
+    files: ['packages/app/src/features/lift/ConjugateCharts.tsx'],
+    rules: {
+      '@typescript-eslint/no-restricted-imports': 'off',
+    },
+  },
+  {
+    // DiagnosticsPanel.tsx imports formatEffect/formatAddlWtOffset (display formatters)
+    files: ['packages/app/src/features/lift/DiagnosticsPanel.tsx'],
+    rules: {
+      '@typescript-eslint/no-restricted-imports': 'off',
+    },
+  },
+  {
+    // VariationRadarChart.tsx imports roundWeight (display rounding in tooltip renderer)
+    files: ['packages/app/src/features/lift/VariationRadarChart.tsx'],
+    rules: {
+      '@typescript-eslint/no-restricted-imports': 'off',
+    },
+  },
+  {
+    // SessionBarChart.tsx imports formatChartDate (display formatter)
+    files: ['packages/app/src/features/sigma/SessionBarChart.tsx'],
+    rules: {
+      '@typescript-eslint/no-restricted-imports': 'off',
+    },
+  },
+  {
+    // RepCalculator.tsx imports CONJUGATE_BARS/STANCES/EQUIPMENT/ADDL_WTS (facet option constants, not derivation)
+    files: ['packages/app/src/features/calculator/RepCalculator.tsx'],
+    rules: {
+      '@typescript-eslint/no-restricted-imports': 'off',
+    },
+  },
+  {
+    // DateRangePicker.tsx imports presetDateRange/activePreset (pure Date-range utilities, no PipelineModel dependency)
+    files: ['packages/app/src/shared/components/DateRangePicker.tsx'],
+    rules: {
+      '@typescript-eslint/no-restricted-imports': 'off',
+    },
+  },
+  {
+    // Enforce feature barrel imports: features may only import sibling features via their index.ts barrel.
+    // This blocks deep relative imports like ../sigma/SigmaChart while allowing barrel imports like ../sigma.
+    // Uses explicit feature directory names to avoid false positives with ../../app or ../../shared imports.
+    files: ['packages/app/src/features/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: [
+                '../data-source/*',
+                '../index-page/*',
+                '../lift/*',
+                '../sigma/*',
+                '../validation/*',
+                '../calculator/*',
+                '../conjugate-info/*',
+              ],
+              message:
+                'Features may import other features only via their index.ts barrel (e.g. `../sigma`, not `../sigma/SigmaChart`) — see root CLAUDE.md and packages/app/CLAUDE.md.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    // Allowlisted exception: index-page/index.ts also re-exports the IndexPage page component,
+    // which main.tsx lazy-loads for code-splitting. Barrel-importing useIndexData here would
+    // statically pull IndexPage into the main bundle and defeat that split, so this file keeps
+    // the deep import `../index-page/useIndexData` instead. See the comment in SheetUrlPanel.tsx.
+    files: ['packages/app/src/features/data-source/SheetUrlPanel.tsx'],
+    rules: {
+      'no-restricted-imports': 'off',
+    },
+  },
 ]);

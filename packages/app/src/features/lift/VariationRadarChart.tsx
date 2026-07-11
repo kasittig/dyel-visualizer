@@ -2,7 +2,7 @@ import { usePipelineVariationRadarData } from './usePipelineVariationRadarData';
 import { BaseRadarChart } from '../../shared/charts/BaseRadarChart';
 import { ChartTooltip, type TooltipLine } from '../../shared/charts/TooltipCard';
 import { CollapsibleSection } from '../../shared/components/CollapsibleSection';
-import { buildRadarRows, roundWeight } from '@dyel/api';
+import { roundWeight } from '@dyel/api';
 import styles from './VariationRadarChart.module.css';
 
 const MIN_VARIATIONS = 3;
@@ -18,18 +18,13 @@ export function VariationRadarChart({
   targetName: string;
   onVariationClick?: (variation: string) => void;
 }) {
-  const { normalizedSnapshot, lastSessionByLabel, targetLabel } = usePipelineVariationRadarData(
-    liftType,
-    unit,
-    targetName
-  );
+  const { lastSessionByLabel, data } = usePipelineVariationRadarData(liftType, unit, targetName);
 
   // Radar spokes show each variation's cross-exercise-normalized e1RM (normalized to the
   // model's fixed lift-family baseline canonical) rather than raw last-session e1RM. Labels
   // with no fitted normalization factor are silently excluded (see
   // snapshotNormalizedVariationsFromPipeline's omission rule) rather than shown with a
   // misleading raw value.
-  const data = buildRadarRows(normalizedSnapshot, targetLabel);
 
   if (data.length < MIN_VARIATIONS) {
     return null;

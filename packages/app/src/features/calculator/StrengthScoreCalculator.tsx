@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import clsx from 'clsx';
-import { strengthTierForPercentile } from '@dyel/api';
 import { useStrengthScores } from './useStrengthScores';
 import { CollapsibleSection } from '../../shared/components/CollapsibleSection';
 import styles from './StrengthScoreCalculator.module.css';
@@ -120,7 +119,10 @@ export function StrengthScoreCalculator({
               scores !== null
                 ? (scores[`${key}Percentile` as keyof typeof scores] as number)
                 : null;
-            const tierLabel = pct !== null ? strengthTierForPercentile(pct) : 'Novice';
+            const tierLabel =
+              scores !== null
+                ? (scores[`${key}Tier` as keyof typeof scores] ?? 'Novice')
+                : 'Novice';
             const tierCol = pct !== null ? tierColor(pct) : 'transparent';
             const barWidth = pct ?? 0;
 

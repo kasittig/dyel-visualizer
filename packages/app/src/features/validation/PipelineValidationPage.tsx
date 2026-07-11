@@ -1,6 +1,5 @@
 import { useState, type CSSProperties } from 'react';
 import clsx from 'clsx';
-import { classifyPipelineVerdict } from '@dyel/api';
 import { usePipelineValidation } from './usePipelineValidation';
 import type { InputMode } from '../../app/appTabs';
 import { InputModeToggle } from '../../features/data-source/InputModeToggle';
@@ -92,7 +91,7 @@ export function PipelineValidationPage() {
   const [mode, setMode] = useState<InputMode>('url');
   const [url, setUrl] = useState('');
   const [text, setText] = useState('');
-  const { state, validateUrl, validateText } = usePipelineValidation();
+  const { state, validateUrl, validateText, verdict } = usePipelineValidation();
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -111,8 +110,6 @@ export function PipelineValidationPage() {
       : mode === 'text' && state.status === 'success'
         ? state.result
         : null;
-
-  const verdict = activeResult ? classifyPipelineVerdict(activeResult) : null;
 
   return (
     <main className={styles.main}>

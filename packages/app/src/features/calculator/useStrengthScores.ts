@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { computeStrengthScores, getCompetitionTotal } from '@dyel/api';
+import { computeStrengthScores, getCompetitionTotal, strengthTierForPercentile } from '@dyel/api';
 import type { DateRange } from 'react-day-picker';
 import { usePipelineModel } from '../../app/PipelineContext';
 
@@ -41,7 +41,27 @@ export function useStrengthScores(
     if (competitionTotal === null || !bodyweight || bodyweightNum <= 0 || isNaN(bodyweightNum)) {
       return null;
     }
-    return computeStrengthScores(bodyweightNum, competitionTotal, gender === 'female', unit);
+    const computed = computeStrengthScores(
+      bodyweightNum,
+      competitionTotal,
+      gender === 'female',
+      unit
+    );
+    return {
+      ...computed,
+      wilksTier:
+        computed.wilksPercentile !== null
+          ? strengthTierForPercentile(computed.wilksPercentile)
+          : null,
+      dotsTier:
+        computed.dotsPercentile !== null
+          ? strengthTierForPercentile(computed.dotsPercentile)
+          : null,
+      schwartzmaloneTier:
+        computed.schwartzmalone !== null && computed.schwartzmalonePercentile !== null
+          ? strengthTierForPercentile(computed.schwartzmalonePercentile)
+          : null,
+    };
   }, [competitionTotal, bodyweight, bodyweightNum, unit, gender]);
 
   return { competitionTotal, scores };

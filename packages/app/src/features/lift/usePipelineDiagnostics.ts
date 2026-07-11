@@ -1,12 +1,14 @@
 import { useMemo } from 'react';
 import { usePipelineModel } from '../../app/PipelineContext';
-import { selectDiagnosticVariants, type DiagnosticVariant } from '@dyel/api';
+import { selectDiagnosticVariants, summarizeEffects, type DiagnosticVariant } from '@dyel/api';
 
 export type { DiagnosticVariant } from '@dyel/api';
 
 export interface DiagnosticResult {
   variants: DiagnosticVariant[];
   hasDeadlift: boolean;
+  weakEffects: string[];
+  overtrainedEffects: string[];
 }
 
 /**
@@ -28,5 +30,7 @@ export function usePipelineDiagnostics(liftType?: string): DiagnosticResult {
 
   const hasDeadlift = variants.some((v) => v.lift.includes('deadlift'));
 
-  return { variants, hasDeadlift };
+  const { weakEffects, overtrainedEffects } = useMemo(() => summarizeEffects(variants), [variants]);
+
+  return { variants, hasDeadlift, weakEffects, overtrainedEffects };
 }
