@@ -2,41 +2,30 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import * as Popover from '@radix-ui/react-popover';
 import { DayPicker } from 'react-day-picker';
 import type { DateRange } from 'react-day-picker';
+import { presetDateRange, activePreset, type PresetId } from '@dyel/api';
 import 'react-day-picker/style.css';
 import styles from './DateRangePicker.module.css';
 import { formatDate, parseDate } from '../../utils/dateUtils';
 
 const PRESETS: {
   label: string;
-  getRange: (latest: Date, earliest: Date | null) => DateRange;
+  presetId: PresetId;
 }[] = [
   {
     label: '2 WKS',
-    getRange: (latest) => {
-      const from = new Date(latest);
-      from.setDate(from.getDate() - 14);
-      return { from, to: latest };
-    },
+    presetId: '2w',
   },
   {
     label: '1 MO',
-    getRange: (latest) => {
-      const from = new Date(latest);
-      from.setMonth(from.getMonth() - 1);
-      return { from, to: latest };
-    },
+    presetId: '1m',
   },
   {
     label: '3 MO',
-    getRange: (latest) => {
-      const from = new Date(latest);
-      from.setMonth(from.getMonth() - 3);
-      return { from, to: latest };
-    },
+    presetId: '3m',
   },
   {
     label: 'ALL TIME',
-    getRange: (latest, earliest) => ({ from: earliest ?? undefined, to: latest }),
+    presetId: 'all',
   },
 ];
 
@@ -54,23 +43,23 @@ export function DateRangePicker({
   const [endText, setEndText] = useState(() => formatDate(value.to));
   const [focused, setFocused] = useState<'start' | 'end' | null>(null);
   const [calendarMonth, setCalendarMonth] = useState<Date>(() => value.from ?? new Date());
+  const containerRef = useRef<HTMLDivElement>(null);
+  const outerRef = useRef<HTMLDivElement>(null);
+  const popoverContentRef = useRef<HTMLDivElement>(null);
+
+  const latestDate = useMemo(() => {
+    if (!sessionDates || sessionDates.length === 0) {
+      return new Date();
+    }
+    return new Date(Math.max(...sessionDates.map((d) => d.getTime())));
+  }, [sessionDates]);
+
   const [showCustomPicker, setShowCustomPicker] = useState(() => {
     if (!sessionDates || sessionDates.length === 0) {
       return true;
     }
-    const latest = new Date(Math.max(...sessionDates.map((d) => d.getTime())));
-    const earliest = new Date(Math.min(...sessionDates.map((d) => d.getTime())));
-    return !PRESETS.some((p) => {
-      const range = p.getRange(latest, earliest);
-      return (
-        value.from?.toDateString() === range.from?.toDateString() &&
-        value.to?.toDateString() === range.to?.toDateString()
-      );
-    });
+    return activePreset(value.from, value.to, latestDate) === null;
   });
-  const containerRef = useRef<HTMLDivElement>(null);
-  const outerRef = useRef<HTMLDivElement>(null);
-  const popoverContentRef = useRef<HTMLDivElement>(null);
 
   // Close the popover when clicking outside both the component and the calendar portal.
   // Radix's built-in dismiss doesn't fire reliably when `open` is set imperatively
@@ -89,20 +78,6 @@ export function DateRangePicker({
     document.addEventListener('mousedown', handleMouseDown, { capture: true });
     return () => document.removeEventListener('mousedown', handleMouseDown, { capture: true });
   }, [open, showCustomPicker]);
-
-  const latestDate = useMemo(() => {
-    if (!sessionDates || sessionDates.length === 0) {
-      return new Date();
-    }
-    return new Date(Math.max(...sessionDates.map((d) => d.getTime())));
-  }, [sessionDates]);
-
-  const earliestDate = useMemo(() => {
-    if (!sessionDates || sessionDates.length === 0) {
-      return null;
-    }
-    return new Date(Math.min(...sessionDates.map((d) => d.getTime())));
-  }, [sessionDates]);
 
   // Sync text and calendar month from external value changes, but only for the field
   // that isn't focused (avoid overwriting what the user is currently typing).
@@ -125,19 +100,11 @@ export function DateRangePicker({
 
   // When value changes to match a preset (e.g. on initial data load), close the custom picker.
   useEffect(() => {
-    if (
-      PRESETS.some((p) => {
-        const range = p.getRange(latestDate, earliestDate);
-        return (
-          value.from?.toDateString() === range.from?.toDateString() &&
-          value.to?.toDateString() === range.to?.toDateString()
-        );
-      })
-    ) {
+    if (activePreset(value.from, value.to, latestDate) !== null) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setShowCustomPicker(false);
     }
-  }, [value.from, value.to, latestDate, earliestDate]);
+  }, [value.from, value.to, latestDate]);
 
   function handleStartChange(text: string) {
     setStartText(text);
@@ -169,16 +136,9 @@ export function DateRangePicker({
     }
   }
 
-  function isPresetActive(preset: (typeof PRESETS)[number]): boolean {
-    const range = preset.getRange(latestDate, earliestDate);
-    return (
-      value.from?.toDateString() === range.from?.toDateString() &&
-      value.to?.toDateString() === range.to?.toDateString()
-    );
-  }
-
   const showPresets = sessionDates && sessionDates.length > 0;
-  const anyPresetActive = PRESETS.some((p) => isPresetActive(p));
+  const currentPreset = activePreset(value.from, value.to, latestDate);
+  const anyPresetActive = currentPreset !== null;
   const showPicker = !showPresets || showCustomPicker;
   const customChipActive = !anyPresetActive;
 
@@ -189,9 +149,13 @@ export function DateRangePicker({
           {PRESETS.map((preset) => (
             <button
               key={preset.label}
-              className={`${styles.preset} ${isPresetActive(preset) ? styles.presetActive : ''}`}
+              className={`${styles.preset} ${currentPreset === preset.presetId ? styles.presetActive : ''}`}
               onClick={() => {
-                onChange(preset.getRange(latestDate, earliestDate));
+                if (preset.presetId === 'all') {
+                  onChange({ from: undefined, to: latestDate });
+                } else {
+                  onChange(presetDateRange(preset.presetId, latestDate));
+                }
                 setShowCustomPicker(false);
               }}
             >

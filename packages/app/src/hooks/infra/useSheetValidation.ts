@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
-import type { SheetValidationResult } from '../../utils/validators/pipelineSheetValidator';
-import { validateSheetCsv } from '../../utils/validators/pipelineSheetValidator';
-import { extractSheetRef } from '../../utils/appUtils';
+import type { SheetValidationResult } from '@dyel/api';
+import { validateSheetCsv } from '@dyel/api';
+import { extractSheetRef } from '../../utils/sheetRef';
 import { sheetCsvUrl, fetchSheetCsv } from '../../utils/sheetFetch';
 
 type ValidationState =

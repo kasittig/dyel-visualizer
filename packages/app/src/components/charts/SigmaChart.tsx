@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { PieChart, Pie, Cell, Tooltip, Legend } from 'recharts';
 import type { ChartPoint } from '@dyel/api';
+import { latestLiftE1RMs } from '@dyel/api';
 import { CollapsibleSection } from '../shared/CollapsibleSection';
 import { BaseRadarChart } from './BaseRadarChart';
 import { ChartTooltip } from './TooltipCard';
@@ -14,34 +15,13 @@ const LIFT_COLORS: Record<string, string> = {
 };
 
 export function SigmaChart({ chartData, unit }: { chartData: ChartPoint[]; unit: string }) {
-  const data = useMemo(() => {
-    if (chartData.length === 0) {
-      return [];
-    }
+  const latest = useMemo(() => latestLiftE1RMs(chartData), [chartData]);
 
-    let lastSquat: number | undefined;
-    let lastBench: number | undefined;
-    let lastDeadlift: number | undefined;
-    for (const point of chartData) {
-      if (point.squat !== undefined) {
-        lastSquat = point.squat as number;
-      }
-      if (point.bench !== undefined) {
-        lastBench = point.bench as number;
-      }
-      if (point.deadlift !== undefined) {
-        lastDeadlift = point.deadlift as number;
-      }
-    }
-
-    const points = [
-      lastSquat !== undefined ? { lift: 'Squat', e1rm: lastSquat } : null,
-      lastBench !== undefined ? { lift: 'Bench', e1rm: lastBench } : null,
-      lastDeadlift !== undefined ? { lift: 'Deadlift', e1rm: lastDeadlift } : null,
-    ].filter((p): p is { lift: string; e1rm: number } => p !== null);
-
-    return points;
-  }, [chartData]);
+  const data = [
+    latest.squat !== undefined ? { lift: 'Squat', e1rm: latest.squat } : null,
+    latest.bench !== undefined ? { lift: 'Bench', e1rm: latest.bench } : null,
+    latest.deadlift !== undefined ? { lift: 'Deadlift', e1rm: latest.deadlift } : null,
+  ].filter((p): p is { lift: string; e1rm: number } => p !== null);
 
   if (data.length === 0) {
     return null;

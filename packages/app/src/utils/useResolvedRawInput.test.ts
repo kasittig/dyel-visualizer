@@ -1,11 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
-import { useResolvedRawInput } from './rawInputUtils';
+import { useResolvedRawInput } from './useResolvedRawInput';
 import * as sheetFetch from './sheetFetch';
-import * as appUtils from './appUtils';
+import * as sheetRef from './sheetRef';
 
 vi.mock('./sheetFetch');
-vi.mock('./appUtils');
+vi.mock('./sheetRef');
 
 describe('useResolvedRawInput', () => {
   beforeEach(() => {
@@ -41,7 +41,7 @@ describe('useResolvedRawInput', () => {
     const mockCsvUrl = 'https://docs.google.com/spreadsheets/d/e/abc123/pub?output=csv';
     const mockCsv = 'date,exercise,weight\n2024-01-01,squat,300';
 
-    vi.mocked(appUtils.extractSheetRef).mockReturnValue(mockSheetRef);
+    vi.mocked(sheetRef.extractSheetRef).mockReturnValue(mockSheetRef);
     vi.mocked(sheetFetch.sheetCsvUrl).mockReturnValue(mockCsvUrl);
     vi.mocked(sheetFetch.fetchSheetCsv).mockResolvedValue(mockCsv);
 
@@ -78,7 +78,7 @@ describe('useResolvedRawInput', () => {
   });
 
   it('idle state: no valid sheet ref', async () => {
-    vi.mocked(appUtils.extractSheetRef).mockReturnValue(null);
+    vi.mocked(sheetRef.extractSheetRef).mockReturnValue(null);
 
     const { result } = renderHook(() =>
       useResolvedRawInput('url', 'https://not-a-real-sheet-url', '', 0)
@@ -91,14 +91,14 @@ describe('useResolvedRawInput', () => {
     expect(result.current.raw).toEqual([]);
 
     // extractSheetRef should have been called
-    expect(appUtils.extractSheetRef).toHaveBeenCalledWith('https://not-a-real-sheet-url');
+    expect(sheetRef.extractSheetRef).toHaveBeenCalledWith('https://not-a-real-sheet-url');
   });
 
   it('error state: fetch failure', async () => {
     const mockSheetRef = { id: 'abc123', published: true };
     const mockCsvUrl = 'https://docs.google.com/spreadsheets/d/e/abc123/pub?output=csv';
 
-    vi.mocked(appUtils.extractSheetRef).mockReturnValue(mockSheetRef);
+    vi.mocked(sheetRef.extractSheetRef).mockReturnValue(mockSheetRef);
     vi.mocked(sheetFetch.sheetCsvUrl).mockReturnValue(mockCsvUrl);
     vi.mocked(sheetFetch.fetchSheetCsv).mockRejectedValue(new Error('Network error'));
 
@@ -119,7 +119,7 @@ describe('useResolvedRawInput', () => {
     const mockSheetRef = { id: 'abc123', published: true };
     const mockCsvUrl = 'https://docs.google.com/spreadsheets/d/e/abc123/pub?output=csv';
 
-    vi.mocked(appUtils.extractSheetRef).mockReturnValue(mockSheetRef);
+    vi.mocked(sheetRef.extractSheetRef).mockReturnValue(mockSheetRef);
     vi.mocked(sheetFetch.sheetCsvUrl).mockReturnValue(mockCsvUrl);
 
     const abortError = new Error('Cancelled');
@@ -141,7 +141,7 @@ describe('useResolvedRawInput', () => {
     const mockSheetRef = { id: 'abc123', published: true };
     const mockCsvUrl = 'https://docs.google.com/spreadsheets/d/e/abc123/pub?output=csv';
 
-    vi.mocked(appUtils.extractSheetRef).mockReturnValue(mockSheetRef);
+    vi.mocked(sheetRef.extractSheetRef).mockReturnValue(mockSheetRef);
     vi.mocked(sheetFetch.sheetCsvUrl).mockReturnValue(mockCsvUrl);
 
     // First fetch hangs
@@ -196,7 +196,7 @@ describe('useResolvedRawInput', () => {
     const mockSheetRef = { id: 'abc123', published: true };
     const mockCsvUrl = 'https://docs.google.com/spreadsheets/d/e/abc123/pub?output=csv';
 
-    vi.mocked(appUtils.extractSheetRef).mockReturnValue(mockSheetRef);
+    vi.mocked(sheetRef.extractSheetRef).mockReturnValue(mockSheetRef);
     vi.mocked(sheetFetch.sheetCsvUrl).mockReturnValue(mockCsvUrl);
 
     // Fetch that never resolves

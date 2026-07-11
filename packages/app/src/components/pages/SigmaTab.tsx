@@ -1,8 +1,7 @@
 import type { DateRange } from 'react-day-picker';
 import { CollapsibleSection } from '../shared/CollapsibleSection';
 import { EditableDateChip } from '../shared/EditableDateChip';
-import { usePipelineTotalChartData } from '../../hooks/pipeline/usePipelineTotalChartData';
-import { mergeVolumeIntoChartPoints } from '@dyel/api';
+import { useSigmaChartData } from '../../hooks/pipeline/useSigmaChartData';
 import { TotalChart } from '../charts/TotalChart';
 import { SessionBarChart } from '../charts/SessionBarChart';
 import { SigmaChart } from '../charts/SigmaChart';
@@ -18,9 +17,7 @@ export function SigmaTab({
   unit: 'lbs' | 'kg';
   volumeByDate: Map<string, number>;
 }) {
-  const pipelineChartData = usePipelineTotalChartData(dateRange, unit);
-
-  const chartData = mergeVolumeIntoChartPoints(pipelineChartData, volumeByDate);
+  const chartData = useSigmaChartData(dateRange, unit, volumeByDate);
 
   return (
     <>

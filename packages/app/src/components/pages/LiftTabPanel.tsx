@@ -5,7 +5,7 @@ import { VariationRadarChart } from '../charts/VariationRadarChart';
 import { CollapsibleSection } from '../shared/CollapsibleSection';
 import { EditableDateChip } from '../shared/EditableDateChip';
 import type { DateRange } from 'react-day-picker';
-import type { DeadliftStancePreference } from '../../utils/appUtils';
+import type { DeadliftStancePreference } from '../../utils/appTabs';
 
 export function LiftTabPanel({
   liftType,

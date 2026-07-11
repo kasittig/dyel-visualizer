@@ -276,22 +276,168 @@ real signature `(raw, [], athlete, {})`, `buildRadarRows` single-pass filter typ
 Next: Phase 2 (`migration/phase-2-render-only-components.md`) — repoint app hooks +
 components at the new API functions; new branch off `main` after this phase's PR lands.
 
+## App Refactor Migration — Phase 2: DONE (on `app-refactor-phase-2`)
+
+All 12 tasks from `migration/phase-2-render-only-components.md` landed as one commit
+each (stacked branch off `migration-phase-1`, since Phase 1's PR #467 hadn't merged yet —
+rebase onto `main` + retarget the PR once it does):
+
+- **Deleted app-side duplicates:** `utils/weightUnit.ts` (+test), `utils/validators/`
+  (both validators + tests) — consumers repointed to `@dyel/api`
+  (`convertWeight`/`roundWeight`/`DisplayUnit`, `validateSheetCsv`/`validateTextData`)
+- **Components made render-only:** `SigmaChart` (→ `latestLiftE1RMs`),
+  `VariationRadarChart` (→ `buildRadarRows`), `DiagnosticsPanel` (→ `summarizeEffects`
+  - api `formatEffect`/`formatAddlWtOffset`), `StrengthScoreCalculator`
+    (→ `strengthTierForPercentile` + new hook), `DateRangePicker`
+    (→ `presetDateRange`/`activePreset`), `PipelineValidationPage`
+    (→ `classifyPipelineVerdict`), `SigmaTab` (→ new hook)
+- **Hooks slimmed to thin wrappers:** `usePipelineDiagnostics` (now memoized, →
+  `selectDiagnosticVariants`), `usePipelineConjugateChartData` (→
+  `buildConjugateChartData` + `roundBestSetsForDisplay` + `dateRangeToRenderParams`),
+  `usePipelineTotalChartData` (→ `dateRangeToRenderParams`), `usePipelineRepCalculator`
+  (roundTo5 swap only, per plan)
+- **New hooks:** `useStrengthScores`, `useSigmaChartData` (both in `hooks/pipeline/`,
+  barrel + CLAUDE.md updated)
+
+**Behavior note (DateRangePicker):** ALL TIME now emits `{ from: undefined, to: latest }`
+(the api's `activePreset` semantics) instead of `{ from: earliest, to: latest }` —
+`dateRangeToRenderParams` treats undefined `from` as "no filter", so rendering is
+equivalent; a persisted old-style all-time range will highlight CUSTOM instead of
+ALL TIME (cosmetic, one-time).
+
+**Test-count delta:** `packages/app` 133 → **76** (−57: weightUnit test −26 and the two
+validator tests −20 moved to api in Phase 1; `usePipelineDiagnostics.test.ts` shrunk to
+wiring-level 16 → 5 tests, −11). api 322 and pipeline 157 unchanged. All three packages
+build; `npx eslint packages/app packages/api` clean; `@dyel/pipeline` imports in app
+production code remain only `App.tsx` + `usePipelineValidation.ts`.
+
+**Grep check:** only two `useMemo`s left under `components/**` — SigmaChart's single
+`latestLiftE1RMs` call and DateRangePicker's `latestDate` max (UI concern).
+
+**Smoke (Playwright via run-dyel-visualizer, real test sheet):** Σ tab (e1RM/radar/
+volume), squat/bench/deadlift tabs (chart + radar + diagnostics with api formatters),
+Calculator (rep calc e1RM + strength scores/competition total via `useStrengthScores`),
+date presets incl. ALL TIME active-highlighting, `?page=validator` (150/150 parsed) and
+`?page=pipeline-validation` (warning verdict + unknown/unnormalized lists). Zero console
+or page errors. Dev server left running at localhost:5173.
+
+**Process notes:** two implementer agents left stray `test_output.txt` files in the repo
+root (one nearly got committed — caught via `git status --short` after every task; later
+prompts explicitly banned redirecting test output to files). One agent wrote a
+conditional `useMemo` (after early return) + an `any` in a test — both caught by the
+pre-commit ESLint hook, fixed by team-lead. The per-task `git status --short` scope
+check caught no scope creep across all 12 tasks.
+
+Next: Phase 3 (`migration/phase-3-app-decomposition.md`) — App.tsx decomposition +
+eslint allowlist shrink; new branch off `main` after Phase 2's PR lands.
+
+## App Refactor Migration — Phase 3: DONE (on `app-refactor-phase-3`)
+
+All 7 tasks from `migration/phase-3-app-decomposition.md` landed (stacked off
+`app-refactor-phase-2`, since Phase 2's PR #468 hadn't merged to `main` yet — same
+stacking pattern as Phase 2 off `migration-phase-1`).
+
+- **Three new hooks** in `packages/app/src/hooks/app/` (barrel + `CLAUDE.md` added,
+  matching the `hooks/infra`/`hooks/pipeline` convention):
+  - `useAppSettings()` — all settings state (`url`/`inputMode`/`pastedText`/`activeTab`/
+    `deadliftStance`, localStorage-backed; `dateRange`/`panelForcedOpen`/`refreshToken`/
+    `shownResetToken`), the `?sheet=`/`?mode=`/`?text=` query-param reconciliation, the
+    URL-sync effect, the `athlete` memo, and the three `handle*Change` handlers
+  - `usePipelineOrchestration(inputMode, url, pastedText, refreshToken, athlete)` —
+    raw-input resolution, **`buildPipelineModel` (`@dyel/api`) replacing both
+    `runPipelineModel` (`@dyel/pipeline`) call sites**, the localStorage-persisted
+    raw-data cache, and the effective status/model fallback logic
+  - `useVisualizerData(model, dateRange, deadliftStance)` — `tabRows` plus a real dedup
+    (not just a move) of previously hand-rolled inline logic into `@dyel/api` calls:
+    `defaultCanonicalsByLift` (baseline/target canonicals were literally duplicate
+    loops), `visibleLiftTypes`, `detectDataUnit`, `collectVolumeRecords`,
+    `collectSessionDates`
+- **App.tsx**: 441 → 179 lines (JSX return block byte-for-byte identical, confirmed by
+  direct read/diff, not just the agent's self-report); composes the three hooks above;
+  `@dyel/pipeline` import removed entirely.
+- **`usePipelineValidation.ts`**: swapped `runPipeline` (`@dyel/pipeline`) for
+  `validatePipelineRun` (`@dyel/api`) — confirmed a true drop-in (same dataset-specs-`[]`/
+  render-params-`{}` call shape) before swapping, not just assumed.
+- **Split two mixed util files**: `rawInputUtils.ts` → `rawInput.ts` (pure) +
+  `useResolvedRawInput.ts` (hook); `appUtils.ts` → `sheetRef.ts` (pure) + `appTabs.ts`
+  (UI types/consts); `LIFT_TABS` deleted (grep-confirmed unused after the
+  `useVisualizerData` dedup). 16 importers repointed.
+- **ESLint allowlist** (`eslint.config.js`) shrunk from 3 files to 1
+  (`usePipelineVariationRadarData.test.ts` only) — `App.tsx` and
+  `usePipelineValidation.ts` no longer need the exception. `PipelineContext.tsx`'s doc
+  comment updated to name `usePipelineOrchestration` as the model producer (provider
+  itself unchanged, still a dumb pass-through).
+
+**Process note — a real parallel-task collision, caught before Task 3.4:** Tasks 3.1 and
+3.2 ran in parallel per their assigned App.tsx line ranges, but both independently
+extracted `cachedSheetData` state — the doc assigns it to Task 3.2
+(`usePipelineOrchestration`) as localStorage-persisted, but Task 3.1's agent picked it up
+too since it fell inside the "settings" line range (32-105) it was told to focus on,
+and Task 3.2's agent, unaware 3.1 already had it, created a _second_, non-persisted
+(`useState`, not `useLocalStorageState`) copy to satisfy its own effect — which would
+have silently broken the "cached-sheet instant restore on reload" feature had it landed
+unnoticed. Caught by reading both new hook files directly (not trusting either agent's
+"build passing" self-report) before starting Task 3.4; fixed directly rather than
+re-delegating: removed `cachedSheetData` from `useAppSettings.ts` entirely, and made
+`usePipelineOrchestration.ts`'s copy `useLocalStorageState`-backed (matching the doc's
+actual assignment). Confirmed via lint/build/test afterward. Worth flagging for future
+phases: parallel tasks split by _line range_ rather than by _variable ownership_ can
+double-extract state that appears in one task's range but is logically owned by
+another's.
+
+**Doc-consistency fixes made directly (not delegated), same practice as Phase 4's Task
+33 gap):** `packages/app/CLAUDE.md`'s "Data flow", "Key modules", and "MVC mapping"
+sections still described the pre-Phase-3 `App.tsx`-does-everything shape and the
+now-deleted `appUtils.ts`/`rawInputUtils.ts` — rewritten to describe the
+`hooks/app/*`-composition shape and the split util files. Added the missing
+`hooks/app/index.ts` barrel export for `usePipelineOrchestration` (Task 3.3's agent had
+only wired `useAppSettings`/`useVisualizerData` into the barrel).
+
+**Final verification (independently re-run twice — once directly by the coordinator,
+once by a `qa-reviewer` agent, per this repo's standing practice):**
+
+- `npm run build -w packages/pipeline && npm run build -w packages/api && npm run build
+-w packages/app`: all clean, 0 TypeScript errors
+- `npm test -w packages/pipeline`: **157/157** (unchanged)
+- `npm test -w packages/api`: **322/322** (unchanged)
+- `npm test -w packages/app`: **76/76** (unchanged — Phase 3 is a pure refactor, no
+  tests added/removed net; two test files were split/renamed —
+  `rawInputUtils.test.ts` → `useResolvedRawInput.test.ts`, `appUtils.test.ts` →
+  `sheetRef.test.ts` — but the 76 total is identical)
+- `npx eslint packages/app packages/api`: clean
+- `grep -rn "from '@dyel/pipeline'" packages/app/src`: exactly one file,
+  `hooks/pipeline/usePipelineVariationRadarData.test.ts`
+- Manual dev-server smoke: **not yet done as of this update** — dev server is running
+  at `localhost:5173` (left running per this repo's convention) for human sign-off on
+  the state-plumbing checklist from `phase-3-app-decomposition.md`'s Verification
+  section (`?sheet=`/`?mode=text&text=` overrides, cached-sheet instant restore on
+  reload, refresh button, mode switching, default 3-month range, tab visibility vs.
+  date range).
+
+PR #469 opened against `app-refactor-phase-2` (stacked, since Phase 2's PR #468 hasn't
+merged to `main` yet — will need retargeting to `main` once #468 lands, same as Phase
+2's own stacking note). Manual dev-server smoke sign-off (checklist above) is the one
+remaining item before this phase is fully done. After that: Phase 4
+(`migration/phase-4-feature-restructure.md`) — file moves only, new branch off `main`
+once Phase 3's PR lands.
+
 ## Next
 
-The `@dyel/api`-as-sole-boundary migration is complete. Two smaller follow-up items
-were deferred out of this migration's scope (recorded here per Phase 4's Task 35, not
-yet started):
+The `@dyel/api`-as-sole-boundary migration is complete. One smaller follow-up item was
+deferred out of this migration's scope (recorded here per Phase 4's Task 35, not yet
+started):
 
 1. **`LiftType` dedupe:** `@dyel/api` independently defines a `LiftType` literal type
    rather than re-exporting `@dyel/pipeline`'s structurally identical one (flagged in
    `API_PHASE_2.md` Task 15). Reconciling this is a separate, smaller cleanup — a
    silent type dedupe risks import-order/circularity surprises better handled as its
    own reviewable diff.
-2. **ESLint `no-restricted-imports` rule** scoped to `packages/app/src` banning
-   `@dyel/pipeline` imports (with an allowlist for `App.tsx` and
-   `usePipelineValidation.ts`), to make the "sole boundary" rule self-enforcing going
-   forward instead of relying on a manual grep sweep (as this migration's Phase 3 had
-   to run by hand).
+
+(The second deferred item that used to be listed here — an ESLint `no-restricted-imports`
+rule scoped to `packages/app/src` banning `@dyel/pipeline` imports — was actually already
+in place before this note was written, just with a wider allowlist; the App Refactor
+migration's Phase 3 (above) shrank that allowlist from 3 files down to 1, closing this
+out.)
 
 Per `API_PHASE_4.md`'s own closing note, `API_PHASE_1.md` through `API_PHASE_4.md`
 themselves are candidates for deletion now that their content is fully reflected in
