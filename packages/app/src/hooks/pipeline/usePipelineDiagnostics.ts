@@ -1,19 +1,8 @@
+import { useMemo } from 'react';
 import { usePipelineModel } from '../../context/PipelineContext';
+import { selectDiagnosticVariants, type DiagnosticVariant } from '@dyel/api';
 
-export interface DiagnosticVariant {
-  canonical: string;
-  displayName: string;
-  lift: string;
-  effects: string[];
-  status: 'optimal' | 'weakness' | 'overperforming' | 'stale';
-  ratio: number;
-  actualE1rmKg: number;
-  expectedE1rmKg: number;
-  staleDays: number;
-  averageIndex: number;
-  expectedBaseline: string | null;
-  addlWtOffset?: { offsetKg: number; n: number };
-}
+export type { DiagnosticVariant } from '@dyel/api';
 
 export interface DiagnosticResult {
   variants: DiagnosticVariant[];
@@ -32,31 +21,10 @@ export interface DiagnosticResult {
 export function usePipelineDiagnostics(liftType?: string): DiagnosticResult {
   const { model } = usePipelineModel();
 
-  if (!model) {
-    return { variants: [], hasDeadlift: false };
-  }
-
-  // Extract only the fields required by DiagnosticVariant
-  let variants: DiagnosticVariant[] = model.diagnostics.variants.map((v) => ({
-    canonical: v.canonical,
-    displayName: v.displayName,
-    lift: v.lift,
-    effects: v.effects,
-    status: v.status,
-    ratio: v.ratio,
-    actualE1rmKg: v.actualE1rmKg,
-    expectedE1rmKg: v.expectedE1rmKg,
-    staleDays: v.staleDays,
-    averageIndex: v.averageIndex,
-    expectedBaseline: v.expectedBaseline,
-    addlWtOffset: v.addlWtOffset,
-  }));
-
-  // Filter by liftType if provided
-  if (liftType) {
-    const liftTag = `lift:${liftType}`;
-    variants = variants.filter((v) => v.lift === liftTag);
-  }
+  const variants = useMemo(
+    () => (model ? selectDiagnosticVariants(model, liftType) : []),
+    [model, liftType]
+  );
 
   const hasDeadlift = variants.some((v) => v.lift.includes('deadlift'));
 
