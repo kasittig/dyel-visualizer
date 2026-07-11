@@ -2,10 +2,7 @@ import { useState, useEffect, useRef, type CSSProperties } from 'react';
 import clsx from 'clsx';
 import { useSheetValidation } from '../../hooks/infra/useSheetValidation';
 import { useTextValidation } from '../../hooks/infra/useTextValidation';
-import type {
-  SheetValidationResult,
-  ColumnInfo,
-} from '../../utils/validators/pipelineSheetValidator';
+import type { SheetValidationResult, ColumnInfo } from '@dyel/api';
 import { EXAMPLE_SHEET_URL } from '../../utils/appUtils';
 import type { InputMode } from '../../utils/appUtils';
 import { InputModeToggle } from '../shared/InputModeToggle';
