@@ -1,4 +1,4 @@
-import type { SheetRef } from './appUtils';
+import type { SheetRef } from './sheetRef';
 
 // During dev the Vite proxy (sheetsProxyPlugin) forwards to Google and follows redirects
 // server-side, avoiding CORS. In production we hit Google directly (published sheets only).

@@ -1,21 +1,7 @@
-import type { LiftType } from '@dyel/api';
-
 export interface SheetRef {
   id: string;
   published: boolean;
 }
-export type PageTab = LiftType | 'calculator' | 'sigma';
-export type InputMode = 'url' | 'text';
-export type DeadliftStancePreference = 'sumo' | 'conventional';
-
-export const MAIN_TABS = [
-  { id: 'squat' as LiftType, label: 'Squat' },
-  { id: 'bench' as LiftType, label: 'Bench' },
-  { id: 'deadlift' as LiftType, label: 'Deadlift' },
-  { id: 'accessory' as LiftType, label: 'Accessories' },
-];
-
-export const LIFT_TABS: LiftType[] = MAIN_TABS.map((t) => t.id);
 
 export const EXAMPLE_CSV_URL =
   'https://docs.google.com/spreadsheets/d/e/2PACX-1vRPu7N-kHeJeUVhjbL0Q9xDLXEPeC3GsvnAE4HXj2-q9pIjM25BxUwUVxHYqxVR-9uQvW9MKM4l9xNI/pub?gid=1297658251&single=true&output=csv';

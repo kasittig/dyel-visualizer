@@ -1,5 +1,5 @@
-import { EXAMPLE_SHEET_URL } from '../../utils/appUtils';
-import type { InputMode } from '../../utils/appUtils';
+import { EXAMPLE_SHEET_URL } from '../../utils/sheetRef';
+import type { InputMode } from '../../utils/appTabs';
 import styles from './GettingStarted.module.css';
 
 /** Onboarding checklist shown before any data has been entered, tailored to the active input mode. */

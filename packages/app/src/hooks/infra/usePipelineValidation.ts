@@ -1,9 +1,9 @@
 import { useState, useRef } from 'react';
-import { runPipeline } from '@dyel/pipeline';
 import type { PipelineResult } from '@dyel/api';
-import { extractSheetRef } from '../../utils/appUtils';
+import { validatePipelineRun } from '@dyel/api';
+import { extractSheetRef } from '../../utils/sheetRef';
 import { sheetCsvUrl, fetchSheetCsv } from '../../utils/sheetFetch';
-import { buildRawInput, PLACEHOLDER_ATHLETE } from '../../utils/rawInputUtils';
+import { buildRawInput, PLACEHOLDER_ATHLETE } from '../../utils/rawInput';
 
 type PipelineValidationState =
   | { status: 'idle' }
@@ -35,7 +35,7 @@ export function usePipelineValidation(): {
     fetchSheetCsv(sheetCsvUrl(sheetRef, '0'), controller.signal)
       .then((csv) => {
         const raw = buildRawInput('url', csv);
-        const result = runPipeline([raw], [], PLACEHOLDER_ATHLETE, {});
+        const result = validatePipelineRun([raw], PLACEHOLDER_ATHLETE);
         setState({ status: 'success', result });
       })
       .catch((err: unknown) => {
@@ -56,7 +56,7 @@ export function usePipelineValidation(): {
     }
     try {
       const raw = buildRawInput('text', text);
-      const result = runPipeline([raw], [], PLACEHOLDER_ATHLETE, {});
+      const result = validatePipelineRun([raw], PLACEHOLDER_ATHLETE);
       setState({ status: 'success', result });
     } catch (err: unknown) {
       setState({

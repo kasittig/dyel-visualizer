@@ -1,18 +1,9 @@
 import { useState, useEffect } from 'react';
-import type { AthleteContext, RawInput } from '@dyel/api';
-import type { InputMode } from './appUtils';
-import { extractSheetRef } from './appUtils';
+import type { RawInput } from '@dyel/api';
+import type { InputMode } from './appTabs';
+import { extractSheetRef } from './sheetRef';
 import { sheetCsvUrl, fetchSheetCsv } from './sheetFetch';
-
-export const PLACEHOLDER_ATHLETE: AthleteContext = {
-  sex: 'M',
-  bodyweight: 90,
-  deadliftStance: 'sumo',
-};
-
-export function buildRawInput(mode: InputMode, content: string): RawInput {
-  return { name: mode === 'url' ? 'sheet.csv' : 'pasted.txt', content };
-}
+import { buildRawInput } from './rawInput';
 
 export function useResolvedRawInput(
   inputMode: InputMode,

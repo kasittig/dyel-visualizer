@@ -3,8 +3,8 @@ import clsx from 'clsx';
 import { useSheetValidation } from '../../hooks/infra/useSheetValidation';
 import { useTextValidation } from '../../hooks/infra/useTextValidation';
 import type { SheetValidationResult, ColumnInfo } from '@dyel/api';
-import { EXAMPLE_SHEET_URL } from '../../utils/appUtils';
-import type { InputMode } from '../../utils/appUtils';
+import { EXAMPLE_SHEET_URL } from '../../utils/sheetRef';
+import type { InputMode } from '../../utils/appTabs';
 import { InputModeToggle } from '../shared/InputModeToggle';
 import styles from './ValidatorPage.module.css';
 
