@@ -59,14 +59,11 @@ export default defineConfig([
     },
   },
   {
-    // Allowlisted exceptions: these are the only packages/app/src files permitted to import
-    // @dyel/pipeline directly (App.tsx and usePipelineValidation.ts for production wiring;
-    // the radar data test for real-fixture PipelineModel coverage).
-    files: [
-      'packages/app/src/App.tsx',
-      'packages/app/src/hooks/infra/usePipelineValidation.ts',
-      'packages/app/src/hooks/pipeline/usePipelineVariationRadarData.test.ts',
-    ],
+    // Allowlisted exception: the only packages/app/src file permitted to import @dyel/pipeline
+    // directly (real-fixture PipelineModel coverage). App.tsx and usePipelineValidation.ts no
+    // longer need this exception as of Phase 3 of the App Refactor migration (App Refactor
+    // migration's Phase 3, see root HANDOFF.md) — both now go through @dyel/api exclusively.
+    files: ['packages/app/src/hooks/pipeline/usePipelineVariationRadarData.test.ts'],
     rules: {
       'no-restricted-imports': 'off',
     },

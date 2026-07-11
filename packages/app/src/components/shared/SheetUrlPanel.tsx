@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useIndexData } from '../../hooks/data/useIndexData';
-import { EXAMPLE_SHEET_URL, EXAMPLE_VISUALIZER_URL } from '../../utils/appUtils';
-import type { InputMode } from '../../utils/appUtils';
+import { EXAMPLE_SHEET_URL, EXAMPLE_VISUALIZER_URL } from '../../utils/sheetRef';
+import type { InputMode } from '../../utils/appTabs';
 import { InputModeToggle } from './InputModeToggle';
 import styles from './SheetUrlPanel.module.css';
 

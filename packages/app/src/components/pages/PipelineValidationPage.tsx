@@ -2,7 +2,7 @@ import { useState, type CSSProperties } from 'react';
 import clsx from 'clsx';
 import { classifyPipelineVerdict } from '@dyel/api';
 import { usePipelineValidation } from '../../hooks/infra/usePipelineValidation';
-import type { InputMode } from '../../utils/appUtils';
+import type { InputMode } from '../../utils/appTabs';
 import { InputModeToggle } from '../shared/InputModeToggle';
 import styles from './PipelineValidationPage.module.css';
 

@@ -12,10 +12,11 @@ const pipelineContext = createContext<PipelineContextValue | undefined>(undefine
 /**
  * PipelineProvider component that passes pre-computed pipeline model and status through context.
  *
- * The app (App.tsx) is responsible for calling useResolvedRawInput() and runPipelineModel()
- * directly to compute the status and model. This provider simply makes those values available
- * to child components via context, eliminating the double-fetch that occurred when both
- * useResolvedRawInput() and a separate useConjugateData() hook were running independently.
+ * The app (App.tsx, via the usePipelineOrchestration() hook) is responsible for resolving raw
+ * input and calling @dyel/api's buildPipelineModel() to compute the status and model. This
+ * provider simply makes those values available to child components via context, eliminating
+ * the double-fetch that occurred when both useResolvedRawInput() and a separate
+ * useConjugateData() hook were running independently.
  *
  * @param props Provider props
  * @param props.status Pipeline status: 'idle' | 'loading' | 'success' | 'error'

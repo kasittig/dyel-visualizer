@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { extractSheetRef } from './appUtils';
+import { extractSheetRef } from './sheetRef';
 
 describe('extractSheetRef', () => {
   it('parses a published web URL as published', () => {
