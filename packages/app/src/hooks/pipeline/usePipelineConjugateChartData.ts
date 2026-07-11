@@ -1,14 +1,15 @@
 import { useMemo } from 'react';
 import type { DateRange } from 'react-day-picker';
-import type { RenderParams, RechartsRow, ChartPoint } from '@dyel/api';
+import type { ChartPoint } from '@dyel/api';
 import { usePipelineModel } from '../../context/PipelineContext';
 import { usePipelineDatasets } from './usePipelineDatasets';
 import {
   conjugateChartSpecs,
   buildBestSetByLabelAndDate,
+  buildConjugateChartData,
+  roundBestSetsForDisplay,
+  dateRangeToRenderParams,
   type BestSet,
-  mergeWideRechartsRows,
-  roundWeight,
 } from '@dyel/api';
 
 export const NORMALIZED_KEY = 'normalized';
@@ -47,11 +48,8 @@ export function usePipelineConjugateChartData(
 ): PipelineConjugateChartData {
   const { status, model } = usePipelineModel();
   const specs = useMemo(() => conjugateChartSpecs(liftType), [liftType]);
-  const ui: RenderParams = useMemo(
-    () =>
-      dateRange.from && dateRange.to
-        ? { dateRange: [dateRange.from.getTime(), dateRange.to.getTime()] }
-        : {},
+  const ui = useMemo(
+    () => dateRangeToRenderParams(dateRange?.from, dateRange?.to),
     [dateRange.from, dateRange.to]
   );
   const datasets = usePipelineDatasets(specs, ui);
@@ -64,31 +62,10 @@ export function usePipelineConjugateChartData(
     const rawVariations = datasets.variations ?? [];
     const rawNormalized = datasets.normalized ?? [];
 
-    const variations = [
-      ...new Set(rawVariations.flatMap((r) => Object.keys(r).filter((k) => k !== 't'))),
-    ].sort();
-
-    const combinedByT = new Map<number, RechartsRow>();
-    for (const row of rawVariations) {
-      combinedByT.set(row.t, { ...combinedByT.get(row.t), ...row });
-    }
-    for (const row of rawNormalized) {
-      combinedByT.set(row.t, { ...combinedByT.get(row.t), ...row });
-    }
-    const data = mergeWideRechartsRows([...combinedByT.values()], unit);
+    const { variations, data } = buildConjugateChartData(rawVariations, rawNormalized, unit);
 
     const bestSetByLabelAndDateKg = buildBestSetByLabelAndDate(model.tagged, liftType);
-    const bestSetByLabelAndDate = new Map(
-      [...bestSetByLabelAndDateKg].map(([label, byDate]) => [
-        label,
-        new Map(
-          [...byDate].map(([date, set]) => [
-            date,
-            { ...set, weight: roundWeight(set.weight, unit) },
-          ])
-        ),
-      ])
-    );
+    const bestSetByLabelAndDate = roundBestSetsForDisplay(bestSetByLabelAndDateKg, unit);
 
     return {
       variations,
