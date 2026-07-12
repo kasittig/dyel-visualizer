@@ -8,17 +8,6 @@ export interface StrengthScoresResult {
   scores: ReturnType<typeof computeStrengthScores> | null;
 }
 
-/**
- * Hook to compute strength scores (Wilks, DOTS, Schwartz-Malone) from a bodyweight
- * and the most recent competition total in the pipeline model.
- *
- * @param bodyweight User-entered bodyweight (empty string if not yet input)
- * @param unit Display unit for bodyweight ('lbs' | 'kg')
- * @param gender Athlete gender ('male' | 'female')
- * @param dateRange Date range to scope the competition total lookup
- * @param dataUnit Unit used in the pipeline data (for getCompetitionTotal)
- * @returns Object with competitionTotal and scores (both null if invalid inputs)
- */
 export function useStrengthScores(
   bodyweight: string,
   unit: 'lbs' | 'kg',
@@ -27,8 +16,7 @@ export function useStrengthScores(
   dataUnit: 'lbs' | 'kg'
 ): StrengthScoresResult {
   const { model } = usePipelineModel();
-
-  const bodyweightNum = parseFloat(bodyweight);
+  const bwNum = parseFloat(bodyweight);
 
   const competitionTotal = useMemo(() => {
     if (model === null) {
@@ -38,31 +26,21 @@ export function useStrengthScores(
   }, [model, dateRange, dataUnit]);
 
   const scores = useMemo(() => {
-    if (competitionTotal === null || !bodyweight || bodyweightNum <= 0 || isNaN(bodyweightNum)) {
+    if (competitionTotal === null || !bodyweight || bwNum <= 0 || isNaN(bwNum)) {
       return null;
     }
-    const computed = computeStrengthScores(
-      bodyweightNum,
-      competitionTotal,
-      gender === 'female',
-      unit
-    );
+    const res = computeStrengthScores(bwNum, competitionTotal, gender === 'female', unit);
     return {
-      ...computed,
+      ...res,
       wilksTier:
-        computed.wilksPercentile !== null
-          ? strengthTierForPercentile(computed.wilksPercentile)
-          : null,
-      dotsTier:
-        computed.dotsPercentile !== null
-          ? strengthTierForPercentile(computed.dotsPercentile)
-          : null,
+        res.wilksPercentile !== null ? strengthTierForPercentile(res.wilksPercentile) : null,
+      dotsTier: res.dotsPercentile !== null ? strengthTierForPercentile(res.dotsPercentile) : null,
       schwartzmaloneTier:
-        computed.schwartzmalone !== null && computed.schwartzmalonePercentile !== null
-          ? strengthTierForPercentile(computed.schwartzmalonePercentile)
+        res.schwartzmalone !== null && res.schwartzmalonePercentile !== null
+          ? strengthTierForPercentile(res.schwartzmalonePercentile)
           : null,
     };
-  }, [competitionTotal, bodyweight, bodyweightNum, unit, gender]);
+  }, [competitionTotal, bodyweight, bwNum, unit, gender]);
 
   return { competitionTotal, scores };
 }

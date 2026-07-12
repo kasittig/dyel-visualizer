@@ -20,11 +20,6 @@ import type {
 } from '@dyel/api';
 import { usePipelineModel } from '../../app/PipelineContext';
 
-/**
- * Controller hook for the Rep Calculator: owns all interactive state (lift type, exercise
- * selection, conjugate facets, reps/weight inputs) and derives the effective e1RM estimate
- * from the shared pipeline model via `usePipelineModel()`.
- */
 export function usePipelineRepCalculator(
   tabRows: Record<LiftType, SplitRows>,
   baselineNames: Partial<Record<LiftType, string>>
@@ -39,53 +34,29 @@ export function usePipelineRepCalculator(
   const [selectedAddlWt, setSelectedAddlWt] = useState<ConjugateAddlWt | null>(null);
   const [selectedEquipmentMagnitude, setSelectedEquipmentMagnitude] = useState<string | null>(null);
 
-  const { status: pipelineStatus, model: pipelineModel } = usePipelineModel();
+  const { status: pStatus, model: pModel } = usePipelineModel();
   const records = tabRows[liftType].maxEffort;
+  const repsRef = useRef(reps);
+  const weightRef = useRef(weight);
+  const lastEditedRef = useRef<'reps' | 'weight'>('reps');
 
-  const unit = useMemo(() => {
-    const found = records.find((r) => r.meta?.rawUnit);
-    return (found?.meta?.rawUnit === 'lbs' ? 'lbs' : 'kg') as 'lbs' | 'kg';
-  }, [records]);
-
+  const unit = useMemo(
+    () => (records.find((r) => r.meta?.rawUnit)?.meta?.rawUnit === 'lbs' ? 'lbs' : 'kg'),
+    [records]
+  );
   const availableMagnitudes = useMemo(
     () => availableEquipmentMagnitudes(records, selectedEquipment),
     [selectedEquipment, records]
   );
-
   const exercisesForType = useMemo(() => exercisesForLiftType(records), [records]);
-
-  // Derive the active canonical key inline during render.
-  // If the user's manual selection is no longer valid for this liftType, default to the first available exercise.
   const activeCanonical = records.some((r) => r.canonical === selectedCanonical)
     ? selectedCanonical
     : (exercisesForType[0]?.canonical ?? '');
-
   const selectedRecord = useMemo(
     () => records.find((r) => r.canonical === activeCanonical),
     [records, activeCanonical]
   );
 
-  // Unified state updater used exclusively by user interactions
-  const syncFacetsAndInputs = (canonical: string, rec?: (typeof records)[number]) => {
-    const f = rec ? facetsFromTags(rec.tags) : null;
-    setSelectedCanonical(canonical);
-    setReps('');
-    setWeight('');
-    setSelectedBar(f?.bar ?? null);
-    setSelectedStance(f?.stance ?? null);
-    setSelectedEquipment(f?.equipment ?? null);
-    setSelectedAddlWt(f?.addlWts?.[0] ?? null);
-    setSelectedEquipmentMagnitude(f?.equipmentMagnitude ?? null);
-  };
-
-  function handleSelectedCanonicalChange(canonical: string) {
-    syncFacetsAndInputs(
-      canonical,
-      records.find((r) => r.canonical === canonical)
-    );
-  }
-
-  // Derive the effective canonical for e1RM lookup
   const effectiveCanonical = useMemo(
     () =>
       resolveEffectiveCanonical(records, {
@@ -110,57 +81,48 @@ export function usePipelineRepCalculator(
   );
 
   const estimate = useMemo(() => {
-    if (!effectiveCanonical || pipelineStatus !== 'success' || !pipelineModel) {
+    if (!effectiveCanonical || pStatus !== 'success' || !pModel) {
       return null;
     }
-
     return resolveE1RMEstimate({
       liftType,
       targetCanonical: effectiveCanonical,
       baselineName: baselineNames[liftType],
       today: new Date(),
-      model: pipelineModel.model,
-      e1rmPoints: pipelineModel.pointsByDeriver.get('e1rm-max-effort') ?? [],
+      model: pModel.model,
+      e1rmPoints: pModel.pointsByDeriver.get('e1rm-max-effort') ?? [],
     });
-  }, [effectiveCanonical, pipelineStatus, pipelineModel, baselineNames, liftType]);
+  }, [effectiveCanonical, pStatus, pModel, baselineNames, liftType]);
 
-  const displayE1rm = useMemo(() => {
-    if (!estimate) {
-      return null;
-    }
-    return convertE1RMToDisplayUnit(estimate.e1rm, unit);
-  }, [estimate, unit]);
-
-  // Ref safely managed via mutations during event handlers
-  const repsRef = useRef(reps);
+  const displayE1rm = useMemo(
+    () => (estimate ? convertE1RMToDisplayUnit(estimate.e1rm, unit) : null),
+    [estimate, unit]
+  );
 
   const syncWeightFromReps = (rVal: string) => {
     const r = parseFloat(rVal);
     if (r > 0 && estimate) {
-      const dispE1RM = convertE1RMToDisplayUnit(estimate.e1rm, unit);
-      setWeight(String(roundTo5(predictWeightForReps(dispE1RM, r))));
+      setWeight(
+        String(roundTo5(predictWeightForReps(convertE1RMToDisplayUnit(estimate.e1rm, unit), r)))
+      );
+    }
+  };
+
+  const syncRepsFromWeight = (wVal: string) => {
+    const w = parseFloat(wVal);
+    if (w > 0 && estimate) {
+      setReps(predictRepsForWeight(convertE1RMToDisplayUnit(estimate.e1rm, unit), w).toFixed(1));
     }
   };
 
   useEffect(() => {
-    syncWeightFromReps(repsRef.current);
+    if (lastEditedRef.current === 'weight') {
+      syncRepsFromWeight(weightRef.current);
+    } else {
+      syncWeightFromReps(repsRef.current);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [estimate, unit]);
-
-  function handleRepsChange(val: string) {
-    repsRef.current = val;
-    setReps(val);
-    syncWeightFromReps(val);
-  }
-
-  function handleWeightChange(val: string) {
-    setWeight(val);
-    const w = parseFloat(val);
-    if (w > 0 && estimate) {
-      const dispE1RM = convertE1RMToDisplayUnit(estimate.e1rm, unit);
-      setReps(predictRepsForWeight(dispE1RM, w).toFixed(1));
-    }
-  }
 
   return {
     liftType,
@@ -181,11 +143,31 @@ export function usePipelineRepCalculator(
     availableMagnitudes,
     reps,
     weight,
-    handleRepsChange,
-    handleWeightChange,
-    handleSelectedCanonicalChange,
     unit,
     estimate,
     displayE1rm,
+    handleSelectedCanonicalChange: (canonical: string) => {
+      const f = facetsFromTags(records.find((r) => r.canonical === canonical)?.tags ?? new Set());
+      setSelectedCanonical(canonical);
+      setReps('');
+      setWeight('');
+      setSelectedBar(f.bar ?? null);
+      setSelectedStance(f.stance ?? null);
+      setSelectedEquipment(f.equipment ?? null);
+      setSelectedAddlWt(f.addlWts?.[0] ?? null);
+      setSelectedEquipmentMagnitude(f.equipmentMagnitude ?? null);
+    },
+    handleRepsChange: (val: string) => {
+      repsRef.current = val;
+      lastEditedRef.current = 'reps';
+      setReps(val);
+      syncWeightFromReps(val);
+    },
+    handleWeightChange: (val: string) => {
+      weightRef.current = val;
+      lastEditedRef.current = 'weight';
+      setWeight(val);
+      syncRepsFromWeight(val);
+    },
   };
 }

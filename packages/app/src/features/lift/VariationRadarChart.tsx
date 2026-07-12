@@ -2,10 +2,8 @@ import { usePipelineVariationRadarData } from './usePipelineVariationRadarData';
 import { BaseRadarChart } from '../../shared/charts/BaseRadarChart';
 import { ChartTooltip, type TooltipLine } from '../../shared/charts/TooltipCard';
 import { CollapsibleSection } from '../../shared/components/CollapsibleSection';
-import { roundWeight } from '@dyel/api';
+import { roundWeight, type RadarRow } from '@dyel/api';
 import styles from './VariationRadarChart.module.css';
-
-const MIN_VARIATIONS = 3;
 
 export function VariationRadarChart({
   liftType,
@@ -16,21 +14,14 @@ export function VariationRadarChart({
   liftType: string;
   unit: 'lbs' | 'kg';
   targetName: string;
-  onVariationClick?: (variation: string) => void;
+  onVariationClick?: (v: string) => void;
 }) {
   const { lastSessionByLabel, data } = usePipelineVariationRadarData(liftType, unit, targetName);
 
-  // Radar spokes show each variation's cross-exercise-normalized e1RM (normalized to the
-  // model's fixed lift-family baseline canonical) rather than raw last-session e1RM. Labels
-  // with no fitted normalization factor are silently excluded (see
-  // snapshotNormalizedVariationsFromPipeline's omission rule) rather than shown with a
-  // misleading raw value.
-
-  if (data.length < MIN_VARIATIONS) {
+  if (data.length < 3) {
     return null;
   }
-
-  const showTargetRing = data.some((d) => d.targetE1rm !== undefined);
+  const hasRing = data.some((d) => d.targetE1rm !== undefined);
 
   return (
     <div className={styles.section}>
@@ -42,7 +33,7 @@ export function VariationRadarChart({
             angleKey="variation"
             unit={unit}
             chartKey={targetName}
-            overlayDataKey={showTargetRing ? 'targetE1rm' : undefined}
+            overlayDataKey={hasRing ? 'targetE1rm' : undefined}
             onClick={onVariationClick}
             tooltip={{
               content: ({ payload }) => {
@@ -50,16 +41,16 @@ export function VariationRadarChart({
                 if (!item) {
                   return null;
                 }
-                const name = (item.payload as { variation: string }).variation;
-                const lastSession = lastSessionByLabel.get(name);
-                const dateStr = lastSession
-                  ? new Date(lastSession.date + 'T00:00:00').toLocaleDateString(undefined, {
+                const name = (item.payload as RadarRow).variation;
+                const last = lastSessionByLabel.get(name);
+                const dStr = last
+                  ? new Date(`${last.date}T00:00:00`).toLocaleDateString(undefined, {
                       month: 'short',
                       day: 'numeric',
                       year: 'numeric',
                     })
                   : 'Never';
-                const displayWeight = lastSession ? roundWeight(lastSession.weight, unit) : 0;
+
                 const lines: TooltipLine[] = [
                   {
                     key: name,
@@ -67,9 +58,9 @@ export function VariationRadarChart({
                     detail: `Normalized e1RM: ${Number(item.value).toFixed(2)} ${unit}`,
                     extra: (
                       <>
-                        Last session: {dateStr}
-                        {lastSession
-                          ? ` · ${lastSession.sets}×${lastSession.reps} @ ${displayWeight} ${unit}${lastSession.rpe != null ? ` · RPE ${lastSession.rpe}` : ''}`
+                        Last session: {dStr}
+                        {last
+                          ? ` · ${last.sets}×${last.reps} @ ${roundWeight(last.weight, unit)} ${unit}${last.rpe != null ? ` · RPE ${last.rpe}` : ''}`
                           : ''}
                       </>
                     ),

@@ -15,7 +15,8 @@ export function availableEquipmentMagnitudes(
     .map((f) => f.equipmentMagnitude!);
 
   return Array.from(new Set(mags)).sort((a, b) => {
-    const [nA, nB] = [parseInt(a, 10), parseInt(b, 10)];
+    const nA = parseInt(a, 10),
+      nB = parseInt(b, 10);
     return isNaN(nA) || isNaN(nB) ? a.localeCompare(b) : nA - nB;
   });
 }
@@ -24,11 +25,11 @@ export function exercisesForLiftType(
   records: TaggedSetRecord[]
 ): { canonical: string; label: string }[] {
   const seen = new Map<string, { canonical: string; label: string }>();
-  records.forEach((r) => {
+  for (const r of records) {
     if (!seen.has(r.canonical)) {
       seen.set(r.canonical, { canonical: r.canonical, label: r.meta?.rawExercise ?? r.exercise });
     }
-  });
+  }
   return Array.from(seen.values()).sort((a, b) => a.label.localeCompare(b.label));
 }
 
@@ -53,11 +54,9 @@ export function resolveEffectiveCanonical(
     selectedEquipmentMagnitude,
     selectedAddlWt,
   } = params;
-
   if (!selectedRecord) {
     return null;
   }
-
   if (liftType === 'accessory') {
     return selectedRecord.canonical;
   }
@@ -72,11 +71,9 @@ export function resolveEffectiveCanonical(
     .join('-');
 
   const match = records.find((rec) => {
-    const fKey = facetFamilyKey(rec.canonical);
     const f = facetsFromTags(rec.tags);
-
     const keyMatch =
-      fKey === candidateKey ||
+      facetFamilyKey(rec.canonical) === candidateKey ||
       (f.bar === selectedBar &&
         f.stance === selectedStance &&
         f.equipment === selectedEquipment &&
@@ -85,11 +82,14 @@ export function resolveEffectiveCanonical(
     if (!keyMatch) {
       return false;
     }
-
     return selectedAddlWt
       ? f.addlWts.includes(selectedAddlWt as ConjugateAddlWt)
       : f.addlWts.length === 0;
   });
 
-  return match ? match.canonical : selectedRecord.canonical;
+  if (match) {
+    return match.canonical;
+  }
+  const knownSelected = records.some((r) => r.canonical === selectedRecord.canonical);
+  return knownSelected ? selectedRecord.canonical : candidateKey;
 }

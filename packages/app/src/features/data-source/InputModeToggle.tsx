@@ -11,24 +11,18 @@ export function InputModeToggle({
 }) {
   return (
     <div className={styles.modeToggle} role="tablist" aria-label="Data source">
-      <button
-        type="button"
-        role="tab"
-        aria-selected={mode === 'url'}
-        className={clsx(styles.modeButton, mode === 'url' && styles.modeButtonActive)}
-        onClick={() => onModeChange('url')}
-      >
-        Sheet URL
-      </button>
-      <button
-        type="button"
-        role="tab"
-        aria-selected={mode === 'text'}
-        className={clsx(styles.modeButton, mode === 'text' && styles.modeButtonActive)}
-        onClick={() => onModeChange('text')}
-      >
-        Paste text
-      </button>
+      {(['url', 'text'] as const).map((m) => (
+        <button
+          key={m}
+          type="button"
+          role="tab"
+          aria-selected={mode === m}
+          className={clsx(styles.modeButton, mode === m && styles.modeButtonActive)}
+          onClick={() => onModeChange(m)}
+        >
+          {m === 'url' ? 'Sheet URL' : 'Paste text'}
+        </button>
+      ))}
     </div>
   );
 }

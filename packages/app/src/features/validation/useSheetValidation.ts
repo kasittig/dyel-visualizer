@@ -13,33 +13,29 @@ export function useSheetValidation(): [ValidationState, (url: string) => void] {
   const [state, setState] = useState<ValidationState>({ status: 'idle' });
   const abortRef = useRef<AbortController | null>(null);
 
-  function validate(url: string) {
+  const validate = (url: string) => {
     const trimmed = url.trim();
-    const sheetRef = extractSheetRef(trimmed);
-    if (!sheetRef) {
+    const ref = extractSheetRef(trimmed);
+    if (!ref) {
       setState({ status: 'error', message: "That doesn't look like a Google Sheet URL." });
       return;
     }
-
     abortRef.current?.abort();
     const controller = new AbortController();
     abortRef.current = controller;
-
     setState({ status: 'loading' });
-    fetchSheetCsv(sheetCsvUrl(sheetRef, '0'), controller.signal)
-      .then((csv) =>
-        setState({ status: 'success', result: validateSheetCsv(csv), sheetUrl: trimmed })
-      )
+
+    fetchSheetCsv(sheetCsvUrl(ref, '0'), controller.signal)
+      .then((csv) => {
+        setState({ status: 'success', result: validateSheetCsv(csv), sheetUrl: trimmed });
+      })
       .catch((err: unknown) => {
         if (err instanceof Error && err.name === 'AbortError') {
           return;
         }
-        setState({
-          status: 'error',
-          message: err instanceof Error ? err.message : String(err),
-        });
+        setState({ status: 'error', message: err instanceof Error ? err.message : String(err) });
       });
-  }
+  };
 
   return [state, validate];
 }

@@ -1,15 +1,10 @@
 import { useState } from 'react';
-// Deep import (not the `../index-page` barrel) is intentional: index-page/index.ts also
-// re-exports the `IndexPage` page component, which main.tsx lazy-loads for code-splitting.
-// Barrel-importing here would statically pull IndexPage into the main bundle and defeat that
-// split. Allowlisted in root eslint.config.js's feature-barrel rule with the same reasoning.
 import { useIndexData } from '../index-page/useIndexData';
 import { EXAMPLE_SHEET_URL, EXAMPLE_VISUALIZER_URL } from './sheetRef';
 import type { InputMode } from '../../app/appTabs';
 import { InputModeToggle } from './InputModeToggle';
 import styles from './SheetUrlPanel.module.css';
 
-/** App header: title plus the collapsible data-source panel (Sheet URL or pasted text) and helper links. */
 export function SheetUrlPanel({
   showUrlPanel,
   url,
@@ -28,27 +23,27 @@ export function SheetUrlPanel({
   url: string;
   loaded: boolean;
   invalidUrl: boolean;
-  onUrlChange: (value: string) => void;
+  onUrlChange: (v: string) => void;
   onForceOpen: () => void;
   onCancel: () => void;
   onRefresh: () => void;
   mode: InputMode;
-  onModeChange: (mode: InputMode) => void;
+  onModeChange: (m: InputMode) => void;
   text: string;
-  onTextChange: (value: string) => void;
+  onTextChange: (v: string) => void;
 }) {
   const indexData = useIndexData();
   const [draft, setDraft] = useState(text);
   const [prevText, setPrevText] = useState(text);
+
   if (text !== prevText) {
     setPrevText(text);
     setDraft(text);
   }
 
-  const matchedEntry =
-    indexData.status === 'success'
-      ? indexData.entries.find((entry) => entry.url === url)
-      : undefined;
+  const matched =
+    indexData.status === 'success' ? indexData.entries.find((e) => e.url === url) : undefined;
+  const valUrl = `?page=validator${url.trim() ? `&url=${encodeURIComponent(url.trim())}` : ''}`;
 
   return (
     <div className={styles.wrapper}>
@@ -57,16 +52,16 @@ export function SheetUrlPanel({
         <p className={styles.subtitle}>
           <button onClick={onForceOpen} className={styles.linkButton}>
             Change data source
-          </button>
-          {' · '}
+          </button>{' '}
+          ·{' '}
           <button
             onClick={onRefresh}
             className={styles.refreshButton}
             title="Reload data from sheet"
           >
             ↻
-          </button>
-          {' · '}
+          </button>{' '}
+          ·{' '}
           <a href="?page=conjugate" className={styles.accentLink}>
             What is the conjugate method?
           </a>
@@ -82,16 +77,9 @@ export function SheetUrlPanel({
               <a href="?page=conjugate" className={styles.accentLink}>
                 What is the conjugate method?
               </a>
-            )}
-            {' · '}
-            <a
-              href={
-                url.trim()
-                  ? `?page=validator&url=${encodeURIComponent(url.trim())}`
-                  : '?page=validator'
-              }
-              className={styles.accentLink}
-            >
+            )}{' '}
+            ·{' '}
+            <a href={valUrl} className={styles.accentLink}>
               See if your training log is compatible
             </a>
           </p>
@@ -106,7 +94,7 @@ export function SheetUrlPanel({
                   <select
                     id="sheet-index"
                     className={styles.input}
-                    value={matchedEntry?.url ?? ''}
+                    value={matched?.url ?? ''}
                     onChange={(e) => {
                       if (e.target.value) {
                         onUrlChange(e.target.value);
@@ -141,8 +129,7 @@ export function SheetUrlPanel({
               )}
               <p className={styles.helperLinks}>
                 Don't have a sheet?{' '}
-                <a href={EXAMPLE_VISUALIZER_URL}>View an example in the visualizer</a>
-                {' · '}
+                <a href={EXAMPLE_VISUALIZER_URL}>View an example in the visualizer</a> ·{' '}
                 <a href={EXAMPLE_SHEET_URL} target="_blank" rel="noreferrer">
                   View the example spreadsheet
                 </a>

@@ -6,151 +6,89 @@ import {
 } from './variationRadarSelectors';
 import type { TaggedSetRecord } from '@dyel/pipeline';
 
-const createRecord = (overrides?: Partial<TaggedSetRecord>): TaggedSetRecord => ({
-  date: 1000,
-  canonical: 'canonical1',
-  exercise: 'exercise1',
-  tags: new Set(['lift:squat']),
+const rec = (
+  canonical: string,
+  date = 1000,
+  tags = ['lift:squat'],
+  rawEx?: string
+): TaggedSetRecord => ({
+  date,
+  canonical,
+  exercise: canonical,
+  tags: new Set(tags),
   sets: 1,
   reps: 1,
   weight: 100,
-  unit: 'kg',
-  meta: {},
-  ...overrides,
+  meta: rawEx ? { rawExercise: rawEx } : {},
+  effects: [],
+  baselineRange: null,
 });
 
 describe('buildCanonicalByLabel', () => {
   it.each([
     ['empty input', [], 'squat', new Map()],
     [
-      'single matching record',
-      [createRecord({ canonical: 'bench_press', tags: new Set(['lift:bench']) })],
+      'single match',
+      [rec('b_press', 100, ['lift:bench'])],
       'bench',
-      new Map([['bench_press', 'bench_press']]),
+      new Map([['b_press', 'b_press']]),
     ],
     [
-      'multiple records same label picks latest date',
-      [
-        createRecord({
-          canonical: 'bench1',
-          date: 100,
-          meta: { rawExercise: 'Bench' },
-          tags: new Set(['lift:bench']),
-        }),
-        createRecord({
-          canonical: 'bench2',
-          date: 200,
-          meta: { rawExercise: 'Bench' },
-          tags: new Set(['lift:bench']),
-        }),
-      ],
+      'picks latest date',
+      [rec('bench1', 100, ['lift:bench'], 'Bench'), rec('bench2', 200, ['lift:bench'], 'Bench')],
       'bench',
       new Map([['Bench', 'bench2']]),
     ],
     [
-      'records for different lift type excluded',
-      [
-        createRecord({ canonical: 'bench_press', tags: new Set(['lift:bench']) }),
-        createRecord({ canonical: 'squat_hs', tags: new Set(['lift:squat']) }),
-      ],
+      'excludes other lift types',
+      [rec('b_press', 100, ['lift:bench']), rec('squat_hs', 100, ['lift:squat'])],
       'bench',
-      new Map([['bench_press', 'bench_press']]),
+      new Map([['b_press', 'b_press']]),
     ],
     [
-      'multiple labels tracked separately',
-      [
-        createRecord({
-          canonical: 'bench1',
-          date: 100,
-          meta: { rawExercise: 'DB Bench' },
-          tags: new Set(['lift:bench']),
-        }),
-        createRecord({
-          canonical: 'press1',
-          date: 150,
-          meta: { rawExercise: 'OHP' },
-          tags: new Set(['lift:bench']),
-        }),
-      ],
+      'tracks separately',
+      [rec('bench1', 100, ['lift:bench'], 'DB Bench'), rec('press1', 150, ['lift:bench'], 'OHP')],
       'bench',
       new Map([
         ['DB Bench', 'bench1'],
         ['OHP', 'press1'],
       ]),
     ],
-  ])('buildCanonicalByLabel: %s', (_, tagged, liftType, expected) => {
-    const result = buildCanonicalByLabel(tagged, liftType);
-    expect(result).toEqual(expected);
+  ])('%s', (_, tagged, liftType, expected) => {
+    expect(buildCanonicalByLabel(tagged, liftType)).toEqual(expected);
   });
 });
 
 describe('resolveTargetLabel', () => {
   it.each([
     ['empty input', [], 'squat', 'squat', undefined],
+    ['single match', [rec('b_press', 100, ['lift:bench'])], 'bench', 'b_press', 'b_press'],
     [
-      'single matching record',
-      [createRecord({ canonical: 'bench_press', tags: new Set(['lift:bench']) })],
-      'bench',
-      'bench_press',
-      'bench_press',
-    ],
-    [
-      'multiple records same canonical picks latest date',
+      'picks latest label version',
       [
-        createRecord({
-          canonical: 'squat',
-          date: 100,
-          meta: { rawExercise: 'Squat v1' },
-          tags: new Set(['lift:squat']),
-        }),
-        createRecord({
-          canonical: 'squat',
-          date: 200,
-          meta: { rawExercise: 'Squat v2' },
-          tags: new Set(['lift:squat']),
-        }),
+        rec('squat', 100, ['lift:squat'], 'Squat v1'),
+        rec('squat', 200, ['lift:squat'], 'Squat v2'),
       ],
       'squat',
       'squat',
       'Squat v2',
     ],
     [
-      'no match for given targetCanonical',
-      [
-        createRecord({ canonical: 'bench_press', tags: new Set(['lift:bench']) }),
-        createRecord({ canonical: 'dumbbell_press', tags: new Set(['lift:bench']) }),
-      ],
+      'no match for canonical',
+      [rec('b_press', 100, ['lift:bench']), rec('db_press', 100, ['lift:bench'])],
       'bench',
       'squat',
       undefined,
     ],
     [
-      'records for different lift type excluded',
-      [
-        createRecord({ canonical: 'squat', tags: new Set(['lift:squat']) }),
-        createRecord({ canonical: 'bench_press', tags: new Set(['lift:bench']) }),
-      ],
+      'lift type exclusion',
+      [rec('squat', 100, ['lift:squat']), rec('b_press', 100, ['lift:bench'])],
       'bench',
-      'bench_press',
-      'bench_press',
+      'b_press',
+      'b_press',
     ],
-    [
-      'uses rawExercise when available',
-      [
-        createRecord({
-          canonical: 'bench',
-          date: 100,
-          meta: { rawExercise: 'Custom Bench' },
-          tags: new Set(['lift:bench']),
-        }),
-      ],
-      'bench',
-      'bench',
-      'Custom Bench',
-    ],
-  ])('resolveTargetLabel: %s', (_, tagged, liftType, targetCanonical, expected) => {
-    const result = resolveTargetLabel(tagged, liftType, targetCanonical);
-    expect(result).toBe(expected);
+  ])('%s', (_, tagged, liftType, target, expected) => {
+    expect(resolveTargetLabel(tagged, liftType, target)).toBe(expected);
   });
 });
 
@@ -159,48 +97,50 @@ describe('buildRadarRows', () => {
     ['empty snapshot', {}, undefined, []],
     [
       'single variation',
-      { 'Variation A': 300 },
+      { 'Var A': 300 },
       undefined,
-      [{ variation: 'Variation A', e1rm: 300, targetE1rm: undefined }],
+      [{ variation: 'Var A', e1rm: 300, targetE1rm: undefined }],
     ],
     [
-      'multiple variations sorted alphabetically',
-      { 'Variation C': 250, 'Variation A': 320, 'Variation B': 280 },
-      undefined,
-      [
-        { variation: 'Variation A', e1rm: 320, targetE1rm: undefined },
-        { variation: 'Variation B', e1rm: 280, targetE1rm: undefined },
-        { variation: 'Variation C', e1rm: 250, targetE1rm: undefined },
-      ],
-    ],
-    [
-      'excludes variations with undefined e1rm',
-      { 'Variation A': 300, 'Variation B': undefined, 'Variation C': 280 },
+      'sorted alphabetically',
+      { 'Var C': 250, 'Var A': 320, 'Var B': 280 },
       undefined,
       [
-        { variation: 'Variation A', e1rm: 300, targetE1rm: undefined },
-        { variation: 'Variation C', e1rm: 280, targetE1rm: undefined },
+        { variation: 'Var A', e1rm: 320, targetE1rm: undefined },
+        { variation: 'Var B', e1rm: 280, targetE1rm: undefined },
+        { variation: 'Var C', e1rm: 250, targetE1rm: undefined },
       ],
     ],
     [
-      'includes targetE1rm when targetLabel matches a variation',
-      { 'Variation A': 300, 'Variation B': 280 },
-      'Variation A',
+      'excludes undefined e1rm',
+      { 'Var A': 300, 'Var B': undefined, 'Var C': 280 },
+      undefined,
       [
-        { variation: 'Variation A', e1rm: 300, targetE1rm: 300 },
-        { variation: 'Variation B', e1rm: 280, targetE1rm: 300 },
+        { variation: 'Var A', e1rm: 300, targetE1rm: undefined },
+        { variation: 'Var C', e1rm: 280, targetE1rm: undefined },
       ],
     ],
     [
-      'targetE1rm is undefined when targetLabel does not match',
-      { 'Variation A': 300, 'Variation B': 280 },
-      'Variation C',
+      'injects targetE1rm on label match',
+      { 'Var A': 300, 'Var B': 280 },
+      'Var A',
       [
-        { variation: 'Variation A', e1rm: 300, targetE1rm: undefined },
-        { variation: 'Variation B', e1rm: 280, targetE1rm: undefined },
+        { variation: 'Var A', e1rm: 300, targetE1rm: 300 },
+        { variation: 'Var B', e1rm: 280, targetE1rm: 300 },
       ],
     ],
-  ])('buildRadarRows: %s', (_, snapshot, targetLabel, expected) => {
-    expect(buildRadarRows(snapshot, targetLabel)).toEqual(expected);
+    [
+      'targetE1rm undefined on mismatch',
+      { 'Var A': 300, 'Var B': 280 },
+      'Var C',
+      [
+        { variation: 'Var A', e1rm: 300, targetE1rm: undefined },
+        { variation: 'Var B', e1rm: 280, targetE1rm: undefined },
+      ],
+    ],
+  ])('%s', (_, snapshot, targetLabel, expected) => {
+    expect(buildRadarRows(snapshot as Record<string, number | undefined>, targetLabel)).toEqual(
+      expected
+    );
   });
 });

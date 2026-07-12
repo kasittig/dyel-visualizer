@@ -19,46 +19,40 @@ export function useResolvedRawInput(
       if (!pastedText.trim()) {
         // eslint-disable-next-line react-hooks/set-state-in-effect
         setStatus('idle');
-
         setRaw([]);
         return;
       }
       try {
         setStatus('loading');
-        const input = buildRawInput('text', pastedText);
-        setRaw([input]);
+        setRaw([buildRawInput('text', pastedText)]);
         setStatus('success');
       } catch {
         setStatus('error');
-
         setRaw([]);
       }
       return;
     }
 
-    const sheetRef = extractSheetRef(url.trim());
-    if (!sheetRef) {
+    const ref = extractSheetRef(url.trim());
+    if (!ref) {
       setStatus('idle');
-
       setRaw([]);
       return;
     }
 
     setStatus('loading');
     const controller = new AbortController();
-    fetchSheetCsv(sheetCsvUrl(sheetRef, '0'), controller.signal)
+
+    fetchSheetCsv(sheetCsvUrl(ref, '0'), controller.signal)
       .then((csv) => {
-        const input = buildRawInput('url', csv);
-        setRaw([input]);
+        setRaw([buildRawInput('url', csv)]);
         setStatus('success');
       })
       .catch((err: unknown) => {
         if (err instanceof Error && err.name === 'AbortError') {
           return;
         }
-
         setStatus('error');
-
         setRaw([]);
       });
 

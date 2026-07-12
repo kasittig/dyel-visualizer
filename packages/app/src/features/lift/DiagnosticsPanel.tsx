@@ -5,6 +5,13 @@ import { formatEffect, formatAddlWtOffset, type DisplayUnit } from '@dyel/api';
 import { CollapsibleSection } from '../../shared/components/CollapsibleSection';
 import styles from './DiagnosticsPanel.module.css';
 
+const LABELS = {
+  optimal: ['Optimal', 'var(--success)'],
+  overperforming: ['Overtrained', 'var(--warning)'],
+  weakness: ['Weakness', 'var(--danger)'],
+  stale: ['Stale', 'var(--muted)'],
+};
+
 export function DiagnosticsPanel({
   deadliftStance,
   onDeadliftStanceChange,
@@ -21,22 +28,17 @@ export function DiagnosticsPanel({
   unit: DisplayUnit;
 }) {
   const [activeEffect, setActiveEffect] = useState<string | null>(null);
+  const { variants, hasDeadlift, weakEffects, overtrainedEffects } =
+    usePipelineDiagnostics(liftType);
+
+  if (variants.length === 0) {
+    return null;
+  }
 
   const handleEffectClick = (e: string) => {
     setActiveEffect((prev) => (prev === e ? null : e));
     onVariationClick?.(null);
   };
-
-  const {
-    variants: results,
-    hasDeadlift,
-    weakEffects,
-    overtrainedEffects,
-  } = usePipelineDiagnostics(liftType);
-
-  if (results.length === 0) {
-    return null;
-  }
 
   return (
     <div className={styles.wrapper}>
@@ -95,76 +97,59 @@ export function DiagnosticsPanel({
               </fieldset>
             )}
           </div>
-          {results.length > 0 && (
-            <table className={styles.table}>
-              <thead>
-                <tr className={styles.thead}>
-                  <th className={styles.cellLeft}>Variation</th>
-                  <th className={styles.cellLeft}>Effects</th>
-                  <th className={styles.cellMono}>Avg Index</th>
-                  <th className={styles.cellMono}>Baseline Range</th>
-                  <th className={styles.cellLeft}>Diagnostic</th>
-                </tr>
-              </thead>
-              <tbody>
-                {results.map((r) => {
-                  const { status } = r;
-                  const diagnosticColor =
-                    status === 'optimal'
-                      ? 'var(--success)'
-                      : status === 'overperforming'
-                        ? 'var(--warning)'
-                        : status === 'weakness'
-                          ? 'var(--danger)'
-                          : 'var(--muted)';
-                  const diagnosticLabel =
-                    status === 'optimal'
-                      ? 'Optimal'
-                      : status === 'overperforming'
-                        ? 'Overtrained'
-                        : status === 'weakness'
-                          ? 'Weakness'
-                          : 'Stale';
-                  const isHighlighted =
-                    r.displayName === highlightedVariation ||
-                    (activeEffect !== null && r.effects.includes(activeEffect));
-                  return (
-                    <tr
-                      key={r.displayName}
-                      className={
-                        isHighlighted
-                          ? `${styles.bodyRow} ${styles.bodyRowSelected}`
-                          : styles.bodyRow
-                      }
-                      onClick={() => {
-                        setActiveEffect(null);
-                        onVariationClick?.(r.displayName);
-                      }}
-                      style={{ cursor: onVariationClick ? 'pointer' : undefined }}
+          <table className={styles.table}>
+            <thead>
+              <tr className={styles.thead}>
+                <th className={styles.cellLeft}>Variation</th>
+                <th className={styles.cellLeft}>Effects</th>
+                <th className={styles.cellMono}>Avg Index</th>
+                <th className={styles.cellMono}>Baseline Range</th>
+                <th className={styles.cellLeft}>Diagnostic</th>
+              </tr>
+            </thead>
+            <tbody>
+              {variants.map((r) => {
+                const [lbl, color] = LABELS[r.status as keyof typeof LABELS] ?? [
+                  'Stale',
+                  'var(--muted)',
+                ];
+                const isHigh =
+                  r.displayName === highlightedVariation ||
+                  (activeEffect !== null && r.effects.includes(activeEffect));
+                return (
+                  <tr
+                    key={r.displayName}
+                    className={
+                      isHigh ? `${styles.bodyRow} ${styles.bodyRowSelected}` : styles.bodyRow
+                    }
+                    onClick={() => {
+                      setActiveEffect(null);
+                      onVariationClick?.(r.displayName);
+                    }}
+                    style={{ cursor: onVariationClick ? 'pointer' : undefined }}
+                  >
+                    <td className={styles.cell}>{r.displayName}</td>
+                    <td className={styles.cellText}>
+                      {[
+                        ...r.effects.map(formatEffect),
+                        ...(r.addlWtOffset !== undefined
+                          ? [formatAddlWtOffset(r.addlWtOffset.offsetKg, unit)]
+                          : []),
+                      ].join(', ')}
+                    </td>
+                    <td className={styles.cellMono}>{r.averageIndex?.toFixed(1) ?? '-'}%</td>
+                    <td className={styles.cellMono}>{r.expectedBaseline}</td>
+                    <td
+                      className={styles.cellDiagnostic}
+                      style={{ '--diagnostic-color': color } as CSSProperties}
                     >
-                      <td className={styles.cell}>{r.displayName}</td>
-                      <td className={styles.cellText}>
-                        {[
-                          ...r.effects.map(formatEffect),
-                          ...(r.addlWtOffset !== undefined
-                            ? [formatAddlWtOffset(r.addlWtOffset.offsetKg, unit)]
-                            : []),
-                        ].join(', ')}
-                      </td>
-                      <td className={styles.cellMono}>{r.averageIndex?.toFixed(1) ?? '-'}%</td>
-                      <td className={styles.cellMono}>{r.expectedBaseline}</td>
-                      <td
-                        className={styles.cellDiagnostic}
-                        style={{ '--diagnostic-color': diagnosticColor } as CSSProperties}
-                      >
-                        {diagnosticLabel}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          )}
+                      {lbl}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       </CollapsibleSection>
     </div>

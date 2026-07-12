@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import type { DateRange } from 'react-day-picker';
-import type { ChartPoint } from '@dyel/api';
+import type { ChartPoint, BestSet } from '@dyel/api';
 import { usePipelineModel } from '../../app/PipelineContext';
 import { usePipelineDatasets } from '../sigma';
 import {
@@ -9,7 +9,6 @@ import {
   buildConjugateChartData,
   roundBestSetsForDisplay,
   dateRangeToRenderParams,
-  type BestSet,
 } from '@dyel/api';
 
 export const NORMALIZED_KEY = 'normalized';
@@ -28,19 +27,6 @@ const EMPTY: PipelineConjugateChartData = {
   bestSetByLabelAndDate: new Map(),
 };
 
-/**
- * Pipeline-native replacement for `useConjugateChartData` (which called `@dyel/core`'s
- * `buildVariationChartData`). Sourced entirely from the shared `PipelineModel` via
- * `usePipelineDatasets` -- never calls `runPipeline` directly, per the pipeline migration
- * boundary rule.
- *
- * Note: unlike legacy's `VariationChartResult`, there is no `effectiveTargetName`/
- * `baselineExercise` here -- the "Competition variation" normalization-target dropdown was
- * intentionally deprecated (not carried over) when this component was swapped onto the
- * pipeline. The `normalized` composite always normalizes to the model's fixed lift-family
- * baseline (`conjugateChartSpecs`' `normalize: true` composite), matching every other
- * pipeline-native normalized series (`TotalChart`, `SigmaTab`).
- */
 export function usePipelineConjugateChartData(
   liftType: string,
   dateRange: DateRange,
@@ -58,20 +44,18 @@ export function usePipelineConjugateChartData(
     if (status !== 'success' || !model) {
       return EMPTY;
     }
-
     const rawVariations = datasets.variations ?? [];
     const rawNormalized = datasets.normalized ?? [];
-
     const { variations, data } = buildConjugateChartData(rawVariations, rawNormalized, unit);
-
-    const bestSetByLabelAndDateKg = buildBestSetByLabelAndDate(model.tagged, liftType);
-    const bestSetByLabelAndDate = roundBestSetsForDisplay(bestSetByLabelAndDateKg, unit);
 
     return {
       variations,
       data,
       showNormalized: rawNormalized.length > 0,
-      bestSetByLabelAndDate,
+      bestSetByLabelAndDate: roundBestSetsForDisplay(
+        buildBestSetByLabelAndDate(model.tagged, liftType),
+        unit
+      ),
     };
   }, [status, model, datasets, unit, liftType]);
 }

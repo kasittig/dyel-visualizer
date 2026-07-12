@@ -19,6 +19,7 @@ export function resolveDeadliftStance(
   }
   return preference;
 }
+
 const effectsMap = modifierEffects as Record<
   string,
   { effects: string[]; min?: number; max?: number }
@@ -76,11 +77,7 @@ export interface BaselineRange {
 export function buildTagsAndEffects(
   ex: ParsedExercise,
   deadliftStance: 'sumo' | 'conventional' = 'sumo'
-): {
-  tags: Set<string>;
-  effects: string[];
-  range: BaselineRange | null;
-} {
+): { tags: Set<string>; effects: string[]; range: BaselineRange | null } {
   const tags = new Set<string>([`lift:${ex.type}`]),
     effects = new Set<string>();
   if (ex.type === 'accessory') {
@@ -90,7 +87,6 @@ export function buildTagsAndEffects(
   const hasBar = ex.bar && ex.bar !== 'standard',
     hasStance = ex.stance && ex.stance !== 'competition';
   const isBareVariant = !hasBar && !hasStance && !ex.equipment && !ex.addlWts.length;
-
   if (isBareVariant) {
     tags.add('comp-lift');
   }
@@ -99,14 +95,12 @@ export function buildTagsAndEffects(
   }
 
   const add = (k: string) => {
-    return effectsMap[k]?.effects.forEach((e) => {
+    return effectsMap[k]?.effects.forEach((e: string) => {
       return effects.add(e);
     });
   };
-  // Baseline % range combines multiplicatively across active modifiers, matching
-  // legacy's `generateDiagnostics.ts` candidate-key order (equipment, then stance,
-  // then bar) so compound-modifier rounding lands on the same numbers.
   let range: BaselineRange | null = null;
+
   const applyRange = (k: string) => {
     const entry = effectsMap[k];
     if (entry?.min === undefined || entry.max === undefined) {
@@ -118,32 +112,25 @@ export function buildTagsAndEffects(
       max: Math.round((cur.max * entry.max) / 100),
     };
   };
+
   if (ex.equipment) {
     tags.add(`equip:${ex.equipment}`);
-    // When equipment has a non-default magnitude (e.g., 2-board vs 1-board bench),
-    // add a magnitude-bearing tag to distinguish them downstream (e.g., facetsFromTags).
     if (ex.equipmentMagnitude && ex.equipmentMagnitude !== '1') {
       tags.add(`equip:${ex.equipment}-${ex.equipmentMagnitude}`);
     }
-    // For effects/range lookups, try a magnitude-specific key first (if magnitude exists
-    // and is non-default), falling back to the base key. This mirrors the addlWts pattern
-    // (line ~152) and maintains backward compatibility: magnitudes without explicit entries
-    // fall back to the base range unchanged.
     const magKey =
       ex.equipmentMagnitude && ex.equipmentMagnitude !== '1'
         ? `equip:${ex.equipment}-${ex.equipmentMagnitude}:${ex.type}`
         : null;
     const baseKey = `equip:${ex.equipment}:${ex.type}`;
-    add(magKey && effectsMap[magKey] ? magKey : baseKey);
-    // NOTE: Magnitude-specific numeric ranges (e.g., 2-board, 3-board) are proposed
-    // placeholder values pending reviewer/domain-expert sign-off. They are NOT verified
-    // physiological truth — see modifier-effects.json for details.
-    applyRange(magKey && effectsMap[magKey] ? magKey : baseKey);
+    const targetKey = magKey && effectsMap[magKey] ? magKey : baseKey;
+    add(targetKey);
+    applyRange(targetKey);
   }
+
   const isDeadliftExplicitStance =
     ex.type === 'deadlift' &&
     (ex.stance === 'sumo' || ex.stance === 'conventional' || ex.stance === 'opposite');
-
   if (isDeadliftExplicitStance) {
     const resolvedStance = resolveDeadliftStance(ex.stance, deadliftStance);
     add(`stance:${resolvedStance}:deadlift`);
@@ -156,6 +143,7 @@ export function buildTagsAndEffects(
     add(`stance:${ex.stance}:${ex.type}`);
     applyRange(`stance:${ex.stance}:${ex.type}`);
   }
+
   if (hasBar) {
     tags.add(`bar:${ex.bar}`);
     add(`bar:${ex.bar}:${ex.type}`);
@@ -167,14 +155,11 @@ export function buildTagsAndEffects(
     tags.add(`addl:${slug}:${w.magnitude}`);
     (
       effectsMap[`addl:${slug}:${w.magnitude}:${ex.type}`] ?? effectsMap[`addl:${slug}:${ex.type}`]
-    )?.effects.forEach((e) => {
+    )?.effects.forEach((e: string) => {
       return effects.add(e);
     });
   }
-  // addlWt-only exercises (no pct-bearing bar/stance/equipment modifier) are
-  // comparable to the straight bar once addlWt-offset-adjusted — 100-100% baseline,
-  // matching legacy's fallback. Exercises with no range-bearing modifier at all stay
-  // unassessed via range (range === null), same as legacy's `continue`.
+
   if (range === null && ex.addlWts.length > 0) {
     range = { min: 100, max: 100 };
   }

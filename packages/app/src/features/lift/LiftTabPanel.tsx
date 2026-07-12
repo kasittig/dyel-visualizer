@@ -26,16 +26,14 @@ export function LiftTabPanel({
 }) {
   const [selectedVariation, setSelectedVariation] = useState<string | null>(null);
 
-  function handleVariationClick(variation: string | null) {
+  const handleVariationClick = (variation: string | null) => {
     setSelectedVariation((v) => (variation === null || v === variation ? null : variation));
-  }
-
-  const label = liftType.charAt(0).toUpperCase() + liftType.slice(1);
+  };
 
   return (
     <>
       <CollapsibleSection
-        label={`${label} performance`}
+        label={`${liftType.charAt(0).toUpperCase() + liftType.slice(1)} performance`}
         trailing={<EditableDateChip dateRange={dateRange} onDateRangeChange={onDateRangeChange} />}
       >
         <ConjugateCharts

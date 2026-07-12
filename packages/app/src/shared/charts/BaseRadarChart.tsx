@@ -12,34 +12,23 @@ import {
 } from 'recharts';
 import styles from './BaseRadarChart.module.css';
 
-// 1. Explicitly type every value as required to satisfy the "defined value" rule
 interface CustomAxisTickProps {
   x: number;
   y: number;
   cx: number;
   cy: number;
   textAnchor: 'start' | 'middle' | 'end' | 'inherit';
-  payload: {
-    value: string;
-    coordinate: number;
-    index: number;
-  };
+  payload: { value: string; coordinate: number; index: number };
 }
 
-// 2. Type the function parameter using the absolute expected type
 const renderCustomAxis = (props: CustomAxisTickProps): React.JSX.Element => {
   const { payload, x, y, cx, cy, textAnchor } = props;
-
-  // Push labels 10% out from center coordinates
-  const offsetX = x + (x - cx) / 10;
-  const offsetY = y + (y - cy) / 10;
-
   return (
     <Text
-      x={offsetX}
-      y={offsetY}
+      x={x + (x - cx) / 10}
+      y={y + (y - cy) / 10}
       textAnchor={textAnchor}
-      className="recharts-polar-angle-axis-tick-value" // Matches internal style sheets
+      className="recharts-polar-angle-axis-tick-value"
       fontSize={11}
       fill="var(--text)"
     >
@@ -64,7 +53,7 @@ export function BaseRadarChart({
   data: object[];
   angleKey: string;
   unit: string;
-  tooltip?: React.ComponentProps<typeof Tooltip>;
+  tooltip?: ComponentProps<typeof Tooltip>;
   onClick?: (label: string) => void;
   chartKey?: string | number;
   overlayDataKey?: string;
@@ -77,6 +66,7 @@ export function BaseRadarChart({
           <RadarChart
             key={chartKey}
             data={data}
+            style={{ cursor: onClick ? 'pointer' : undefined }}
             onClick={
               onClick
                 ? (chartData) => {
@@ -87,7 +77,6 @@ export function BaseRadarChart({
                   }
                 : undefined
             }
-            style={{ cursor: onClick ? 'pointer' : undefined }}
           >
             <PolarGrid stroke="var(--border)" />
             <PolarAngleAxis

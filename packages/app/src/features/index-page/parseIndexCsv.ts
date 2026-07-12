@@ -3,51 +3,37 @@ export interface IndexEntry {
   url: string;
 }
 
-/**
- * Parse a two-column CSV (name, url) into IndexEntry objects.
- * Skips rows where name or url is empty.
- */
 export function parseIndexCsv(csv: string): IndexEntry[] {
   const lines = csv
     .trim()
     .split('\n')
-    .map((line) => line.trim());
-
-  // Find header row (should be first non-empty line containing 'name' or 'url')
-  const headerLineIndex = lines.findIndex(
-    (line) =>
-      line.length > 0 && (line.toLowerCase().includes('name') || line.toLowerCase().includes('url'))
+    .map((l) => l.trim());
+  const idx = lines.findIndex(
+    (l) => l.length > 0 && (l.toLowerCase().includes('name') || l.toLowerCase().includes('url'))
   );
 
-  if (headerLineIndex === -1) {
+  if (idx === -1) {
     return [];
   }
 
-  // Parse headers: split by comma, lowercase, and trim
-  const headerLine = lines[headerLineIndex];
-  const headers = headerLine.split(',').map((h) => h.trim().toLowerCase());
+  const hdrs = lines[idx].split(',').map((h) => h.trim().toLowerCase());
+  const nameIdx = hdrs.indexOf('name');
+  const urlIdx = hdrs.indexOf('url');
 
-  const nameIndex = headers.indexOf('name');
-  const urlIndex = headers.indexOf('url');
-
-  // If either column is missing, return empty
-  if (nameIndex === -1 || urlIndex === -1) {
+  if (nameIdx === -1 || urlIdx === -1) {
     return [];
   }
 
-  // Parse data rows
   const entries: IndexEntry[] = [];
-  for (let i = headerLineIndex + 1; i < lines.length; i++) {
+  for (let i = idx + 1; i < lines.length; i++) {
     const line = lines[i];
     if (!line) {
-      continue; // Skip empty lines
+      continue;
     }
+    const vals = line.split(',').map((v) => v.trim());
+    const name = vals[nameIdx];
+    const url = vals[urlIdx];
 
-    const values = line.split(',').map((v) => v.trim());
-    const name = values[nameIndex];
-    const url = values[urlIndex];
-
-    // Only include rows with both name and url
     if (name && url) {
       entries.push({ name, url });
     }

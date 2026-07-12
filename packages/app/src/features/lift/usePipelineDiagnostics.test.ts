@@ -4,15 +4,18 @@ import type { PipelineModel, VariantAssessment } from '@dyel/api';
 import { usePipelineDiagnostics } from './usePipelineDiagnostics';
 
 vi.mock('../../app/PipelineContext');
-
 const mockUsePipelineModel = vi.mocked(
   (await import('../../app/PipelineContext')).usePipelineModel
 );
 
-const buildVariant = (overrides?: Partial<VariantAssessment>): VariantAssessment => ({
-  canonical: 'squat',
-  displayName: 'Squat',
-  lift: 'lift:squat',
+const rec = (
+  canonical: string,
+  lift: string,
+  overrides?: Partial<VariantAssessment>
+): VariantAssessment => ({
+  canonical,
+  displayName: canonical,
+  lift,
   expectedE1rmKg: 100,
   actualE1rmKg: 102,
   ratio: 1.02,
@@ -25,112 +28,64 @@ const buildVariant = (overrides?: Partial<VariantAssessment>): VariantAssessment
   ...overrides,
 });
 
-const buildModel = (overrides?: Partial<PipelineModel>): PipelineModel => ({
+const mockModel = (variants: VariantAssessment[]): PipelineModel => ({
   model: { baseline: {}, variantFactor: {}, addlWtOffset: {} },
-  diagnostics: {
-    variants: [buildVariant()],
-    weaknesses: [],
-    unassessed: [],
-  },
+  diagnostics: { variants, weaknesses: [], unassessed: [] },
   unknownExercises: [],
   unnormalized: [],
   parseErrors: [],
-  pointsByDeriver: new Map([['e1rm', []]]),
-  pointsByLabelByDeriver: new Map([['e1rm', []]]),
-  pointsByDeriverAdjusted: new Map([['e1rm', []]]),
+  pointsByDeriver: new Map(),
+  pointsByLabelByDeriver: new Map(),
+  pointsByDeriverAdjusted: new Map(),
   athlete: { sex: 'M', bodyweight: 90, deadliftStance: 'sumo' },
-  ...overrides,
 });
 
 describe('usePipelineDiagnostics', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
-
   afterEach(() => {
     vi.restoreAllMocks();
   });
 
-  it('returns empty variants and false hasDeadlift when model is null', () => {
+  it('handles empty states, filters liftType contexts, and builds target indicators', () => {
     mockUsePipelineModel.mockReturnValue({ status: 'loading', model: null });
-
-    const { result } = renderHook(() => usePipelineDiagnostics());
-
-    expect(result.current).toEqual({
+    expect(renderHook(() => usePipelineDiagnostics()).result.current).toEqual({
       variants: [],
       hasDeadlift: false,
       weakEffects: [],
       overtrainedEffects: [],
     });
-  });
 
-  it('wires model through to selector and returns variants', () => {
-    const variant = buildVariant({ lift: 'lift:squat' });
-    const model = buildModel({
-      diagnostics: { variants: [variant], weaknesses: [], unassessed: [] },
-    });
-
-    mockUsePipelineModel.mockReturnValue({ status: 'success', model });
-
-    const { result } = renderHook(() => usePipelineDiagnostics());
-
-    expect(result.current.variants).toHaveLength(1);
-    expect(result.current.variants[0].canonical).toBe('squat');
-  });
-
-  it('filters variants by liftType', () => {
-    const variants = [
-      buildVariant({ canonical: 'squat', lift: 'lift:squat' }),
-      buildVariant({ canonical: 'bench', lift: 'lift:bench' }),
-      buildVariant({ canonical: 'deadlift', lift: 'lift:deadlift' }),
+    const dataset = [
+      rec('squat', 'lift:squat'),
+      rec('bench', 'lift:bench'),
+      rec('deadlift', 'lift:deadlift'),
     ];
-    const model = buildModel({
-      diagnostics: { variants, weaknesses: [], unassessed: [] },
-    });
+    mockUsePipelineModel.mockReturnValue({ status: 'success', model: mockModel(dataset) });
 
-    mockUsePipelineModel.mockReturnValue({ status: 'success', model });
+    const all = renderHook(() => usePipelineDiagnostics()).result.current;
+    const squat = renderHook(() => usePipelineDiagnostics('squat')).result.current;
+    const deadlift = renderHook(() => usePipelineDiagnostics('deadlift')).result.current;
 
-    const { result: resultAll } = renderHook(() => usePipelineDiagnostics());
-    const { result: resultSquat } = renderHook(() => usePipelineDiagnostics('squat'));
-    const { result: resultDeadlift } = renderHook(() => usePipelineDiagnostics('deadlift'));
+    expect(all.variants).toHaveLength(3);
+    expect(all.hasDeadlift).toBe(true);
 
-    expect(resultAll.current.variants).toHaveLength(3);
-    expect(resultSquat.current.variants).toHaveLength(1);
-    expect(resultSquat.current.variants[0].canonical).toBe('squat');
-    expect(resultDeadlift.current.variants[0].canonical).toBe('deadlift');
+    expect(squat.variants).toHaveLength(1);
+    expect(squat.variants[0].canonical).toBe('squat');
+    expect(squat.hasDeadlift).toBe(false);
+
+    expect(deadlift.variants[0].canonical).toBe('deadlift');
   });
 
-  it('computes hasDeadlift flag from filtered variants', () => {
-    const variants = [
-      buildVariant({ lift: 'lift:squat' }),
-      buildVariant({ lift: 'lift:deadlift' }),
-    ];
-    const model = buildModel({
-      diagnostics: { variants, weaknesses: [], unassessed: [] },
+  it('memoizes array references across identical lifecycle renders', () => {
+    mockUsePipelineModel.mockReturnValue({
+      status: 'success',
+      model: mockModel([rec('squat', 'lift:squat')]),
     });
-
-    mockUsePipelineModel.mockReturnValue({ status: 'success', model });
-
-    const { result: resultAll } = renderHook(() => usePipelineDiagnostics());
-    const { result: resultSquatOnly } = renderHook(() => usePipelineDiagnostics('squat'));
-
-    expect(resultAll.current.hasDeadlift).toBe(true);
-    expect(resultSquatOnly.current.hasDeadlift).toBe(false);
-  });
-
-  it('memoizes variants across renders with unchanged dependencies', () => {
-    const variant = buildVariant();
-    const model = buildModel({
-      diagnostics: { variants: [variant], weaknesses: [], unassessed: [] },
-    });
-
-    mockUsePipelineModel.mockReturnValue({ status: 'success', model });
-
     const { result, rerender } = renderHook(() => usePipelineDiagnostics('squat'));
-    const firstVariantsArray = result.current.variants;
-
+    const initialArray = result.current.variants;
     rerender();
-
-    expect(result.current.variants).toBe(firstVariantsArray);
+    expect(result.current.variants).toBe(initialArray);
   });
 });

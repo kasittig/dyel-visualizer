@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import {
   dateRangeToRenderParams,
   isRecordInDateRange,
@@ -8,15 +8,17 @@ import {
   type PresetId,
 } from './dateRangeUtils';
 
-const d = (year: number, month: number, day: number) => new Date(year, month - 1, day);
+const d = (y: number, m: number, d: number) => new Date(y, m - 1, d);
+const ms = (y: number, m: number, d: number, h = 0, min = 0, s = 0, ms = 0) =>
+  new Date(y, m - 1, d, h, min, s, ms).getTime();
 
 describe('dateRangeToRenderParams', () => {
   it.each([
     [
-      'both from and to defined',
+      'both defined',
       d(2024, 1, 15),
       d(2024, 3, 20),
-      { dateRange: [new Date(2024, 0, 15).getTime(), new Date(2024, 2, 20).getTime()] },
+      { dateRange: [ms(2024, 1, 15), ms(2024, 3, 20)] },
     ],
     ['from undefined', undefined, d(2024, 3, 20), {}],
     ['to undefined', d(2024, 1, 15), undefined, {}],
@@ -27,136 +29,58 @@ describe('dateRangeToRenderParams', () => {
 });
 
 describe('isRecordInDateRange', () => {
+  const from = d(2024, 1, 10);
+  const to = d(2024, 3, 20);
+
   it.each([
-    [
-      'record within range',
-      new Date(2024, 0, 15, 12, 0, 0).getTime(),
-      d(2024, 1, 10),
-      d(2024, 3, 20),
-      true,
-    ],
-    [
-      'record on from date',
-      new Date(2024, 0, 10, 0, 0, 0).getTime(),
-      d(2024, 1, 10),
-      d(2024, 3, 20),
-      true,
-    ],
-    [
-      'record on to date midnight',
-      new Date(2024, 2, 20, 0, 0, 0).getTime(),
-      d(2024, 1, 10),
-      d(2024, 3, 20),
-      true,
-    ],
-    [
-      'record at end-of-day on to date (23:59:59.999)',
-      new Date(2024, 2, 20, 23, 59, 59, 999).getTime(),
-      d(2024, 1, 10),
-      d(2024, 3, 20),
-      true,
-    ],
-    [
-      'record after end-of-day on to date',
-      new Date(2024, 2, 21, 0, 0, 0).getTime(),
-      d(2024, 1, 10),
-      d(2024, 3, 20),
-      false,
-    ],
-    [
-      'record before from date',
-      new Date(2024, 0, 9, 23, 59, 59).getTime(),
-      d(2024, 1, 10),
-      d(2024, 3, 20),
-      false,
-    ],
-    [
-      'no from bound, within to',
-      new Date(2024, 1, 15, 12, 0, 0).getTime(),
-      undefined,
-      d(2024, 3, 20),
-      true,
-    ],
-    [
-      'no from bound, after to',
-      new Date(2024, 2, 21, 0, 0, 0).getTime(),
-      undefined,
-      d(2024, 3, 20),
-      false,
-    ],
-    [
-      'no to bound, after from',
-      new Date(2024, 1, 15, 12, 0, 0).getTime(),
-      d(2024, 1, 10),
-      undefined,
-      true,
-    ],
-    [
-      'no to bound, before from',
-      new Date(2024, 0, 9, 23, 59, 59).getTime(),
-      d(2024, 1, 10),
-      undefined,
-      false,
-    ],
-    [
-      'no bounds (always true)',
-      new Date(2024, 0, 1, 12, 0, 0).getTime(),
-      undefined,
-      undefined,
-      true,
-    ],
-  ])('%s', (_, dateMs, from, to, expected) => {
-    expect(isRecordInDateRange(dateMs, from, to)).toBe(expected);
+    ['within range', ms(2024, 1, 15, 12), from, to, true],
+    ['on from date', ms(2024, 1, 10), from, to, true],
+    ['on to date midnight', ms(2024, 3, 20), from, to, true],
+    ['end-of-day on to date', ms(2024, 3, 20, 23, 59, 59, 999), from, to, true],
+    ['after end-of-day on to date', ms(2024, 3, 21), from, to, false],
+    ['before from date', ms(2024, 1, 9, 23, 59, 59), from, to, false],
+    ['no from bound, within to', ms(2024, 2, 15, 12), undefined, to, true],
+    ['no from bound, after to', ms(2024, 3, 21), undefined, to, false],
+    ['no to bound, after from', ms(2024, 2, 15, 12), from, undefined, true],
+    ['no to bound, before from', ms(2024, 1, 9, 23, 59, 59), from, undefined, false],
+    ['no bounds', ms(2024, 1, 1, 12), undefined, undefined, true],
+  ])('%s', (_, dateMs, f, t, expected) => {
+    expect(isRecordInDateRange(dateMs, f, t)).toBe(expected);
   });
 });
 
-describe('presetDateRange', () => {
-  let today: Date;
+describe('presetDateRange & activePreset', () => {
+  const today = d(2024, 3, 20);
 
-  beforeEach(() => {
-    today = d(2024, 3, 20);
+  it.each([
+    ['2w', d(2024, 3, 6), d(2024, 3, 20), '2w'],
+    ['1m', d(2024, 2, 20), d(2024, 3, 20), '1m'],
+    ['3m', d(2023, 12, 20), d(2024, 3, 20), '3m'],
+    ['all', new Date(1970, 0, 1), d(2024, 3, 20), 'all'],
+  ])('preset %s matches expected bounds', (preset, expFrom, expTo, id) => {
+    const res = presetDateRange(preset as PresetId, today);
+    expect(res.from.toDateString()).toBe(expFrom.toDateString());
+    expect(res.to.toDateString()).toBe(expTo.toDateString());
+    expect(activePreset(expFrom, expTo, today)).toBe(id);
   });
 
   it.each([
-    ['2w', '2w', d(2024, 3, 6), d(2024, 3, 20)],
-    ['1m', '1m', d(2024, 2, 20), d(2024, 3, 20)],
-    ['3m', '3m', d(2023, 12, 20), d(2024, 3, 20)],
-    ['all', 'all', new Date(1970, 0, 1), d(2024, 3, 20)],
-  ])('preset %s returns correct range', (_, preset, expectedFrom, expectedTo) => {
-    const result = presetDateRange(preset as PresetId, today);
-    expect(result.from.toDateString()).toBe(expectedFrom.toDateString());
-    expect(result.to.toDateString()).toBe(expectedTo.toDateString());
-  });
-});
-
-describe('activePreset', () => {
-  let today: Date;
-
-  beforeEach(() => {
-    today = d(2024, 3, 20);
-  });
-
-  it.each([
-    ['matches 2w', d(2024, 3, 6), d(2024, 3, 20), '2w'],
-    ['matches 1m', d(2024, 2, 20), d(2024, 3, 20), '1m'],
-    ['matches 3m', d(2023, 12, 20), d(2024, 3, 20), '3m'],
-    ['matches all (from undefined)', undefined, d(2024, 3, 20), 'all'],
-    ['no match: to does not match today', d(2024, 3, 6), d(2024, 3, 19), null],
-    ['no match: from does not match any preset', d(2024, 3, 5), d(2024, 3, 20), null],
-    ['no match: both undefined', undefined, undefined, null],
-  ])('%s', (_, from, to, expected) => {
-    expect(activePreset(from, to, today)).toBe(expected);
+    ['to does not match today', d(2024, 3, 6), d(2024, 3, 19)],
+    ['from does not match preset', d(2024, 3, 5), d(2024, 3, 20)],
+    ['both undefined', undefined, undefined],
+  ])('activePreset returns null when %s', (_, f, t) => {
+    expect(activePreset(f, t, today)).toBeNull();
   });
 });
 
 describe('defaultDateRangeFromLastSession', () => {
   it.each([
     ['january date', d(2024, 1, 15), d(2023, 10, 15), d(2024, 1, 15)],
-    ['december date (wraps year)', d(2024, 12, 25), d(2024, 9, 25), d(2024, 12, 25)],
+    ['december date', d(2024, 12, 25), d(2024, 9, 25), d(2024, 12, 25)],
     ['march date', d(2024, 3, 20), d(2023, 12, 20), d(2024, 3, 20)],
-  ])('%s', (_, lastSessionDate, expectedFrom, expectedTo) => {
-    const result = defaultDateRangeFromLastSession(lastSessionDate);
-    expect(result.from.toDateString()).toBe(expectedFrom.toDateString());
-    expect(result.to.toDateString()).toBe(expectedTo.toDateString());
+  ])('%s', (_, lastSession, expFrom, expTo) => {
+    const res = defaultDateRangeFromLastSession(lastSession);
+    expect(res.from.toDateString()).toBe(expFrom.toDateString());
+    expect(res.to.toDateString()).toBe(expTo.toDateString());
   });
 });

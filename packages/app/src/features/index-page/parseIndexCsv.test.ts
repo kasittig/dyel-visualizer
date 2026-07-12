@@ -2,56 +2,36 @@ import { describe, it, expect } from 'vitest';
 import { parseIndexCsv } from './parseIndexCsv';
 
 describe('parseIndexCsv', () => {
+  const mockRows = [
+    { name: 'Alice', url: 'https://example.com/alice' },
+    { name: 'Bob', url: 'https://example.com/bob' },
+  ];
+
   it.each([
+    ['basic', 'name,url\nAlice,https://example.com/alice\nBob,https://example.com/bob', mockRows],
     [
-      'basic two rows',
-      'name,url\nAlice,https://example.com/alice\nBob,https://example.com/bob',
-      [
-        { name: 'Alice', url: 'https://example.com/alice' },
-        { name: 'Bob', url: 'https://example.com/bob' },
-      ],
+      'whitespace',
+      'name , url \n Alice , https://example.com/alice \n Bob, https://example.com/bob ',
+      mockRows,
     ],
     [
-      'with whitespace',
-      'name , url \n  Alice  ,  https://example.com/alice  \n Bob, https://example.com/bob ',
-      [
-        { name: 'Alice', url: 'https://example.com/alice' },
-        { name: 'Bob', url: 'https://example.com/bob' },
-      ],
-    ],
-    [
-      'empty lines skipped',
+      'empty lines',
       'name,url\nAlice,https://example.com/alice\n\nBob,https://example.com/bob\n',
-      [
-        { name: 'Alice', url: 'https://example.com/alice' },
-        { name: 'Bob', url: 'https://example.com/bob' },
-      ],
+      mockRows,
     ],
     [
-      'missing name column',
+      'missing name',
       'name,url\nAlice,https://example.com/alice\n,https://example.com/carol',
-      [{ name: 'Alice', url: 'https://example.com/alice' }],
+      [mockRows[0]],
     ],
-    [
-      'missing url column',
-      'name,url\nAlice,https://example.com/alice\nBob,',
-      [{ name: 'Alice', url: 'https://example.com/alice' }],
-    ],
-    [
-      'case insensitive headers',
-      'NAME,URL\nAlice,https://example.com/alice',
-      [{ name: 'Alice', url: 'https://example.com/alice' }],
-    ],
-    [
-      'single entry',
-      'name,url\nAlice,https://example.com/alice',
-      [{ name: 'Alice', url: 'https://example.com/alice' }],
-    ],
+    ['missing url', 'name,url\nAlice,https://example.com/alice\nBob,', [mockRows[0]]],
+    ['case insensitive', 'NAME,URL\nAlice,https://example.com/alice', [mockRows[0]]],
+    ['single', 'name,url\nAlice,https://example.com/alice', [mockRows[0]]],
     ['empty csv', '', []],
     ['headers only', 'name,url', []],
-    ['missing url column', 'name\nAlice', []],
-    ['missing name column', 'url\nhttps://example.com/alice', []],
-  ])('parseIndexCsv %s', (_, csv, expected) => {
+    ['missing url header', 'name\nAlice', []],
+    ['missing name header', 'url\nhttps://example.com/alice', []],
+  ])('%s', (_, csv, expected) => {
     expect(parseIndexCsv(csv)).toEqual(expected);
   });
 });

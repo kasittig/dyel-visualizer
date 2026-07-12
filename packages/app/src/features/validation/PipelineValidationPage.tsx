@@ -5,46 +5,11 @@ import type { InputMode } from '../../app/appTabs';
 import { InputModeToggle } from '../../features/data-source/InputModeToggle';
 import styles from './PipelineValidationPage.module.css';
 
-function VerdictBanner({ verdict }: { verdict: 'ok' | 'warning' | 'error' }) {
-  const color =
-    verdict === 'ok'
-      ? 'var(--success)'
-      : verdict === 'warning'
-        ? 'var(--warning)'
-        : 'var(--danger)';
-  const icon = verdict === 'ok' ? '✓' : verdict === 'warning' ? '⚠' : '✗';
-
-  const messages = {
-    ok: 'Your pipeline data is valid.',
-    warning: 'Your data parsed, but there are issues to review.',
-    error: 'Your data failed to parse. See the errors below.',
-  };
-
-  return (
-    <div className={styles.verdictBanner} style={{ '--verdict-color': color } as CSSProperties}>
-      <span className={styles.verdictIcon}>{icon}</span>
-      <span className={styles.verdictMessage}>{messages[verdict]}</span>
-    </div>
-  );
-}
-
-function ParseErrorList({ errors }: { errors: string[] }) {
-  if (errors.length === 0) {
-    return null;
-  }
-  return (
-    <section className={styles.section}>
-      <h2 className={styles.dangerHeading}>Parse Errors</h2>
-      <ul className={styles.issueUl}>
-        {errors.map((error, i) => (
-          <li key={i} className={styles.issueLi}>
-            {error}
-          </li>
-        ))}
-      </ul>
-    </section>
-  );
-}
+const BANNERS = {
+  ok: ['var(--success)', '✓', 'Your pipeline data is valid.'],
+  warning: ['var(--warning)', '⚠', 'Your data parsed, but there are issues to review.'],
+  error: ['var(--danger)', '✗', 'Your data failed to parse. See the errors below.'],
+};
 
 function IssueList({ title, items, color }: { title: string; items: string[]; color: string }) {
   if (items.length === 0) {
@@ -66,50 +31,24 @@ function IssueList({ title, items, color }: { title: string; items: string[]; co
   );
 }
 
-function ResultsPanel({
-  verdict,
-  parseErrors,
-  unknownExercises,
-  unnormalized,
-}: {
-  verdict: 'ok' | 'warning' | 'error';
-  parseErrors: string[];
-  unknownExercises: string[];
-  unnormalized: string[];
-}) {
-  return (
-    <div>
-      <VerdictBanner verdict={verdict} />
-      <ParseErrorList errors={parseErrors} />
-      <IssueList title="Unknown Exercises" items={unknownExercises} color="var(--warning)" />
-      <IssueList title="Unnormalized" items={unnormalized} color="var(--warning)" />
-    </div>
-  );
-}
-
 export function PipelineValidationPage() {
   const [mode, setMode] = useState<InputMode>('url');
   const [url, setUrl] = useState('');
   const [text, setText] = useState('');
   const { state, validateUrl, validateText, verdict } = usePipelineValidation();
 
-  function handleSubmit(e: React.FormEvent) {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (mode === 'url') {
       validateUrl(url);
     } else {
       validateText(text);
     }
-  }
+  };
 
   const isDisabled = mode === 'url' ? !url.trim() || state.status === 'loading' : !text.trim();
-
-  const activeResult =
-    mode === 'url' && state.status === 'success'
-      ? state.result
-      : mode === 'text' && state.status === 'success'
-        ? state.result
-        : null;
+  const activeResult = state.status === 'success' ? state.result : null;
+  const [color, icon, msg] = verdict ? BANNERS[verdict] : ['', '', ''];
 
   return (
     <main className={styles.main}>
@@ -122,17 +61,10 @@ export function PipelineValidationPage() {
         </p>
       </div>
       <br />
-
       <p className={styles.introP}>
-        {mode === 'url' ? (
-          <>Paste a CSV URL to validate its pipeline parsing.</>
-        ) : (
-          <>Paste exercise logs to validate their pipeline parsing.</>
-        )}
+        Paste {mode === 'url' ? 'a CSV URL' : 'exercise logs'} to validate pipeline parsing.
       </p>
-
       <InputModeToggle mode={mode} onModeChange={setMode} />
-
       <form onSubmit={handleSubmit} className={styles.form}>
         {mode === 'url' ? (
           <input
@@ -162,16 +94,32 @@ export function PipelineValidationPage() {
           {state.status === 'loading' ? 'Validating…' : 'Validate'}
         </button>
       </form>
-
       {state.status === 'error' && <p className={styles.errorP}>{state.message}</p>}
-
       {activeResult && verdict && (
-        <ResultsPanel
-          verdict={verdict}
-          parseErrors={activeResult.parseErrors.map((e) => e.toString())}
-          unknownExercises={activeResult.unknownExercises}
-          unnormalized={activeResult.unnormalized}
-        />
+        <div>
+          <div
+            className={styles.verdictBanner}
+            style={{ '--verdict-color': color } as CSSProperties}
+          >
+            <span className={styles.verdictIcon}>{icon}</span>
+            <span className={styles.verdictMessage}>{msg}</span>
+          </div>
+          <IssueList
+            title="Parse Errors"
+            items={activeResult.parseErrors.map((e) => e.toString())}
+            color="var(--danger)"
+          />
+          <IssueList
+            title="Unknown Exercises"
+            items={activeResult.unknownExercises}
+            color="var(--warning)"
+          />
+          <IssueList
+            title="Unnormalized"
+            items={activeResult.unnormalized}
+            color="var(--warning)"
+          />
+        </div>
       )}
     </main>
   );

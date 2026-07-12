@@ -13,9 +13,7 @@ export function selectBestE1RMPoint(canonicalPoints: Point[]): { e1rm: number; t
   if (!canonicalPoints.length) {
     return null;
   }
-  const best = canonicalPoints.reduce((acc, p) => {
-    return p.v > acc.v ? p : acc;
-  });
+  const best = canonicalPoints.reduce((acc, p) => (p.v > acc.v ? p : acc));
   return { e1rm: best.v, t: best.t };
 }
 
@@ -27,23 +25,15 @@ export function findBestE1RMFromPipeline(
   model: NormalizationModel,
   baselineSourceName: string
 ): E1RMEstimate | null {
-  if (!baselineSourceName) {
+  if (!baselineSourceName || !baselineE1RMPoints.length) {
     return null;
   }
-
-  // Compute e1RM via trend projection to today, not flat max
   const compE1RM = projectE1RMToDate(baselineE1RMPoints, today.getTime());
   if (compE1RM === null) {
     return null;
   }
 
-  // sourceDate is the last actual baseline point (most recent), not the highest-value point
-  if (!baselineE1RMPoints.length) {
-    return null;
-  }
-  const lastPoint = baselineE1RMPoints.reduce((acc, p) => {
-    return p.t > acc.t ? p : acc;
-  });
+  const lastPoint = baselineE1RMPoints.reduce((acc, p) => (p.t > acc.t ? p : acc));
   const sourceDate = new Date(lastPoint.t);
 
   if (targetCanonical === baselineCanonical) {
@@ -58,9 +48,7 @@ export function findBestE1RMFromPipeline(
   let e1rm = compE1RM * vf.factor;
   const offsetData = model.addlWtOffset[targetCanonical];
   if (offsetData && offsetData.n > 0) {
-    {
-      e1rm = Math.max(0, e1rm - offsetData.offsetKg);
-    }
+    e1rm = Math.max(0, e1rm - offsetData.offsetKg);
   }
 
   return { e1rm, date: sourceDate, sourceName: baselineSourceName, method: 'variantFactor' };
@@ -74,13 +62,10 @@ export function predictRepsForWeight(e1rm: number, weight: number): number {
   return weight <= 0 || weight >= e1rm ? 1 : Math.max(1, 30 * (e1rm / weight - 1));
 }
 
-// Pipeline output is always kg (see packages/pipeline/src/dataset/CLAUDE.md); display-unit
-// conversion is the app's job.
 export function convertE1RMToDisplayUnit(e1rmKg: number, unit: 'lbs' | 'kg'): number {
   return convertWeight(e1rmKg, unit);
 }
 
-// Round to the nearest multiple of 5. Useful for weight suggestions to avoid odd plate loads.
 export function roundTo5(n: number): number {
   return Math.round(n / 5) * 5;
 }
@@ -97,12 +82,10 @@ export function resolveE1RMEstimate(params: {
   if (!baselineCanonical) {
     return null;
   }
-
   const baselinePoints = params.e1rmPoints.filter((p) => p.series === baselineCanonical);
   if (baselinePoints.length === 0) {
     return null;
   }
-
   return findBestE1RMFromPipeline(
     params.targetCanonical,
     baselineCanonical,

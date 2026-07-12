@@ -6,7 +6,6 @@ export interface SheetValidationIssue {
   exercise: string;
   issues: string[];
 }
-
 export interface ColumnInfo {
   hasExercise: boolean;
   hasDate: boolean;
@@ -15,7 +14,6 @@ export interface ColumnInfo {
   hasSets: boolean;
   weightUnit: 'lbs' | 'kg' | null;
 }
-
 export interface SheetValidationResult {
   verdict: 'ok' | 'warning' | 'error';
   headerRow: number | null;
@@ -31,7 +29,6 @@ export interface SheetValidationResult {
 }
 
 const MAX_ROW_ISSUES = 10;
-
 const emptyColumns: ColumnInfo = {
   hasExercise: false,
   hasDate: false,
@@ -40,10 +37,7 @@ const emptyColumns: ColumnInfo = {
   hasSets: false,
   weightUnit: null,
 };
-
-function emptyLiftTypes() {
-  return { squat: 0, bench: 0, deadlift: 0, accessory: 0 };
-}
+const emptyLiftTypes = () => ({ squat: 0, bench: 0, deadlift: 0, accessory: 0 });
 
 export function validateSheetCsv(csv: string): SheetValidationResult {
   const { data, meta } = Papa.parse<Record<string, string>>(csv, {
@@ -66,9 +60,8 @@ export function validateSheetCsv(csv: string): SheetValidationResult {
   }
 
   const hMap = new Map(meta.fields.map((h) => [h.toLowerCase(), h]));
-
   const findH = (f: string) => {
-    return [...hMap.entries()].find(([k]) => k.startsWith(f.toLowerCase()))?.[1];
+    return Array.from(hMap.entries()).find(([k]) => k.startsWith(f.toLowerCase()))?.[1];
   };
 
   const hasExercise = !!findH('exercise');
@@ -77,18 +70,14 @@ export function validateSheetCsv(csv: string): SheetValidationResult {
   const hasReps = !!findH('reps');
   const hasSets = !!findH('sets');
 
-  const weightHeader = findH('weight') || '';
-  const detectedUnit = weightHeader.match(/\((kg|lbs)\)$/)?.[1];
-  const weightUnit: 'lbs' | 'kg' | null =
-    detectedUnit === 'kg' ? 'kg' : detectedUnit === 'lbs' ? 'lbs' : null;
-
+  const detectedUnit = (findH('weight') || '').match(/\((kg|lbs)\)$/)?.[1];
   const columns: ColumnInfo = {
     hasExercise,
     hasDate,
     hasWeight,
     hasReps,
     hasSets,
-    weightUnit,
+    weightUnit: detectedUnit === 'kg' ? 'kg' : detectedUnit === 'lbs' ? 'lbs' : null,
   };
 
   const issues: string[] = [];
@@ -126,23 +115,20 @@ export function validateSheetCsv(csv: string): SheetValidationResult {
   }
 
   const liftTypes = emptyLiftTypes();
+  const rowIssues: SheetValidationIssue[] = [];
   let numParsed = 0;
   let rowsFullyFailed = 0;
-  const rowIssues: SheetValidationIssue[] = [];
-
-  const exerciseKeyIdx = meta.fields.findIndex((f) => f.toLowerCase().startsWith('exercise'));
+  const exerciseKey = findH('exercise');
 
   for (let i = 0; i < data.length; i++) {
     const row = data[i];
     const rowNum = i + 1;
-    const exerciseName = exerciseKeyIdx >= 0 ? row[meta.fields[exerciseKeyIdx]]?.trim() : '';
-    const rowProblems: string[] = [];
+    const exerciseName = exerciseKey ? row[exerciseKey]?.trim() : '';
 
     if (!exerciseName) {
-      rowProblems.push('Exercise name is empty');
       rowsFullyFailed++;
       if (rowIssues.length < MAX_ROW_ISSUES) {
-        rowIssues.push({ row: rowNum, exercise: '(empty)', issues: rowProblems });
+        rowIssues.push({ row: rowNum, exercise: '(empty)', issues: ['Exercise name is empty'] });
       }
       continue;
     }
@@ -155,7 +141,6 @@ export function validateSheetCsv(csv: string): SheetValidationResult {
   }
 
   const total = data.length;
-
   if (numParsed === 0 && total > 0) {
     issues.push(
       `None of the ${total} data row${total === 1 ? '' : 's'} could be parsed. See row issues below.`
@@ -169,17 +154,15 @@ export function validateSheetCsv(csv: string): SheetValidationResult {
     }
   }
 
-  if (numParsed > 0 && liftTypes.squat === 0 && liftTypes.bench === 0 && liftTypes.deadlift === 0) {
+  if (numParsed > 0 && !liftTypes.squat && !liftTypes.bench && !liftTypes.deadlift) {
     warnings.push(
       'No squat, bench, or deadlift exercises were recognized — only accessories. Check exercise naming rules in the onboarding guide.'
     );
   }
 
-  const verdict: 'ok' | 'warning' | 'error' =
-    issues.length > 0 || numParsed === 0 ? 'error' : warnings.length > 0 ? 'warning' : 'ok';
-
   return {
-    verdict,
+    verdict:
+      issues.length > 0 || numParsed === 0 ? 'error' : warnings.length > 0 ? 'warning' : 'ok',
     headerRow: 0,
     columns,
     rows: { total, parsed: numParsed, liftTypes },

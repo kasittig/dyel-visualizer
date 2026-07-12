@@ -1,26 +1,21 @@
 import { useState, useEffect, useRef } from 'react';
-import type React from 'react';
 import type { DateRange } from 'react-day-picker';
-import styles from './EditableDateChip.module.css';
 import { formatDate, parseDate } from '../dateUtils';
+import styles from './EditableDateChip.module.css';
 
-function shortDate(d: Date | undefined): string {
-  if (!d) {
-    return '';
-  }
-  return `${d.getMonth() + 1}/${d.getDate()}`;
-}
+const shortDate = (d?: Date) => (d ? `${d.getMonth() + 1}/${d.getDate()}` : '');
 
 export function EditableDateChip({
   dateRange,
   onDateRangeChange,
 }: {
   dateRange: DateRange;
-  onDateRangeChange: (range: DateRange) => void;
+  onDateRangeChange: (r: DateRange) => void;
 }) {
   const [isEditing, setIsEditing] = useState(false);
   const [fromText, setFromText] = useState(() => formatDate(dateRange.from));
   const [toText, setToText] = useState(() => formatDate(dateRange.to));
+
   const fromRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLSpanElement>(null);
 
@@ -39,45 +34,24 @@ export function EditableDateChip({
     }
   }, [isEditing]);
 
-  function commit(overrideFrom?: string, overrideTo?: string) {
-    const from = parseDate(overrideFrom ?? fromText);
-    const to = parseDate(overrideTo ?? toText);
-    if (from && to) {
-      onDateRangeChange({ from, to });
-    } else {
-      setFromText(formatDate(dateRange.from));
-      setToText(formatDate(dateRange.to));
-    }
-    setIsEditing(false);
-  }
-
-  function cancel() {
+  const reset = () => {
     setFromText(formatDate(dateRange.from));
     setToText(formatDate(dateRange.to));
     setIsEditing(false);
-  }
+  };
 
-  function handleContainerBlur(e: React.FocusEvent) {
-    if (!containerRef.current?.contains(e.relatedTarget as Node)) {
-      commit();
+  const commit = () => {
+    const from = parseDate(fromText);
+    const to = parseDate(toText);
+    if (from && to) {
+      onDateRangeChange({ from, to });
+      setIsEditing(false);
+    } else {
+      reset();
     }
-  }
+  };
 
-  function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key === 'Enter') {
-      commit();
-    }
-    if (e.key === 'Escape') {
-      cancel();
-    }
-  }
-
-  const displayLabel =
-    dateRange.from && dateRange.to
-      ? `${shortDate(dateRange.from)} – ${shortDate(dateRange.to)}`
-      : null;
-
-  if (!displayLabel) {
+  if (!dateRange.from || !dateRange.to) {
     return null;
   }
 
@@ -85,14 +59,14 @@ export function EditableDateChip({
     return (
       <span
         className="tab-title-date"
-        onClick={(e) => {
-          e.stopPropagation();
-          setIsEditing(true);
-        }}
         style={{ cursor: 'text' }}
         title="Click to edit date range"
         role="button"
         tabIndex={0}
+        onClick={(e) => {
+          e.stopPropagation();
+          setIsEditing(true);
+        }}
         onKeyDown={(e) => {
           e.stopPropagation();
           if (e.key === 'Enter' || e.key === ' ') {
@@ -100,7 +74,7 @@ export function EditableDateChip({
           }
         }}
       >
-        {displayLabel}
+        {`${shortDate(dateRange.from)} – ${shortDate(dateRange.to)}`}
       </span>
     );
   }
@@ -109,15 +83,26 @@ export function EditableDateChip({
     <span
       ref={containerRef}
       className={styles.editWrapper}
-      onBlur={handleContainerBlur}
       onClick={(e) => e.stopPropagation()}
+      onBlur={(e) => {
+        if (!containerRef.current?.contains(e.relatedTarget as Node)) {
+          commit();
+        }
+      }}
     >
       <input
         ref={fromRef}
         className={styles.editInput}
         value={fromText}
         onChange={(e) => setFromText(e.target.value)}
-        onKeyDown={handleKeyDown}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            commit();
+          }
+          if (e.key === 'Escape') {
+            reset();
+          }
+        }}
         placeholder="M/D/YYYY"
         aria-label="Start date"
       />
@@ -126,7 +111,14 @@ export function EditableDateChip({
         className={styles.editInput}
         value={toText}
         onChange={(e) => setToText(e.target.value)}
-        onKeyDown={handleKeyDown}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            commit();
+          }
+          if (e.key === 'Escape') {
+            reset();
+          }
+        }}
         placeholder="M/D/YYYY"
         aria-label="End date"
       />

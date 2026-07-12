@@ -7,9 +7,6 @@ import { DateLineChart, ChartEmpty } from '../../shared/charts/DateLineChart';
 import { ChartTooltip } from '../../shared/charts/TooltipCard';
 import styles from './ConjugateCharts.module.css';
 
-const NORMALIZED_COLOR = 'var(--chart-blue)';
-const NORMALIZED_LABEL = 'Normalized e1RM';
-
 export function ConjugateCharts({
   liftType,
   dateRange,
@@ -21,7 +18,7 @@ export function ConjugateCharts({
   dateRange: DateRange;
   unit: 'lbs' | 'kg';
   highlightedVariation?: string | null;
-  onVariationClick?: (variation: string) => void;
+  onVariationClick?: (v: string) => void;
 }) {
   const { variations, data, showNormalized, bestSetByLabelAndDate } = usePipelineConjugateChartData(
     liftType,
@@ -53,15 +50,15 @@ export function ConjugateCharts({
           label={label}
           lines={payload.map((item) => {
             const name = String(item.name);
-            const bestSet =
+            const best =
               name !== NORMALIZED_KEY ? bestSetByLabelAndDate.get(name)?.get(isoDate) : undefined;
             return {
               key: name,
               name,
               color: item.color,
               detail: `e1RM: ${item.value} ${unit}`,
-              extra: bestSet
-                ? `${bestSet.sets}×${bestSet.reps} @ ${bestSet.weight} ${unit}${bestSet.rpe != null ? ` · RPE ${bestSet.rpe}` : ''}`
+              extra: best
+                ? `${best.sets}×${best.reps} @ ${best.weight} ${unit}${best.rpe != null ? ` · RPE ${best.rpe}` : ''}`
                 : undefined,
             };
           })}
@@ -85,8 +82,8 @@ export function ConjugateCharts({
             key={NORMALIZED_KEY}
             type="monotone"
             dataKey={NORMALIZED_KEY}
-            name={NORMALIZED_LABEL}
-            stroke={NORMALIZED_COLOR}
+            name="Normalized e1RM"
+            stroke="var(--chart-blue)"
             strokeWidth={2}
             strokeDasharray="6 3"
             dot={{ r: 3 }}
@@ -96,23 +93,22 @@ export function ConjugateCharts({
           />
         )}
         {variations.map((label, i) => {
-          const isHighlighted = highlightedVariation === label;
-          const stroke = isHighlighted ? 'var(--text-h)' : LINE_COLORS[i % LINE_COLORS.length];
-          const handleClick = onVariationClick ? () => onVariationClick(label) : undefined;
+          const isHigh = highlightedVariation === label;
+          const click = onVariationClick ? () => onVariationClick(label) : undefined;
           return (
             <Line
               key={label}
               type="monotone"
               dataKey={label}
-              stroke={stroke}
-              strokeWidth={isHighlighted ? 3 : 1.5}
-              dot={{ r: isHighlighted ? 4 : 3 }}
+              stroke={isHigh ? 'var(--text-h)' : LINE_COLORS[i % LINE_COLORS.length]}
+              strokeWidth={isHigh ? 3 : 1.5}
+              dot={{ r: isHigh ? 4 : 3 }}
               activeDot={{
                 r: 5,
-                onClick: handleClick,
+                onClick: click,
                 style: { cursor: onVariationClick ? 'pointer' : undefined },
               }}
-              onClick={handleClick}
+              onClick={click}
               style={{ cursor: onVariationClick ? 'pointer' : undefined }}
               connectNulls
               isAnimationActive={false}

@@ -7,243 +7,160 @@ import {
   roundTo5,
 } from './repCalculatorUtils';
 
-// Mock factory functions
-const point = (series: string, value: number, timestamp: number): Point => ({
-  series,
-  v: value,
-  t: timestamp,
-});
-
-const model = (overrides?: Partial<NormalizationModel>): NormalizationModel => ({
+const pt = (series: string, v: number, t: number): Point => ({ series, v, t, tags: new Set() });
+const mockModel = (overrides?: Partial<NormalizationModel>): NormalizationModel => ({
   baseline: { 'lift:squat': 'squat', 'lift:bench': 'bench', 'lift:deadlift': 'deadlift' },
   variantFactor: {},
   addlWtOffset: {},
+  fittedAt: 0,
   ...overrides,
 });
 
 describe('selectBestE1RMPoint', () => {
   it.each([
     ['empty array', [], null],
-    ['single point', [point('squat', 300, 1000)], { e1rm: 300, t: 1000 }],
+    ['single point', [pt('squat', 300, 1000)], { e1rm: 300, t: 1000 }],
     [
-      'multiple points picks max',
-      [point('squat', 250, 1000), point('squat', 300, 2000), point('squat', 280, 3000)],
+      'picks max',
+      [pt('squat', 250, 1000), pt('squat', 300, 2000), pt('squat', 280, 3000)],
       { e1rm: 300, t: 2000 },
     ],
-  ])('handles %s', (_, points, expected) => {
+  ])('%s', (_, points, expected) => {
     expect(selectBestE1RMPoint(points)).toEqual(expected);
   });
 });
 
-describe('findBestE1RMFromPipeline', () => {
+describe('findBestE1RMFromPipeline & resolveE1RMEstimate', () => {
   const today = new Date('2024-01-15');
-  const baselinePoints = [point('squat', 250, 1000000000), point('squat', 280, 1000000000000)];
+  const pts = [pt('squat', 250, 1e9), pt('squat', 280, 1e12)];
+  const vfModel = mockModel({ variantFactor: { 'squat-pause': { factor: 0.85, n: 10 } } });
 
   it.each([
     [
-      'missing baseline source name',
-      {
-        targetCanonical: 'squat',
-        baselineCanonical: 'squat',
-        baselineE1RMPoints: baselinePoints,
-        today,
-        model: model(),
-        baselineSourceName: '',
-      },
+      'missing baseline name',
+      () => findBestE1RMFromPipeline('squat', 'squat', pts, today, mockModel(), ''),
       null,
     ],
     [
-      'exact match (same canonical)',
-      {
-        targetCanonical: 'squat',
-        baselineCanonical: 'squat',
-        baselineE1RMPoints: baselinePoints,
-        today,
-        model: model(),
-        baselineSourceName: 'Competition Squat',
-      },
-      expect.objectContaining({
-        method: 'exact',
-        sourceName: 'Competition Squat',
-      }),
+      'exact match same canonical',
+      () => findBestE1RMFromPipeline('squat', 'squat', pts, today, mockModel(), 'Comp Squat'),
+      expect.objectContaining({ method: 'exact', sourceName: 'Comp Squat' }),
     ],
     [
-      'variant factor projection',
-      {
-        targetCanonical: 'squat-pause',
-        baselineCanonical: 'squat',
-        baselineE1RMPoints: baselinePoints,
-        today,
-        model: model({
-          variantFactor: {
-            'squat-pause': { factor: 0.85, n: 10 },
-          },
+      'projection variant factor',
+      () => findBestE1RMFromPipeline('squat-pause', 'squat', pts, today, vfModel, 'Squat'),
+      expect.objectContaining({ method: 'variantFactor', sourceName: 'Squat' }),
+    ],
+    [
+      'missing factor',
+      () => findBestE1RMFromPipeline('squat-unknown', 'squat', pts, today, mockModel(), 'Squat'),
+      null,
+    ],
+    [
+      'zero scalar drops',
+      () =>
+        findBestE1RMFromPipeline(
+          'squat-bad',
+          'squat',
+          pts,
+          today,
+          mockModel({ variantFactor: { 'squat-bad': { factor: 0, n: 5 } } }),
+          'Squat'
+        ),
+      null,
+    ],
+    [
+      'empty history sets',
+      () => findBestE1RMFromPipeline('squat', 'squat', [], today, mockModel(), 'Squat'),
+      null,
+    ],
+    [
+      'resolve: empty model keys',
+      () =>
+        resolveE1RMEstimate({
+          liftType: 'squat',
+          targetCanonical: 'squat',
+          baselineName: 'Comp Squat',
+          today,
+          model: mockModel({ baseline: {} }),
+          e1rmPoints: pts,
         }),
-        baselineSourceName: 'Squat',
-      },
-      expect.objectContaining({
-        method: 'variantFactor',
-        sourceName: 'Squat',
-      }),
-    ],
-    [
-      'missing variant factor returns null',
-      {
-        targetCanonical: 'squat-unknown',
-        baselineCanonical: 'squat',
-        baselineE1RMPoints: baselinePoints,
-        today,
-        model: model(),
-        baselineSourceName: 'Squat',
-      },
       null,
     ],
     [
-      'variant factor with zero factor returns null',
-      {
-        targetCanonical: 'squat-bad',
-        baselineCanonical: 'squat',
-        baselineE1RMPoints: baselinePoints,
-        today,
-        model: model({
-          variantFactor: {
-            'squat-bad': { factor: 0, n: 5 },
-          },
+      'resolve: point mismatch fallback',
+      () =>
+        resolveE1RMEstimate({
+          liftType: 'squat',
+          targetCanonical: 'squat',
+          baselineName: 'Comp Squat',
+          today,
+          model: mockModel(),
+          e1rmPoints: [pt('bench', 200, 1e9)],
         }),
-        baselineSourceName: 'Squat',
-      },
       null,
     ],
     [
-      'empty baseline points returns null',
-      {
-        targetCanonical: 'squat',
-        baselineCanonical: 'squat',
-        baselineE1RMPoints: [],
-        today,
-        model: model(),
-        baselineSourceName: 'Squat',
-      },
-      null,
+      'resolve: matches explicit label',
+      () =>
+        resolveE1RMEstimate({
+          liftType: 'squat',
+          targetCanonical: 'squat',
+          baselineName: 'My Squat',
+          today,
+          model: mockModel(),
+          e1rmPoints: pts,
+        }),
+      expect.objectContaining({ sourceName: 'My Squat', method: 'exact' }),
     ],
-  ])('%s', (_, input, expected) => {
-    const result = findBestE1RMFromPipeline(
-      input.targetCanonical,
-      input.baselineCanonical,
-      input.baselineE1RMPoints,
-      input.today,
-      input.model,
-      input.baselineSourceName
-    );
+    [
+      'resolve: fallback canonical label',
+      () =>
+        resolveE1RMEstimate({
+          liftType: 'squat',
+          targetCanonical: 'squat',
+          baselineName: null,
+          today,
+          model: mockModel(),
+          e1rmPoints: pts,
+        }),
+      expect.objectContaining({ sourceName: 'squat', method: 'exact' }),
+    ],
+    [
+      'resolve: scales factor cascades',
+      () =>
+        resolveE1RMEstimate({
+          liftType: 'squat',
+          targetCanonical: 'squat-pause',
+          baselineName: 'Squat',
+          today,
+          model: vfModel,
+          e1rmPoints: pts,
+        }),
+      expect.objectContaining({ method: 'variantFactor' }),
+    ],
+  ])('%s', (_, runner, expected) => {
+    const res = runner();
     if (expected === null) {
-      expect(result).toBeNull();
+      expect(res).toBeNull();
     } else {
-      expect(result).toEqual(expected);
-    }
-  });
-});
-
-describe('resolveE1RMEstimate', () => {
-  const today = new Date('2024-01-15');
-  const e1rmPoints = [point('squat', 250, 1000000000), point('squat', 280, 1000000000000)];
-
-  it.each([
-    [
-      'no baseline in model',
-      {
-        liftType: 'squat',
-        targetCanonical: 'squat',
-        baselineName: 'Competition Squat',
-        today,
-        model: model({ baseline: {} }),
-        e1rmPoints,
-      },
-      null,
-    ],
-    [
-      'baseline exists but no matching points',
-      {
-        liftType: 'squat',
-        targetCanonical: 'squat',
-        baselineName: 'Competition Squat',
-        today,
-        model: model(),
-        e1rmPoints: [point('bench', 200, 1000000000)],
-      },
-      null,
-    ],
-    [
-      'delegates to findBestE1RMFromPipeline with exact match',
-      {
-        liftType: 'squat',
-        targetCanonical: 'squat',
-        baselineName: 'My Squat',
-        today,
-        model: model(),
-        e1rmPoints,
-      },
-      expect.objectContaining({
-        sourceName: 'My Squat',
-        method: 'exact',
-      }),
-    ],
-    [
-      'uses canonical when baselineName is null',
-      {
-        liftType: 'squat',
-        targetCanonical: 'squat',
-        baselineName: null,
-        today,
-        model: model(),
-        e1rmPoints,
-      },
-      expect.objectContaining({
-        sourceName: 'squat',
-        method: 'exact',
-      }),
-    ],
-    [
-      'delegates variant factor to findBestE1RMFromPipeline',
-      {
-        liftType: 'squat',
-        targetCanonical: 'squat-pause',
-        baselineName: 'Squat',
-        today,
-        model: model({
-          variantFactor: {
-            'squat-pause': { factor: 0.85, n: 10 },
-          },
-        }),
-        e1rmPoints,
-      },
-      expect.objectContaining({
-        method: 'variantFactor',
-      }),
-    ],
-  ])('%s', (_, params, expected) => {
-    const result = resolveE1RMEstimate(params);
-    if (expected === null) {
-      expect(result).toBeNull();
-    } else {
-      expect(result).toEqual(expected);
+      expect(res).toEqual(expected);
     }
   });
 });
 
 describe('roundTo5', () => {
   it.each([
-    ['exact multiple', 25, 25],
-    ['exact multiple 100', 100, 100],
-    ['rounds down 22', 22, 20],
-    ['rounds up 23', 23, 25],
-    ['rounds up 27', 27, 25],
-    ['rounds down 28', 28, 30],
-    ['zero', 0, 0],
-    ['negative rounds down', -22, -20],
-    ['negative rounds up', -23, -25],
-    ['decimal 22.4', 22.4, 20],
-    ['decimal 22.6', 22.6, 25],
-  ])('%s', (_, input, expected) => {
+    [100, 100],
+    [22, 20],
+    [23, 25],
+    [27, 25],
+    [28, 30],
+    [-22, -20],
+    [-23, -25],
+    [22.4, 20],
+    [22.6, 25],
+  ])('rounds %s to %s', (input, expected) => {
     expect(roundTo5(input)).toBe(expected);
   });
 });

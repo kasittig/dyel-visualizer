@@ -1,32 +1,16 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import * as Popover from '@radix-ui/react-popover';
-import { DayPicker } from 'react-day-picker';
-import type { DateRange } from 'react-day-picker';
+import { DayPicker, type DateRange } from 'react-day-picker';
 import { presetDateRange, activePreset, type PresetId } from '@dyel/api';
+import { formatDate, parseDate } from '../dateUtils';
 import 'react-day-picker/style.css';
 import styles from './DateRangePicker.module.css';
-import { formatDate, parseDate } from '../dateUtils';
 
-const PRESETS: {
-  label: string;
-  presetId: PresetId;
-}[] = [
-  {
-    label: '2 WKS',
-    presetId: '2w',
-  },
-  {
-    label: '1 MO',
-    presetId: '1m',
-  },
-  {
-    label: '3 MO',
-    presetId: '3m',
-  },
-  {
-    label: 'ALL TIME',
-    presetId: 'all',
-  },
+const PRESETS: { label: string; presetId: PresetId }[] = [
+  { label: '2 WKS', presetId: '2w' },
+  { label: '1 MO', presetId: '1m' },
+  { label: '3 MO', presetId: '3m' },
+  { label: 'ALL TIME', presetId: 'all' },
 ];
 
 export function DateRangePicker({
@@ -35,7 +19,7 @@ export function DateRangePicker({
   sessionDates,
 }: {
   value: DateRange;
-  onChange: (range: DateRange) => void;
+  onChange: (r: DateRange) => void;
   sessionDates?: Date[];
 }) {
   const [open, setOpen] = useState(false);
@@ -43,7 +27,7 @@ export function DateRangePicker({
   const [endText, setEndText] = useState(() => formatDate(value.to));
   const [focused, setFocused] = useState<'start' | 'end' | null>(null);
   const [calendarMonth, setCalendarMonth] = useState<Date>(() => value.from ?? new Date());
-  const containerRef = useRef<HTMLDivElement>(null);
+
   const outerRef = useRef<HTMLDivElement>(null);
   const popoverContentRef = useRef<HTMLDivElement>(null);
 
@@ -61,26 +45,21 @@ export function DateRangePicker({
     return activePreset(value.from, value.to, latestDate) === null;
   });
 
-  // Close the popover when clicking outside both the component and the calendar portal.
-  // Radix's built-in dismiss doesn't fire reliably when `open` is set imperatively
-  // (i.e. via the Custom chip, not through a Popover.Trigger).
   useEffect(() => {
     if (!open && !showCustomPicker) {
       return;
     }
-    function handleMouseDown(e: MouseEvent) {
+    const handleMouseDown = (e: MouseEvent) => {
       const target = e.target as Node;
       if (!outerRef.current?.contains(target) && !popoverContentRef.current?.contains(target)) {
         setOpen(false);
         setShowCustomPicker(false);
       }
-    }
+    };
     document.addEventListener('mousedown', handleMouseDown, { capture: true });
     return () => document.removeEventListener('mousedown', handleMouseDown, { capture: true });
   }, [open, showCustomPicker]);
 
-  // Sync text and calendar month from external value changes, but only for the field
-  // that isn't focused (avoid overwriting what the user is currently typing).
   useEffect(() => {
     if (focused !== 'start') {
       // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -89,16 +68,15 @@ export function DateRangePicker({
     if (focused !== 'start' && value.from) {
       setCalendarMonth(value.from);
     }
-  }, [value.from]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [value.from, focused]);
 
   useEffect(() => {
     if (focused !== 'end') {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setEndText(formatDate(value.to));
     }
-  }, [value.to]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [value.to, focused]);
 
-  // When value changes to match a preset (e.g. on initial data load), close the custom picker.
   useEffect(() => {
     if (activePreset(value.from, value.to, latestDate) !== null) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -106,64 +84,42 @@ export function DateRangePicker({
     }
   }, [value.from, value.to, latestDate]);
 
-  function handleStartChange(text: string) {
-    setStartText(text);
-    const d = parseDate(text);
-    if (d) {
-      onChange({ ...value, from: d });
-    }
-  }
-
-  function handleEndChange(text: string) {
-    setEndText(text);
-    const d = parseDate(text);
-    if (d) {
-      onChange({ ...value, to: d });
-    }
-  }
-
-  function handleStartBlur() {
-    setFocused(null);
-    if (!parseDate(startText)) {
-      setStartText(formatDate(value.from));
-    }
-  }
-
-  function handleEndBlur() {
-    setFocused(null);
-    if (!parseDate(endText)) {
-      setEndText(formatDate(value.to));
-    }
-  }
-
-  const showPresets = sessionDates && sessionDates.length > 0;
   const currentPreset = activePreset(value.from, value.to, latestDate);
-  const anyPresetActive = currentPreset !== null;
-  const showPicker = !showPresets || showCustomPicker;
-  const customChipActive = !anyPresetActive;
+  const showPresets = sessionDates && sessionDates.length > 0;
+
+  const handleBlur = (field: 'start' | 'end', text: string) => {
+    setFocused(null);
+    if (!parseDate(text)) {
+      if (field === 'start') {
+        setStartText(formatDate(value.from));
+      } else {
+        setEndText(formatDate(value.to));
+      }
+    }
+  };
 
   return (
     <div ref={outerRef} className={styles.outerWrapper}>
       {showPresets && (
         <div className={styles.presets}>
-          {PRESETS.map((preset) => (
+          {PRESETS.map((p) => (
             <button
-              key={preset.label}
-              className={`${styles.preset} ${currentPreset === preset.presetId ? styles.presetActive : ''}`}
+              key={p.label}
+              className={`${styles.preset} ${currentPreset === p.presetId ? styles.presetActive : ''}`}
               onClick={() => {
-                if (preset.presetId === 'all') {
-                  onChange({ from: undefined, to: latestDate });
-                } else {
-                  onChange(presetDateRange(preset.presetId, latestDate));
-                }
+                onChange(
+                  p.presetId === 'all'
+                    ? { from: undefined, to: latestDate }
+                    : presetDateRange(p.presetId, latestDate)
+                );
                 setShowCustomPicker(false);
               }}
             >
-              {preset.label}
+              {p.label}
             </button>
           ))}
           <button
-            className={`${styles.preset} ${customChipActive ? styles.presetActive : ''}`}
+            className={`${styles.preset} ${currentPreset === null ? styles.presetActive : ''}`}
             onClick={() => {
               setShowCustomPicker((v) => !v);
               setOpen(true);
@@ -173,10 +129,10 @@ export function DateRangePicker({
           </button>
         </div>
       )}
-      {showPicker && (
+      {(!showPresets || showCustomPicker) && (
         <Popover.Root open={open} onOpenChange={setOpen}>
           <Popover.Anchor asChild>
-            <div ref={containerRef} className={styles.container}>
+            <div className={styles.container}>
               <span className={styles.icon} aria-hidden>
                 <svg
                   width="13"
@@ -207,7 +163,14 @@ export function DateRangePicker({
                 value={startText}
                 placeholder="M/D/YYYY"
                 className={styles.input}
-                onChange={(e) => handleStartChange(e.target.value)}
+                onBlur={() => handleBlur('start', startText)}
+                onChange={(e) => {
+                  setStartText(e.target.value);
+                  const d = parseDate(e.target.value);
+                  if (d) {
+                    onChange({ ...value, from: d });
+                  }
+                }}
                 onFocus={() => {
                   setFocused('start');
                   if (value.from) {
@@ -215,7 +178,6 @@ export function DateRangePicker({
                   }
                   setOpen(true);
                 }}
-                onBlur={handleStartBlur}
               />
               <span className={styles.separator}>–</span>
               <input
@@ -223,7 +185,14 @@ export function DateRangePicker({
                 value={endText}
                 placeholder="M/D/YYYY"
                 className={styles.input}
-                onChange={(e) => handleEndChange(e.target.value)}
+                onBlur={() => handleBlur('end', endText)}
+                onChange={(e) => {
+                  setEndText(e.target.value);
+                  const d = parseDate(e.target.value);
+                  if (d) {
+                    onChange({ ...value, to: d });
+                  }
+                }}
                 onFocus={() => {
                   setFocused('end');
                   if (value.to) {
@@ -231,16 +200,14 @@ export function DateRangePicker({
                   }
                   setOpen(true);
                 }}
-                onBlur={handleEndBlur}
               />
             </div>
           </Popover.Anchor>
-
           <Popover.Portal>
             <Popover.Content
               ref={popoverContentRef}
               sideOffset={6}
-              onOpenAutoFocus={(e: Event) => e.preventDefault()}
+              onOpenAutoFocus={(e) => e.preventDefault()}
               onInteractOutside={(e) => e.preventDefault()}
               onFocusOutside={(e) => e.preventDefault()}
               className={styles.popover}
@@ -248,17 +215,13 @@ export function DateRangePicker({
               <DayPicker
                 mode="range"
                 selected={value}
-                onSelect={(r: DateRange | undefined) => {
-                  onChange(r ?? { from: undefined, to: undefined });
-                }}
+                onSelect={(r) => onChange(r ?? { from: undefined, to: undefined })}
                 month={calendarMonth}
                 onMonthChange={setCalendarMonth}
                 disabled={{ after: new Date() }}
                 numberOfMonths={1}
                 modifiers={{ hasSession: sessionDates ?? [] }}
-                modifiersStyles={{
-                  hasSession: { fontWeight: 'bold', color: 'var(--accent)' },
-                }}
+                modifiersStyles={{ hasSession: { fontWeight: 'bold', color: 'var(--accent)' } }}
               />
             </Popover.Content>
           </Popover.Portal>

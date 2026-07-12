@@ -1,4 +1,4 @@
-import type { AthleteContext, LiftType, RawInput, TaggedSetRecord } from '@dyel/pipeline';
+import type { AthleteContext, LiftType, TaggedSetRecord } from '@dyel/pipeline';
 import { runPipelineModel } from '@dyel/pipeline';
 
 export type { LiftType } from '@dyel/pipeline';
@@ -29,7 +29,6 @@ export function splitByEffort(records: TaggedSetRecord[], type: LiftType): Split
   if (type === 'accessory') {
     return { all: records, maxEffort: records, volume: [] };
   }
-
   const maxEffort: TaggedSetRecord[] = [];
   const volume: TaggedSetRecord[] = [];
 
@@ -40,23 +39,19 @@ export function splitByEffort(records: TaggedSetRecord[], type: LiftType): Split
       volume.push(record);
     }
   }
-
   return { all: records, maxEffort, volume };
 }
 
 export function groupByLiftType(tagged: TaggedSetRecord[]): Record<LiftType, SplitRows> {
-  const byLiftType = Map.groupBy(tagged, liftTypeOf);
-
+  const groups = Map.groupBy(tagged, liftTypeOf);
   return {
-    squat: splitByEffort(byLiftType.get('squat') ?? [], 'squat'),
-    bench: splitByEffort(byLiftType.get('bench') ?? [], 'bench'),
-    deadlift: splitByEffort(byLiftType.get('deadlift') ?? [], 'deadlift'),
-    accessory: splitByEffort(byLiftType.get('accessory') ?? [], 'accessory'),
+    squat: splitByEffort(groups.get('squat') ?? [], 'squat'),
+    bench: splitByEffort(groups.get('bench') ?? [], 'bench'),
+    deadlift: splitByEffort(groups.get('deadlift') ?? [], 'deadlift'),
+    accessory: splitByEffort(groups.get('accessory') ?? [], 'accessory'),
   };
 }
 
 export function parseSheetData(csv: string, athlete: AthleteContext): Record<LiftType, SplitRows> {
-  const raw: RawInput = { name: 'sheet.csv', content: csv };
-  const model = runPipelineModel([raw], athlete);
-  return groupByLiftType(model.tagged);
+  return groupByLiftType(runPipelineModel([{ name: 'sheet.csv', content: csv }], athlete).tagged);
 }

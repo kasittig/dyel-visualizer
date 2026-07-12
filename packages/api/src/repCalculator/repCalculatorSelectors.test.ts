@@ -6,97 +6,89 @@ import {
   resolveEffectiveCanonical,
 } from './repCalculatorSelectors';
 
-const record = (
+// Automatically infer the precise type from the function signature's second argument
+type ParamsType = Parameters<typeof resolveEffectiveCanonical>[1];
+
+const rec = (
   canonical: string,
   tags: string[],
-  opts: { rawExercise?: string; exercise?: string } = {}
+  opts?: { rawExercise?: string; exercise?: string }
 ): TaggedSetRecord => ({
   date: 0,
   weight: 100,
   reps: 5,
   rpe: undefined,
   canonical,
-  exercise: opts.exercise ?? canonical,
+  exercise: opts?.exercise ?? canonical,
   tags: new Set(tags),
   effects: [],
   baselineRange: null,
-  meta: opts.rawExercise ? { rawExercise: opts.rawExercise } : undefined,
+  meta: opts?.rawExercise ? { rawExercise: opts.rawExercise } : undefined,
 });
 
 describe('availableEquipmentMagnitudes', () => {
   it.each([
-    ['no equipment selected', null, [], []],
-    ['equipment = null', null, [record('bench-board-2', ['equip:board-2'])], []],
-    ['equipment not in allowed list', 'pause', [record('bench-pause', ['equip:pause'])], []],
-    ['equipment selected, no matching records', 'board', [record('bench', ['comp-lift'])], []],
+    ['no equipment Selected', null, [], []],
+    ['equipment null', null, [rec('b-board-2', ['equip:board-2'])], []],
+    ['unallowed equipment', 'pause', [rec('b-pause', ['equip:pause'])], []],
+    ['no records matching', 'board', [rec('b', ['comp-lift'])], []],
     [
-      'board equipment with one magnitude',
+      'one magnitude',
       'board',
-      [record('bench-board-1', ['equip:board-1']), record('bench-board-1', ['equip:board-1'])],
+      [rec('b-board-1', ['equip:board-1']), rec('b-board-1', ['equip:board-1'])],
       ['1'],
     ],
     [
-      'board equipment with multiple magnitudes, numeric sort',
+      'numeric sorting pass',
       'board',
       [
-        record('bench-board-1', ['equip:board-1']),
-        record('bench-board-10', ['equip:board-10']),
-        record('bench-board-2', ['equip:board-2']),
+        rec('b-board-1', ['equip:board-1']),
+        rec('b-board-10', ['equip:board-10']),
+        rec('b-board-2', ['equip:board-2']),
       ],
       ['1', '2', '10'],
     ],
     [
-      'blocks equipment with mixed numeric/non-numeric magnitudes',
+      'mixed text / numeric sort',
       'blocks',
       [
-        record('squat-blocks-abc', ['equip:blocks-abc']),
-        record('squat-blocks-1', ['equip:blocks-1']),
-        record('squat-blocks-xyz', ['equip:blocks-xyz']),
+        rec('s-blocks-abc', ['equip:blocks-abc']),
+        rec('s-blocks-1', ['equip:blocks-1']),
+        rec('s-blocks-xyz', ['equip:blocks-xyz']),
       ],
       ['1', 'abc', 'xyz'],
     ],
     [
-      'deficit equipment deduplicates magnitudes',
+      'deduplicates values',
       'deficit',
-      [
-        record('deadlift-deficit-2', ['equip:deficit-2']),
-        record('deadlift-deficit-2', ['equip:deficit-2']),
-      ],
+      [rec('d-deficit-2', ['equip:deficit-2']), rec('d-deficit-2', ['equip:deficit-2'])],
       ['2'],
     ],
-  ])('%s', (_, equipment, records, expected) => {
-    expect(availableEquipmentMagnitudes(records, equipment as string | null)).toEqual(expected);
+  ])('%s', (_, equip, records, expected) => {
+    expect(availableEquipmentMagnitudes(records, equip)).toEqual(expected);
   });
 });
 
 describe('exercisesForLiftType', () => {
   it.each([
     ['empty input', [], []],
+    ['single exercise', [rec('bench', ['lift:bench'])], [{ canonical: 'bench', label: 'bench' }]],
     [
-      'single exercise',
-      [record('bench', ['lift:bench'])],
+      'collapses duplicate canonicals',
+      [rec('bench', ['lift:bench']), rec('bench', ['lift:bench'])],
       [{ canonical: 'bench', label: 'bench' }],
     ],
     [
-      'duplicate canonicals collapse to one',
-      [
-        record('bench', ['lift:bench']),
-        record('bench', ['lift:bench']),
-        record('bench', ['lift:bench']),
-      ],
-      [{ canonical: 'bench', label: 'bench' }],
+      'uses rawExercise label override',
+      [rec('bench', ['lift:bench'], { rawExercise: 'Bench (Comp)' })],
+      [{ canonical: 'bench', label: 'Bench (Comp)' }],
     ],
     [
-      'rawExercise used when present',
-      [record('bench', ['lift:bench'], { rawExercise: 'Bench (Competition)' })],
-      [{ canonical: 'bench', label: 'Bench (Competition)' }],
-    ],
-    [
-      'multiple exercises sorted by label',
+      'sorts exercises by label',
       [
-        record('bench-close', ['lift:bench']),
-        record('bench', ['lift:bench']),
-        record('bench-board-2', ['lift:bench']),
+        rec('bench-close', ['lift:bench']),
+        rec('bench', ['lift:bench']),
+        rec('bench-board-2', ['lift:bench']),
       ],
       [
         { canonical: 'bench', label: 'bench' },
@@ -105,14 +97,14 @@ describe('exercisesForLiftType', () => {
       ],
     ],
     [
-      'rawExercise overrides exercise for sorting',
+      'sorts by overriding rawExercise',
       [
-        record('bench-1', ['lift:bench'], { rawExercise: 'Bench Variation A' }),
-        record('bench-2', ['lift:bench'], { rawExercise: 'Bench Variation B' }),
+        rec('bench-1', ['lift:bench'], { rawExercise: 'Var A' }),
+        rec('bench-2', ['lift:bench'], { rawExercise: 'Var B' }),
       ],
       [
-        { canonical: 'bench-1', label: 'Bench Variation A' },
-        { canonical: 'bench-2', label: 'Bench Variation B' },
+        { canonical: 'bench-1', label: 'Var A' },
+        { canonical: 'bench-2', label: 'Var B' },
       ],
     ],
   ])('%s', (_, records, expected) => {
@@ -121,159 +113,101 @@ describe('exercisesForLiftType', () => {
 });
 
 describe('resolveEffectiveCanonical', () => {
+  const bComp = rec('bench', ['bar:standard', 'stance:competition']);
+  const baseParams: ParamsType = {
+    liftType: 'bench',
+    selectedRecord: bComp,
+    selectedBar: 'standard',
+    selectedStance: 'competition',
+    selectedEquipment: null,
+    selectedEquipmentMagnitude: null,
+    selectedAddlWt: null,
+  };
+
   it.each([
     [
       'no selectedRecord returns null',
-      [record('bench', ['lift:bench'])],
-      {
-        liftType: 'bench',
-        selectedRecord: undefined,
-        selectedBar: 'standard',
-        selectedStance: 'competition',
-        selectedEquipment: null,
-        selectedEquipmentMagnitude: null,
-        selectedAddlWt: null,
-      },
+      [rec('bench', ['lift:bench'])],
+      { ...baseParams, selectedRecord: undefined },
       null,
     ],
     [
-      'accessory lift type short-circuits to selectedRecord.canonical',
-      [record('leg-press', ['lift:accessory'])],
+      'accessory short-circuits',
+      [rec('leg-press', ['lift:accessory'])],
       {
+        ...baseParams,
         liftType: 'accessory',
-        selectedRecord: record('leg-press', ['lift:accessory']),
+        selectedRecord: rec('leg-press', ['lift:accessory']),
         selectedBar: null,
         selectedStance: null,
-        selectedEquipment: null,
-        selectedEquipmentMagnitude: null,
-        selectedAddlWt: null,
       },
       'leg-press',
     ],
     [
       'candidate-key exact match',
       [
-        record('bench-close', ['bar:close', 'stance:competition']),
-        record('bench-standard', ['bar:standard', 'stance:competition']),
+        rec('bench-close', ['bar:close', 'stance:competition']),
+        rec('bench-std', ['bar:standard', 'stance:competition']),
       ],
-      {
-        liftType: 'bench',
-        selectedRecord: record('bench-standard', ['bar:standard', 'stance:competition']),
-        selectedBar: 'standard',
-        selectedStance: 'competition',
-        selectedEquipment: null,
-        selectedEquipmentMagnitude: null,
-        selectedAddlWt: null,
-      },
-      'bench-standard',
+      { ...baseParams, selectedRecord: rec('bench-std', ['bar:standard', 'stance:competition']) },
+      'bench-std',
     ],
     [
-      'facet-field fallback match when key does not match',
+      'facet-field fallback match',
       [
-        record('bench-close', ['bar:close', 'stance:narrow']),
-        record('bench-standard', ['bar:standard', 'stance:competition']),
+        rec('bench-close', ['bar:close', 'stance:narrow']),
+        rec('bench-std', ['bar:standard', 'stance:competition']),
       ],
-      {
-        liftType: 'bench',
-        selectedRecord: record('bench-standard', ['bar:standard', 'stance:competition']),
-        selectedBar: 'standard',
-        selectedStance: 'competition',
-        selectedEquipment: null,
-        selectedEquipmentMagnitude: null,
-        selectedAddlWt: null,
-      },
-      'bench-standard',
+      baseParams,
+      'bench-std',
     ],
     [
-      'addlWt present filters to matching record only',
-      [record('bench-chains', ['addl:chains']), record('bench', ['comp-lift'])],
+      'filters matching addlWt',
+      [rec('bench-chains', ['addl:chains']), rec('bench', ['comp-lift'])],
       {
-        liftType: 'bench',
-        selectedRecord: record('bench-chains', ['addl:chains']),
-        selectedBar: 'standard',
-        selectedStance: 'competition',
-        selectedEquipment: null,
-        selectedEquipmentMagnitude: null,
+        ...baseParams,
+        selectedRecord: rec('bench-chains', ['addl:chains']),
         selectedAddlWt: 'chains',
       },
       'bench-chains',
     ],
     [
-      'addlWt absent filters to record with empty addlWts',
-      [record('bench-chains', ['addl:chains']), record('bench', ['comp-lift'])],
-      {
-        liftType: 'bench',
-        selectedRecord: record('bench', ['comp-lift']),
-        selectedBar: 'standard',
-        selectedStance: 'competition',
-        selectedEquipment: null,
-        selectedEquipmentMagnitude: null,
-        selectedAddlWt: null,
-      },
+      'filters empty addlWt',
+      [rec('bench-chains', ['addl:chains']), rec('bench', ['comp-lift'])],
+      { ...baseParams, selectedRecord: rec('bench', ['comp-lift']) },
       'bench',
     ],
     [
-      'no match returns selectedRecord.canonical fallback',
-      [record('bench-close', ['bar:close', 'stance:narrow'])],
-      {
-        liftType: 'bench',
-        selectedRecord: record('bench-standard', ['bar:standard', 'stance:competition']),
-        selectedBar: 'standard',
-        selectedStance: 'competition',
-        selectedEquipment: null,
-        selectedEquipmentMagnitude: null,
-        selectedAddlWt: null,
-      },
+      'no match fallback',
+      [rec('bench-close', ['bar:close', 'stance:narrow'])],
+      { ...baseParams, selectedRecord: rec('bench-std', ['bar:standard', 'stance:competition']) },
       'bench-standard',
     ],
     [
-      'equipment magnitude included in facet-field fallback match',
-      [record('bench-board-2', ['equip:board-2']), record('bench', ['comp-lift'])],
+      'includes equipment magnitude match',
+      [rec('bench-board-2', ['equip:board-2']), rec('bench', ['comp-lift'])],
       {
-        liftType: 'bench',
-        selectedRecord: record('bench-board-2', ['equip:board-2']),
-        selectedBar: 'standard',
-        selectedStance: 'competition',
+        ...baseParams,
+        selectedRecord: rec('bench-board-2', ['equip:board-2']),
         selectedEquipment: 'board',
         selectedEquipmentMagnitude: '2',
-        selectedAddlWt: null,
       },
       'bench-board-2',
     ],
     [
-      'stance = competition excluded from candidateKey',
+      'excludes competition stance from key',
       [
-        record('bench-close', ['bar:close', 'stance:competition']),
-        record('bench-standard', ['bar:standard', 'stance:competition']),
+        rec('bench-close', ['bar:close', 'stance:competition']),
+        rec('bench-std', ['bar:standard', 'stance:competition']),
       ],
       {
-        liftType: 'bench',
-        selectedRecord: record('bench-close', ['bar:close', 'stance:competition']),
+        ...baseParams,
+        selectedRecord: rec('bench-close', ['bar:close', 'stance:competition']),
         selectedBar: 'close',
-        selectedStance: 'competition',
-        selectedEquipment: null,
-        selectedEquipmentMagnitude: null,
-        selectedAddlWt: null,
       },
       'bench-close',
     ],
-  ])(
-    '%s',
-    (
-      _,
-      records,
-      params: {
-        liftType: string;
-        selectedRecord: TaggedSetRecord | undefined;
-        selectedBar: string | null;
-        selectedStance: string | null;
-        selectedEquipment: string | null;
-        selectedEquipmentMagnitude: string | null;
-        selectedAddlWt: string | null;
-      },
-      expected
-    ) => {
-      expect(resolveEffectiveCanonical(records, params)).toBe(expected);
-    }
-  );
+  ])('%s', (_, records, params, expected) => {
+    expect(resolveEffectiveCanonical(records, params)).toBe(expected);
+  });
 });

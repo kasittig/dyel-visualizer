@@ -14,10 +14,7 @@ import { diagnose } from './analyze/diagnose';
 import type { DatasetSpec, RenderParams, RechartsRow } from './dataset/build';
 import { buildDataset } from './dataset/build';
 
-const MIN_SAMPLES = 1,
-  DIAGNOSTICS_TOLERANCE = 0.05,
-  DIAGNOSTICS_STALE_DAYS = 90,
-  PARSE_CONTEXT: ParseContext = { fallback: 'lbs' };
+const PARSE_CONTEXT: ParseContext = { fallback: 'lbs' };
 
 export interface PipelineResult {
   datasets: Record<string, RechartsRow[]>;
@@ -38,34 +35,27 @@ export interface PipelineModel {
   pointsByLabelByDeriver: Map<string, Point[]>;
   pointsByDeriverAdjusted: Map<string, Point[]>;
   pointsByLabelByDeriverAdjusted: Map<string, Point[]>;
-  // Tagged, canonicalized set records prior to any deriver aggregation -- exposed for
-  // callers that need per-set detail (sets/reps/weight/rpe) rather than a day-collapsed
-  // Point, e.g. building a per-variation/per-date "best set" lookup for chart tooltips.
   tagged: TaggedSetRecord[];
   athlete: AthleteContext;
 }
 
 function buildPoints(tagged: TaggedSetRecord[], deriverId: string): Point[] {
   const d = derivers[deriverId];
-  return [
-    ...Map.groupBy(tagged, (r) => {
-      return `${r.date}::${r.canonical}`;
-    }).values(),
-  ].flatMap((sets) => {
-    const v = d.derive(sets);
-    return v === null
-      ? []
-      : [{ t: sets[0].date, v, series: sets[0].canonical, tags: sets[0].tags }];
-  });
+  return Array.from(Map.groupBy(tagged, (r) => `${r.date}::${r.canonical}`).values()).flatMap(
+    (sets) => {
+      const v = d.derive(sets);
+      return v === null
+        ? []
+        : [{ t: sets[0].date, v, series: sets[0].canonical, tags: sets[0].tags }];
+    }
+  );
 }
 
 function buildPointsByLabel(tagged: TaggedSetRecord[], deriverId: string): Point[] {
   const d = derivers[deriverId];
-  return [
-    ...Map.groupBy(tagged, (r) => {
-      return `${r.date}::${r.meta?.rawExercise ?? r.canonical}`;
-    }).values(),
-  ].flatMap((sets) => {
+  return Array.from(
+    Map.groupBy(tagged, (r) => `${r.date}::${r.meta?.rawExercise ?? r.canonical}`).values()
+  ).flatMap((sets) => {
     const v = d.derive(sets);
     return v === null
       ? []
@@ -88,8 +78,9 @@ export function runPipelineModel(
   const timestamp = now ?? Date.now();
   const registry = new ParserRegistry();
   registry.registerMany([csvParser, freeformParser]);
-  const parseErrors: ParseError[] = [],
-    records: SetRecord[] = [];
+
+  const parseErrors: ParseError[] = [];
+  const records: SetRecord[] = [];
 
   for (const input of raw) {
     try {
@@ -106,27 +97,19 @@ export function runPipelineModel(
   const { resolved, unknown: unkAliases } = resolveCanonicalNames(records);
   const { tagged, unknown: unkCanonicals } = tagRecords(resolved, athlete.deadliftStance);
   const unknownExercises = [...new Set([...unkAliases, ...unkCanonicals])];
-  const fitInput = tagged.filter((record) => {
-    return record.sets === undefined || record.sets === 1 || record.rpe !== undefined;
-  });
-  const model = fitNormalizationModel(fitInput, { minSamples: MIN_SAMPLES }, athlete);
 
-  // Build points for ALL registered deriver ids
+  const fitInput = tagged.filter(
+    (r) => r.sets === undefined || r.sets === 1 || r.rpe !== undefined
+  );
+  const model = fitNormalizationModel(fitInput, { minSamples: 1 }, athlete);
   const allDeriverIds = Object.keys(derivers);
-  const pointsByDeriver = new Map(
-    allDeriverIds.map((id) => {
-      return [id, buildPoints(tagged, id)];
-    })
-  );
-  const e1rmPoints = pointsByDeriver.get('e1rm')!;
 
+  const pointsByDeriver = new Map(allDeriverIds.map((id) => [id, buildPoints(tagged, id)]));
   const pointsByLabelByDeriver = new Map(
-    allDeriverIds.map((id) => {
-      return [id, buildPointsByLabel(tagged, id)];
-    })
+    allDeriverIds.map((id) => [id, buildPointsByLabel(tagged, id)])
   );
-
   const addlWtCanonicals = new Set(Object.keys(model.addlWtOffset));
+
   const pointsByDeriverAdjusted = new Map(
     allDeriverIds.map((id) => {
       const original = pointsByDeriver.get(id)!;
@@ -135,28 +118,13 @@ export function runPipelineModel(
       }
       const adjustedByKey = new Map(
         buildPoints(offsetAdjustRecords(tagged, model), id)
-          .filter((p) => {
-            return addlWtCanonicals.has(p.series);
-          })
-          .map((p) => {
-            return [`${p.t}::${p.series}`, p];
-          })
+          .filter((p) => addlWtCanonicals.has(p.series))
+          .map((p) => [`${p.t}::${p.series}`, p])
       );
-      return [
-        id,
-        original.map((p) => {
-          return adjustedByKey.get(`${p.t}::${p.series}`) ?? p;
-        }),
-      ];
+      return [id, original.map((p) => adjustedByKey.get(`${p.t}::${p.series}`) ?? p)];
     })
   );
 
-  // pointsByLabelByDeriverAdjusted: offset-adjusted by-label points for specs that opt into
-  // normalization. Unlike pointsByDeriverAdjusted (canonical-grouped), here we can't use the
-  // filter-by-canonical-and-merge-back optimization because points are label-keyed, not
-  // canonical-keyed. Instead, we directly recompute from offset-adjusted records — offsets for
-  // canonicals with no fitted offset are applied as no-ops (offsetAdjustRecords passes them
-  // through unchanged), making this a complete, correct implementation without the merge trick.
   const pointsByLabelByDeriverAdjusted = new Map(
     allDeriverIds.map((id) => {
       const original = pointsByLabelByDeriver.get(id)!;
@@ -167,31 +135,14 @@ export function runPipelineModel(
     })
   );
 
-  const unnormalized = [
-    ...Map.groupBy(e1rmPoints, (p) => {
-      return p.series;
-    }),
-  ]
-    .map(([, pts]) => {
-      return pts.reduce((a, b) => {
-        return b.t > a.t ? b : a;
-      });
-    })
-    .filter((latest) => {
-      return normalizeE1rm(latest.series, latest.v, model) === null;
-    })
-    .map((latest) => {
-      return latest.series;
-    });
+  const unnormalized = Array.from(Map.groupBy(pointsByDeriver.get('e1rm')!, (p) => p.series))
+    .map(([, pts]) => pts.reduce((a, b) => (b.t > a.t ? b : a)))
+    .filter((latest) => normalizeE1rm(latest.series, latest.v, model) === null)
+    .map((latest) => latest.series);
 
-  const effectsByCanonical = new Map(
-    tagged.map((r) => {
-      return [r.canonical, [...r.effects]];
-    })
-  );
-  // Most-recent-by-date wins per canonical — a variant's logged label can drift over
-  // time (e.g. sheet-entry rewording), so the display name should track current usage.
+  const effectsByCanonical = new Map(tagged.map((r) => [r.canonical, [...r.effects]]));
   const displayNameLatest = new Map<string, { date: number; name: string }>();
+
   for (const r of tagged) {
     const existing = displayNameLatest.get(r.canonical);
     if (!existing || r.date > existing.date) {
@@ -201,17 +152,17 @@ export function runPipelineModel(
       });
     }
   }
-  const displayNameByCanonical = new Map(
-    [...displayNameLatest].map(([canonical, { name }]) => [canonical, name])
-  );
+
+  const displayNameByCanonical = new Map(Array.from(displayNameLatest, ([k, v]) => [k, v.name]));
   const baselineRangeByCanonical = new Map(
     tagged.flatMap((r) => (r.baselineRange ? [[r.canonical, r.baselineRange] as const] : []))
   );
+
   const diagnostics = diagnose(
-    e1rmPoints,
+    pointsByDeriver.get('e1rm')!,
     model,
     effectsByCanonical,
-    { tolerance: DIAGNOSTICS_TOLERANCE, staleDays: DIAGNOSTICS_STALE_DAYS },
+    { tolerance: 0.05, staleDays: 90 },
     timestamp,
     displayNameByCanonical,
     baselineRangeByCanonical
@@ -261,9 +212,8 @@ export function runPipeline(
 ): PipelineResult {
   const timestamp = now ?? Date.now();
   const pipelineModel = runPipelineModel(raw, athlete, timestamp);
-  const datasets = buildDatasetsFromModel(pipelineModel, specs, ui);
   return {
-    datasets,
+    datasets: buildDatasetsFromModel(pipelineModel, specs, ui),
     diagnostics: pipelineModel.diagnostics,
     unknownExercises: pipelineModel.unknownExercises,
     unnormalized: pipelineModel.unnormalized,

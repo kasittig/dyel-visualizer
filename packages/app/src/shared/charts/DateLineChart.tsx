@@ -4,7 +4,6 @@ import type { ChartPoint } from '@dyel/api';
 import { formatChartDate } from '@dyel/api';
 import styles from './DateLineChart.module.css';
 
-/** The "No data found." placeholder shared by the time-series charts. */
 export function ChartEmpty() {
   return (
     <section>
@@ -13,11 +12,6 @@ export function ChartEmpty() {
   );
 }
 
-/**
- * Shared shell for the date-indexed line charts: the centered responsive container, a
- * date X axis (formatted, angled), and a unit-suffixed Y axis. Callers supply the
- * `<Tooltip>` and `<Line>` children.
- */
 export function DateLineChart({
   data,
   unit,

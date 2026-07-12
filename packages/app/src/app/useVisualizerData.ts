@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import type { DateRange } from 'react-day-picker';
-import type { PipelineModel, LiftType } from '@dyel/api';
+import type { PipelineModel, LiftType, SplitRows } from '@dyel/api';
 import {
   groupByLiftType,
   defaultCanonicalsByLift,
@@ -10,7 +10,6 @@ import {
   calculateVolumeCorrelationFromTagged,
   collectSessionDates,
 } from '@dyel/api';
-import type { SplitRows } from '@dyel/api';
 
 export interface VisualizerData {
   tabRows: Record<LiftType, SplitRows>;
@@ -28,35 +27,25 @@ export function useVisualizerData(
   dateRange: DateRange,
   deadliftStance: string
 ): VisualizerData {
-  const tabRows = useMemo(() => {
-    const tagged = model?.tagged ?? [];
-    return groupByLiftType(tagged);
-  }, [model]);
-
-  const canonicals = useMemo(() => {
-    return defaultCanonicalsByLift(tabRows, deadliftStance);
-  }, [tabRows, deadliftStance]);
-
-  const visibleLiftIds = useMemo(() => {
-    const visible = visibleLiftTypes(tabRows, dateRange?.from, dateRange?.to);
-    return new Set(visible);
-  }, [tabRows, dateRange]);
-
-  const volumeRecords = useMemo(() => {
-    return collectVolumeRecords(tabRows);
-  }, [tabRows]);
-
-  const dataUnit = useMemo(() => {
-    return detectDataUnit(tabRows);
-  }, [tabRows]);
-
-  const volumeByDate = useMemo(() => {
-    return calculateVolumeCorrelationFromTagged(volumeRecords, dataUnit);
-  }, [volumeRecords, dataUnit]);
-
-  const { allSessionDates, lastSessionDate } = useMemo(() => {
-    return collectSessionDates(tabRows);
-  }, [tabRows]);
+  const tabRows = useMemo(() => groupByLiftType(model?.tagged ?? []), [model]);
+  const canonicals = useMemo(
+    () => defaultCanonicalsByLift(tabRows, deadliftStance),
+    [tabRows, deadliftStance]
+  );
+  const visibleLiftIds = useMemo(
+    () => new Set(visibleLiftTypes(tabRows, dateRange?.from, dateRange?.to)),
+    [tabRows, dateRange]
+  );
+  const volumeRecords = useMemo(() => collectVolumeRecords(tabRows), [tabRows]);
+  const dataUnit = useMemo(() => detectDataUnit(tabRows), [tabRows]);
+  const volumeByDate = useMemo(
+    () => calculateVolumeCorrelationFromTagged(volumeRecords, dataUnit),
+    [volumeRecords, dataUnit]
+  );
+  const { allSessionDates, lastSessionDate } = useMemo(
+    () => collectSessionDates(tabRows),
+    [tabRows]
+  );
 
   return {
     tabRows,

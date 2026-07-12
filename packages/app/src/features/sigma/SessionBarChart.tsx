@@ -13,7 +13,6 @@ import { formatChartDate } from '@dyel/api';
 import { ChartEmpty } from '../../shared/charts/DateLineChart';
 import { ChartTooltip } from '../../shared/charts/TooltipCard';
 import styles from './SessionBarChart.module.css';
-
 import {
   SQUAT_COLOR,
   BENCH_COLOR,

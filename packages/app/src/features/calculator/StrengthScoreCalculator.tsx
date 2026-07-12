@@ -36,7 +36,7 @@ const METRICS = [
 ];
 
 export function StrengthScoreCalculator({
-  dateRange: dateRange,
+  dateRange,
   unit: dataUnit,
 }: {
   dateRange: DateRange;
@@ -45,7 +45,6 @@ export function StrengthScoreCalculator({
   const [bodyweight, setBodyweight] = useState('');
   const [unit, setUnit] = useState<'lbs' | 'kg'>('lbs');
   const [gender, setGender] = useState<Gender>('female');
-
   const { competitionTotal, scores } = useStrengthScores(
     bodyweight,
     unit,
@@ -54,15 +53,11 @@ export function StrengthScoreCalculator({
     dataUnit
   );
 
-  const totalDisplay =
-    competitionTotal !== null ? `${Math.round(competitionTotal)} ${dataUnit}` : '—';
-
   return (
     <CollapsibleSection label="Strength Score Calculator">
       <div className={styles.card}>
         <div className={styles.leftCol}>
           <span className={styles.sectionLabel}>Score Calculator</span>
-
           <div className={styles.field}>
             <div className={styles.fieldLabel}>Gender</div>
             <div className={styles.chipGroup}>
@@ -77,11 +72,10 @@ export function StrengthScoreCalculator({
               ))}
             </div>
           </div>
-
           <div className={styles.field}>
             <div className={styles.fieldLabel}>Unit</div>
             <div className={styles.chipGroup}>
-              {(['lbs', 'kg'] as ('lbs' | 'kg')[]).map((u) => (
+              {(['lbs', 'kg'] as const).map((u) => (
                 <button
                   key={u}
                   onClick={() => setUnit(u)}
@@ -92,7 +86,6 @@ export function StrengthScoreCalculator({
               ))}
             </div>
           </div>
-
           <div className={styles.field}>
             <div className={styles.fieldLabel}>Bodyweight</div>
             <input
@@ -104,34 +97,40 @@ export function StrengthScoreCalculator({
               className={styles.input}
             />
           </div>
-
           <div className={styles.field}>
             <div className={styles.fieldLabel}>Competition Total</div>
-            <input type="text" value={totalDisplay} readOnly disabled className={styles.input} />
+            <input
+              type="text"
+              value={
+                competitionTotal !== null ? `${Math.round(competitionTotal)} ${dataUnit}` : '—'
+              }
+              readOnly
+              disabled
+              className={styles.input}
+            />
           </div>
         </div>
-
         <div className={styles.rightCol}>
           {METRICS.map(({ key, label, barColor }, i) => {
             const score = scores?.[key] ?? null;
-            const isLast = i === METRICS.length - 1;
             const pct =
               scores !== null
                 ? (scores[`${key}Percentile` as keyof typeof scores] as number)
                 : null;
-            const tierLabel =
-              scores !== null
-                ? (scores[`${key}Tier` as keyof typeof scores] ?? 'Novice')
-                : 'Novice';
-            const tierCol = pct !== null ? tierColor(pct) : 'transparent';
-            const barWidth = pct ?? 0;
-
             return (
-              <div key={key} className={clsx(styles.scoreRow, isLast && styles.scoreRowLast)}>
+              <div
+                key={key}
+                className={clsx(styles.scoreRow, i === METRICS.length - 1 && styles.scoreRowLast)}
+              >
                 <div className={styles.scoreHeader}>
                   <span className={styles.metricLabel}>{label}</span>
-                  <span className={styles.tierLabel} style={{ color: tierCol }}>
-                    {tierLabel}
+                  <span
+                    className={styles.tierLabel}
+                    style={{ color: pct !== null ? tierColor(pct) : 'transparent' }}
+                  >
+                    {scores !== null
+                      ? (scores[`${key}Tier` as keyof typeof scores] ?? 'Novice')
+                      : 'Novice'}
                   </span>
                 </div>
                 <div
@@ -149,7 +148,7 @@ export function StrengthScoreCalculator({
                 <div className={styles.bar}>
                   <div
                     className={styles.barFill}
-                    style={{ width: `${barWidth}%`, background: barColor }}
+                    style={{ width: `${pct ?? 0}%`, background: barColor }}
                   />
                 </div>
               </div>

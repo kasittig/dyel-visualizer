@@ -5,7 +5,7 @@ import {
   CONJUGATE_EQUIPMENT,
   CONJUGATE_ADDL_WTS,
 } from '@dyel/api';
-import type { LiftType, SplitRows, E1RMEstimate } from '@dyel/api';
+import type { LiftType, SplitRows } from '@dyel/api';
 import { usePipelineRepCalculator } from './usePipelineRepCalculator';
 import styles from './RepCalculator.module.css';
 import { CollapsibleSection } from '../../shared/components/CollapsibleSection';
@@ -16,15 +16,6 @@ const LIFT_LABELS: Record<LiftType, string> = {
   deadlift: 'Deadlift',
   accessory: 'Accessory',
 };
-
-function sourceNote(estimate: E1RMEstimate): string {
-  switch (estimate.method) {
-    case 'exact':
-      return `Based on ${estimate.sourceName} · ${estimate.date.toLocaleDateString()}`;
-    case 'variantFactor':
-      return `Projected from ${estimate.sourceName} (${estimate.date.toLocaleDateString()})`;
-  }
-}
 
 export function RepCalculator({
   tabRows,
@@ -59,19 +50,16 @@ export function RepCalculator({
     displayE1rm,
   } = usePipelineRepCalculator(tabRows, baselineNames);
 
-  const hasAccessories = tabRows.accessory.all.length > 0;
-
   return (
     <CollapsibleSection label="Rep Calculator">
       <div className={styles.card}>
         <div className={styles.leftCol}>
           <span className={styles.sectionLabel}>Rep Calculator</span>
-
           <div className={styles.field}>
             <div className={styles.fieldLabel}>Lift Type</div>
             <div className={styles.chipGroup}>
               {(Object.keys(LIFT_LABELS) as LiftType[])
-                .filter((t) => t !== 'accessory' || hasAccessories)
+                .filter((t) => t !== 'accessory' || tabRows.accessory.all.length > 0)
                 .map((t) => (
                   <button
                     key={t}
@@ -83,7 +71,6 @@ export function RepCalculator({
                 ))}
             </div>
           </div>
-
           <div className={styles.field}>
             <div className={styles.fieldLabel}>Exercise</div>
             <select
@@ -98,7 +85,6 @@ export function RepCalculator({
               ))}
             </select>
           </div>
-
           {liftType !== 'accessory' && (
             <div className={styles.facetGrid}>
               {(
@@ -136,13 +122,13 @@ export function RepCalculator({
                     change: setSelectedAddlWt,
                     opts: CONJUGATE_ADDL_WTS,
                   },
-                ] as Array<{
+                ] as {
                   label: string;
                   value: string | null;
-                  change: (val: string | null) => void; // Uses structural variance contextually mapped to the component fields
-                  opts: readonly string[] | string[];
+                  change: (v: string | null) => void;
+                  opts: readonly string[];
                   show?: boolean;
-                }>
+                }[]
               ).map(
                 ({ label, value, change, opts, show = true }) =>
                   show && (
@@ -150,10 +136,7 @@ export function RepCalculator({
                       <div className={styles.fieldLabel}>{label}</div>
                       <select
                         value={value ?? ''}
-                        onChange={(e) => {
-                          const val = e.target.value || null;
-                          change(val);
-                        }}
+                        onChange={(e) => change(e.target.value || null)}
                         className={styles.input}
                       >
                         <option value="">—</option>
@@ -169,7 +152,6 @@ export function RepCalculator({
             </div>
           )}
         </div>
-
         <div className={styles.rightCol}>
           {exercisesForType.length === 0 ? (
             <p className={styles.emptyNote}>
@@ -217,7 +199,13 @@ export function RepCalculator({
               <div className={styles.e1rmDisplay}>
                 e1RM: {Math.round(displayE1rm!)} {unit}
               </div>
-              <p className={styles.sourceNote}>{sourceNote(estimate)}</p>
+              <p className={styles.sourceNote}>
+                {estimate.method === 'exact'
+                  ? `Based on ${estimate.sourceName} · `
+                  : `Projected from ${estimate.sourceName} (`}
+                {estimate.date.toLocaleDateString()}
+                {estimate.method === 'variantFactor' && ')'}
+              </p>
             </>
           )}
         </div>

@@ -15,7 +15,6 @@ const LIFT_COLORS: Record<string, string> = {
 
 export function SigmaChart({ chartData, unit }: { chartData: ChartPoint[]; unit: string }) {
   const latest = useLatestLiftE1RMs(chartData);
-
   const data = [
     latest.squat !== undefined ? { lift: 'Squat', e1rm: latest.squat } : null,
     latest.bench !== undefined ? { lift: 'Bench', e1rm: latest.bench } : null,
@@ -26,13 +25,13 @@ export function SigmaChart({ chartData, unit }: { chartData: ChartPoint[]; unit:
     return null;
   }
 
-  const label = data.length < 3 ? 'Combined Total' : 'Current e1RM by lift (normalized)';
-
   return (
-    <CollapsibleSection label={label}>
+    <CollapsibleSection
+      label={data.length < 3 ? 'Combined Total' : 'Current e1RM by lift (normalized)'}
+    >
       <div className={styles.card}>
         <span className={styles.sectionLabel}>Lift Balance</span>
-        {data.length < 3 && (
+        {data.length < 3 ? (
           <div style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
             <PieChart width={300} height={300}>
               <Pie
@@ -71,8 +70,7 @@ export function SigmaChart({ chartData, unit }: { chartData: ChartPoint[]; unit:
               <Legend />
             </PieChart>
           </div>
-        )}
-        {data.length >= 3 && (
+        ) : (
           <BaseRadarChart
             data={data}
             angleKey="lift"

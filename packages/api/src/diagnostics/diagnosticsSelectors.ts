@@ -15,23 +15,17 @@ export interface DiagnosticVariant {
   addlWtOffset?: { offsetKg: number; n: number };
 }
 
-/**
- * Selects and filters diagnostic variants from the pipeline model.
- *
- * Extracts the diagnostic variants as DiagnosticVariant objects (a defined subset of
- * VariantAssessment fields). If liftType is provided, filters to only variants matching
- * `lift:${liftType}` tag. When liftType is undefined, returns all variants unfiltered.
- *
- * @param model - The PipelineModel containing diagnostics data
- * @param liftType - Optional lift type filter (e.g., 'squat', 'bench', 'deadlift')
- * @returns Array of DiagnosticVariant objects matching the filter
- */
+export interface EffectSummary {
+  weakEffects: string[];
+  overtrainedEffects: string[];
+}
+
 export function selectDiagnosticVariants(
   model: PipelineModel,
   liftType?: string
 ): DiagnosticVariant[] {
-  // Extract only the fields required by DiagnosticVariant
-  let variants: DiagnosticVariant[] = model.diagnostics.variants.map((v) => ({
+  // Dynamically map properties to safely preserve the strict DiagnosticVariant shape
+  const list = model.diagnostics.variants.map((v) => ({
     canonical: v.canonical,
     displayName: v.displayName,
     lift: v.lift,
@@ -46,48 +40,18 @@ export function selectDiagnosticVariants(
     addlWtOffset: v.addlWtOffset,
   }));
 
-  // Filter by liftType if provided
-  if (liftType) {
-    const liftTag = `lift:${liftType}`;
-    variants = variants.filter((v) => v.lift === liftTag);
-  }
-
-  return variants;
+  return liftType ? list.filter((v) => v.lift === `lift:${liftType}`) : list;
 }
 
-/**
- * Effect summary type for diagnostic analysis.
- */
-export interface EffectSummary {
-  weakEffects: string[];
-  overtrainedEffects: string[];
-}
-
-/**
- * Summarizes diagnostic effects from variant assessments.
- *
- * Tallies effect imbalances by:
- * - Scanning all variants with status 'weakness' or 'overperforming'
- * - For each effect in the variant, adding/subtracting 1 from a counter
- *   (weakness → -1, overperforming → +1)
- * - Collecting effects with negative count as weakEffects, positive as overtrainedEffects
- *
- * Effects with a count of exactly 0 (equal weakness/overperformance) are omitted.
- *
- * @param variants - DiagnosticVariant objects to analyze
- * @returns EffectSummary with weak and overtrained effect lists
- */
 export function summarizeEffects(variants: DiagnosticVariant[]): EffectSummary {
   const counter = new Map<string, number>();
 
   for (const v of variants) {
-    if (v.status !== 'overperforming' && v.status !== 'weakness') {
-      continue;
-    }
-
-    const delta = v.status === 'overperforming' ? 1 : -1;
-    for (const e of v.effects) {
-      counter.set(e, (counter.get(e) ?? 0) + delta);
+    if (v.status === 'overperforming' || v.status === 'weakness') {
+      const delta = v.status === 'overperforming' ? 1 : -1;
+      for (const e of v.effects) {
+        counter.set(e, (counter.get(e) ?? 0) + delta);
+      }
     }
   }
 
@@ -97,7 +61,8 @@ export function summarizeEffects(variants: DiagnosticVariant[]): EffectSummary {
   for (const [e, count] of counter) {
     if (count < 0) {
       weakEffects.push(e);
-    } else if (count > 0) {
+    }
+    if (count > 0) {
       overtrainedEffects.push(e);
     }
   }

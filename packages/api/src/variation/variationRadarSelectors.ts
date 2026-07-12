@@ -13,6 +13,7 @@ export function buildRadarRows(
 ): RadarRow[] {
   const targetE1rm = targetLabel ? normalizedSnapshot[targetLabel] : undefined;
   const rows: RadarRow[] = [];
+
   for (const name of Object.keys(normalizedSnapshot).sort()) {
     const e1rm = normalizedSnapshot[name];
     if (e1rm !== undefined) {
@@ -28,6 +29,7 @@ export function buildCanonicalByLabel(
 ): Map<string, string> {
   const canonicalByLabel = new Map<string, string>();
   const dateByLabel = new Map<string, number>();
+
   for (const r of tagged) {
     if (!matches(r.tags, { all: [`lift:${liftType}`] })) {
       continue;
@@ -49,6 +51,7 @@ export function resolveTargetLabel(
 ): string | undefined {
   let targetLabel: string | undefined;
   let targetDate = -Infinity;
+
   for (const r of tagged) {
     if (r.canonical !== targetCanonical || !matches(r.tags, { all: [`lift:${liftType}`] })) {
       continue;

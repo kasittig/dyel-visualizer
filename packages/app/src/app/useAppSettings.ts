@@ -4,21 +4,13 @@ import type { AthleteContext } from '@dyel/api';
 import { useLocalStorageState } from '../shared/hooks/useLocalStorageState';
 import type { InputMode, PageTab, DeadliftStancePreference } from './appTabs';
 
-/**
- * Extracts all settings state from App.tsx: localStorage-backed settings (url, inputMode,
- * pastedText, activeTab, deadliftStance), transient UI state (panelForcedOpen, refreshToken,
- * shownResetToken), date range, cached sheet data, the athlete memo, and URL-sync effect.
- *
- * Query params (?sheet=, ?mode=, ?text=) override cached settings on mount.
- */
 export function useAppSettings() {
-  // Runs once, before the useLocalStorageState hooks below read from localStorage: an
-  // explicit query param (e.g. a shared link) must override whatever was previously cached.
   useState(() => {
     const params = new URLSearchParams(window.location.search);
     const qUrl = params.get('sheet');
     const qMode = params.get('mode');
     const qText = params.get('text');
+
     if (qMode === 'text') {
       localStorage.setItem('dyel:inputMode', JSON.stringify('text'));
     } else if (qUrl !== null) {
@@ -47,17 +39,12 @@ export function useAppSettings() {
     'dyel:deadliftStance',
     'sumo'
   );
+  const [dateRange, setDateRange] = useState<DateRange>({ from: undefined, to: undefined });
 
   const athlete: AthleteContext = useMemo(
-    () => ({
-      sex: 'M',
-      bodyweight: 80,
-      deadliftStance,
-    }),
+    () => ({ sex: 'M', bodyweight: 80, deadliftStance }),
     [deadliftStance]
   );
-
-  const [dateRange, setDateRange] = useState<DateRange>({ from: undefined, to: undefined });
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -78,25 +65,13 @@ export function useAppSettings() {
         params.delete('sheet');
       }
     }
-    history.replaceState(null, '', '?' + params.toString());
+    history.replaceState(null, '', `?${params.toString()}`);
   }, [inputMode, url, pastedText]);
 
-  function handleUrlChange(newUrl: string) {
-    setUrl(newUrl);
+  const updateToken = () => {
     setPanelForcedOpen(false);
     setShownResetToken((t) => t + 1);
-  }
-
-  function handleTextChange(newText: string) {
-    setPastedText(newText);
-    setPanelForcedOpen(false);
-    setShownResetToken((t) => t + 1);
-  }
-
-  function handleModeChange(newMode: InputMode) {
-    setInputMode(newMode);
-    setShownResetToken((t) => t + 1);
-  }
+  };
 
   return {
     url,
@@ -118,8 +93,17 @@ export function useAppSettings() {
     athlete,
     dateRange,
     setDateRange,
-    handleUrlChange,
-    handleTextChange,
-    handleModeChange,
+    handleUrlChange: (u: string) => {
+      setUrl(u);
+      updateToken();
+    },
+    handleTextChange: (t: string) => {
+      setPastedText(t);
+      updateToken();
+    },
+    handleModeChange: (m: InputMode) => {
+      setInputMode(m);
+      setShownResetToken((t) => t + 1);
+    },
   };
 }

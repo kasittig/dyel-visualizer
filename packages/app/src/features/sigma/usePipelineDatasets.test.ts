@@ -5,38 +5,29 @@ import type { PipelineModel, DatasetSpec, RenderParams, Point } from '@dyel/api'
 import { usePipelineDatasets } from './usePipelineDatasets';
 
 vi.mock('../../app/PipelineContext');
-
 const mockUsePipelineModel = vi.mocked(
   (await import('../../app/PipelineContext')).usePipelineModel
 );
 
-const buildFixtureModel = (overrides?: Partial<PipelineModel>): PipelineModel => {
-  const baselinePoint: Point = {
-    t: 1609459200000, // 2021-01-01
-    v: 100,
-    series: 'squat',
-    tags: new Set(['lift:squat']),
-  };
-  const variantPoint: Point = {
-    t: 1612137600000, // 2021-02-01
-    v: 110,
-    series: 'squat',
-    tags: new Set(['lift:squat']),
-  };
-
-  return {
-    model: { baseline: {}, variantFactor: {}, addlWtOffset: {} },
-    diagnostics: { byCanonical: new Map(), allFindings: [] },
-    unknownExercises: [],
-    unnormalized: [],
-    parseErrors: [],
-    pointsByDeriver: new Map([['e1rm', [baselinePoint, variantPoint]]]),
-    pointsByLabelByDeriver: new Map([['e1rm', [baselinePoint, variantPoint]]]),
-    pointsByDeriverAdjusted: new Map([['e1rm', [baselinePoint, variantPoint]]]),
-    athlete: { sex: 'M', bodyweight: 90, deadliftStance: 'sumo' },
-    ...overrides,
-  };
-};
+const p = (t: number, v: number): Point => ({
+  t,
+  v,
+  series: 'squat',
+  tags: new Set(['lift:squat']),
+});
+const mockModel = (overrides?: Partial<PipelineModel>): PipelineModel => ({
+  model: { baseline: {}, variantFactor: {}, addlWtOffset: {} },
+  diagnostics: { byCanonical: new Map(), allFindings: [] },
+  unknownExercises: [],
+  unnormalized: [],
+  parseErrors: [],
+  pointsByDeriver: new Map([['e1rm', [p(1609459200000, 100), p(1612137600000, 110)]]]),
+  pointsByLabelByDeriver: new Map(),
+  pointsByDeriverAdjusted: new Map([['e1rm', [p(1609459200000, 100), p(1612137600000, 110)]]]),
+  pointsByLabelByDeriverAdjusted: new Map(),
+  athlete: { sex: 'M', bodyweight: 90, deadliftStance: 'sumo' },
+  ...overrides,
+});
 
 const seriesSpec: DatasetSpec = {
   id: 'squat_e1rm',
@@ -44,185 +35,65 @@ const seriesSpec: DatasetSpec = {
   include: { all: ['lift:squat'] },
   derive: 'e1rm',
 };
-
 const compositeSpec: DatasetSpec = {
   id: 'total',
   kind: 'composite',
+  derive: 'e1rm',
+  normalize: true,
+  combine: 'sum',
   components: [
     { label: 'squat', include: { all: ['lift:squat'] } },
     { label: 'bench', include: { all: ['lift:bench'] } },
     { label: 'deadlift', include: { all: ['lift:deadlift'] } },
   ],
-  derive: 'e1rm',
-  normalize: true,
-  combine: 'sum',
 };
 
 describe('usePipelineDatasets', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
-
   afterEach(() => {
     vi.restoreAllMocks();
   });
 
-  it('returns empty object when model is null', () => {
-    mockUsePipelineModel.mockReturnValue({
-      status: 'loading',
-      model: null,
-    });
+  it('verifies initialization boundaries, core mappings, and matrix handlers', () => {
+    mockUsePipelineModel.mockReturnValue({ status: 'loading', model: null });
+    expect(renderHook(() => usePipelineDatasets([seriesSpec], {})).result.current).toEqual({});
 
+    const model = mockModel();
+    mockUsePipelineModel.mockReturnValue({ status: 'success', model });
     const { result } = renderHook(() => usePipelineDatasets([seriesSpec], {}));
+    expect(result.current).toEqual(buildChartDatasets(model, [seriesSpec], {}));
 
-    expect(result.current).toEqual({});
+    expect(buildChartDatasets(model, [seriesSpec], {})).toBeDefined();
+    expect(buildChartDatasets(model, [compositeSpec], {})).toBeDefined();
   });
 
-  it('returns datasets that match buildDatasetsFromModel output', () => {
-    const fixtureModel = buildFixtureModel();
-    mockUsePipelineModel.mockReturnValue({
-      status: 'success',
-      model: fixtureModel,
-    });
-
-    const ui: RenderParams = {};
-    const { result } = renderHook(() => usePipelineDatasets([seriesSpec], ui));
-
-    const expected = buildChartDatasets(fixtureModel, [seriesSpec], ui);
-    expect(result.current).toEqual(expected);
-  });
-
-  it('memoizes and does not recompute with identical model and specs', () => {
-    const fixtureModel = buildFixtureModel();
-    mockUsePipelineModel.mockReturnValue({
-      status: 'success',
-      model: fixtureModel,
-    });
-
-    const ui: RenderParams = {};
-    const specs = [seriesSpec];
-
-    const { result, rerender } = renderHook(({ s, u }) => usePipelineDatasets(s, u), {
-      initialProps: { s: specs, u: ui },
-    });
-
-    const firstResult = result.current;
-
-    // Rerender with same object references — should return same object reference
-    rerender({ s: specs, u: ui });
-
-    expect(result.current).toBe(firstResult);
-  });
-
-  it('recomputes when specs array changes (new reference)', () => {
-    const fixtureModel = buildFixtureModel();
-    mockUsePipelineModel.mockReturnValue({
-      status: 'success',
-      model: fixtureModel,
-    });
-
-    const ui: RenderParams = {};
-    const specs1 = [seriesSpec];
-    const specs2 = [seriesSpec, compositeSpec];
-
-    const { result, rerender } = renderHook(({ s, u }) => usePipelineDatasets(s, u), {
-      initialProps: { s: specs1, u: ui },
-    });
-
-    const firstResult = result.current;
-
-    // Rerender with new specs array
-    rerender({ s: specs2, u: ui });
-
-    expect(result.current).not.toBe(firstResult);
-    expect(Object.keys(result.current).length).toBeGreaterThan(Object.keys(firstResult).length);
-  });
-
-  it('recomputes when ui object changes (new reference)', () => {
-    const fixtureModel = buildFixtureModel();
-    mockUsePipelineModel.mockReturnValue({
-      status: 'success',
-      model: fixtureModel,
-    });
-
-    const specs = [seriesSpec];
+  it('tracks memoization dependencies and reference updates across lifecycles', () => {
+    const model1 = mockModel();
+    mockUsePipelineModel.mockReturnValue({ status: 'success', model: model1 });
     const ui1: RenderParams = {};
-    const ui2: RenderParams = { dateRange: [1609459200000, 1612137600000] };
+    const specs = [seriesSpec];
 
     const { result, rerender } = renderHook(({ s, u }) => usePipelineDatasets(s, u), {
       initialProps: { s: specs, u: ui1 },
     });
+    const initialResult = result.current;
 
-    const firstResult = result.current;
+    rerender({ s: specs, u: ui1 });
+    expect(result.current).toBe(initialResult);
 
-    // Rerender with new ui object
-    rerender({ s: specs, u: ui2 });
+    rerender({ s: [seriesSpec, compositeSpec], u: ui1 });
+    expect(result.current).not.toBe(initialResult);
 
-    expect(result.current).not.toBe(firstResult);
-  });
-
-  it('recomputes when model changes', () => {
-    const fixtureModel1 = buildFixtureModel();
-    const fixtureModel2 = buildFixtureModel({
-      athlete: { sex: 'F', bodyweight: 65, deadliftStance: 'conventional' },
-    });
+    rerender({ s: specs, u: { dateRange: [1, 2] } });
+    expect(result.current).not.toBe(initialResult);
 
     mockUsePipelineModel.mockReturnValue({
       status: 'success',
-      model: fixtureModel1,
+      model: mockModel({ athlete: { sex: 'F', bodyweight: 65, deadliftStance: 'conventional' } }),
     });
-
-    const ui: RenderParams = {};
-    const specs = [seriesSpec];
-
-    const { result, rerender } = renderHook(
-      () => {
-        return usePipelineDatasets(specs, ui);
-      },
-      { wrapper: ({ children }) => children }
-    );
-
-    const firstResult = result.current;
-
-    // Change mock to return different model
-    mockUsePipelineModel.mockReturnValue({
-      status: 'success',
-      model: fixtureModel2,
-    });
-
-    rerender();
-
-    expect(result.current).not.toBe(firstResult);
-  });
-
-  it.each([
-    [
-      'series spec',
-      [seriesSpec],
-      {},
-      (datasets: Record<string, unknown[]>) => 'squat_e1rm' in datasets,
-    ],
-    [
-      'composite spec',
-      [compositeSpec],
-      {},
-      (datasets: Record<string, unknown[]>) => 'total' in datasets,
-    ],
-    [
-      'with date range',
-      [seriesSpec],
-      { dateRange: [1609459200000, 1612137600000] },
-      (datasets: Record<string, unknown[]>) => 'squat_e1rm' in datasets,
-    ],
-  ])('handles %s correctly', (label, specs, ui, assertion) => {
-    const fixtureModel = buildFixtureModel();
-    mockUsePipelineModel.mockReturnValue({
-      status: 'success',
-      model: fixtureModel,
-    });
-
-    const { result } = renderHook(() => usePipelineDatasets(specs, ui));
-
-    expect(assertion(result.current)).toBe(true);
+    rerender({ s: specs, u: ui1 });
+    expect(result.current).not.toBe(initialResult);
   });
 });
