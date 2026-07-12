@@ -6,7 +6,7 @@ import type { PipelineModel } from '@dyel/pipeline';
 import { runPipelineModel } from '@dyel/pipeline';
 import type { PipelineStatus } from '../../app/PipelineContext';
 import { usePipelineVariationRadarData } from './usePipelineVariationRadarData';
-import { buildRawInput, PLACEHOLDER_ATHLETE } from '../../features/data-source/rawInput';
+import { buildRawInput, PLACEHOLDER_ATHLETE } from '../data-source';
 
 vi.mock('recharts', () => ({}));
 vi.mock('../../app/PipelineContext');

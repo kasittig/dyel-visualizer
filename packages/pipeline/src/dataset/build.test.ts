@@ -156,7 +156,11 @@ describe('buildDataset Series & Composite Specs', () => {
     ];
     expect(
       buildDataset(p4, cSpec(lifts), { dateRange: [day(5), day(31)] }, mUnfitted, athlete)
-    ).toEqual([{ t: day(20), 'estimated-total': 330 }]);
+    ).toEqual([
+      { t: day(5), 'estimated-total': 300 },
+      { t: day(10), 'estimated-total': 310 },
+      { t: day(20), 'estimated-total': 330 },
+    ]);
 
     const p5 = [
       pt('squat', 200, day(1), ['lift:squat']),
@@ -179,6 +183,20 @@ describe('buildDataset Series & Composite Specs', () => {
     ];
     expect(buildDataset(p6, cSpec(lifts), noUi, mC, athlete)).toEqual([
       { t: day(1), 'estimated-total': 300 },
+    ]);
+
+    // Test carry-forward with dateRange: bench before range, squat within range
+    // Bug scenario: a lifter benches in December, squats in January
+    const p7 = [
+      pt('bench', 100, day(1), ['lift:bench']),
+      pt('squat', 200, day(10), ['lift:squat']),
+      pt('squat', 220, day(20), ['lift:squat']),
+    ];
+    expect(
+      buildDataset(p7, cSpec(lifts), { dateRange: [day(5), day(31)] }, mUnfitted, athlete)
+    ).toEqual([
+      { t: day(10), 'estimated-total': 300 },
+      { t: day(20), 'estimated-total': 320 },
     ]);
   });
 });

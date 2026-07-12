@@ -119,24 +119,77 @@ export function validateSheetCsv(csv: string): SheetValidationResult {
   let numParsed = 0;
   let rowsFullyFailed = 0;
   const exerciseKey = findH('exercise');
+  const weightKey = findH('weight');
+  const repsKey = findH('reps');
+  const dateKey = findH('date');
+  const rpeKey = findH('rpe');
 
   for (let i = 0; i < data.length; i++) {
     const row = data[i];
     const rowNum = i + 1;
     const exerciseName = exerciseKey ? row[exerciseKey]?.trim() : '';
+    const rowProblems: string[] = [];
+    const rowWarnings: string[] = [];
 
+    // Exercise validation
     if (!exerciseName) {
-      rowsFullyFailed++;
-      if (rowIssues.length < MAX_ROW_ISSUES) {
-        rowIssues.push({ row: rowNum, exercise: '(empty)', issues: ['Exercise name is empty'] });
-      }
-      continue;
+      rowProblems.push('Exercise name is empty');
     }
 
-    numParsed++;
-    const classified = classifyExerciseName(exerciseName);
-    if (!classified.isUnknown) {
-      liftTypes[classified.type] += 1;
+    // Weight validation
+    const weightStr = weightKey ? row[weightKey]?.trim() : '';
+    if (!weightStr) {
+      rowProblems.push('Weight is missing');
+    } else {
+      const weight = parseFloat(weightStr);
+      if (isNaN(weight)) {
+        rowProblems.push(`Invalid weight: "${weightStr}" (must be a number)`);
+      }
+    }
+
+    // Reps validation
+    const repsStr = repsKey ? row[repsKey]?.trim() : '';
+    if (!repsStr) {
+      rowWarnings.push('Reps is missing. Will assume 1 rep was performed');
+    } else {
+      const reps = parseFloat(repsStr);
+      if (isNaN(reps) || !Number.isInteger(reps) || reps <= 0) {
+        rowProblems.push(`Invalid reps: "${repsStr}" (must be a positive whole number)`);
+      }
+    }
+
+    // Date validation
+    const dateStr = dateKey ? row[dateKey]?.trim() : '';
+    if (!dateStr) {
+      rowWarnings.push('Date is missing');
+    } else if (isNaN(new Date(dateStr).getTime())) {
+      rowProblems.push(`Invalid date: "${dateStr}"`);
+    }
+
+    // RPE validation (optional)
+    const rpeStr = rpeKey ? row[rpeKey]?.trim() : '';
+    if (rpeStr) {
+      const rpeVal = parseFloat(rpeStr);
+      if (isNaN(rpeVal) || rpeVal < 1 || rpeVal > 10) {
+        rowWarnings.push(`Invalid RPE: "${rpeStr}" (must be a number between 1 and 10)`);
+      }
+    }
+
+    // Accumulate issues and decide row fate
+    if (rowProblems.length > 0) {
+      rowsFullyFailed++;
+      if (rowIssues.length < MAX_ROW_ISSUES) {
+        rowIssues.push({ row: rowNum, exercise: exerciseName || '(empty)', issues: rowProblems });
+      }
+    } else {
+      if (rowWarnings.length > 0 && rowIssues.length < MAX_ROW_ISSUES) {
+        rowIssues.push({ row: rowNum, exercise: exerciseName, issues: rowWarnings });
+      }
+      numParsed++;
+      const classified = classifyExerciseName(exerciseName);
+      if (!classified.isUnknown) {
+        liftTypes[classified.type] += 1;
+      }
     }
   }
 

@@ -70,7 +70,10 @@ export const csvParser: Parser = {
         throw new ParseError('Missing required field in row', lineNum, rawStr);
       }
 
-      const reps = parseInt(repsStr);
+      const reps = parseInt(repsStr, 10);
+      if (isNaN(reps)) {
+        throw new ParseError(`Invalid reps: ${repsStr}`, lineNum, rawStr);
+      }
       let weight: number | null, rUnit: Unit | undefined;
       const cell = extractUnitFromCell(wStr);
 

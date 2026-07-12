@@ -66,7 +66,8 @@ export function buildDataset(
       const q = mergeChips(c.include, ui.chips);
       const grid = new Map<number, number>();
 
-      for (const p of scoped) {
+      // Use full points (not scoped) to build grids, so carry-forward has access to full history
+      for (const p of points) {
         if (matches(new Set([...p.tags, p.series]), q)) {
           const val = normalizeE1rm(p.series, p.v, model);
           if (val !== null && val > (grid.get(p.t) ?? -Infinity)) {
@@ -96,6 +97,11 @@ export function buildDataset(
     if (spec.post) {
       const transform = spec.post === 'wilks' ? wilks : dots;
       rows = rows.map((r) => ({ ...r, [spec.id]: transform(r[spec.id], athlete) }));
+    }
+
+    // Apply dateRange filter after carry-forward/sum/post-transform
+    if (ui.dateRange) {
+      rows = rows.filter((r) => r.t >= ui.dateRange![0] && r.t <= ui.dateRange![1]);
     }
   }
   return rows;

@@ -685,3 +685,183 @@ after being written.
 npm run build -w packages/pipeline && npm run build -w packages/api && npm run build -w packages/app
 npm test -w packages/pipeline && npm test -w packages/api && npm test -w packages/app
 ```
+
+## CODE_REVIEW.md remediation — IN PROGRESS (still on `migration-phase-1`)
+
+New effort, separate from the App Refactor / `@dyel/api`-boundary migrations above: fixing
+the 11 confirmed findings in `CODE_REVIEW.md` (review of PR #470, this same branch). Full
+finding detail/line citations live in `CODE_REVIEW.md`; this section tracks execution only.
+
+**Pre-delegation verification (Explore agent, cross-checked against `CODE_REVIEW.md`'s own
+citations):** all 11 findings' file/line citations confirmed against current source, with two
+corrections to the review's own citations noted for delegation accuracy:
+
+- Finding 2 (speed-work fallback): `fitNormalizationModel` itself starts at `normalize.ts:87`,
+  not 154 — 154 is inside its per-family baseline cascade (lines 143-154). Fallback fix likely
+  belongs inside `fitNormalizationModel`, not the `pipeline.ts:101` prefilter.
+- Finding 5 (UTC date bug): the correct local-date pattern to mirror is
+  `packages/api/src/chart/pipelineChartUtils.ts:62-68` (`localDateKey`), not
+  `utils/pipelineChartUtils.ts` — that path doesn't exist.
+- Finding 3 (validator): `headerRow: 0` is hardcoded in the early-`error`-return path at line
+  102, not inside the 123-141 range itself — worth flagging to whichever agent takes Task B3.
+
+**Priority tiers** (see full task list below, same content mirrored from the plan):
+
+- **P0 (Phase A):** silent data corruption / easy to hit in normal use — CSV reps NaN guard,
+  session-date UTC shift, `collectSessionDates` maxEffort-only gap, committed build artifact,
+  `KG_TO_LBS` triplication. All touch disjoint files — dispatched in parallel.
+- **P1 (Phase B):** real correctness/architecture bugs with larger blast radius — composite
+  chart carry-forward/date-range order, normalization speed-work fallback, sheet validator
+  per-row checks, cross-feature barrel evasion + ESLint widening. Sequential, reviewed closely.
+- **P2 (Phase C):** perf cleanup only, no correctness impact — pipeline hot-path
+  recomputation, `conjugateBestSet` reduce.
+- **Out of scope:** Finding 4 (Schwartz-Malone typo) predates this branch's merge-base — file
+  as a separate GitHub issue, not fixed here. Lower-priority notes section not actioned yet.
+
+### Phase A — P0 fixes — DONE, independently verified
+
+- [x] Task A1: CSV reps NaN guard — `parseInt(repsStr, 10)` + `isNaN` guard throwing `ParseError`,
+      matching the `weight` field's existing pattern. `csv.ts:73`. 4 new `it.each` error-case tests
+      added. Verified: `npm run build -w packages/pipeline` clean, 6/6 tests pass.
+- [x] Task A2: Session date UTC shift fix — replaced `toISOString().split('T')[0]` with an inline
+      local-date formatter (`getFullYear`/`getMonth`/`getDate`) in `lastSessionDetail.ts:36-39`.
+      Test dates switched from UTC-midnight-parsing `new Date('2026-01-15')` to local
+      `new Date(2026, 0, 15)`, plus a new dedicated timezone regression test. Verified:
+      `npm run build -w packages/api` clean, 9/9 tests pass. **Follow-up noted, not blocking:**
+      this inlines the same local-date-string logic a third time rather than exporting/reusing
+      `localDateKey` from `pipelineChartUtils.ts` (which isn't currently exported) — same
+      duplication pattern already flagged as a lower-priority note in `CODE_REVIEW.md`. Small
+      future cleanup: export `localDateKey`, repoint both `lastSessionDetail.ts` and
+      `volume/volume.ts`'s hand-rolled copy at it.
+- [x] Task A3: `collectSessionDates` now spreads both `.maxEffort` and `.volume` per lift
+      (`modelSelectors.ts:23-26`), mirroring sibling `collectVolumeRecords`'s access pattern. New
+      test covers a volume-only day becoming `lastSessionDate`. Verified: `npm run build -w
+    packages/api` clean, 20/20 tests pass.
+- [x] Task A4: `packages/pipeline/tsconfig.tsbuildinfo` removed from git (`git rm`), `*.tsbuildinfo`
+      added to root `.gitignore`. Verified: rebuild regenerates the file locally but it stays
+      untracked (`git status --short` confirms).
+- [x] Task A5: `KG_TO_LBS` exported from `weightUnit.ts` as the single source of truth;
+      `getCompetitionTotal.ts` now calls `roundWeight` directly (was a verbatim reimplementation);
+      `volume.ts` now calls `convertWeight`; `strengthScores.ts`'s `convertUnits` now derives the
+      lbs→kg direction as `v / KG_TO_LBS` instead of hardcoding the inverse constant. Verified:
+      `npm run build -w packages/api` clean, full package suite 284/284 (was 282 baseline + 2 new
+      tests from A2/A3, confirming no regressions).
+
+**Phase A cross-package regression (independently re-run by coordinator after all 5 tasks landed):**
+`npm run build -w packages/pipeline && npm run build -w packages/api && npm run build -w
+packages/app` — all clean, 0 TypeScript errors. Baseline test counts on this branch
+(`migration-phase-1`, pre-fix, confirmed via `git stash`) were pipeline 71, api 282, app 40 — much
+lower than the App Refactor migration's documented Phase 1-5 numbers above, confirming those later
+phases live on unmerged stacked branches and are **not** part of this branch's current state; this
+is the correct baseline for `CODE_REVIEW.md`'s findings, which were reviewed against this same
+branch. Post-Phase-A: pipeline 71/71 (unchanged), api 284/284 (+2, expected), app not yet touched
+by Phase A (all 5 tasks were pipeline/api-only).
+
+### Phase B — P1 fixes — DONE, independently verified
+
+- [x] Task B1: Composite branch in `buildDataset` (`packages/pipeline/src/dataset/build.ts`) now
+      builds per-component grids and runs carry-forward over full unfiltered `points` (not
+      `scoped`), and applies `ui.dateRange` filtering to the final `rows` only, after
+      carry-forward/sum/post-transform — matching the documented CompositeSpec contract. `series`
+      branch left untouched (no carry-forward, pre-filter is semantically equivalent there). 4 new
+      test cases added, including the exact December-bench/January-squat bug scenario from
+      `CODE_REVIEW.md`. Manually hand-traced by the coordinator against both the new and a
+      pre-existing test case to confirm correctness before trusting. Verified: build clean, full
+      pipeline suite 75/75 → **77/77** after B2's own additions (see below).
+- [x] Task B2: `fitNormalizationModel` (`packages/pipeline/src/derive/normalize.ts`) now builds a
+      `byCanFitted` view — each canonical's records filtered to non-speed-work sets via the
+      already-exported `isSpeedWork` from `derivers.ts`, falling back to the canonical's full
+      record set if it has zero effort sets (mirrors `derivers.ts`'s own `e1rm` deriver's
+      `effortSets.length ? effortSets : sets` fallback pattern exactly). All grid-building/fit call
+      sites (baseline grid, straight-canonical grid, addlWt offset fit, variant factor fit) switched
+      to this view. `pipeline.ts`'s global `fitInput` prefilter (which unconditionally dropped every
+      speed-work set pipeline-wide, with no per-canonical fallback) removed entirely —
+      `fitNormalizationModel` now receives the full unfiltered `tagged` history and does its own
+      per-canonical filtering internally. 2 new tests (100%-speed-work canonical gets a factor via
+      fallback; mixed canonical uses only its effort sets, verified with a concrete numeric
+      assertion). Verified: build clean, full pipeline suite **77/77**.
+- [x] Task B3: `validateSheetCsv`'s per-row loop (`packages/api/src/validation/pipelineSheetValidator.ts`)
+      restored to the deleted `packages/core` predecessor's exact validation surface (weight
+      missing/non-numeric = problem; reps missing = warning, non-integer/`<=0` = problem; date
+      missing = warning, unparseable = problem; RPE out of 1-10 = warning) — traced against the
+      original `validateRow.ts`/`validateSheetCsv.ts` (commit `56fbe5c^`) to confirm exact severity
+      split and message text, adapted to the current file's `findH()`-based header resolution
+      instead of the deleted core package's `RawRow`/`findCol`. `headerRow: 0` hardcoding
+      deliberately left untouched (separate, lower-priority gap, not part of this fix). 1 new test
+      covering all 6 field-level cases independently (missing/invalid weight, reps, date, RPE).
+      Verified: build clean, full api suite **285/285**.
+- [x] Task B4: 5 deep cross-feature imports (4 originally flagged + 1 more the implementer found in
+      `usePipelineVariationRadarData.test.ts`, all using the `../../features/<name>/*` evasion form)
+      repointed to their feature's barrel across
+      `features/validation/{ValidatorPage,PipelineValidationPage}.tsx`,
+      `features/index-page/useIndexData.ts`, `features/lift/usePipelineVariationRadarData.test.ts`.
+      `eslint.config.js`'s feature-barrel `no-restricted-imports` block widened with 7 new
+      `../../features/<name>/*` pattern entries alongside the existing `../<name>/*` ones — the
+      `SheetUrlPanel.tsx` allowlist exception (intentional, documented lazy-loading reason) verified
+      unaffected. **Independently re-verified the widened rule actually works** (not just trusted
+      the agent's claim): reintroduced a scratch `../../features/data-source/sheetFetch` import,
+      confirmed `npm run lint -w packages/app` flags it, reverted before finishing. Verified: lint
+      clean, build clean, app suite **40/40** (unchanged, pure import-path swap).
+
+**Phase B cross-package regression (independently re-run by coordinator after all 4 tasks landed):**
+builds all clean (pipeline/api/app), `npx eslint packages/app packages/api` clean. Tests: pipeline
+**77/77** (was 71 baseline, +6 from B1+B2), api **285/285** (was 282 baseline, +2 A2/A3 +1 B3), app
+**40/40** (unchanged).
+
+### Phase C — P2 cleanup (perf, do last) — DONE, independently verified
+
+- [x] Task C1: `packages/pipeline/src/pipeline.ts` now hoists `offsetAdjustRecords(tagged, model)`
+      to run once (was once per deriver id, ~4+ redundant O(records) passes) and splits the
+      `Map.groupBy` grouping (by `${date}::${canonical}` and `${date}::${label}`) into standalone
+      `groupByDateAndCanonical`/`groupByDateAndLabel` helpers computed once each and reused across
+      all 4 `pointsBy*` builders via new `buildPointsFromGroups`/`buildPointsByLabelFromGroups`
+      helpers that take pre-grouped data — eliminating the previous once-per-deriver-id grouping
+      passes entirely. `conjugateBestSet.ts`'s `reduce` now precomputes each record's e1RM once
+      (`effortSets.map(r => ({ r, e1rm: calcE1RM(...) }))`) instead of recomputing the accumulator's
+      e1RM every iteration; tie-break semantics (prefer earlier element on equality) preserved
+      exactly. **Coordinator found and removed dead code the implementer left behind:** the old
+      `buildPoints`/`buildPointsByLabel` wrapper functions became unused after the refactor (nothing
+      in the file called them anymore, just thin pass-throughs to the new `*FromGroups` helpers) —
+      not caught by `tsc` (no `noUnusedLocals`) or lint (pipeline package isn't in the monorepo's
+      `eslint packages/app packages/api` scope), only caught by directly reading the diff. Removed
+      directly rather than re-delegating. Verified: build clean, pipeline 77/77 and api 285/285
+      unchanged before AND after the dead-code removal, confirming zero behavior change throughout.
+
+**Phase C cross-package regression (independently re-run by coordinator):** builds all clean
+(pipeline/api/app), tests unchanged (pipeline 77/77, api 285/285, app 40/40), `npx eslint
+packages/app packages/api` clean, `git status --short` confirms the full diff touches exactly the
+files each of the 10 tasks (A1-A5, B1-B4, C1) was assigned — no scope creep across the whole effort.
+
+### Out of scope / file separately
+
+- Finding 4 (Schwartz-Malone female coefficient typo at bodyweight 237, `strengthScores.ts:339`) —
+  pre-existing bug, predates this branch's merge-base. File as a new GitHub issue, not part of
+  this remediation.
+- Lower-priority notes (duplicated date helpers, ESLint carve-out growth, dead barrel exports,
+  redundant field pair, hardcoded special cases, diagnostics semantics question) — noted in
+  `CODE_REVIEW.md`, not blocking; revisit after Phases A-C land.
+
+**Status: ALL 10 TASKS DONE (A1-A5, B1-B4, C1), independently verified.** Remaining, not yet
+started:
+
+1. **File a GitHub issue for Finding 4** (Schwartz-Malone female coefficient typo,
+   `strengthScores.ts:339`, bodyweight-237 entry `0.5765` breaks the strictly-decreasing table
+   trend) — pre-existing, predates this branch, deliberately not fixed here. `gh issue create`
+   has known problems on this repo per user's standing memory (Projects-classic-deprecation
+   breakage) — use the `gh api` workaround, not the plain CLI form.
+2. **Lower-priority notes not actioned:** duplicated date helpers (now a THIRD copy after Task
+   A2's inline local-date formatter — see A2's note above; export `localDateKey` from
+   `pipelineChartUtils.ts` and repoint both `lastSessionDetail.ts` and `volume/volume.ts`'s
+   existing hand-rolled copy at it), ESLint carve-out growth (render-only allowlist could become
+   a structural `@dyel/api/display` subpath export instead of a maintained per-file list), dead
+   barrel exports (`selectBestE1RMPoint`/`mergeWideRechartsRows`/`facetFamilyKey`), a redundant
+   `baselineCanonicals`/`targetCanonicals` field pair in `useVisualizerData.ts`, hardcoded
+   deadlift-stance/equipment-magnitude special cases (overstated in the review, not a clean
+   drop-in fix), and a diagnostics semantics question likely intentional (documented in
+   `analyze/CLAUDE.md`) — none blocking, not part of this remediation pass.
+3. **Not yet committed.** Everything above (Tasks A1-A5, B1-B4, C1) is sitting uncommitted in the
+   working tree, same as this branch's other in-flight migration work. Per this repo's git
+   conventions (root `CLAUDE.md`): never commit directly to `main` (N/A here, already on a feature
+   branch), submit as a new PR referencing the source issue once ready. Awaiting user direction on
+   whether to commit as one combined change or split by phase/priority tier, and which branch/PR
+   this should target given `migration-phase-1`'s own PR #467 status.

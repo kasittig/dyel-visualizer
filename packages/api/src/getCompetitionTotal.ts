@@ -1,5 +1,6 @@
 import type { PipelineModel } from '@dyel/pipeline';
 import { buildDatasetsFromModel } from '@dyel/pipeline';
+import { roundWeight } from './weightUnit';
 import { TOTAL_CHART_SPECS } from './totalChartSpecs';
 
 export function getCompetitionTotal(
@@ -18,5 +19,5 @@ export function getCompetitionTotal(
   if (last === undefined) {
     return null;
   }
-  return Math.round(unit === 'lbs' ? last.total * 2.20462262185 : last.total);
+  return roundWeight(last.total, unit);
 }

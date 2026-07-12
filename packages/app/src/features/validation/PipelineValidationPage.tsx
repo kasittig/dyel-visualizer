@@ -2,7 +2,7 @@ import { useState, type CSSProperties } from 'react';
 import clsx from 'clsx';
 import { usePipelineValidation } from './usePipelineValidation';
 import type { InputMode } from '../../app/appTabs';
-import { InputModeToggle } from '../../features/data-source/InputModeToggle';
+import { InputModeToggle } from '../data-source';
 import styles from './PipelineValidationPage.module.css';
 
 const BANNERS = {

@@ -140,6 +140,8 @@ export default defineConfig([
     // Enforce feature barrel imports: features may only import sibling features via their index.ts barrel.
     // This blocks deep relative imports like ../sigma/SigmaChart while allowing barrel imports like ../sigma.
     // Uses explicit feature directory names to avoid false positives with ../../app or ../../shared imports.
+    // Patterns include both ../name/* (correct deep-import form) and ../../features/name/* (evasion form) to
+    // catch both intended and accidental violations.
     files: ['packages/app/src/features/**/*.{ts,tsx}'],
     rules: {
       'no-restricted-imports': [
@@ -155,6 +157,13 @@ export default defineConfig([
                 '../validation/*',
                 '../calculator/*',
                 '../conjugate-info/*',
+                '../../features/data-source/*',
+                '../../features/index-page/*',
+                '../../features/lift/*',
+                '../../features/sigma/*',
+                '../../features/validation/*',
+                '../../features/calculator/*',
+                '../../features/conjugate-info/*',
               ],
               message:
                 'Features may import other features only via their index.ts barrel (e.g. `../sigma`, not `../sigma/SigmaChart`) — see root CLAUDE.md and packages/app/CLAUDE.md.',

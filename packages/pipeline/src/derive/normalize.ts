@@ -1,5 +1,6 @@
 import type { TaggedSetRecord } from '../tag/tag';
 import { calcE1RM, invertE1RM } from './e1rm';
+import { isSpeedWork } from './derivers';
 import type { AthleteContext } from './athlete';
 
 export interface NormalizationModel {
@@ -90,6 +91,17 @@ export function fitNormalizationModel(
   athlete: AthleteContext
 ): NormalizationModel {
   const byCan = Object.groupBy(history, (r: TaggedSetRecord) => r.canonical);
+  // Build effort-filtered-with-fallback view: each canonical uses only non-speed-work sets,
+  // but falls back to all sets if it has zero effort records
+  const byCanFitted = Object.fromEntries(
+    Object.entries(byCan).map(([c, recs]) => {
+      if (!recs) {
+        return [c, recs];
+      }
+      const effort = recs.filter((r) => !isSpeedWork(r));
+      return [c, effort.length ? effort : recs];
+    })
+  );
   const byFam = new Map<string, string[]>();
   for (const [can, recs] of Object.entries(byCan)) {
     if (!recs) {
@@ -151,7 +163,7 @@ export function fitNormalizationModel(
             : entries;
     const [baseCan] = pool.sort((a, b) => b.r.length - a.r.length || a.c.localeCompare(b.c));
     baseline[family] = baseCan.c;
-    const grid = buildSessionGrid(byCan[baseCan.c]!);
+    const grid = buildSessionGrid(byCanFitted[baseCan.c]!);
 
     for (const { c, r } of entries) {
       if (c === baseCan.c) {
@@ -162,8 +174,8 @@ export function fitNormalizationModel(
         const straightCan = straightBySig.get(getNonAddlSignature(r[0]?.tags || new Set<string>()));
         if (straightCan) {
           const o = fitMetric(
-            buildSessionGrid(byCan[straightCan]!),
-            r,
+            buildSessionGrid(byCanFitted[straightCan]!),
+            byCanFitted[c]!,
             (p: number, rec: TaggedSetRecord) => invertE1RM(p, rec.reps) - rec.weight
           );
           if (o && o.n >= opts.minSamples) {
@@ -174,13 +186,13 @@ export function fitNormalizationModel(
       }
       const rFit =
         offsetKg !== null
-          ? r.map(
+          ? byCanFitted[c]!.map(
               (rec: TaggedSetRecord): TaggedSetRecord => ({
                 ...rec,
                 weight: rec.weight + (offsetKg as number),
               })
             )
-          : r;
+          : byCanFitted[c]!;
       const f = fitMetric(
         grid,
         rFit,

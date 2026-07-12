@@ -33,10 +33,12 @@ export function buildLastSessionDetail(
     Array.from(labelSessions, ([label, { date, records }]) => {
       const first = records[0]!;
       const sets = first.meta?.sets ? parseInt(first.meta.sets, 10) : records.length;
+      const d = new Date(date);
+      const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
       return [
         label,
         {
-          date: new Date(date).toISOString().split('T')[0]!,
+          date: dateStr,
           sets,
           reps: first.reps,
           weight: first.weight,

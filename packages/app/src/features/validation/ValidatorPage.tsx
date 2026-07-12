@@ -3,9 +3,8 @@ import clsx from 'clsx';
 import { useSheetValidation } from './useSheetValidation';
 import { useTextValidation } from './useTextValidation';
 import type { ColumnInfo } from '@dyel/api';
-import { EXAMPLE_SHEET_URL } from '../../features/data-source/sheetRef';
+import { EXAMPLE_SHEET_URL, InputModeToggle } from '../data-source';
 import type { InputMode } from '../../app/appTabs';
-import { InputModeToggle } from '../../features/data-source/InputModeToggle';
 import styles from './ValidatorPage.module.css';
 
 const BANNERS = {

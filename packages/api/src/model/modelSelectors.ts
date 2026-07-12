@@ -20,7 +20,10 @@ export function collectSessionDates(tabRows: Record<LiftType, SplitRows>): {
   allSessionDates: Date[];
   lastSessionDate: Date | null;
 } {
-  const allRecords = LIFT_TABS.flatMap((lift) => tabRows[lift].maxEffort);
+  const allRecords = LIFT_TABS.flatMap((lift) => [
+    ...tabRows[lift].maxEffort,
+    ...tabRows[lift].volume,
+  ]);
   const seen = new Set<string>();
   const dates: Date[] = [];
   let last: Date | null = null;

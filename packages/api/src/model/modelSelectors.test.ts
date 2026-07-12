@@ -107,6 +107,15 @@ describe('modelSelectors', () => {
       expect(res.allSessionDates).toHaveLength(3);
       expect(res.lastSessionDate?.toDateString()).toBe(d20.toDateString());
     });
+
+    it('includes volume-only days as lastSessionDate when most recent', () => {
+      const res = collectSessionDates({
+        ...emptyTabRows(),
+        squat: { all: [], maxEffort: [rec(d10.getTime())], volume: [rec(d20.getTime())] },
+      });
+      expect(res.allSessionDates).toHaveLength(2);
+      expect(res.lastSessionDate?.toDateString()).toBe(d20.toDateString());
+    });
   });
 
   describe('collectVolumeRecords', () => {

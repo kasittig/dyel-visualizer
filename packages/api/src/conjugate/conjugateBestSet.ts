@@ -26,9 +26,8 @@ export function buildBestSetByLabelAndDate(
       continue;
     }
 
-    const best = effortSets.reduce((a, b) =>
-      calcE1RM(b.weight, b.reps, b.rpe) > calcE1RM(a.weight, a.reps, a.rpe) ? b : a
-    );
+    const withE1RM = effortSets.map((r) => ({ r, e1rm: calcE1RM(r.weight, r.reps, r.rpe) }));
+    const best = withE1RM.reduce((a, b) => (b.e1rm > a.e1rm ? b : a)).r;
 
     if (!result.has(label)) {
       result.set(label, new Map());

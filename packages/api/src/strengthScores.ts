@@ -1,4 +1,5 @@
 import type { AthleteContext } from '@dyel/pipeline';
+import { KG_TO_LBS } from './weightUnit';
 
 interface LiftMetrics {
   dots: number;
@@ -380,7 +381,7 @@ const calc = (bw: number, total: number, coeff: number[]) => {
 };
 
 const convertUnits = (v: number, from: 'lbs' | 'kg', to: 'lbs' | 'kg') => {
-  return from === to ? v : from === 'lbs' ? v * 0.45359237 : v * 2.20462262185;
+  return from === to ? v : from === 'lbs' ? v / KG_TO_LBS : v * KG_TO_LBS;
 };
 
 function calculatePercentileRank(

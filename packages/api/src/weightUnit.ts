@@ -3,7 +3,7 @@ export type DisplayUnit = 'lbs' | 'kg';
 // Pipeline output is always kg; display-unit conversion is the app's job (see
 // packages/pipeline/src/dataset/CLAUDE.md). This is the single source of truth for
 // kg -> display-unit conversion — do not reintroduce local KG_TO_LBS constants elsewhere.
-const KG_TO_LBS = 2.20462262185;
+export const KG_TO_LBS = 2.20462262185;
 
 export function convertWeight(kg: number, unit: DisplayUnit): number {
   return unit === 'lbs' ? kg * KG_TO_LBS : kg;

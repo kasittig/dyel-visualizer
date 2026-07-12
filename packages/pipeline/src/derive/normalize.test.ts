@@ -11,7 +11,8 @@ const r = (
   wt: number,
   tags: string[],
   sets?: number,
-  raw?: string
+  raw?: string,
+  rpe?: number
 ): TaggedSetRecord => ({
   date: dt,
   exercise: ex,
@@ -21,6 +22,7 @@ const r = (
   tags: new Set(tags),
   effects: [],
   baselineRange: null,
+  ...(rpe !== undefined ? { rpe } : {}),
   ...(sets || raw
     ? { meta: { ...(sets && { sets: String(sets) }), ...(raw && { rawExercise: raw }) } }
     : {}),
@@ -63,12 +65,24 @@ describe('fitNormalizationModel core & preferences', () => {
     const bh = hist.filter((x) => x.exercise.startsWith('bench')),
       v = r(d(5), 'bench-paused', 95, ['lift:bench', 'variation']);
     const wOut = fitNormalizationModel([...bh, v], { minSamples: 1 }, ath());
+    // Adding a speed-work bench set should NOT change the factor, because it's filtered out
+    // at the per-canonical level before grid building
     const wIn = fitNormalizationModel(
       [...bh, v, r(d(5), 'bench', 10, ['lift:bench', 'comp-lift'], 9)],
       { minSamples: 1 },
       ath()
     );
-    expect(wIn.variantFactor['bench-paused'].factor).not.toBeCloseTo(
+    expect(wIn.variantFactor['bench-paused'].factor).toBeCloseTo(
+      wOut.variantFactor['bench-paused'].factor,
+      1
+    );
+    // But adding an EFFORT set (with RPE) should change the factor, even at 9 sets
+    const wRpe = fitNormalizationModel(
+      [...bh, v, r(d(5), 'bench', 115, ['lift:bench', 'comp-lift'], 9, undefined, 7)],
+      { minSamples: 1 },
+      ath()
+    );
+    expect(wRpe.variantFactor['bench-paused'].factor).not.toBeCloseTo(
       wOut.variantFactor['bench-paused'].factor,
       1
     );
@@ -101,5 +115,51 @@ describe('fitNormalizationModel core & preferences', () => {
 
     const mix = [...p, r(d(1), 'bn', 110, ['lift:bench'], 0, 'Competition Bench')];
     expect(fitNormalizationModel(mix, { minSamples: 1 }, ath()).baseline['lift:bench']).toBe('bn');
+  });
+
+  it('handles speed-work-only canonicals with per-canonical fallback', () => {
+    // Speed Bench variant logged exclusively as speed work (3x3, no RPE)
+    const speedOnly = [
+      r(d(1), 'bench-speed', 95, ['lift:bench', 'variation'], 3),
+      r(d(5), 'bench-speed', 105, ['lift:bench', 'variation'], 3),
+      r(d(10), 'bench-speed', 110, ['lift:bench', 'variation'], 3),
+    ];
+    // Regular bench for comparison
+    const regular = [
+      r(d(1), 'bench', 100, ['lift:bench', 'comp-lift']),
+      r(d(5), 'bench', 110, ['lift:bench', 'comp-lift']),
+      r(d(10), 'bench', 115, ['lift:bench', 'comp-lift']),
+    ];
+
+    const m = fitNormalizationModel([...regular, ...speedOnly], { minSamples: 1 }, ath());
+    // Baseline should be regular bench (more records)
+    expect(m.baseline['lift:bench']).toBe('bench');
+    // Speed bench should get a variantFactor even though it's 100% speed work,
+    // because of per-canonical fallback (it will use all its records for fitting)
+    expect(m.variantFactor['bench-speed']).toBeDefined();
+    expect(m.variantFactor['bench-speed']?.factor).toBeGreaterThan(0);
+  });
+
+  it('uses effort-filtered records when canonical has mixed effort and speed work', () => {
+    // Bench variant with both effort and speed-work sets
+    const mixed = [
+      r(d(1), 'bench-pause', 90, ['lift:bench', 'variation']), // single set (effort)
+      r(d(5), 'bench-pause', 85, ['lift:bench', 'variation'], 5), // speed work (5x sets, no RPE)
+      r(d(10), 'bench-pause', 100, ['lift:bench', 'variation']), // single set (effort)
+    ];
+    // Regular bench for comparison
+    const regular = [
+      r(d(1), 'bench', 100, ['lift:bench', 'comp-lift']),
+      r(d(5), 'bench', 110, ['lift:bench', 'comp-lift']),
+      r(d(10), 'bench', 115, ['lift:bench', 'comp-lift']),
+    ];
+
+    const m = fitNormalizationModel([...regular, ...mixed], { minSamples: 1 }, ath());
+    // Both should have factors
+    expect(m.variantFactor['bench-pause']).toBeDefined();
+    // The factor should be based on effort records only (90 and 100), not the 85 speed work
+    const factor = m.variantFactor['bench-pause']?.factor || 1;
+    const expectedFactor = (90 / 100 + 100 / 115) / 2; // avg of only effort records
+    expect(factor).toBeCloseTo(expectedFactor, 1);
   });
 });

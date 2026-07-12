@@ -24,9 +24,9 @@ const rec = (
 });
 
 describe('buildLastSessionDetail', () => {
-  const now = new Date('2026-01-15');
-  const yest = new Date('2026-01-14');
-  const twoDays = new Date('2026-01-13');
+  const now = new Date(2026, 0, 15);
+  const yest = new Date(2026, 0, 14);
+  const twoDays = new Date(2026, 0, 13);
 
   it.each([
     ['empty input', [], new Map()],
@@ -75,7 +75,7 @@ describe('buildLastSessionDetail', () => {
     const res = buildLastSessionDetail(
       [
         rec(now, 'squat', 5, 100, 8, undefined, 'squat'),
-        rec(new Date('2026-07-08'), 'bench', 5, 100, 8),
+        rec(new Date(2026, 6, 8), 'bench', 5, 100, 8),
       ],
       'bench'
     );
@@ -84,5 +84,15 @@ describe('buildLastSessionDetail', () => {
       throw new Error('Missing expected bench entry');
     }
     expect(res.get('bench')?.date).toBe('2026-07-08');
+  });
+
+  it('formats local-constructed dates correctly (catches timezone bugs)', () => {
+    const localDate = new Date(2026, 6, 8);
+    const expectedDate = `${localDate.getFullYear()}-${String(localDate.getMonth() + 1).padStart(2, '0')}-${String(localDate.getDate()).padStart(2, '0')}`;
+    const res = buildLastSessionDetail([rec(localDate, 'bench', 5, 100, 8)], 'bench');
+    if (!res.has('bench')) {
+      throw new Error('Missing expected bench entry');
+    }
+    expect(res.get('bench')?.date).toBe(expectedDate);
   });
 });

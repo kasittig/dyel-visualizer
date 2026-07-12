@@ -54,4 +54,79 @@ describe('validateSheetCsv (pipeline-native)', () => {
     );
     expect(accOnly.warnings.some((w) => w.includes('only accessories'))).toBe(true);
   });
+
+  it('validates per-row weight, reps, date, and RPE independently', () => {
+    // Missing weight should fail the row
+    const missingWeight = validateSheetCsv(`date,exercise,weight (lbs),reps\n2024-01-01,Squat,,5`);
+    expect(missingWeight.rows.parsed).toBe(0);
+    expect(missingWeight.rowIssues[0]?.issues.some((i) => i.includes('Weight is missing'))).toBe(
+      true
+    );
+
+    // Invalid weight (non-numeric) should fail the row
+    const invalidWeight = validateSheetCsv(
+      `date,exercise,weight (lbs),reps\n2024-01-01,Squat,abc,5`
+    );
+    expect(invalidWeight.rows.parsed).toBe(0);
+    expect(invalidWeight.rowIssues[0]?.issues.some((i) => i.includes('Invalid weight'))).toBe(true);
+
+    // Missing reps should warn but not fail the row
+    const missingReps = validateSheetCsv(`date,exercise,weight (lbs),reps\n2024-01-01,Squat,405,`);
+    expect(missingReps.rows.parsed).toBe(1);
+    expect(missingReps.verdict).toBe('ok');
+    expect(missingReps.rowIssues[0]?.issues.some((i) => i.includes('Reps is missing'))).toBe(true);
+
+    // Invalid reps (non-integer) should fail the row
+    const invalidReps = validateSheetCsv(
+      `date,exercise,weight (lbs),reps\n2024-01-01,Squat,405,2.5`
+    );
+    expect(invalidReps.rows.parsed).toBe(0);
+    expect(invalidReps.rowIssues[0]?.issues.some((i) => i.includes('Invalid reps'))).toBe(true);
+
+    // Negative reps should fail the row
+    const negativeReps = validateSheetCsv(
+      `date,exercise,weight (lbs),reps\n2024-01-01,Squat,405,-3`
+    );
+    expect(negativeReps.rows.parsed).toBe(0);
+    expect(negativeReps.rowIssues[0]?.issues.some((i) => i.includes('Invalid reps'))).toBe(true);
+
+    // Zero reps should fail the row
+    const zeroReps = validateSheetCsv(`date,exercise,weight (lbs),reps\n2024-01-01,Squat,405,0`);
+    expect(zeroReps.rows.parsed).toBe(0);
+    expect(zeroReps.rowIssues[0]?.issues.some((i) => i.includes('Invalid reps'))).toBe(true);
+
+    // Missing date should warn but not fail the row
+    const missingDate = validateSheetCsv(`date,exercise,weight (lbs),reps\n,Squat,405,2`);
+    expect(missingDate.rows.parsed).toBe(1);
+    expect(missingDate.verdict).toBe('ok');
+    expect(missingDate.rowIssues[0]?.issues.some((i) => i.includes('Date is missing'))).toBe(true);
+
+    // Invalid date should fail the row
+    const invalidDate = validateSheetCsv(`date,exercise,weight (lbs),reps\n2024-13-01,Squat,405,2`);
+    expect(invalidDate.rows.parsed).toBe(0);
+    expect(invalidDate.rowIssues[0]?.issues.some((i) => i.includes('Invalid date'))).toBe(true);
+
+    // Invalid RPE (out of range) should warn but not fail the row
+    const invalidRpe = validateSheetCsv(
+      `date,exercise,weight (lbs),reps,rpe\n2024-01-01,Squat,405,2,11`
+    );
+    expect(invalidRpe.rows.parsed).toBe(1);
+    expect(invalidRpe.verdict).toBe('ok');
+    expect(invalidRpe.rowIssues[0]?.issues.some((i) => i.includes('Invalid RPE'))).toBe(true);
+
+    // RPE below 1 should warn but not fail the row
+    const rpeBelow1 = validateSheetCsv(
+      `date,exercise,weight (lbs),reps,rpe\n2024-01-01,Squat,405,2,0.5`
+    );
+    expect(rpeBelow1.rows.parsed).toBe(1);
+    expect(rpeBelow1.verdict).toBe('ok');
+    expect(rpeBelow1.rowIssues[0]?.issues.some((i) => i.includes('Invalid RPE'))).toBe(true);
+
+    // Valid RPE (within 1-10) should not produce warnings
+    const validRpe = validateSheetCsv(
+      `date,exercise,weight (lbs),reps,rpe\n2024-01-01,Squat,405,2,8`
+    );
+    expect(validRpe.rows.parsed).toBe(1);
+    expect(validRpe.rowIssues).toEqual([]);
+  });
 });

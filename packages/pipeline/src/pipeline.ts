@@ -39,23 +39,30 @@ export interface PipelineModel {
   athlete: AthleteContext;
 }
 
-function buildPoints(tagged: TaggedSetRecord[], deriverId: string): Point[] {
-  const d = derivers[deriverId];
-  return Array.from(Map.groupBy(tagged, (r) => `${r.date}::${r.canonical}`).values()).flatMap(
-    (sets) => {
-      const v = d.derive(sets);
-      return v === null
-        ? []
-        : [{ t: sets[0].date, v, series: sets[0].canonical, tags: sets[0].tags }];
-    }
-  );
+function groupByDateAndCanonical(tagged: TaggedSetRecord[]): Map<string, TaggedSetRecord[]> {
+  return Map.groupBy(tagged, (r) => `${r.date}::${r.canonical}`);
 }
 
-function buildPointsByLabel(tagged: TaggedSetRecord[], deriverId: string): Point[] {
+function groupByDateAndLabel(tagged: TaggedSetRecord[]): Map<string, TaggedSetRecord[]> {
+  return Map.groupBy(tagged, (r) => `${r.date}::${r.meta?.rawExercise ?? r.canonical}`);
+}
+
+function buildPointsFromGroups(groups: Map<string, TaggedSetRecord[]>, deriverId: string): Point[] {
   const d = derivers[deriverId];
-  return Array.from(
-    Map.groupBy(tagged, (r) => `${r.date}::${r.meta?.rawExercise ?? r.canonical}`).values()
-  ).flatMap((sets) => {
+  return Array.from(groups.values()).flatMap((sets) => {
+    const v = d.derive(sets);
+    return v === null
+      ? []
+      : [{ t: sets[0].date, v, series: sets[0].canonical, tags: sets[0].tags }];
+  });
+}
+
+function buildPointsByLabelFromGroups(
+  groups: Map<string, TaggedSetRecord[]>,
+  deriverId: string
+): Point[] {
+  const d = derivers[deriverId];
+  return Array.from(groups.values()).flatMap((sets) => {
     const v = d.derive(sets);
     return v === null
       ? []
@@ -98,17 +105,22 @@ export function runPipelineModel(
   const { tagged, unknown: unkCanonicals } = tagRecords(resolved, athlete.deadliftStance);
   const unknownExercises = [...new Set([...unkAliases, ...unkCanonicals])];
 
-  const fitInput = tagged.filter(
-    (r) => r.sets === undefined || r.sets === 1 || r.rpe !== undefined
-  );
-  const model = fitNormalizationModel(fitInput, { minSamples: 1 }, athlete);
+  const model = fitNormalizationModel(tagged, { minSamples: 1 }, athlete);
   const allDeriverIds = Object.keys(derivers);
 
-  const pointsByDeriver = new Map(allDeriverIds.map((id) => [id, buildPoints(tagged, id)]));
-  const pointsByLabelByDeriver = new Map(
-    allDeriverIds.map((id) => [id, buildPointsByLabel(tagged, id)])
+  const canonicalGroups = groupByDateAndCanonical(tagged);
+  const labelGroups = groupByDateAndLabel(tagged);
+  const pointsByDeriver = new Map(
+    allDeriverIds.map((id) => [id, buildPointsFromGroups(canonicalGroups, id)])
   );
+  const pointsByLabelByDeriver = new Map(
+    allDeriverIds.map((id) => [id, buildPointsByLabelFromGroups(labelGroups, id)])
+  );
+
   const addlWtCanonicals = new Set(Object.keys(model.addlWtOffset));
+  const adjustedRecords = addlWtCanonicals.size > 0 ? offsetAdjustRecords(tagged, model) : null;
+  const adjustedCanonicalGroups = adjustedRecords ? groupByDateAndCanonical(adjustedRecords) : null;
+  const adjustedLabelGroups = adjustedRecords ? groupByDateAndLabel(adjustedRecords) : null;
 
   const pointsByDeriverAdjusted = new Map(
     allDeriverIds.map((id) => {
@@ -117,7 +129,7 @@ export function runPipelineModel(
         return [id, original];
       }
       const adjustedByKey = new Map(
-        buildPoints(offsetAdjustRecords(tagged, model), id)
+        buildPointsFromGroups(adjustedCanonicalGroups!, id)
           .filter((p) => addlWtCanonicals.has(p.series))
           .map((p) => [`${p.t}::${p.series}`, p])
       );
@@ -131,7 +143,7 @@ export function runPipelineModel(
       if (addlWtCanonicals.size === 0) {
         return [id, original];
       }
-      return [id, buildPointsByLabel(offsetAdjustRecords(tagged, model), id)];
+      return [id, buildPointsByLabelFromGroups(adjustedLabelGroups!, id)];
     })
   );
 
