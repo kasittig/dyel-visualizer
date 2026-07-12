@@ -1,6 +1,12 @@
 # Model Descriptions
 
-## e1RM Prediction (`predictE1RM`)
+These describe the current `@dyel/pipeline` implementations. The now-deleted `@dyel/core`
+package originally had similarly-named functions (`predictE1RM`, `normalizeToBaseE1RM`,
+`generateDiagnostics`) that this doc used to describe directly; `@dyel/core` has since been
+fully removed from the workspace (see `HANDOFF.md`) and its logic ported/rearchitected into
+`@dyel/pipeline`, so each section below now names the pipeline-native equivalent.
+
+## e1RM Prediction (`projectE1RMToDate`)
 
 ### What it does
 
@@ -13,9 +19,9 @@ Given a set of known e1RM values (one per session date) and a target date, retur
 - **No sessions:** returns `null`.
 - **Floor:** all predictions are clamped to a minimum of 0.
 
-Each session's e1RM is the best (highest) e1RM across all sets on that date, computed with the Epley formula (`weight × (1 + reps / 30)`).
+Each session's e1RM is the best (highest) e1RM across all sets on that date, computed with the Epley formula (`weight × (1 + reps / 30)`, RPE-adjusted when present — see `derive/e1rm.ts`'s `calcE1RM`). `projectE1RMToDate(points, targetDate)` (`packages/pipeline/src/derive/normalize.ts`) takes already-derived `{t, v}` points (e.g. from the pipeline's `e1rm` deriver) rather than raw sessions directly, but is otherwise an unchanged, pure port of legacy's algorithm — same edge-extrapolation behavior, same interpolation.
 
-In Conjugate Mode, each exercise variation has its own independent prediction curve.
+Each exercise variation (canonical) has its own independent prediction curve, since points are grouped by canonical before this function ever sees them.
 
 ### Assumptions
 
@@ -32,87 +38,67 @@ In Conjugate Mode, each exercise variation has its own independent prediction cu
 - **Non-linear progress curves.** Beginners tend to progress faster early on; advanced lifters plateau. The model applies a constant rate regardless of training age or phase.
 - **Regression below zero.** If extrapolation would produce a negative e1RM, the result is clamped to 0. A prediction of 0 is not meaningful — it just means the linear model has run out of range.
 
-## Cross-exercise e1RM normalization (`normalizeToBaseE1RM`)
+## Cross-exercise e1RM normalization (`fitNormalizationModel` / `normalizeE1rm` / `projectToVariant`)
 
 ### What it does
 
-Given a `(weight, reps)` recorded under one exercise (the _source_), returns the equivalent e1RM expressed in terms of a different exercise (the _target_). This lets you compare lifts across variations — e.g. express an SSB squat session as a competition squat e1RM, or convert a swiss bar floor press with chains into a bench press e1RM.
+Given an e1RM recorded under one exercise (the _source_ canonical), returns the equivalent e1RM expressed in terms of that lift family's baseline exercise (e.g. express an SSB squat session as a competition squat e1RM). Unlike legacy's `normalizeToBaseE1RM`, this is **baseline-only, not arbitrary source→target**: everything normalizes to (or projects from) the model's fixed per-lift-family baseline canonical — there is no "normalize any exercise to any other exercise" path. All of this lives in `packages/pipeline/src/derive/normalize.ts`.
 
-The function uses two pre-fitted statistics from `RepCalcStats`, both computed by `useLastSessionStats`:
+`fitNormalizationModel(history, { minSamples }, athlete)` produces a `NormalizationModel` with three fitted fields:
 
-- **`addlWtOffset`** — per exercise, the average difference between the bar weight and the "effective" straight-bar weight at the same rep count. Negative when chains or bands add weight that contributes less than a straight plate (e.g. because chain weight deloads at the bottom). Keyed by the exercise's display name.
-- **`variantFactor`** — per exercise, the ratio of that exercise's e1RM to the baseline exercise's e1RM (e.g. SSB squat ÷ competition squat ≈ 0.90). Fitted against _addlWt-adjusted_ sessions (see below). Keyed by the exercise's display name.
+- **`baseline`** — per lift family (`lift:squat`/`lift:bench`/`lift:deadlift`), the canonical chosen as that family's anchor. Selection prefers (first match wins): an exercise explicitly logged with "competition" in its name, then the athlete's preferred deadlift stance, then a paused/"commands" bench, then any plain `comp-lift`-tagged entry, then any entry at all — ties broken by most logged samples, then alphabetically.
+- **`variantFactor`** — per non-baseline canonical, the ratio of that exercise's e1RM to the baseline exercise's e1RM (e.g. SSB squat ÷ competition squat ≈ 0.90), fitted by interpolating the baseline's e1RM grid at each variant session's date and averaging the ratio. `null`/absent when fewer than `minSamples` sessions are available — never silently defaults to 1.0.
+- **`addlWtOffset`** — per addlWt (chains/bands) canonical, the average kg difference between its logged weight and the "effective" straight-bar weight at the same rep count, fitted against the matching addlWt-free canonical in the same family (same bar/stance/equipment, no chains/bands). Chain/band offsets are typically negative (they add weight that contributes less than a straight plate).
 
-### Normalization paths
+### Applying the model
 
-**1. Exact match** (`source.displayName === target.displayName`)
+**Fit-time offset correction (Design B, mirroring legacy's `applyAddlWtOffset`-before-`fitVariantFactor` sequencing):** for addlWt canonicals, `fitNormalizationModel` fits the offset first, then offset-adjusts that canonical's records (`weight += offsetKg`) _before_ fitting `variantFactor` against them — so the stored factor reflects only the biomechanical variation, with the chain/band contribution already backed out.
 
-Returns `calcE1RM(weight, reps)` with no adjustment.
+**Pre-derivation weight-space correction (Design C, supersedes an earlier e1RM-space approximation):** `offsetAdjustRecords(records, model)` applies the same `weight += offsetKg` correction to raw `TaggedSetRecord[]` before any e1RM derivation happens. `pipeline.ts` uses this for composite chart specs (e.g. `TotalChart`, `ConjugateCharts`' normalized line) so their e1RM values are derived from already-corrected weights, not corrected after the fact. Canonicals with no fitted offset (including the baseline itself) pass through unchanged.
 
-**2. Same family, different addlWts** (`familyKey(source) === familyKey(target)`)
-
-`familyKey` is `type | bar | stance | equipment`. Two exercises in the same family differ only in chains or bands.
-
-- _Source has addlWts, target does not_ (strip): `calcE1RM(weight + offset, reps)` where `offset = addlWtOffset[source]`. The offset is negative, so this reduces the effective weight.
-- _Target has addlWts, source does not_ (add): `calcE1RM(max(0, weight − offset), reps)`. Subtracting a negative offset increases the bar weight to what you would need to load with chains to match the straight-bar lift.
-
-Returns `null` if the required offset entry is missing or has zero samples.
-
-**3. Cross-family** (different bar, stance, or equipment)
-
-Uses `variantFactor` to convert through a shared baseline:
+**Apply-time, once weights are already correct:**
 
 ```
-result = (sourceE1RM / sourceFactor) × targetFactor
+normalizeE1rm(canonical, e1rmKg, model)          // variant → baseline: e1rmKg / factor
+projectToVariant(baseE1rmKg, canonical, model)   // baseline → variant: baseE1rmKg * factor
 ```
 
-where `sourceFactor` and `targetFactor` are each exercise's ratio to the baseline (the optional `baseline` parameter gets factor = 1.0; everything else is looked up in `variantFactor`).
-
-**Order of operations matters for addlWt sources.** `variantFactor` entries for chain/band exercises are fitted against _chain-stripped_ session weights (in `useLastSessionStats` pass 4, each session weight is adjusted by `addlWtOffset` before `fitVariantFactor` is called). This means the stored factor reflects only the _biomechanical_ variation — the chain contribution has already been removed from the training data. To be consistent, `normalizeToBaseE1RM` must strip the addlWt from the source weight _before_ dividing by the factor:
-
-```
-sourceE1RM = calcE1RM(weight + addlWtOffset[source], reps)   // strip chains first
-result     = (sourceE1RM / sourceFactor) × targetFactor       // then apply factors
-```
-
-If instead the raw (chain-weighted) e1RM were divided by the factor, the chain load would be scaled by `1 / sourceFactor` rather than removed, producing an incorrect result. If no offset entry exists for an addlWt source, the raw e1RM is used as a best-effort approximation.
-
-Returns `null` if either factor is missing or has zero samples.
+Both are now pure factor operations (no additional offset math — offset correction already happened upstream via `offsetAdjustRecords`). Both return `null`, never a silent fallback to `1.0`, when the canonical has no fitted `variantFactor` (or isn't itself the baseline). `projectToVariant` currently has no production callers — the app only ever projects the other direction (variant → baseline).
 
 ### Assumptions
 
 1. **Factors are stationary.** The ratio between two exercises is assumed to be constant over time. In practice it can shift as a lifter's technique or body composition changes.
-2. **addlWt contributes linearly.** The offset model assumes the effective weight penalty for chains is a fixed number of pounds per session, regardless of the total load or where in the range of motion the chain weight is heaviest.
-3. **addlWt and biomechanical effects are independent.** For cross-family normalization of addlWt sources, the code strips chains via the offset and then applies the bar/stance/equipment factor. This is valid only if the two adjustments do not interact — i.e. the biomechanical factor for "SSB + chains" equals the factor for "SSB" alone.
+2. **addlWt contributes linearly.** The offset model assumes the effective weight penalty for chains is a fixed number of kg per session, regardless of the total load or where in the range of motion the chain weight is heaviest.
+3. **addlWt and biomechanical effects are independent.** The fit-time sequencing (offset-adjust, then fit `variantFactor`) is valid only if the two adjustments don't interact — i.e. the biomechanical factor for "SSB + chains" equals the factor for "SSB" alone.
 
 ### Cases not handled
 
-- **Source has addlWts and target is in a different family, but no `addlWtOffset` entry exists.** The function falls back to the raw (chain-weighted) e1RM before dividing by `variantFactor`, which will overestimate the baseline e1RM.
-- **Neither source nor target is the baseline, and one of them has no `variantFactor` entry.** Returns `null`; there is not enough data to cross-normalize.
-- **Proxy offset lookup for same-family → addlWt target.** `findBestE1RM` can search for a proxy offset from a related exercise in the same family, but `normalizeToBaseE1RM` only looks up the target's own `addlWtOffset` entry. If that entry is missing, it returns `null` rather than falling back to a proxy.
+- **Arbitrary source→target normalization.** Legacy's `normalizeToBaseE1RM` could convert between any two exercises directly (e.g. SSB squat → floor press); the pipeline only supports variant↔baseline. Cross-variant comparison (neither side the baseline) isn't a supported operation — this was a deliberate scope narrowing when `ConjugateCharts`/`VariationRadarChart` were migrated (see `HANDOFF.md`), not an oversight.
+- **No fitted offset for an addlWt canonical.** If no matching addlWt-free canonical exists in the same family to fit against, `addlWtOffset` for that canonical is simply left unfitted; `offsetAdjustRecords` passes its records through unchanged (no fallback approximation).
+- **`projectToVariant`'s offset limitation.** Since offset correction now happens in weight-space before this function ever runs, `projectToVariant` has no principled way to reintroduce a target's offset post-hoc if called on values that were never offset-adjusted upstream — a known, accepted approximation limitation, not a bug (it has no production callers currently).
 
-## Diagnostic baseline combination (`generateDiagnostics`)
+## Diagnostic baseline combination (`diagnose`)
 
 ### What it does
 
-Each entry in `MODIFIER_EFFECTS` carries an optional `min`/`max` percentage range expressing how strong a lifter is expected to be at that variation relative to their competition lift. For example, `equipment:pause:squat` is 85–95%, meaning a pause squat is expected at 85–95% of the competition squat e1RM.
+Each entry in `packages/pipeline/src/tag/detect/modifier-effects.json` carries an optional `min`/`max` percentage range expressing how strong a lifter is expected to be at that variation relative to their competition lift. For example, `equip:pause:squat` is 85–95%, meaning a pause squat is expected at 85–95% of the competition squat e1RM. This combination itself happens at tagging time in `buildTagsAndEffects` (`packages/pipeline/src/tag/detect/canonical.ts`), producing each `TaggedSetRecord`'s `baselineRange`; `diagnose()` (`packages/pipeline/src/analyze/diagnose.ts`) is the function that then compares a variant's actual fitted strength (`variantFactor` as a %, see above) against that range to classify it `optimal`/`weakness`/`overperforming` (plus a `stale` status when the variant's most recent data point is older than the staleness threshold — see `analyze/CLAUDE.md`).
 
-When an exercise has **multiple pct-bearing modifiers active simultaneously** (e.g. an SSB + pause squat has both `bar:ssb:squat` and `equipment:pause:squat`), `generateDiagnostics` combines them into a single expected range using **multiplicative scaling**:
+When an exercise has **multiple pct-bearing modifiers active simultaneously** (e.g. an SSB + pause squat has both `bar:ssb:squat` and `equip:pause:squat`), the tagging step combines them into a single expected range using **multiplicative scaling**:
 
 ```
 combined_min = round(m1_min × m2_min / 100)   (applied iteratively)
 combined_max = round(m1_max × m2_max / 100)
 ```
 
-Starting from 100%, each modifier's range is applied in turn. `addl_wt` entries (chains, bands, reverse bands) carry no pct and are never included.
+Starting from 100%, each modifier's range is applied in turn. `addl:` (chains, bands, reverse bands) tags carry no pct and are never included.
 
 ### Examples
 
-| Exercise        | Modifiers                                               | Baseline |
-| --------------- | ------------------------------------------------------- | -------- |
-| SSB pause squat | bar:ssb:squat (90–95%) × equipment:pause:squat (85–95%) | 77–90%   |
-| SSB box squat   | equipment:box:squat (90–100%) × bar:ssb:squat (90–95%)  | 81–95%   |
-| Board press     | equipment:board:bench (105–115%)                        | 105–115% |
+| Exercise        | Modifiers                                           | Baseline |
+| --------------- | --------------------------------------------------- | -------- |
+| SSB pause squat | bar:ssb:squat (90–95%) × equip:pause:squat (85–95%) | 77–90%   |
+| SSB box squat   | equip:box:squat (90–100%) × bar:ssb:squat (90–95%)  | 81–95%   |
+| Board press     | equip:board:bench (105–115%)                        | 105–115% |
 
 ### Assumptions
 

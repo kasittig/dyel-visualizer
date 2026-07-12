@@ -13,12 +13,14 @@ here: output weights are always kg; no unit information escapes this stage.
 
 Unit precedence: `record-level > ctx.datasetUnit > ctx.fallback ('lbs')`.
 `resolveUnit` is internal to this stage — never export it past parse/.
+`convertToKg` is a shared helper (unitConversion.ts) used by CSV and freeform adapters — internal to parse/.
 Every record carries `meta.rawUnit` / `meta.rawWeight` (audit trail).
 
 ## Adapters
 
 - `csv.ts`: dataset unit sniffed from headers ("weight (lbs)"); record-level
-  from a unit column or cell suffix ("225lbs").
+  from a unit column or cell suffix ("225lbs"). Reps via `parseInt` + `isNaN`
+  hard-fail → `ParseError` on non-numeric input (e.g., "AMRAP", "max").
 - `freeform/`: line-oriented, one exercise entry per line, e.g.
   `7/3 comp squat 1rm 200kg`. Whitespace-insensitive tokenizer + per-line
   semantic role assignment (NOT positional templates):
@@ -29,7 +31,10 @@ Every record carries `meta.rawUnit` / `meta.rawWeight` (audit trail).
   - `315/335/355 x3` → one record per weight.
   - Sets multipliers EXPAND: `3 x 5 @ 100kg` → three identical records.
   - Exercise name = tokens not consumed by date/effort roles (multi-word ok).
-  - Dates `M/D` or `M/D/YYYY`; missing year → current year.
+  - Dates are strict `YYYY-MM-DD` only (`^\d{4}-\d{2}-\d{2}` at line start) — no other
+    format is accepted, no missing-year inference. This is an intentional break from
+    legacy's lenient `M/D`/`M/D/YYYY` parsing (see `freeform/CLAUDE.md`); validators
+    surface this as a hard requirement to users.
     This is the most intricate module in the system. Hard-fail with line
     context; never guess silently.
 

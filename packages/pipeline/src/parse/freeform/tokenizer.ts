@@ -13,7 +13,7 @@ export class TokenizerError extends Error {
   }
 }
 
-const parseWeight = (str: string) => {
+const parseWeight = (str: string): { value: number; unit?: Unit } | null => {
   const m = str.match(/^(\d+(?:\.\d+)?)(lbs|kg)?$/i);
   return m ? { value: parseFloat(m[1]), unit: m[2]?.toLowerCase() as Unit } : null;
 };
@@ -21,13 +21,12 @@ const parseWeight = (str: string) => {
 export function tokenize(line: string): TokenizerOutput {
   const tokens = line.trim().split(/\s+/);
   const weights: TokenizerOutput['weights'] = [];
-  let reps: number | null = null,
-    rpe: number | null = null;
+  let reps: number | null = null;
+  let rpe: number | null = null;
 
   for (let i = 0; i < tokens.length; i++) {
-    const t = tokens[i],
-      next = tokens[i + 1];
-
+    const t = tokens[i];
+    const next = tokens[i + 1];
     if (t.startsWith('@') && t.length > 1) {
       rpe = parseFloat(t.slice(1));
     } else if (/^x\d+$/i.test(t) || /^\d+rm$/i.test(t)) {
@@ -39,7 +38,7 @@ export function tokenize(line: string): TokenizerOutput {
         weights.push({ value: a });
       }
     } else if (t.includes('/')) {
-      t.split('/').forEach((p) => {
+      t.split('/').forEach((p: string) => {
         const w = parseWeight(p);
         if (w) {
           weights.push(w);
@@ -62,6 +61,5 @@ export function tokenize(line: string): TokenizerOutput {
   if (reps === null || !weights.length) {
     throw new TokenizerError(`No ${reps === null ? 'reps' : 'weights'} found in: ${line.trim()}`);
   }
-
-  return { weights, reps, ...(rpe !== null && { rpe }) };
+  return { weights, reps, ...(rpe !== null ? { rpe } : {}) };
 }

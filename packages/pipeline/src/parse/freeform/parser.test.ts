@@ -1,319 +1,139 @@
 import { describe, it, expect } from 'vitest';
 import { freeformParser, parseFreeformText } from './parser';
 import { ParseError } from '../parser';
-import type { RawInput, ParseContext } from '../parser';
+import type { ParseContext } from '../parser';
 import * as fs from 'fs';
 import * as path from 'path';
+import type { SetRecord } from '../../types.ts';
 
-const ctx: ParseContext = {
-  fallback: 'lbs',
-};
+const ctx: ParseContext = { fallback: 'lbs' };
+const LBS = 0.453592;
+const file = (content: string) => ({ name: 't.txt', content });
+const load = (f: string) => ({
+  name: f,
+  content: fs.readFileSync(path.join(__dirname, '../../../test/fixtures', f), 'utf-8'),
+});
 
 describe('freeformParser', () => {
   describe('canParse', () => {
-    it('recognizes .txt files', () => {
+    it('evaluates file boundaries and magic phrases', () => {
       expect(freeformParser.canParse({ name: 'log.txt', content: '' })).toBe(true);
-    });
-
-    it('recognizes content with units: keyword', () => {
       expect(freeformParser.canParse({ name: 'anyfile', content: 'units: kg' })).toBe(true);
-    });
-
-    it('rejects other files', () => {
       expect(freeformParser.canParse({ name: 'log.csv', content: 'some,data' })).toBe(false);
     });
   });
 
   describe('parse', () => {
-    it('parses simple form: 2026-01-10 Bench 315x5 @8', () => {
-      const input: RawInput = {
-        name: 'test.txt',
-        content: '2026-01-10 Bench 315x5 @8\n',
-      };
-
-      const result = freeformParser.parse(input, ctx);
-
-      expect(result).toHaveLength(1);
-      expect(result[0]).toMatchObject({
+    it('parses variations, units rules, and hierarchies', () => {
+      const simple = freeformParser.parse(file('2026-01-10 Bench 315x5 @8\n'), ctx);
+      expect(simple).toHaveLength(1);
+      expect(simple[0]).toMatchObject({
         date: new Date('2026-01-10').setHours(0, 0, 0, 0),
         exercise: 'Bench',
-        weight: 315 * 0.453592, // lbs to kg
+        weight: 315 * LBS,
         reps: 5,
         rpe: 8,
+        meta: { rawUnit: 'lbs', rawWeight: '315' },
       });
-      expect(result[0].meta).toMatchObject({
-        rawUnit: 'lbs',
-        rawWeight: '315',
+
+      const shorthand = freeformParser.parse(file('2026-01-12 Squat 315/335/355 x3\n'), ctx);
+      expect(shorthand).toHaveLength(3);
+      [315, 335, 355].forEach((w: number, i: number) => {
+        expect(shorthand[i]).toMatchObject({ exercise: 'Squat', weight: w * LBS, reps: 3 });
       });
-    });
 
-    it('parses multi-weight shorthand: 2026-01-12 Squat 315/335/355 x3', () => {
-      const input: RawInput = {
-        name: 'test.txt',
-        content: '2026-01-12 Squat 315/335/355 x3\n',
-      };
-
-      const result = freeformParser.parse(input, ctx);
-
-      expect(result).toHaveLength(3);
-      expect(result[0]).toMatchObject({
-        exercise: 'Squat',
-        weight: 315 * 0.453592,
-        reps: 3,
-      });
-      expect(result[1]).toMatchObject({
-        exercise: 'Squat',
-        weight: 335 * 0.453592,
-        reps: 3,
-      });
-      expect(result[2]).toMatchObject({
-        exercise: 'Squat',
-        weight: 355 * 0.453592,
-        reps: 3,
-      });
-    });
-
-    it('parses inline unit suffix: 2026-01-09 Bench 100kg x 5', () => {
-      const input: RawInput = {
-        name: 'test.txt',
-        content: '2026-01-09 Bench 100kg x 5\n',
-      };
-
-      const result = freeformParser.parse(input, ctx);
-
-      expect(result).toHaveLength(1);
-      expect(result[0]).toMatchObject({
+      expect(freeformParser.parse(file('2026-01-09 Bench 100kg x 5\n'), ctx)[0]).toMatchObject({
         exercise: 'Bench',
-        weight: 100, // already kg
+        weight: 100,
         reps: 5,
+        meta: { rawUnit: 'kg', rawWeight: '100kg' },
       });
-      expect(result[0].meta).toMatchObject({
-        rawUnit: 'kg',
-        rawWeight: '100kg',
-      });
-    });
-
-    it('parses reversed form: 2026-01-11 Bench 3x5 @ 315', () => {
-      const input: RawInput = {
-        name: 'test.txt',
-        content: '2026-01-11 Bench 3x5 @ 315\n',
-      };
-
-      const result = freeformParser.parse(input, ctx);
-
-      expect(result).toHaveLength(1);
-      expect(result[0]).toMatchObject({
+      expect(freeformParser.parse(file('2026-01-11 Bench 3x5 @ 315\n'), ctx)[0]).toMatchObject({
         exercise: 'Bench',
-        weight: 315 * 0.453592,
+        weight: 315 * LBS,
         reps: 5,
       });
+      expect(
+        freeformParser.parse(file('units: kg 2026-01-08 Squat 140x5 @8\n'), ctx)[0]
+      ).toMatchObject({ exercise: 'Squat', weight: 140, reps: 5, rpe: 8, meta: { rawUnit: 'kg' } });
+      expect(freeformParser.parse(file('2026-02-01 bench press 235x3 @9\n'), ctx)[0].exercise).toBe(
+        'bench press'
+      );
+
+      const multi = freeformParser.parse(
+        file('units: kg\n2026-01-10 Bench 225lbs x5\n2026-01-10 Squat 140x3\n'),
+        ctx
+      );
+      expect(multi).toHaveLength(2);
+      expect(multi[0]).toMatchObject({ weight: 225 * LBS, meta: { rawUnit: 'lbs' } });
+      expect(multi[1]).toMatchObject({ weight: 140, meta: { rawUnit: 'kg' } });
+
+      const empty = freeformParser.parse(
+        file('2026-01-10 Bench 315x5 @8\n\n2026-01-11 Squat 405x3\n'),
+        ctx
+      );
+      expect(
+        empty.map((r: SetRecord): string => {
+          return r.exercise;
+        })
+      ).toEqual(['Bench', 'Squat']);
     });
 
-    it('parses preamble units: kg declaration', () => {
-      const input: RawInput = {
-        name: 'test.txt',
-        content: 'units: kg 2026-01-08 Squat 140x5 @8\n',
-      };
+    it('matches assertions against external file fixtures', () => {
+      expect(freeformParser.parse(load('freeform-simple-form.txt'), ctx)).toMatchObject([
+        { exercise: 'Bench', reps: 5, rpe: 8 },
+      ]);
+      expect(freeformParser.parse(load('freeform-preamble-units-kg.txt'), ctx)).toMatchObject([
+        { exercise: 'Squat', weight: 140, meta: { rawUnit: 'kg' } },
+      ]);
+      expect(freeformParser.parse(load('freeform-inline-unit-suffix.txt'), ctx)).toMatchObject([
+        { weight: 100, meta: { rawUnit: 'kg' } },
+      ]);
+      expect(freeformParser.parse(load('freeform-reversed-form.txt'), ctx)).toMatchObject([
+        { weight: 315 * LBS, reps: 5 },
+      ]);
 
-      const result = freeformParser.parse(input, ctx);
-
-      expect(result).toHaveLength(1);
-      expect(result[0]).toMatchObject({
-        exercise: 'Squat',
-        weight: 140, // already kg
-        reps: 5,
-        rpe: 8,
+      const multi = freeformParser.parse(load('freeform-multi-weight-shorthand.txt'), ctx);
+      expect(multi).toHaveLength(3);
+      [315, 335, 355].forEach((w: number, i: number) => {
+        expect(multi[i].weight).toBe(w * LBS);
       });
-      expect(result[0].meta?.rawUnit).toBe('kg');
+      expect(
+        freeformParser
+          .parse(load('freeform-near-variant-exercise-names.txt'), ctx)
+          .map((r: SetRecord): string => {
+            return r.exercise;
+          })
+      ).toEqual(['Bench', 'bench press', 'Comp Bench']);
     });
 
-    it('parses multi-word exercise names', () => {
-      const input: RawInput = {
-        name: 'test.txt',
-        content: '2026-02-01 bench press 235x3 @9\n',
-      };
-
-      const result = freeformParser.parse(input, ctx);
-
-      expect(result).toHaveLength(1);
-      expect(result[0].exercise).toBe('bench press');
-    });
-
-    it('applies unit precedence: record level > dataset level > fallback', () => {
-      const inputWithDatasetUnit: RawInput = {
-        name: 'test.txt',
-        content: 'units: kg\n2026-01-10 Bench 225lbs x5\n2026-01-10 Squat 140x3\n',
-      };
-
-      const result = freeformParser.parse(inputWithDatasetUnit, ctx);
-
-      expect(result).toHaveLength(2);
-      // 225lbs with explicit unit, should use lbs even though dataset is kg
-      expect(result[0].weight).toBe(225 * 0.453592);
-      expect(result[0].meta?.rawUnit).toBe('lbs');
-      // 140 without explicit unit, should use dataset kg
-      expect(result[1].weight).toBe(140);
-      expect(result[1].meta?.rawUnit).toBe('kg');
-    });
-
-    it('handles empty lines', () => {
-      const input: RawInput = {
-        name: 'test.txt',
-        content: '2026-01-10 Bench 315x5 @8\n\n2026-01-11 Squat 405x3\n',
-      };
-
-      const result = freeformParser.parse(input, ctx);
-
-      expect(result).toHaveLength(2);
-      expect(result[0].exercise).toBe('Bench');
-      expect(result[1].exercise).toBe('Squat');
-    });
-
-    it('throws ParseError on malformed date line', () => {
-      const input: RawInput = {
-        name: 'test.txt',
-        content: 'No date here Bench 315x5 @8\n',
-      };
-
-      expect(() => freeformParser.parse(input, ctx)).toThrow(ParseError);
-    });
-
-    it('throws ParseError on missing weight/reps specification', () => {
-      const input: RawInput = {
-        name: 'test.txt',
-        content: '2026-01-10 Bench\n',
-      };
-
-      expect(() => freeformParser.parse(input, ctx)).toThrow(ParseError);
-    });
-
-    it('propagates tokenizer errors with line context', () => {
-      const input: RawInput = {
-        name: 'test.txt',
-        content:
-          '2026-01-13 Bench 225x5 @8\n2026-01-13 Squat 315x @7\n2026-01-13 Deadlift 405x3 @9\n',
-      };
-
-      expect(() => freeformParser.parse(input, ctx)).toThrow(ParseError);
-    });
-
-    it('loads and parses freeform-simple-form.txt fixture', () => {
-      const fixture = fs.readFileSync(
-        path.join(__dirname, '../../../test/fixtures/freeform-simple-form.txt'),
-        'utf-8'
-      );
-      const input: RawInput = { name: 'freeform-simple-form.txt', content: fixture };
-
-      const result = freeformParser.parse(input, ctx);
-
-      expect(result).toHaveLength(1);
-      expect(result[0].exercise).toBe('Bench');
-      expect(result[0].reps).toBe(5);
-      expect(result[0].rpe).toBe(8);
-    });
-
-    it('loads and parses freeform-preamble-units-kg.txt fixture', () => {
-      const fixture = fs.readFileSync(
-        path.join(__dirname, '../../../test/fixtures/freeform-preamble-units-kg.txt'),
-        'utf-8'
-      );
-      const input: RawInput = { name: 'freeform-preamble-units-kg.txt', content: fixture };
-
-      const result = freeformParser.parse(input, ctx);
-
-      expect(result).toHaveLength(1);
-      expect(result[0].exercise).toBe('Squat');
-      expect(result[0].weight).toBe(140);
-      expect(result[0].meta?.rawUnit).toBe('kg');
-    });
-
-    it('loads and parses freeform-multi-weight-shorthand.txt fixture', () => {
-      const fixture = fs.readFileSync(
-        path.join(__dirname, '../../../test/fixtures/freeform-multi-weight-shorthand.txt'),
-        'utf-8'
-      );
-      const input: RawInput = {
-        name: 'freeform-multi-weight-shorthand.txt',
-        content: fixture,
-      };
-
-      const result = freeformParser.parse(input, ctx);
-
-      expect(result).toHaveLength(3);
-      expect(result[0].weight).toBe(315 * 0.453592);
-      expect(result[1].weight).toBe(335 * 0.453592);
-      expect(result[2].weight).toBe(355 * 0.453592);
-    });
-
-    it('loads and parses freeform-inline-unit-suffix.txt fixture', () => {
-      const fixture = fs.readFileSync(
-        path.join(__dirname, '../../../test/fixtures/freeform-inline-unit-suffix.txt'),
-        'utf-8'
-      );
-      const input: RawInput = { name: 'freeform-inline-unit-suffix.txt', content: fixture };
-
-      const result = freeformParser.parse(input, ctx);
-
-      expect(result).toHaveLength(1);
-      expect(result[0].weight).toBe(100);
-      expect(result[0].meta?.rawUnit).toBe('kg');
-    });
-
-    it('loads and parses freeform-reversed-form.txt fixture', () => {
-      const fixture = fs.readFileSync(
-        path.join(__dirname, '../../../test/fixtures/freeform-reversed-form.txt'),
-        'utf-8'
-      );
-      const input: RawInput = { name: 'freeform-reversed-form.txt', content: fixture };
-
-      const result = freeformParser.parse(input, ctx);
-
-      expect(result).toHaveLength(1);
-      expect(result[0].weight).toBe(315 * 0.453592);
-      expect(result[0].reps).toBe(5);
-    });
-
-    it('loads and parses freeform-near-variant-exercise-names.txt fixture', () => {
-      const fixture = fs.readFileSync(
-        path.join(__dirname, '../../../test/fixtures/freeform-near-variant-exercise-names.txt'),
-        'utf-8'
-      );
-      const input: RawInput = {
-        name: 'freeform-near-variant-exercise-names.txt',
-        content: fixture,
-      };
-
-      const result = freeformParser.parse(input, ctx);
-
-      expect(result).toHaveLength(3);
-      expect(result[0].exercise).toBe('Bench');
-      expect(result[1].exercise).toBe('bench press');
-      expect(result[2].exercise).toBe('Comp Bench');
-    });
-
-    it('throws on freeform-malformed-line.txt fixture', () => {
-      const fixture = fs.readFileSync(
-        path.join(__dirname, '../../../test/fixtures/freeform-malformed-line.txt'),
-        'utf-8'
-      );
-      const input: RawInput = { name: 'freeform-malformed-line.txt', content: fixture };
-
-      expect(() => freeformParser.parse(input, ctx)).toThrow(ParseError);
+    it('throws errors on malformed tracking structures', () => {
+      [
+        'No date here Bench 315x5 @8\n',
+        '2026-01-10 Bench\n',
+        '2026-01-13 Bench 225x5 @8\n2026-01-13 Squat 315x @7\n2026-01-13 Deadlift 405x3 @9\n',
+      ].forEach((c: string) => {
+        expect(() => {
+          return freeformParser.parse(file(c), ctx);
+        }).toThrow(ParseError);
+      });
+      expect(() => {
+        return freeformParser.parse(load('freeform-malformed-line.txt'), ctx);
+      }).toThrow(ParseError);
     });
   });
 
   describe('parseFreeformText', () => {
     it.each([
-      ['simple form', '2026-01-10 Bench 315x5 @8\n'],
-      ['multi-weight shorthand', '2026-01-12 Squat 315/335/355 x3\n'],
-      ['inline unit suffix', '2026-01-09 Bench 100kg x 5\n'],
-      ['reversed form', '2026-01-11 Bench 3x5 @ 315\n'],
-      ['preamble units', 'units: kg 2026-01-08 Squat 140x5 @8\n'],
-    ])('produces same result as freeformParser.parse for %s', (_, content) => {
-      const directResult = parseFreeformText(content, ctx);
-      const parserResult = freeformParser.parse({ name: 'test.txt', content }, ctx);
-
-      expect(directResult).toEqual(parserResult);
+      ['2026-01-10 Bench 315x5 @8\n'],
+      ['2026-01-12 Squat 315/335/355 x3\n'],
+      ['2026-01-09 Bench 100kg x 5\n'],
+      ['2026-01-11 Bench 3x5 @ 315\n'],
+      ['units: kg 2026-01-08 Squat 140x5 @8\n'],
+    ])('parses identically to standard parsing flow', (content: string) => {
+      expect(parseFreeformText(content, ctx)).toEqual(
+        freeformParser.parse({ name: 'test.txt', content }, ctx)
+      );
     });
   });
 });

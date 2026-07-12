@@ -1,0 +1,6 @@
+.emptyMsg {
+  color: var(--text);
+}
+.chartWrapper {
+  composes: chartWrapper from './charts.module.css';
+}

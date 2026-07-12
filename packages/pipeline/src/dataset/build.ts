@@ -10,12 +10,14 @@ export interface SeriesSpec {
   kind: 'series';
   include: TagQuery;
   derive: string;
+  groupBy?: 'label';
+  normalize?: true;
 }
 export interface CompositeSpec {
   id: string;
   kind: 'composite';
   components: { label: string; include: TagQuery }[];
-  derive: 'e1rm';
+  derive: string;
   normalize: true;
   combine: 'sum';
   post?: 'wilks' | 'dots';
@@ -29,6 +31,7 @@ export interface RechartsRow {
   t: number;
   [column: string]: number;
 }
+export type ChartPoint = Record<string, string | number>;
 
 const mergeChips = (base: TagQuery, chips?: RenderParams['chips']): TagQuery => ({
   all: [...(base.all ?? []), ...(chips?.include ?? [])],
@@ -44,38 +47,43 @@ export function buildDataset(
   athlete: AthleteContext
 ): RechartsRow[] {
   let rows: RechartsRow[] = [];
+  const scoped = ui.dateRange
+    ? points.filter((p) => p.t >= ui.dateRange![0] && p.t <= ui.dateRange![1])
+    : points;
 
   if (spec.kind === 'series') {
     const q = mergeChips(spec.include, ui.chips);
     const rowMap = new Map<number, RechartsRow>();
 
-    points.forEach((p) => {
+    for (const p of scoped) {
       if (matches(new Set([...p.tags, p.series]), q)) {
         rowMap.set(p.t, { ...(rowMap.get(p.t) ?? { t: p.t }), [p.series]: p.v });
       }
-    });
-    rows = [...rowMap.values()].sort((a, b) => a.t - b.t);
+    }
+    rows = Array.from(rowMap.values()).sort((a, b) => a.t - b.t);
   } else {
-    // 1. Generate grids mapping timestamp to maximum normalized e1rm value
-    const queries = spec.components.map((c) => mergeChips(c.include, ui.chips));
-    const grids = queries.map((q) => {
+    const grids = spec.components.map((c) => {
+      const q = mergeChips(c.include, ui.chips);
       const grid = new Map<number, number>();
-      points.forEach((p) => {
+
+      // Use full points (not scoped) to build grids, so carry-forward has access to full history
+      for (const p of points) {
         if (matches(new Set([...p.tags, p.series]), q)) {
           const val = normalizeE1rm(p.series, p.v, model);
           if (val !== null && val > (grid.get(p.t) ?? -Infinity)) {
             grid.set(p.t, val);
           }
         }
-      });
+      }
       return grid;
     });
 
-    // 2. Compute composite metrics across the sorted timeline using forward-filled lookups
-    const timestamps = [...new Set(grids.flatMap((g) => [...g.keys()]))].sort((a, b) => a - b);
+    const timestamps = Array.from(new Set(grids.flatMap((g) => Array.from(g.keys())))).sort(
+      (a, b) => a - b
+    );
     const lastValues = new Array(grids.length).fill(undefined);
 
-    timestamps.forEach((t) => {
+    for (const t of timestamps) {
       grids.forEach((grid, idx) => {
         if (grid.has(t)) {
           lastValues[idx] = grid.get(t);
@@ -84,17 +92,17 @@ export function buildDataset(
       if (lastValues.every((v) => v !== undefined)) {
         rows.push({ t, [spec.id]: lastValues.reduce((sum, v) => sum + v, 0) });
       }
-    });
+    }
 
-    // 3. Apply optional post-processing metrics (Wilks or Dots coefficients)
     if (spec.post) {
       const transform = spec.post === 'wilks' ? wilks : dots;
       rows = rows.map((r) => ({ ...r, [spec.id]: transform(r[spec.id], athlete) }));
     }
-  }
 
-  // 4. Inline filtering using the date range constraints
-  return ui.dateRange
-    ? rows.filter((r) => r.t >= ui.dateRange![0] && r.t <= ui.dateRange![1])
-    : rows;
+    // Apply dateRange filter after carry-forward/sum/post-transform
+    if (ui.dateRange) {
+      rows = rows.filter((r) => r.t >= ui.dateRange![0] && r.t <= ui.dateRange![1]);
+    }
+  }
+  return rows;
 }

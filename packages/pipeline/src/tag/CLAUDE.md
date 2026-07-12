@@ -1,10 +1,12 @@
 # tag/ — SetRecord[] → TaggedSetRecord[]
 
 Runtime tagging is a KEYWORD-DETECTOR PARSE, not a dictionary lookup. `detect/` holds a
-ported copy of `@dyel/core`'s exercise-name parser (`detect/detectors.ts` +
-`detect/parseExercise.ts`) plus a re-keyed copy of `@dyel/core`'s
-`modifierEffects.json` (`detect/modifier-effects.json`). This is a deliberate copy, not a
-dependency on `@dyel/core` — pipeline and core do not import from each other.
+ported copy of the now-deleted `@dyel/core` package's exercise-name parser
+(`detect/detectors.ts` + `detect/parseExercise.ts`) plus a re-keyed copy of its
+`modifierEffects.json` (`detect/modifier-effects.json`). This was always a deliberate
+one-time copy, never a dependency — pipeline never imported from `@dyel/core`, and
+`@dyel/core` has since been removed from the workspace entirely (see
+`HANDOFF.md`).
 
 ## Contract
 
@@ -13,6 +15,12 @@ dependency on `@dyel/core` — pipeline and core do not import from each other.
     function tagRecords(records: SetRecord[]):
       { tagged: TaggedSetRecord[]; unknown: string[] };
     function matches(tags: ReadonlySet<string>, q: TagQuery): boolean;  // all/any/none
+    function classifyExerciseName(name: string): { type: LiftType; isUnknown: boolean };
+
+`classifyExerciseName` is a small additive export (wraps `parseExercise`) for callers that
+just need a lift-type/unknown classification without going through the full
+`resolveCanonicalNames`/`tagRecords` pipeline — e.g. `packages/app`'s sheet/freeform
+validators and `packages/api`'s `parseTextData`.
 
 `resolveCanonicalNames` runs first (raw name → canonical via `detect/parseExercise.ts` +
 `detect/canonical.ts`'s `buildCanonical`), then `tagRecords` (canonical → tags/effects via
@@ -26,6 +34,18 @@ For non-accessory lifts: `${type}[-${bar}][-${stance}][-${equipment}][-${addlWts
 omitting default values (`bar: standard`, `stance: competition`) and any absent component.
 For accessory lifts (parser always nulls bar/stance/equipment there): a kebab-slugified
 raw name, preserving per-exercise distinctness without a dictionary.
+
+**Magnitude conventions:** When equipment or addlWts are present, they may include a magnitude
+suffix. For chains/bands (`addlWts`), magnitude is parsed as a digit or the word `"double"`
+from the raw exercise label; it defaults to `'1'` when not specified. For board/block/deficit
+equipment, magnitude is parsed as a digit (optionally followed by a `"` inch mark) from the raw
+label; it also defaults to `'1'`. The magnitude suffix is appended to the canonical as `-${magnitude}`
+only when the magnitude is **not** the default `'1'` — the default is always omitted. Examples:
+
+- `Bench (1 board)` → `bench-board` (default magnitude omitted)
+- `Bench (2 board)` → `bench-board-2` (non-default magnitude appended)
+- `Deadlift (1 block)` → `deadlift-blocks` (default magnitude omitted)
+- `Deadlift (2" blocks)` → `deadlift-blocks-2` (non-default magnitude appended)
 
 ## Tag/effects derivation
 

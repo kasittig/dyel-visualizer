@@ -3,23 +3,40 @@
 ## Workspace Architecture
 
 - Package Manager: npm Workspaces
-- Pipeline Types Package Name: `@dyel/pipeline` maps directly to `packages/pipeline/`
-- Shared Core Package Name: `@dyel/core` maps directly to `packages/core/`
-- Application Package Name: `@dyel/app` maps directly to `packages/app/`
+- Pipeline Compute Engine Package Name: `@dyel/pipeline` maps directly to `packages/pipeline/`
+- API/Business-Logic Package Name: `@dyel/api` maps directly to `packages/api/` — pure TypeScript
+  derivation functions over `@dyel/pipeline` output; no React, no DOM. See `packages/api/CLAUDE.md`.
+- Application Package Name: `dyel-visualizer` (npm package name; imported as `@dyel/app` is not a
+  thing — there is no scoped alias) maps directly to `packages/app/` — the Vite/React frontend.
 
 ## Core Commands (Run from Root)
 
-- Build Pipeline Types: `npm run build -w packages/pipeline`
-- Build Shared Core: `npm run build -w packages/core`
+- Build Pipeline Engine: `npm run build -w packages/pipeline`
+- Build API: `npm run build -w packages/api`
 - Build Vite App: `npm run build -w packages/app`
 - Start App Dev: `npm run dev -w packages/app`
 
 ## Strict Importing Rules
 
-- Any package that needs pipeline types (`SetRecord`, `Point`, `TagQuery`, `Unit`) must import from `@dyel/pipeline`, never a relative path traversal.
-- Inside `packages/app`, always import shared modules from `@dyel/core`.
-- **CRITICAL:** Do NOT use relative path traversals (like `../../core`) to share code.
-- If changes are made to `@dyel/core`, you must explicitly prompt Claude to run `npm run build --workspace=@dyel/core` before testing `@dyel/app`.
+- `@dyel/api` is the **sole boundary** between `packages/app` and `@dyel/pipeline`. `packages/app`
+  must never import `@dyel/pipeline` directly — always go through `@dyel/api`. This is
+  ESLint-enforced (`no-restricted-imports` in `eslint.config.js`); the only sanctioned exception is
+  one test file with a documented reason (real-fixture `PipelineModel` coverage), also allowlisted
+  in `eslint.config.js`. See `packages/app/CLAUDE.md`'s "Data flow contract" section and
+  `packages/api/CLAUDE.md` for the full rationale and export table.
+- Within `packages/app`, components (`.tsx` files under `features/*/`, `shared/*/`) may not import
+  **value** exports from `@dyel/api` directly (types are fine) — derive data via a feature hook
+  instead. A small, ESLint-allowlisted set of files import genuine display-only formatters/constants
+  directly; see `eslint.config.js` for the current list.
+- Within `packages/app`, a feature may import a sibling feature only via that feature's `index.ts`
+  barrel (e.g. `import { usePipelineDatasets } from '../sigma'`), never a deep relative path into
+  its internals (e.g. `../sigma/usePipelineDatasets`). ESLint-enforced with one documented exception
+  (see `packages/app/CLAUDE.md`).
+- Any package that needs pipeline types (`SetRecord`, `Point`, `TagQuery`, `Unit`, `PipelineModel`,
+  etc.) imports them from `@dyel/pipeline` (or re-exported from `@dyel/api` for `packages/app`
+  consumers), never a relative path traversal.
+- **CRITICAL:** Do NOT use relative path traversals (like `../../core`) to share code across
+  package boundaries.
 
 ## Git
 

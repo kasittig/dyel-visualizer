@@ -18,80 +18,102 @@ Single-page React app with no backend. Data comes from either a user-supplied Go
 
 - `?page=conjugate` (or `/conjugate`) → `ConjugateInfoPage` (renders `CONJUGATE.md` as markdown)
 - `?page=index` (or `/index`) → `IndexPage` (list of linked sheets fetched from a hardcoded published index sheet)
+- `?page=validator` (or `/validator`) → `ValidatorPage` (sheet/pasted-text structural validation)
+- `?page=pipeline-validation` (or `/pipeline-validation`) → `PipelineValidationPage` (parse errors, unknown exercises, normalization issues via `runPipeline`)
 - no `?page=` → `App` (main visualizer)
 
-**Data flow (`App.tsx`):**
+**Data flow (`app/App.tsx` composing `app/*` hooks):**
 
-1. `SheetUrlPanel` offers two input modes: a Google Sheet URL (`extractSheetRef()` → `useConjugateData()`, which fetches the sheet as CSV and calls `parseConjugateData` from `@dyel/core`) or pasted free-text (parsed via `parseTextData` from `@dyel/core`). `App.tsx` picks whichever mode is active and normalizes both into the same `ConjugateDataState` shape.
-2. The resulting `ConjugateDataPair[]` flows through exercise-type tabs (squat / bench / deadlift / accessory), `ExerciseFilters`, and `LiftTabPanel` (which composes `ConjugateCharts` + `VariationRadarChart` + `DiagnosticsPanel`)
-3. `useLastSessionStats` computes per-exercise stats from the pair list — e1RM, last session, predicted e1RM, variant factors, resistance offsets
-4. `ErrorBoundary` wraps the root in `main.tsx`
-5. Settings (`url`, `inputMode`, `pastedText`, `activeTab`, `tabState`, `deadliftStance`) and the last successfully fetched sheet's `ConjugateDataPair[]` are persisted to `localStorage` via `useLocalStorageState`, so a revisit restores the previous configuration and renders the last sheet's data instantly instead of a blank/loading state. Explicit `?sheet=`/`?mode=`/`?text=` query params always override cached settings (reconciled once on mount). The sheet-data cache is keyed by the sheet URL, so switching sheets never shows stale data from a different sheet; there is no staleness/invalidation logic — users refresh manually via the existing refresh button.
+1. `useAppSettings()` owns all settings state (`url`, `inputMode`, `pastedText`, `activeTab`, `deadliftStance`, date range, transient UI state), the query-param → localStorage reconciliation, the URL-sync effect, and the `athlete` memo.
+2. `usePipelineOrchestration(inputMode, url, pastedText, refreshToken, athlete)` resolves a `RawInput[]` via `useResolvedRawInput` (`features/data-source/`) (URL mode calls `fetchSheetCsv` to retrieve the published CSV, using the dev proxy `/sheets-proxy/` during development to handle CORS; text mode directly wraps the pasted text into a `RawInput`), then passes it to `buildPipelineModel(raw, athlete)` from `@dyel/api` (a thin wrapper over `@dyel/pipeline`'s `runPipelineModel`, which performs all parsing, normalization, tagging, and diagnostic computation in a single call), returning a `PipelineModel`. It also owns the raw-data cache (keyed by sheet URL, persisted to `localStorage`) so a revisit renders the last sheet's data instantly instead of a blank/loading state — explicit `?sheet=`/`?mode=`/`?text=` query params always override cached settings.
+3. `useVisualizerData(model, dateRange, deadliftStance)` derives `tabRows`, visible-lift-type filtering, default canonicals, display unit, and volume/session-date data via `@dyel/api` selectors.
+4. The `PipelineModel` is stored in context via `PipelineProvider` and accessed downstream via the `usePipelineModel()` hook (both in `app/PipelineContext.tsx`). Child components use selector hooks from their owning feature directory (e.g., `features/lift/usePipelineConjugateChartData`, `features/sigma/usePipelineTotalChartData`) to derive display-ready data from the model.
+5. Exercise-type tabs (squat / bench / deadlift / accessory) render `features/lift/LiftTabPanel` (which composes `ConjugateCharts` + `VariationRadarChart` + `DiagnosticsPanel`, all colocated in `features/lift/`) consuming the derived data from selectors.
+6. `shared/components/ErrorBoundary` wraps the root in `main.tsx`.
 
-**Tab state:** `App.tsx` owns `tabState: Record<LiftType, TabState>` (initialized via `initialTabState()`). Active non-lift tabs: `"sigma"` and `"calculator"`.
+**Tab state:** `app/App.tsx` owns a single `activeTab: PageTab` state variable that tracks the current tab. Valid values are lift types (`'squat'`, `'bench'`, `'deadlift'`, `'accessory'`) or non-lift tabs (`'sigma'` for the competition-total overview, `'calculator'` for the rep/strength-score calculators). The active tab is persisted to localStorage and restored on revisit.
 
-**Component subdirectories** (`src/components/`):
+**Directory layout** (`src/`, per-feature, flat — no `components/`/`hooks/` subdirs within a feature):
 
-| Subdirectory | Contents                                                                                                                               |
-| ------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
-| `charts/`    | Reusable Recharts components: `BaseRadarChart`, `DateLineChart`, `SigmaRadarChart`, `TotalChart`, `TooltipCard`, `VariationRadarChart` |
-| `conjugate/` | Conjugate-feature components: `ConjugateCharts`, `ConjugateInfoPage`                                                                   |
-| `pages/`     | Page/tab-panel entry points: `GettingStarted`, `IndexPage`, `LiftTabPanel`, `SigmaTab`, `ValidatorPage`                                |
-| `shared/`    | Cross-feature UI: `DateRangePicker`, `DiagnosticsPanel`, `ErrorBoundary`, `ExerciseFilters`, `RepCalculator`, `SheetUrlPanel`          |
+| Directory                  | Contents                                                                                                                                                                                                                                        |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `app/`                     | `App.tsx`, `PipelineContext.tsx` (`PipelineProvider`/`usePipelineModel`), `useAppSettings`, `usePipelineOrchestration`, `useVisualizerData`, `appTabs.ts` (`PageTab`/`InputMode`/`DeadliftStancePreference` types + `MAIN_TABS`)                |
+| `features/data-source/`    | `SheetUrlPanel`, `InputModeToggle`, `GettingStarted`, `useResolvedRawInput`, `rawInput.ts`, `sheetRef.ts`, `sheetFetch.ts`, `sheetCacheUtils.ts`                                                                                                |
+| `features/validation/`     | `ValidatorPage`, `PipelineValidationPage`, `useSheetValidation`, `useTextValidation`, `usePipelineValidation`                                                                                                                                   |
+| `features/calculator/`     | `RepCalculator`, `usePipelineRepCalculator`, `StrengthScoreCalculator`, `useStrengthScores`                                                                                                                                                     |
+| `features/sigma/`          | `SigmaTab`, `SigmaChart`, `TotalChart`, `SessionBarChart`, `usePipelineTotalChartData`, `usePipelineDatasets`, `useSigmaChartData`                                                                                                              |
+| `features/lift/`           | `LiftTabPanel`, `ConjugateCharts`, `usePipelineConjugateChartData`, `VariationRadarChart`, `usePipelineVariationRadarData`, `DiagnosticsPanel`, `usePipelineDiagnostics`                                                                        |
+| `features/conjugate-info/` | `ConjugateInfoPage`                                                                                                                                                                                                                             |
+| `features/index-page/`     | `IndexPage`, `useIndexData`, `parseIndexCsv`                                                                                                                                                                                                    |
+| `shared/charts/`           | Reusable Recharts components: `BaseRadarChart`, `DateLineChart` (+`ChartEmpty`), `TooltipCard` (+`ChartTooltip`), `colors.ts`, `CONVENTIONS.md`, `charts.module.css` (shared CSS module `composes`d by feature-owned chart `.module.css` files) |
+| `shared/components/`       | Cross-feature UI: `CollapsibleSection`, `DateRangePicker`, `EditableDateChip`, `ErrorBoundary`                                                                                                                                                  |
+| `shared/hooks/`            | `useCsvResource`, `useLocalStorageState`                                                                                                                                                                                                        |
+| `shared/dateUtils.ts`      | Pure date-formatting helpers — no React dependency                                                                                                                                                                                              |
 
-Each subdirectory has an `index.ts` barrel and a `CLAUDE.md` with per-file descriptions.
+Each `features/*/` and `shared/*/` directory has an `index.ts` barrel and a `CLAUDE.md` with per-file descriptions.
 
-**Hook subdirectories** (`src/hooks/`):
+**Dev proxy:** `vite.config.ts` defines a `sheetsProxyPlugin` that forwards `/sheets-proxy/*` to `https://docs.google.com/*` using Node's `fetch`, which follows redirects server-side and avoids CORS issues. In production `fetchSheetCsv` hits Google directly — this only works with published sheets.
 
-| Subdirectory | Contents                                                            |
-| ------------ | ------------------------------------------------------------------- |
-| `conjugate/` | `useConjugateData`, `useConjugateChartData`                         |
-| `data/`      | `useBaselineTargetExercises`, `useIndexData`, `useLastSessionStats` |
-| `infra/`     | `useCsvResource`, `useSheetValidation`, `useLocalStorageState`      |
+## Data flow contract
 
-Each subdirectory has an `index.ts` barrel and a `CLAUDE.md` with per-file descriptions.
+The app enforces a unidirectional data flow: **data source → `usePipelineOrchestration` (calls `@dyel/api`'s `buildPipelineModel`) → `PipelineModel` held in `PipelineContext` → feature selector hooks (call `@dyel/api` derivation functions) → render-only components → user events → state updates in `app/useAppSettings` or feature-local state → re-render**.
 
-**Key modules:**
+This separation ensures business logic stays in `@dyel/api`, React lifecycle stays in feature hooks, and components remain pure rendering functions. ESLint rules in `eslint.config.js` enforce this contract via static analysis.
 
-| Path                                           | Purpose                                                                                                                                                                                                            |
-| ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `src/utils/appUtils.ts`                        | Pure helpers (`extractSheetRef`, `toggleInSet`, `initialTabState`), type aliases (`LiftType`, `PageTab`, `TabState`), and URL/tab constants — no React dependency                                                  |
-| `src/components/charts/BaseRadarChart.tsx`     | Shared Recharts radar wrapper; accepts `angleKey`, `unit`, `tooltip`, optional `onClick`                                                                                                                           |
-| `src/components/pages/SigmaTab.tsx`            | "Σ" overview tab: `TotalChart` + `SessionBarChart` + `SigmaRadarChart` across all lift types                                                                                                                       |
-| `src/components/pages/LiftTabPanel.tsx`        | Per-lift tab content: `ConjugateCharts` + `VariationRadarChart` with shared variation-highlight state                                                                                                              |
-| `src/components/shared/RepCalculator.tsx`      | Calculator tab: predicts weight-for-reps and reps-for-weight using `findBestE1RM` from `@dyel/core`                                                                                                                |
-| `src/components/shared/DiagnosticsPanel.tsx`   | Diagnostics panel using `generateDiagnostics` from `@dyel/core`                                                                                                                                                    |
-| `src/components/shared/DateRangePicker.tsx`    | Date range input using `react-day-picker` + Radix Popover                                                                                                                                                          |
-| `src/components/pages/IndexPage.tsx`           | Landing page listing linked sheets; fetches from a hardcoded published index sheet via `useIndexData`                                                                                                              |
-| `src/hooks/data/useBaselineTargetExercises.ts` | Exports pure `computeBaselineTargetExercises` (for use outside React, e.g. tests) plus a `useMemo`-wrapped hook; builds `baselineExByType` and `targetExByType` maps; shared by `TotalChart` and `SigmaRadarChart` |
-| `src/hooks/conjugate/useConjugateChartData.ts` | All data aggregation for `ConjugateCharts` (grouping, normalization, forward-fill); the component itself is presentation-only                                                                                      |
-| `src/hooks/data/useIndexData.ts`               | Fetches and parses the published index sheet CSV; returns `IndexEntry[]`                                                                                                                                           |
-| `src/utils/sheetCacheUtils.ts`                 | Pure serialize/deserialize helpers for caching `ConjugateDataPair[]` to localStorage (handles `Date` round-tripping)                                                                                               |
-| `src/testUtils/compareChartSeries.ts`          | Reusable series-extraction/statistics helper for chart-output assertions in tests (see "Core-vs-pipeline parity testing" below)                                                                                    |
-| `src/pipeline/totalChartParity.test.ts`        | Example consumer of the parity-test harness pattern below                                                                                                                                                          |
+**Known data-flow modeling issue (documented, not yet refactored):** `useVisualizerData` returns both `baselineCanonicals` and `targetCanonicals` assigned from a single `defaultCanonicalsByLift(...)` memo, falsely implying two independent computations exist (CODE_REVIEW.md's "Lower-priority notes" section flagged this as a real issue, but it was deliberately left out of scope for remediation; see HANDOFF.md's "Remaining, not yet started" section). This is a documentation-only notice to prevent future misreading of the shape as two separate derivations.
 
-**Dev proxy:** `vite.config.ts` defines a `sheetsProxyPlugin` that forwards `/sheets-proxy/*` to `https://docs.google.com/*` using Node's `fetch`, which follows redirects server-side and avoids CORS issues. In production `useConjugateData` hits Google directly — this only works with published sheets.
+### Component rules (`.tsx` files in `features/*/` and `shared/*/`)
 
-## Core-vs-pipeline parity testing
+- Render props and hook results only
+- Never call `useMemo` or `useState` to re-derive business data — do that in a feature hook instead
+- Never import **value** exports from `@dyel/api` (type imports are fine); get derived data by calling a feature hook instead
+- Never call `usePipelineModel()` directly — only feature hooks do that
+- Feature-local UI state (a popover's open/closed toggle, in-progress calculator inputs, which variation is highlighted) stays colocated in the owning component or feature hook
 
-As charts migrate from `@dyel/core` to `@dyel/pipeline` (see the pipeline migration boundary rule: migrated components call only `runPipeline`, never `@dyel/core`), use this harness pattern to regression-test the new pipeline output rather than trusting it blind. See `src/testUtils/CLAUDE.md` for full detail; summary:
+A small set of display-only helpers and constants are allowlisted to import from `@dyel/api` — these are pure formatters/constants with no business logic (e.g., `shared/charts/**` for chart formatting, `features/lift/DiagnosticsPanel.tsx` for display formatters like `formatEffect`, `features/calculator/RepCalculator.tsx` for facet option constants). See the `@typescript-eslint/no-restricted-imports` block and its per-file overrides in root `eslint.config.js` for the current allowlist; that file is the source of truth, not this line count (which will drift).
 
-1. Capture a real (not synthetic) CSV fixture from a published sheet into `packages/app/test/fixtures/`, via the dev server's `/sheets-proxy` (documented per-fixture in `packages/app/test/fixtures/CLAUDE.md`).
-2. In a `*.test.ts` colocated with the migrated feature (e.g. `src/pipeline/totalChartParity.test.ts`), load the fixture once in `beforeAll`, run it through the real `runPipeline` + the production `DatasetSpec[]`, and merge to `ChartPoint[]` with the same `utils/pipelineChartUtils.ts` helpers the app uses.
-3. Use `src/testUtils/compareChartSeries.ts` (`it.each` over series names) for hard assertions on any series that must match exactly; use a soft `console.warn`-only test for any series with a known, accepted divergence from the legacy implementation.
-4. This is a regression harness, not a `@dyel/core` reimplementation check — it does not run the old code path side-by-side; it asserts the new pipeline's output is internally consistent and sane against real data.
+### Feature hook rules (`use*.ts` in `features/*/`)
 
-Extend this pattern for future chart migrations instead of inventing new one-off comparison scripts.
+- The only consumers of `usePipelineModel()` and `PipelineContext`
+- Call `@dyel/api` derivation functions (selectors, utilities) to compute all business logic from the model
+- Own React lifecycle (`useState`, `useEffect`, `useMemo`) and return display-ready data for components to render
+- Thin adapters between the shared model and components; delegate all derivation to `@dyel/api`
 
-### Intentional exception: core-vs-pipeline live diff in tests
+### State layering
 
-`packages/app/src/pipeline/totalChartParity.test.ts` is a deliberate, scoped exception to the pipeline migration boundary rule (which mandates that migrated chart components call only `runPipeline`, never `@dyel/core`). This test file imports directly from both `@dyel/core` (`parseConjugateData`, `buildSessionStats`, `calculateVolumeCorrelation`, `buildChartData`) and `@dyel/pipeline` (`runPipeline`) to run the legacy implementation and pipeline implementation over the same fixture in parallel, then use `src/testUtils/diffChartSeries.ts` (`joinChartPointsByDate` + `diffSeries`) to diff the two outputs.
+- **App-wide state** (`app/useAppSettings`): settings, date range, active tab, UI preferences like deadlift stance; persisted to localStorage and restored on revisit
+- **Feature-local state**: a popover's open/closed flag, in-progress form inputs, transient selections — stays in the owning component or feature hook; never moved to app-wide state
 
-**Why this exception is safe:** It is confined to a test file (never shipped runtime code); the actual migrated `TotalChart`/`ConjugateCharts` components themselves continue to call only `runPipeline`, fully satisfying the real boundary. The test exists specifically to regression-test the migration itself — catching divergence between old and new implementations rather than reintroducing a legacy runtime dependency into production code.
+### Cross-feature imports
 
-**Handling known divergence:** Real differences between legacy and pipeline normalization-fitting are treated as soft-warn (logged via `console.warn`, not hard-fail) rather than hard assertions. See the comment block directly above the `core-vs-pipeline soft-warn: %s divergence...` test in `totalChartParity.test.ts` for the full root-cause explanation (speed-work filtering, minimum-sample gating, canonical grouping granularity), and GitHub issue #451 for a specific tracked contributing bug (chain-count/band-tension canonical collapsing).
+- Features may import sibling features only via their `index.ts` barrel (e.g., `import { usePipelineDatasets } from '../sigma'`)
+- Never deep imports like `../sigma/usePipelineDatasets`
+- ESLint blocks deep imports to enforce explicit barrel exports and prevent accidental static inclusion of lazy-loaded page components
 
-**Forward rule:** Any new direct `@dyel/core` import inside a migrated chart's actual runtime component (not a test file) remains a boundary violation and should be treated as a proposed pipeline change per the existing convention — this exception is test-file-only.
+ESLint's `no-restricted-imports` patterns now enforce both the `../<name>/*` and `../../features/<name>/*` path forms — previously only the former was caught (CODE_REVIEW.md Finding 8 / HANDOFF.md Task B4). Five evasions using the `../../features/` form were repaired and the pattern widened in `eslint.config.js` to prevent future blind spots.
+
+**Exception:** `features/data-source/SheetUrlPanel.tsx` keeps a deep import of `../index-page/useIndexData` because barrel-importing `../index-page` would statically pull the lazy-loaded `IndexPage` component into the main bundle and defeat `main.tsx`'s code-splitting. See the comment in that file and its matching per-file allowlist override in root `eslint.config.js`.
+
+### Process for adding a new derivation
+
+1. Add the function to `@dyel/api` with colocated tests
+2. Export it from `packages/api/src/index.ts` (the public barrel)
+3. Add a row to `packages/api/CLAUDE.md`'s export table describing it
+4. Write a thin feature hook in `packages/app/src/features/*/use*.ts` that calls it
+5. Components call that hook; never call `@dyel/api` directly
+
+### Directory summary
+
+- `app/`: `App.tsx`, settings/orchestration/visualizer-data hooks, `PipelineContext.tsx` with `PipelineProvider`/`usePipelineModel()`
+- `features/*/`: feature hooks and components; each has an `index.ts` barrel and `CLAUDE.md`
+- `shared/charts/`: reusable Recharts components and chart color constants
+- `shared/components/`: cross-feature UI primitives (DateRangePicker, ErrorBoundary, etc.)
+- `shared/hooks/`: cross-feature React hooks (useCsvResource, useLocalStorageState)
+- `shared/dateUtils.ts`: pure date-formatting helpers
+
+See the **Directory layout** table above for complete per-directory file listings.
+
+**Boundary:** `@dyel/api` is the sole business-logic boundary — the app never imports `@dyel/pipeline` directly (only `features/lift/usePipelineVariationRadarData.test.ts` does for real-fixture test coverage, allowlisted in `eslint.config.js`). This directory layout resulted from Phase 4 of the App Refactor migration (see `HANDOFF.md`), which reorganized `src/components/`, `src/hooks/`, `src/context/`, `src/utils/` into feature-based directories. Earlier, Phase 2 deleted `src/pipeline/` (non-hook derivation helpers) and moved that logic into `@dyel/api`.
 
 ## Constraints
 

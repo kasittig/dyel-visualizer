@@ -83,6 +83,8 @@ Pages and tabs:
 - Default (`/`): main visualizer — tabs: Σ, Squat, Bench, Deadlift, Accessories, Calculator
 - `?page=index`: index page listing linked sheets
 - `?page=conjugate`: conjugate method info (markdown)
+- `?page=validator`: sheet/pasted-text structural validator
+- `?page=pipeline-validation`: pipeline-level validation (parse errors, unknown exercises, normalization issues)
 
 ## Run (human path)
 

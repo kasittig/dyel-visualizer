@@ -15,8 +15,15 @@ const DOTS: Record<AthleteContext['sex'], { c: number[]; min: number; max: numbe
 };
 
 const calc = (bw: number, total: number, coeff: number[]) => {
-  const d = coeff.reduce((sum, c, i) => sum + c * Math.pow(bw, i), 0);
-  return Math.round(((total * 500) / d) * 100) / 100;
+  return (
+    Math.round(
+      ((total * 500) /
+        coeff.reduce((sum, c, i) => {
+          return sum + c * Math.pow(bw, i);
+        }, 0)) *
+        100
+    ) / 100
+  );
 };
 
 export const wilks = (totalKg: number, { bodyweight: bw, sex }: AthleteContext) =>

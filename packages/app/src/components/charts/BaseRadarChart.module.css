@@ -1,3 +1,0 @@
-.section { composes: section from './charts.module.css'; }
-.label { composes: label from './charts.module.css'; }
-.chartWrapper { composes: chartWrapper from './charts.module.css'; }

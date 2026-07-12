@@ -1,0 +1,63 @@
+import { useState, useEffect } from 'react';
+import type { RawInput } from '@dyel/api';
+import type { InputMode } from '../../app/appTabs';
+import { extractSheetRef } from './sheetRef';
+import { sheetCsvUrl, fetchSheetCsv } from './sheetFetch';
+import { buildRawInput } from './rawInput';
+
+export function useResolvedRawInput(
+  inputMode: InputMode,
+  url: string,
+  pastedText: string,
+  refreshToken: number
+): { status: 'idle' | 'loading' | 'success' | 'error'; raw: RawInput[] } {
+  const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [raw, setRaw] = useState<RawInput[]>([]);
+
+  useEffect(() => {
+    if (inputMode === 'text') {
+      if (!pastedText.trim()) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setStatus('idle');
+        setRaw([]);
+        return;
+      }
+      try {
+        setStatus('loading');
+        setRaw([buildRawInput('text', pastedText)]);
+        setStatus('success');
+      } catch {
+        setStatus('error');
+        setRaw([]);
+      }
+      return;
+    }
+
+    const ref = extractSheetRef(url.trim());
+    if (!ref) {
+      setStatus('idle');
+      setRaw([]);
+      return;
+    }
+
+    setStatus('loading');
+    const controller = new AbortController();
+
+    fetchSheetCsv(sheetCsvUrl(ref, '0'), controller.signal)
+      .then((csv) => {
+        setRaw([buildRawInput('url', csv)]);
+        setStatus('success');
+      })
+      .catch((err: unknown) => {
+        if (err instanceof Error && err.name === 'AbortError') {
+          return;
+        }
+        setStatus('error');
+        setRaw([]);
+      });
+
+    return () => controller.abort();
+  }, [inputMode, url, pastedText, refreshToken]);
+
+  return { status, raw };
+}

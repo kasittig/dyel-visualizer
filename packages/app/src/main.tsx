@@ -2,25 +2,25 @@
 import { StrictMode, lazy, Suspense } from 'react';
 import { createRoot } from 'react-dom/client';
 import './index.css';
-import { App } from './App.tsx';
-import { ErrorBoundary } from './components/shared/ErrorBoundary.tsx';
+import { App } from './app/App.tsx';
+import { ErrorBoundary } from './shared/components/ErrorBoundary.tsx';
 
 const ConjugateInfoPage = lazy(() =>
-  import('./components/conjugate/ConjugateInfoPage.tsx').then((m) => ({
+  import('./features/conjugate-info/ConjugateInfoPage.tsx').then((m) => ({
     default: m.ConjugateInfoPage,
   }))
 );
 
 const IndexPage = lazy(() =>
-  import('./components/pages/IndexPage.tsx').then((m) => ({ default: m.IndexPage }))
+  import('./features/index-page/IndexPage.tsx').then((m) => ({ default: m.IndexPage }))
 );
 
 const ValidatorPage = lazy(() =>
-  import('./components/pages/ValidatorPage.tsx').then((m) => ({ default: m.ValidatorPage }))
+  import('./features/validation/ValidatorPage.tsx').then((m) => ({ default: m.ValidatorPage }))
 );
 
 const PipelineValidationPage = lazy(() =>
-  import('./components/pages/PipelineValidationPage.tsx').then((m) => ({
+  import('./features/validation/PipelineValidationPage.tsx').then((m) => ({
     default: m.PipelineValidationPage,
   }))
 );

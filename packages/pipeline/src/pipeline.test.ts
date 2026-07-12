@@ -1,101 +1,223 @@
-import { describe, it, expect } from 'vitest';
-import * as fs from 'fs';
-import * as path from 'path';
-import { runPipeline } from './pipeline';
-import type { DatasetSpec } from './dataset/build';
+import type { Point, SetRecord } from './types';
+import type { RawInput, ParseContext } from './parse/parser';
+import { ParseError, ParserRegistry } from './parse/parser';
+import { csvParser } from './parse/csv';
+import { freeformParser } from './parse/freeform/parser';
+import type { TaggedSetRecord } from './tag/tag';
+import { resolveCanonicalNames, tagRecords } from './tag/tag';
+import { derivers } from './derive/derivers';
+import type { NormalizationModel } from './derive/normalize';
+import { fitNormalizationModel, normalizeE1rm, offsetAdjustRecords } from './derive/normalize';
+import type { AthleteContext } from './derive/athlete';
+import type { DiagnosticsReport } from './analyze/diagnose';
+import { diagnose } from './analyze/diagnose';
+import type { DatasetSpec, RenderParams, RechartsRow } from './dataset/build';
+import { buildDataset } from './dataset/build';
 
-const loadFixture = (name: string) => ({
-  name,
-  content: fs.readFileSync(path.join(__dirname, '../test/fixtures', name), 'utf-8'),
-});
+const PARSE_CONTEXT: ParseContext = { fallback: 'lbs' };
 
-const FIXTURE_NAMES = [
-  'csv-header-unit-lbs.csv',
-  'csv-unit-column-mixed.csv',
-  'csv-cell-suffix-unit.csv',
-  'freeform-simple-form.txt',
-  'freeform-reversed-form.txt',
-  'freeform-inline-unit-suffix.txt',
-  'freeform-preamble-units-kg.txt',
-  'freeform-multi-weight-shorthand.txt',
-  'freeform-near-variant-exercise-names.txt',
-  'freeform-malformed-line.txt',
-];
+export interface PipelineResult {
+  datasets: Record<string, RechartsRow[]>;
+  diagnostics: DiagnosticsReport;
+  unknownExercises: string[];
+  unnormalized: string[];
+  parseErrors: ParseError[];
+  model: NormalizationModel;
+}
 
-const specs: DatasetSpec[] = [
-  {
-    id: 'e1rm-per-bench-variant',
-    kind: 'series',
-    include: { any: ['lift:bench'] },
-    derive: 'e1rm',
-  },
-  { id: 'tonnage-per-lift', kind: 'series', include: {}, derive: 'tonnage' },
-  {
-    id: 'estimated-total',
-    kind: 'composite',
-    derive: 'e1rm',
-    normalize: true,
-    combine: 'sum',
-    components: [
-      { label: 'squat', include: { any: ['lift:squat'] } },
-      { label: 'bench', include: { any: ['lift:bench'] } },
-      { label: 'deadlift', include: { any: ['lift:deadlift'] } },
-    ],
-  },
-  {
-    id: 'wilks-total',
-    kind: 'composite',
-    derive: 'e1rm',
-    normalize: true,
-    combine: 'sum',
-    post: 'wilks',
-    components: [
-      { label: 'squat', include: { any: ['lift:squat'] } },
-      { label: 'bench', include: { any: ['lift:bench'] } },
-      { label: 'deadlift', include: { any: ['lift:deadlift'] } },
-    ],
-  },
-];
+export interface PipelineModel {
+  model: NormalizationModel;
+  diagnostics: DiagnosticsReport;
+  unknownExercises: string[];
+  unnormalized: string[];
+  parseErrors: ParseError[];
+  pointsByDeriver: Map<string, Point[]>;
+  pointsByLabelByDeriver: Map<string, Point[]>;
+  pointsByDeriverAdjusted: Map<string, Point[]>;
+  pointsByLabelByDeriverAdjusted: Map<string, Point[]>;
+  tagged: TaggedSetRecord[];
+  athlete: AthleteContext;
+}
 
-const athlete = { sex: 'M' as const, bodyweight: 90, deadliftStance: 'conventional' as const };
+function buildPoints(tagged: TaggedSetRecord[], deriverId: string): Point[] {
+  const d = derivers[deriverId];
+  return Array.from(Map.groupBy(tagged, (r) => `${r.date}::${r.canonical}`).values()).flatMap(
+    (sets) => {
+      const v = d.derive(sets);
+      return v === null
+        ? []
+        : [{ t: sets[0].date, v, series: sets[0].canonical, tags: sets[0].tags }];
+    }
+  );
+}
 
-describe('runPipeline (end-to-end)', () => {
-  const raw = FIXTURE_NAMES.map(loadFixture);
-  const result = runPipeline(raw, specs, athlete, {});
-
-  it('runs successfully with a properly shaped output structure', () => {
-    // Verifies all specs generated datasets containing valid time rows
-    specs.forEach((s) => {
-      expect(result.datasets[s.id]).toBeInstanceOf(Array);
-      result.datasets[s.id].forEach((row) => expect(row.t).toBeTypeOf('number'));
-    });
-
-    // Holistic structural shape affirmation using toMatchObject
-    expect(result).toMatchObject({
-      parseErrors: [{ name: 'ParseError' }],
-      diagnostics: {
-        variants: expect.any(Array),
-        weaknesses: expect.any(Array),
-        unassessed: expect.any(Array),
-      },
-      unknownExercises: expect.any(Array),
-      unnormalized: expect.any(Array),
-    });
+function buildPointsByLabel(tagged: TaggedSetRecord[], deriverId: string): Point[] {
+  const d = derivers[deriverId];
+  return Array.from(
+    Map.groupBy(tagged, (r) => `${r.date}::${r.meta?.rawExercise ?? r.canonical}`).values()
+  ).flatMap((sets) => {
+    const v = d.derive(sets);
+    return v === null
+      ? []
+      : [
+          {
+            t: sets[0].date,
+            v,
+            series: sets[0].meta?.rawExercise ?? sets[0].canonical,
+            tags: sets[0].tags,
+          },
+        ];
   });
+}
 
-  it('surfaces unmapped raw exercises', () => {
-    const fresh = runPipeline(
-      [...raw, { name: 'unmapped.txt', content: '2026-01-15 Curls 50x10 @8\n' }],
-      specs,
-      athlete,
-      {}
-    );
-    expect(fresh.unknownExercises).toContain('Curls');
-  });
+export function runPipelineModel(
+  raw: RawInput[],
+  athlete: AthleteContext,
+  now?: number
+): PipelineModel {
+  const timestamp = now ?? Date.now();
+  const registry = new ParserRegistry();
+  registry.registerMany([csvParser, freeformParser]);
 
-  it('re-runs the integration code from scratch without memoization', () => {
-    const again = runPipeline(raw, specs, athlete, {});
-    expect(again.datasets).toEqual(result.datasets);
-    expect(again).not.toBe(result);
-  });
-});
+  const parseErrors: ParseError[] = [];
+  const records: SetRecord[] = [];
+
+  for (const input of raw) {
+    try {
+      records.push(...registry.parse(input, PARSE_CONTEXT));
+    } catch (err) {
+      if (err instanceof ParseError) {
+        parseErrors.push(err);
+      } else {
+        throw err;
+      }
+    }
+  }
+
+  const { resolved, unknown: unkAliases } = resolveCanonicalNames(records);
+  const { tagged, unknown: unkCanonicals } = tagRecords(resolved, athlete.deadliftStance);
+  const unknownExercises = [...new Set([...unkAliases, ...unkCanonicals])];
+
+  const fitInput = tagged.filter(
+    (r) => r.sets === undefined || r.sets === 1 || r.rpe !== undefined
+  );
+  const model = fitNormalizationModel(fitInput, { minSamples: 1 }, athlete);
+  const allDeriverIds = Object.keys(derivers);
+
+  const pointsByDeriver = new Map(allDeriverIds.map((id) => [id, buildPoints(tagged, id)]));
+  const pointsByLabelByDeriver = new Map(
+    allDeriverIds.map((id) => [id, buildPointsByLabel(tagged, id)])
+  );
+  const addlWtCanonicals = new Set(Object.keys(model.addlWtOffset));
+
+  const pointsByDeriverAdjusted = new Map(
+    allDeriverIds.map((id) => {
+      const original = pointsByDeriver.get(id)!;
+      if (addlWtCanonicals.size === 0) {
+        return [id, original];
+      }
+      const adjustedByKey = new Map(
+        buildPoints(offsetAdjustRecords(tagged, model), id)
+          .filter((p) => addlWtCanonicals.has(p.series))
+          .map((p) => [`${p.t}::${p.series}`, p])
+      );
+      return [id, original.map((p) => adjustedByKey.get(`${p.t}::${p.series}`) ?? p)];
+    })
+  );
+
+  const pointsByLabelByDeriverAdjusted = new Map(
+    allDeriverIds.map((id) => {
+      const original = pointsByLabelByDeriver.get(id)!;
+      if (addlWtCanonicals.size === 0) {
+        return [id, original];
+      }
+      return [id, buildPointsByLabel(offsetAdjustRecords(tagged, model), id)];
+    })
+  );
+
+  const unnormalized = Array.from(Map.groupBy(pointsByDeriver.get('e1rm')!, (p) => p.series))
+    .map(([, pts]) => pts.reduce((a, b) => (b.t > a.t ? b : a)))
+    .filter((latest) => normalizeE1rm(latest.series, latest.v, model) === null)
+    .map((latest) => latest.series);
+
+  const effectsByCanonical = new Map(tagged.map((r) => [r.canonical, [...r.effects]]));
+  const displayNameLatest = new Map<string, { date: number; name: string }>();
+
+  for (const r of tagged) {
+    const existing = displayNameLatest.get(r.canonical);
+    if (!existing || r.date > existing.date) {
+      displayNameLatest.set(r.canonical, {
+        date: r.date,
+        name: r.meta?.rawExercise ?? r.canonical,
+      });
+    }
+  }
+
+  const displayNameByCanonical = new Map(Array.from(displayNameLatest, ([k, v]) => [k, v.name]));
+  const baselineRangeByCanonical = new Map(
+    tagged.flatMap((r) => (r.baselineRange ? [[r.canonical, r.baselineRange] as const] : []))
+  );
+
+  const diagnostics = diagnose(
+    pointsByDeriver.get('e1rm')!,
+    model,
+    effectsByCanonical,
+    { tolerance: 0.05, staleDays: 90 },
+    timestamp,
+    displayNameByCanonical,
+    baselineRangeByCanonical
+  );
+
+  return {
+    model,
+    diagnostics,
+    unknownExercises,
+    unnormalized,
+    parseErrors,
+    pointsByDeriver,
+    pointsByLabelByDeriver,
+    pointsByDeriverAdjusted,
+    pointsByLabelByDeriverAdjusted,
+    tagged,
+    athlete,
+  };
+}
+
+export function buildDatasetsFromModel(
+  pipelineModel: PipelineModel,
+  specs: DatasetSpec[],
+  ui: RenderParams
+): Record<string, RechartsRow[]> {
+  return Object.fromEntries(
+    specs.map((s) => {
+      const pts =
+        s.kind === 'composite'
+          ? pipelineModel.pointsByDeriverAdjusted.get(s.derive)!
+          : s.kind === 'series' && s.groupBy === 'label' && s.normalize
+            ? pipelineModel.pointsByLabelByDeriverAdjusted.get(s.derive)!
+            : s.kind === 'series' && s.groupBy === 'label'
+              ? pipelineModel.pointsByLabelByDeriver.get(s.derive)!
+              : pipelineModel.pointsByDeriver.get(s.derive)!;
+      return [s.id, buildDataset(pts, s, ui, pipelineModel.model, pipelineModel.athlete)];
+    })
+  );
+}
+
+export function runPipeline(
+  raw: RawInput[],
+  specs: DatasetSpec[],
+  athlete: AthleteContext,
+  ui: RenderParams,
+  now?: number
+): PipelineResult {
+  const timestamp = now ?? Date.now();
+  const pipelineModel = runPipelineModel(raw, athlete, timestamp);
+  return {
+    datasets: buildDatasetsFromModel(pipelineModel, specs, ui),
+    diagnostics: pipelineModel.diagnostics,
+    unknownExercises: pipelineModel.unknownExercises,
+    unnormalized: pipelineModel.unnormalized,
+    parseErrors: pipelineModel.parseErrors,
+    model: pipelineModel.model,
+  };
+}

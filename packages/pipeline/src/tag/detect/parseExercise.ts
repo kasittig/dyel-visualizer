@@ -59,7 +59,31 @@ export function parseExercise(name: string): ParsedExercise {
   const type = isDumbbell ? 'accessory' : (parseLiftType(base, tokens) ?? 'accessory');
 
   if (type === 'accessory') {
-    return { type, bar: null, stance: null, addlWts: [], equipment: null };
+    return {
+      type,
+      bar: null,
+      stance: null,
+      addlWts: [],
+      equipment: null,
+      equipmentMagnitude: null,
+    };
+  }
+
+  const equipment = parseEquipment(lower, tokens);
+  let equipmentMagnitude: string | null = null;
+
+  // Equipment magnitude parsing: board, block, deficit (similar to chains/bands pattern)
+  // Each follows bounded regex to avoid polynomial-time redos on uncontrolled input.
+  if (equipment === 'board') {
+    const digitMatch = lower.match(/(\d{1,4})\s{0,4}board/);
+    const doubleMatch = lower.match(/\bdouble\s{1,4}board/);
+    equipmentMagnitude = digitMatch ? digitMatch[1] : doubleMatch ? '2' : '1';
+  } else if (equipment === 'blocks') {
+    const digitMatch = lower.match(/(\d{1,4})"{0,1}\s{0,4}blocks?/);
+    equipmentMagnitude = digitMatch ? digitMatch[1] : '1';
+  } else if (equipment === 'deficit') {
+    const digitMatch = lower.match(/(\d{1,4})"{0,1}\s{0,4}deficit/);
+    equipmentMagnitude = digitMatch ? digitMatch[1] : '1';
   }
 
   return {
@@ -67,6 +91,7 @@ export function parseExercise(name: string): ParsedExercise {
     bar: parseBar(lower, tokens) ?? 'standard',
     stance: parseStance(lower, tokens) ?? 'competition',
     addlWts,
-    equipment: parseEquipment(lower, tokens),
+    equipment,
+    equipmentMagnitude,
   };
 }

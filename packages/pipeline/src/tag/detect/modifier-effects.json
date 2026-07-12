@@ -1,74 +1,274 @@
 {
-  "bar:standard:squat": { "effects": [] },
-  "bar:standard:bench": { "effects": [] },
-  "bar:standard:deadlift": { "effects": [] },
-  "bar:ssb:squat": {
-    "effects": ["QUAD_DOMINANT", "UPPER_BACK_DEMAND", "UPRIGHT_TORSO", "STABILIZER_DEMAND"]
+  "bar:standard:squat": {
+    "effects": [],
+    "min": 100,
+    "max": 100
   },
-  "bar:trap:deadlift": { "effects": ["QUAD_DOMINANT", "UPRIGHT_TORSO"] },
-  "bar:american:bench": { "effects": ["TRICEP_DOMINANT", "BOTTOM_RANGE"] },
-  "bar:swiss:bench": { "effects": ["TRICEP_DOMINANT"] },
+  "bar:standard:bench": {
+    "effects": [],
+    "min": 100,
+    "max": 100
+  },
+  "bar:standard:deadlift": {
+    "effects": [],
+    "min": 100,
+    "max": 100
+  },
+  "bar:ssb:squat": {
+    "effects": ["QUAD_DOMINANT", "UPPER_BACK_DEMAND", "UPRIGHT_TORSO", "STABILIZER_DEMAND"],
+    "min": 90,
+    "max": 95
+  },
+  "bar:trap:deadlift": {
+    "effects": ["QUAD_DOMINANT", "UPRIGHT_TORSO"],
+    "min": 105,
+    "max": 115
+  },
+  "bar:american:bench": {
+    "effects": ["TRICEP_DOMINANT", "BOTTOM_RANGE"],
+    "min": 95,
+    "max": 100
+  },
+  "bar:swiss:bench": {
+    "effects": ["TRICEP_DOMINANT"],
+    "min": 90,
+    "max": 100
+  },
   "bar:cambered:squat": {
-    "effects": ["STABILIZER_DEMAND", "LOWER_BACK_DEMAND", "POSTERIOR_CHAIN", "CORE_DEMAND"]
+    "effects": ["STABILIZER_DEMAND", "LOWER_BACK_DEMAND", "POSTERIOR_CHAIN", "CORE_DEMAND"],
+    "min": 85,
+    "max": 95
   },
   "bar:zercher:squat": {
-    "effects": ["CORE_DEMAND", "UPPER_BACK_DEMAND", "UPRIGHT_TORSO", "QUAD_DOMINANT"]
+    "effects": ["CORE_DEMAND", "UPPER_BACK_DEMAND", "UPRIGHT_TORSO", "QUAD_DOMINANT"],
+    "min": 70,
+    "max": 85
   },
   "bar:duffalo:bench": {
-    "effects": ["STABILIZER_DEMAND", "BOTTOM_RANGE", "PEC_DOMINANT"]
+    "effects": ["STABILIZER_DEMAND", "BOTTOM_RANGE", "PEC_DOMINANT"],
+    "min": 95,
+    "max": 100
   },
   "bar:dumbbell:bench": {
-    "effects": ["UNILATERAL", "STABILIZER_DEMAND", "PEC_DOMINANT"]
+    "effects": ["UNILATERAL", "STABILIZER_DEMAND", "PEC_DOMINANT"],
+    "min": 75,
+    "max": 90
   },
-  "bar:bamboo:bench": { "effects": ["STABILIZER_DEMAND"] },
-  "bar:belt:squat": { "effects": ["QUAD_DOMINANT", "POSTERIOR_CHAIN"] },
-  "bar:goblet:squat": { "effects": ["QUAD_DOMINANT", "UPRIGHT_TORSO", "CORE_DEMAND"] },
-
-  "stance:competition:squat": { "effects": [] },
-  "stance:competition:bench": { "effects": [] },
-  "stance:competition:deadlift": { "effects": [] },
-  "stance:sumo:deadlift": { "effects": ["HIP_DOMINANT", "POSTERIOR_CHAIN"] },
-  "stance:sumo:squat": { "effects": ["HIP_DOMINANT", "POSTERIOR_CHAIN"] },
+  "bar:bamboo:bench": {
+    "effects": ["STABILIZER_DEMAND"],
+    "min": 80,
+    "max": 90
+  },
+  "bar:belt:squat": {
+    "effects": ["QUAD_DOMINANT", "POSTERIOR_CHAIN"],
+    "min": 85,
+    "max": 95
+  },
+  "bar:goblet:squat": {
+    "effects": ["QUAD_DOMINANT", "UPRIGHT_TORSO", "CORE_DEMAND"],
+    "min": 50,
+    "max": 65
+  },
+  "stance:competition:squat": {
+    "effects": [],
+    "min": 100,
+    "max": 100
+  },
+  "stance:competition:bench": {
+    "effects": [],
+    "min": 100,
+    "max": 100
+  },
+  "stance:competition:deadlift": {
+    "effects": [],
+    "min": 100,
+    "max": 100
+  },
+  "stance:sumo:deadlift": {
+    "effects": ["HIP_DOMINANT", "POSTERIOR_CHAIN"],
+    "min": 90,
+    "max": 100
+  },
+  "stance:sumo:squat": {
+    "effects": ["HIP_DOMINANT", "POSTERIOR_CHAIN"],
+    "min": 90,
+    "max": 100
+  },
   "stance:conventional:deadlift": {
-    "effects": ["HAMSTRING_DOMINANT", "POSTERIOR_CHAIN"]
+    "effects": ["HAMSTRING_DOMINANT", "POSTERIOR_CHAIN"],
+    "min": 90,
+    "max": 100
   },
-  "stance:close:bench": { "effects": ["TRICEP_DOMINANT"] },
-  "stance:close:squat": { "effects": ["QUAD_DOMINANT"] },
-  "stance:wide:bench": { "effects": ["UPPER_PECS", "REDUCED_ROM"] },
-  "stance:wide:squat": { "effects": ["POSTERIOR_CHAIN"] },
-  "stance:medium:bench": { "effects": [] },
-  "stance:medium:squat": { "effects": [] },
-  "stance:narrow:bench": { "effects": ["TRICEP_DOMINANT"] },
-  "stance:narrow:squat": { "effects": ["QUAD_DOMINANT"] },
+  "stance:close:bench": {
+    "effects": ["TRICEP_DOMINANT"],
+    "min": 80,
+    "max": 90
+  },
+  "stance:close:squat": {
+    "effects": ["QUAD_DOMINANT"],
+    "min": 85,
+    "max": 95
+  },
+  "stance:wide:bench": {
+    "effects": ["UPPER_PECS", "REDUCED_ROM"],
+    "min": 90,
+    "max": 100
+  },
+  "stance:wide:squat": {
+    "effects": ["POSTERIOR_CHAIN"],
+    "min": 90,
+    "max": 100
+  },
+  "stance:medium:bench": {
+    "effects": [],
+    "min": 100,
+    "max": 100
+  },
+  "stance:medium:squat": {
+    "effects": [],
+    "min": 100,
+    "max": 100
+  },
+  "stance:narrow:bench": {
+    "effects": ["TRICEP_DOMINANT"],
+    "min": 85,
+    "max": 95
+  },
+  "stance:narrow:squat": {
+    "effects": ["QUAD_DOMINANT"],
+    "min": 85,
+    "max": 95
+  },
   "stance:romanian:deadlift": {
-    "effects": ["HAMSTRING_DOMINANT", "LOWER_BACK_DEMAND"]
+    "effects": ["HAMSTRING_DOMINANT", "LOWER_BACK_DEMAND"],
+    "min": 60,
+    "max": 75
   },
   "stance:front:squat": {
-    "effects": ["QUAD_DOMINANT", "UPRIGHT_TORSO", "CORE_DEMAND"]
+    "effects": ["QUAD_DOMINANT", "UPRIGHT_TORSO", "CORE_DEMAND"],
+    "min": 75,
+    "max": 85
   },
-  "stance:slingshot:bench": { "effects": ["SUPRAMAXIMAL", "TRICEP_DOMINANT"] },
-  "stance:builder:bench": { "effects": ["CONDITIONING"] },
-  "stance:opposite:deadlift": { "effects": [] },
-
-  "equip:incline:bench": { "effects": ["UPPER_PECS"] },
-  "equip:decline:bench": { "effects": ["LOWER_PECS"] },
-  "equip:blocks:deadlift": { "effects": ["LOCKOUT"] },
-  "equip:deficit:deadlift": { "effects": ["EXTENDED_ROM", "BOTTOM_RANGE"] },
-  "equip:board:bench": { "effects": ["TRICEP_DOMINANT", "SUPRAMAXIMAL"] },
-  "equip:pause:squat": { "effects": ["DEAD_STOP"] },
-  "equip:pause:bench": { "effects": [] },
-  "equip:pause:deadlift": { "effects": ["DEAD_STOP"] },
-  "equip:floor:bench": { "effects": ["TRICEP_DOMINANT"] },
-  "equip:box:squat": { "effects": ["DEAD_STOP", "POSTERIOR_SHIFT"] },
-  "equip:rack:deadlift": { "effects": ["LOCKOUT"] },
-
-  "addl:chains:squat": { "effects": ["BAR_SPEED"] },
-  "addl:chains:bench": { "effects": ["BAR_SPEED"] },
-  "addl:chains:deadlift": { "effects": ["BAR_SPEED"] },
-  "addl:bands:squat": { "effects": ["BAR_SPEED"] },
-  "addl:bands:bench": { "effects": ["BAR_SPEED"] },
-  "addl:bands:deadlift": { "effects": ["BAR_SPEED"] },
-  "addl:rev-bands:squat": { "effects": ["SUPRAMAXIMAL", "LOCKOUT"] },
-  "addl:rev-bands:bench": { "effects": ["SUPRAMAXIMAL", "LOCKOUT"] },
-  "addl:rev-bands:deadlift": { "effects": ["SUPRAMAXIMAL", "LOCKOUT"] }
+  "stance:slingshot:bench": {
+    "effects": ["SUPRAMAXIMAL", "TRICEP_DOMINANT"],
+    "min": 110,
+    "max": 120
+  },
+  "stance:builder:bench": {
+    "effects": ["CONDITIONING"],
+    "min": 105,
+    "max": 115
+  },
+  "stance:opposite:deadlift": {
+    "effects": [],
+    "min": 100,
+    "max": 100
+  },
+  "equip:incline:bench": {
+    "effects": ["UPPER_PECS"],
+    "min": 85,
+    "max": 95
+  },
+  "equip:decline:bench": {
+    "effects": ["LOWER_PECS"],
+    "min": 100,
+    "max": 110
+  },
+  "equip:blocks:deadlift": {
+    "effects": ["LOCKOUT"],
+    "min": 105,
+    "max": 115
+  },
+  "equip:blocks-2:deadlift": {
+    "effects": ["LOCKOUT"],
+    "min": 115,
+    "max": 125
+  },
+  "equip:blocks-3:deadlift": {
+    "effects": ["LOCKOUT"],
+    "min": 125,
+    "max": 135
+  },
+  "equip:deficit:deadlift": {
+    "effects": ["EXTENDED_ROM", "BOTTOM_RANGE"],
+    "min": 85,
+    "max": 95
+  },
+  "equip:deficit-2:deadlift": {
+    "effects": ["EXTENDED_ROM", "BOTTOM_RANGE"],
+    "min": 75,
+    "max": 85
+  },
+  "equip:board:bench": {
+    "effects": ["TRICEP_DOMINANT", "SUPRAMAXIMAL"],
+    "min": 105,
+    "max": 115
+  },
+  "equip:board-2:bench": {
+    "effects": ["TRICEP_DOMINANT", "SUPRAMAXIMAL"],
+    "min": 115,
+    "max": 125
+  },
+  "equip:board-3:bench": {
+    "effects": ["TRICEP_DOMINANT", "SUPRAMAXIMAL"],
+    "min": 125,
+    "max": 135
+  },
+  "equip:pause:squat": {
+    "effects": ["DEAD_STOP"],
+    "min": 85,
+    "max": 95
+  },
+  "equip:pause:bench": {
+    "effects": [],
+    "min": 85,
+    "max": 95
+  },
+  "equip:pause:deadlift": {
+    "effects": ["DEAD_STOP"],
+    "min": 90,
+    "max": 95
+  },
+  "equip:floor:bench": {
+    "effects": ["TRICEP_DOMINANT"],
+    "min": 85,
+    "max": 95
+  },
+  "equip:box:squat": {
+    "effects": ["DEAD_STOP", "POSTERIOR_SHIFT"],
+    "min": 90,
+    "max": 100
+  },
+  "equip:rack:deadlift": {
+    "effects": ["LOCKOUT"],
+    "min": 110,
+    "max": 130
+  },
+  "addl:chains:squat": {
+    "effects": ["BAR_SPEED"]
+  },
+  "addl:chains:bench": {
+    "effects": ["BAR_SPEED"]
+  },
+  "addl:chains:deadlift": {
+    "effects": ["BAR_SPEED"]
+  },
+  "addl:bands:squat": {
+    "effects": ["BAR_SPEED"]
+  },
+  "addl:bands:bench": {
+    "effects": ["BAR_SPEED"]
+  },
+  "addl:bands:deadlift": {
+    "effects": ["BAR_SPEED"]
+  },
+  "addl:rev-bands:squat": {
+    "effects": ["SUPRAMAXIMAL", "LOCKOUT"]
+  },
+  "addl:rev-bands:bench": {
+    "effects": ["SUPRAMAXIMAL", "LOCKOUT"]
+  },
+  "addl:rev-bands:deadlift": {
+    "effects": ["SUPRAMAXIMAL", "LOCKOUT"]
+  }
 }
