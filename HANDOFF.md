@@ -736,7 +736,7 @@ corrections to the review's own citations noted for delegation accuracy:
 - [x] Task A3: `collectSessionDates` now spreads both `.maxEffort` and `.volume` per lift
       (`modelSelectors.ts:23-26`), mirroring sibling `collectVolumeRecords`'s access pattern. New
       test covers a volume-only day becoming `lastSessionDate`. Verified: `npm run build -w
-    packages/api` clean, 20/20 tests pass.
+  packages/api` clean, 20/20 tests pass.
 - [x] Task A4: `packages/pipeline/tsconfig.tsbuildinfo` removed from git (`git rm`), `*.tsbuildinfo`
       added to root `.gitignore`. Verified: rebuild regenerates the file locally but it stays
       untracked (`git status --short` confirms).
@@ -834,22 +834,45 @@ files each of the 10 tasks (A1-A5, B1-B4, C1) was assigned — no scope creep ac
 
 ### Out of scope / file separately
 
-- Finding 4 (Schwartz-Malone female coefficient typo at bodyweight 237, `strengthScores.ts:339`) —
-  pre-existing bug, predates this branch's merge-base. File as a new GitHub issue, not part of
-  this remediation.
 - Lower-priority notes (duplicated date helpers, ESLint carve-out growth, dead barrel exports,
   redundant field pair, hardcoded special cases, diagnostics semantics question) — noted in
   `CODE_REVIEW.md`, not blocking; revisit after Phases A-C land.
 
-**Status: ALL 10 TASKS DONE (A1-A5, B1-B4, C1), independently verified.** Remaining, not yet
-started:
+### Finding 4 (Schwartz-Malone female coefficient, deferred above) — DONE, independently verified
 
-1. **File a GitHub issue for Finding 4** (Schwartz-Malone female coefficient typo,
-   `strengthScores.ts:339`, bodyweight-237 entry `0.5765` breaks the strictly-decreasing table
-   trend) — pre-existing, predates this branch, deliberately not fixed here. `gh issue create`
-   has known problems on this repo per user's standing memory (Projects-classic-deprecation
-   breakage) — use the `gh api` workaround, not the plain CLI form.
-2. **Lower-priority notes not actioned:** duplicated date helpers (now a THIRD copy after Task
+Originally deferred as "out of scope, file separately" since it predated this branch's
+merge-base. User asked to fix it directly instead. Investigation went deeper than the original
+`CODE_REVIEW.md` write-up assumed:
+
+- The non-monotonic entry wasn't a single mistyped digit at bodyweight 237. `git log -S`/`git show
+45a13a9:packages/core/coefficients.json` recovered the original, OCR-verified, PDF-sourced
+  female Schwartz-Malone table (commit `45a13a9`, "Fix calculateSchwartzMalone: replace sparse
+  anchor table with reference per-pound table") — that table has **zero** monotonicity violations
+  across all 161 rows (bodyweight 90-250). Diffing it against the current table showed rows
+  w=110-236 had been silently re-transcribed to different values during a later, undocumented
+  commit (`df15c89`/`c42d62d`, the `@dyel/core`→`@dyel/pipeline` migration), while rows w=237-250
+  were left untouched and still match `45a13a9` byte-for-byte. That undocumented re-transcription
+  is what produced the 236→237 inversion — no single-row fix was mathematically possible once row
+  236 drifted below row 238.
+- **Fix:** restored the full `SCHWARTZ_MALONE_FEMALE` table (w 90-250, `strengthScores.ts`) to the
+  verified `45a13a9` values — the only segment with confirmed provenance and zero internal
+  violations. `SCHWARTZ_MALONE_MALE` left untouched (independently confirmed zero monotonicity
+  violations already, despite its own smaller unexplained drift from `45a13a9` — no observable
+  bug, not in scope).
+- Added 2 new regression tests to `strengthScores.test.ts` (full 90-250lb female range
+  monotonically non-increasing for a fixed total; explicit 236/237/238 non-increasing check) so
+  any future table edit that reintroduces a similar drift/inversion fails loudly.
+- `CODE_REVIEW.md`'s Finding 4 write-up updated to ✅ FIXED with the full root-cause trail.
+- **Verification:** `npm run build -w packages/api` clean; `npm test -w packages/api` **287/287**
+  (285 Phase C baseline + 2 new). Cross-package regression re-run: pipeline 77/77, app 40/40 (both
+  unaffected — change is `packages/api`-only), `npx eslint packages/app packages/api` clean,
+  `git status --short` confirms only `strengthScores.ts`, `strengthScores.test.ts`, `HANDOFF.md`,
+  and `CODE_REVIEW.md` changed — no scope creep.
+
+**Status: ALL 10 CODE_REVIEW.md tasks DONE (A1-A5, B1-B4, C1) plus Finding 4, all independently
+verified.** Remaining, not yet started:
+
+1. **Lower-priority notes not actioned:** duplicated date helpers (now a THIRD copy after Task
    A2's inline local-date formatter — see A2's note above; export `localDateKey` from
    `pipelineChartUtils.ts` and repoint both `lastSessionDetail.ts` and `volume/volume.ts`'s
    existing hand-rolled copy at it), ESLint carve-out growth (render-only allowlist could become
@@ -858,10 +881,12 @@ started:
    `baselineCanonicals`/`targetCanonicals` field pair in `useVisualizerData.ts`, hardcoded
    deadlift-stance/equipment-magnitude special cases (overstated in the review, not a clean
    drop-in fix), and a diagnostics semantics question likely intentional (documented in
-   `analyze/CLAUDE.md`) — none blocking, not part of this remediation pass.
-3. **Not yet committed.** Everything above (Tasks A1-A5, B1-B4, C1) is sitting uncommitted in the
-   working tree, same as this branch's other in-flight migration work. Per this repo's git
-   conventions (root `CLAUDE.md`): never commit directly to `main` (N/A here, already on a feature
-   branch), submit as a new PR referencing the source issue once ready. Awaiting user direction on
-   whether to commit as one combined change or split by phase/priority tier, and which branch/PR
-   this should target given `migration-phase-1`'s own PR #467 status.
+   `analyze/CLAUDE.md`) — none blocking, not part of this remediation pass. Also worth a follow-up
+   check on the male Schwartz-Malone table's own unexplained (but not currently bug-producing)
+   drift from `45a13a9`, found incidentally while fixing Finding 4.
+2. **Not yet committed.** Everything above (Tasks A1-A5, B1-B4, C1, Finding 4) is sitting
+   uncommitted in the working tree, same as this branch's other in-flight migration work. Per this
+   repo's git conventions (root `CLAUDE.md`): never commit directly to `main` (N/A here, already
+   on a feature branch), submit as a new PR referencing the source issue once ready. Awaiting user
+   direction on whether to commit as one combined change or split by phase/priority tier, and
+   which branch/PR this should target given `migration-phase-1`'s own PR #467 status.
