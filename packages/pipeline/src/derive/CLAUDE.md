@@ -48,6 +48,10 @@ parse/; never re-multiply.
   Do not add a variant→variant path.
 - `null` = unfitted (n < minSamples) → caller excludes + surfaces for review.
   Never fall back to factor 1.0 silently.
+- `fitNormalizationModel` self-filters each canonical's records to non-speed-work sets
+  (via `isSpeedWork`, same classifier as `e1rm` deriver); if a canonical has zero effort
+  sets, falls back to its full record set, mirroring `e1rm`'s pattern. No pipeline-wide
+  pre-filter applied — fitting is self-protecting against speed-work-only canonicals.
 - Fit estimation specifics are needs-design (port from legacy
   repCalculator.ts) — flag, don't invent.
 

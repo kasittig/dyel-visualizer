@@ -736,7 +736,7 @@ corrections to the review's own citations noted for delegation accuracy:
 - [x] Task A3: `collectSessionDates` now spreads both `.maxEffort` and `.volume` per lift
       (`modelSelectors.ts:23-26`), mirroring sibling `collectVolumeRecords`'s access pattern. New
       test covers a volume-only day becoming `lastSessionDate`. Verified: `npm run build -w
-  packages/api` clean, 20/20 tests pass.
+packages/api` clean, 20/20 tests pass.
 - [x] Task A4: `packages/pipeline/tsconfig.tsbuildinfo` removed from git (`git rm`), `*.tsbuildinfo`
       added to root `.gitignore`. Verified: rebuild regenerates the file locally but it stays
       untracked (`git status --short` confirms).
@@ -884,9 +884,9 @@ verified.** Remaining, not yet started:
    `analyze/CLAUDE.md`) — none blocking, not part of this remediation pass. Also worth a follow-up
    check on the male Schwartz-Malone table's own unexplained (but not currently bug-producing)
    drift from `45a13a9`, found incidentally while fixing Finding 4.
-2. **Not yet committed.** Everything above (Tasks A1-A5, B1-B4, C1, Finding 4) is sitting
-   uncommitted in the working tree, same as this branch's other in-flight migration work. Per this
-   repo's git conventions (root `CLAUDE.md`): never commit directly to `main` (N/A here, already
-   on a feature branch), submit as a new PR referencing the source issue once ready. Awaiting user
-   direction on whether to commit as one combined change or split by phase/priority tier, and
-   which branch/PR this should target given `migration-phase-1`'s own PR #467 status.
+2. **Committed.** Tasks A1-A5, B1-B4, and C1 landed in commit `6fe98c2` ("Fix 10 confirmed findings
+   from CODE_REVIEW.md (PR #470)"); Finding 4 landed separately in commit `3fc2ebb` ("Fix
+   Schwartz-Malone female coefficient table non-monotonicity (CODE_REVIEW.md Finding 4)"), both on
+   `migration-phase-1`. `CODE_REVIEW.md`'s per-finding status labels have been updated to ✅ FIXED
+   to match. Still open: whether/when this lands in a PR against `main` given
+   `migration-phase-1`'s own PR #467 status — not yet actioned.

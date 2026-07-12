@@ -60,6 +60,8 @@ The app enforces a unidirectional data flow: **data source → `usePipelineOrche
 
 This separation ensures business logic stays in `@dyel/api`, React lifecycle stays in feature hooks, and components remain pure rendering functions. ESLint rules in `eslint.config.js` enforce this contract via static analysis.
 
+**Known data-flow modeling issue (documented, not yet refactored):** `useVisualizerData` returns both `baselineCanonicals` and `targetCanonicals` assigned from a single `defaultCanonicalsByLift(...)` memo, falsely implying two independent computations exist (CODE_REVIEW.md's "Lower-priority notes" section flagged this as a real issue, but it was deliberately left out of scope for remediation; see HANDOFF.md's "Remaining, not yet started" section). This is a documentation-only notice to prevent future misreading of the shape as two separate derivations.
+
 ### Component rules (`.tsx` files in `features/*/` and `shared/*/`)
 
 - Render props and hook results only
@@ -87,6 +89,8 @@ A small set of display-only helpers and constants are allowlisted to import from
 - Features may import sibling features only via their `index.ts` barrel (e.g., `import { usePipelineDatasets } from '../sigma'`)
 - Never deep imports like `../sigma/usePipelineDatasets`
 - ESLint blocks deep imports to enforce explicit barrel exports and prevent accidental static inclusion of lazy-loaded page components
+
+ESLint's `no-restricted-imports` patterns now enforce both the `../<name>/*` and `../../features/<name>/*` path forms — previously only the former was caught (CODE_REVIEW.md Finding 8 / HANDOFF.md Task B4). Five evasions using the `../../features/` form were repaired and the pattern widened in `eslint.config.js` to prevent future blind spots.
 
 **Exception:** `features/data-source/SheetUrlPanel.tsx` keeps a deep import of `../index-page/useIndexData` because barrel-importing `../index-page` would statically pull the lazy-loaded `IndexPage` component into the main bundle and defeat `main.tsx`'s code-splitting. See the comment in that file and its matching per-file allowlist override in root `eslint.config.js`.
 

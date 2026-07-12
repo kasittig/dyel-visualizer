@@ -34,6 +34,22 @@ rule for any other use case. Since `packages/app` needs `classifyExerciseName` d
 validators, this minimal pass-through is the necessary exception, in the same category as
 the raw-input entry points above (an unavoidable boundary-crossing for legitimate reasons).
 
+**Single source of truth for unit conversion:** `weightUnit.ts`'s `KG_TO_LBS` is the sole
+definition of the kg→lbs conversion factor (`2.20462262185`); its comment explicitly forbids
+reintroducing local copies. `strengthScores.ts` imports it directly rather than duplicating the
+literal (previously duplicated across three files — `getCompetitionTotal.ts`, `volume/volume.ts`,
+`strengthScores.ts` — fixed per CODE_REVIEW.md Finding 9). Prefer `convertWeight`/`roundWeight`
+for kg↔display-unit conversions; only import the raw constant where a scoring formula needs the
+unrounded factor directly.
+
+**Known unused barrel exports (documented, not yet removed):** `selectBestE1RMPoint`
+(`repCalculator/repCalculatorUtils.ts`), `mergeWideRechartsRows` (`chart/pipelineChartUtils.ts`),
+and `facetFamilyKey` (`conjugate/facets.ts`) currently have no consumers in `packages/app` via the
+`@dyel/api` barrel (per CODE_REVIEW.md's "Dead barrel exports" note). `mergeWideRechartsRows` and
+`facetFamilyKey` do each have one same-package internal consumer, reached via a relative import
+rather than the barrel. Left in place pending a decision on whether to remove or find their
+intended call site — flagging here so they aren't mistaken for actively-used public API.
+
 ## Dependencies
 
 `papaparse` (+ `@types/papaparse`) is a direct dependency of this package, used by

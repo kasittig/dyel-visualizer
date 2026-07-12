@@ -32,13 +32,19 @@ enabling normalized per-label metrics.
 Per component (typically the three `lift:*` families):
 derive e1rm → `normalizeE1rm` each point (null → EXCLUDE, don't zero-fill) →
 per date take MAX normalized → CARRY FORWARD most recent value across dates
-(indefinitely, v1) → SUM components → optional `post: 'wilks' | 'dots'`
-(consumes AthleteContext). The total consumes ALL variants (normalized),
-not just comp lifts. Wilks/DOTS charts are just the total + post transform.
+(indefinitely, v1; over FULL unfiltered history) → SUM components →
+optional `post: 'wilks' | 'dots'` (consumes AthleteContext) → apply `ui.dateRange`
+filter to final rows only (critical load-bearing ordering: filtering happens
+after carry-forward/aggregation, never before—missing this breaks composite
+charts when date range excludes values needed for carry-forward). The total
+consumes ALL variants (normalized), not just comp lifts. Wilks/DOTS charts
+are just the total + post transform.
 
 ## RenderParams (UI runtime)
 
-`chips` AND-merge into each spec's TagQuery; `dateRange` filters.
+`chips` AND-merge into each spec's TagQuery (during point derivation);
+`dateRange` filters final output rows only, after all carry-forward and
+aggregation steps. Never filter points before carry-forward.
 
 ## Boundaries
 

@@ -7,9 +7,16 @@
 
 **Verification update (2026-07-11):** all 17 claims below were independently re-verified against the current code on `migration-phase-1` (file/line citations, `git diff main...HEAD` / `git log -p` against the claimed prior behavior, and downstream call-site tracing). Every finding CONFIRMED except one PLAUSIBLE (overstated) note. See inline ✅/⚠️ verdicts.
 
+**Remediation update (2026-07-12):** Findings 1, 2, 3, 5, 6, 7, 8, 9, 10, and 11 were fixed in
+commit `6fe98c2` ("Fix 10 confirmed findings from CODE_REVIEW.md (PR #470)"); Finding 4 was fixed
+separately in commit `3fc2ebb`. Full task-by-task remediation detail (which task fixed which
+finding, verification commands run, test counts before/after) is in `HANDOFF.md`'s Phase A/B/C
+sections. All 11 findings are now ✅ FIXED; only the "Lower-priority notes" section below remains
+open (see `HANDOFF.md`'s "Remaining, not yet started" list).
+
 ## Correctness
 
-### 1. Composite charts lose carry-forward when a date range is set ⚠️ corroborated by two angles — ✅ CONFIRMED
+### 1. Composite charts lose carry-forward when a date range is set ⚠️ corroborated by two angles — ✅ FIXED (HANDOFF.md Task B1)
 
 - **File:** `packages/pipeline/src/dataset/build.ts:50`
 - `buildDataset` now filters points to `ui.dateRange` (`scoped`) _before_ the composite carry-forward loop; the old code carried forward across full history and range-filtered the final rows. The composite gate `lastValues.every(v => v !== undefined)` then drops any timestamp where a component has no in-range value.
@@ -17,14 +24,14 @@
 - **Fix direction:** Carry forward over full history, filter rows to the range last (the documented CompositeSpec contract in `dataset/CLAUDE.md`).
 - **Verification:** `build.ts:50-52` filters `points` into `scoped` by `ui.dateRange` before the grid/carry-forward loop (lines 65-94); `git diff main...HEAD` confirms the old code built grids over unfiltered `points` and applied the range filter only to final `rows`. `packages/api/src/totalChartSpecs.ts:7` does use `derive: 'e1rm-max-effort'`, and that deriver returns `null` (not a speed-work fallback) on effort-only days, confirming the "easy to hit" claim.
 
-### 2. Speed-work guard removed from `fitNormalizationModel` without a per-canonical fallback — ✅ CONFIRMED
+### 2. Speed-work guard removed from `fitNormalizationModel` without a per-canonical fallback — ✅ FIXED (HANDOFF.md Task B2)
 
 - **File:** `packages/pipeline/src/derive/normalize.ts:154` (surviving protection: `packages/pipeline/src/pipeline.ts:101`)
 - The deleted `effortOnly()` helper excluded speed sets from the baseline grid and variant fits but fell back to a canonical's own sets when it had _only_ speed work (`effort.length ? effort : records`). The replacement is a global pre-filter in `pipeline.ts` with no fallback.
 - **Failure scenario:** A variant logged exclusively as speed work (e.g. "Speed Bench" always 3×3, no RPE) is dropped from `fitInput` entirely — no `variantFactor`/`baseline` computed, so it silently vanishes from normalized variation/radar output. Separately, `fitNormalizationModel` is still a public export but no longer self-protects: calling it with unfiltered history anchors the baseline grid on speed-work e1RMs (~9× inflated variant factors).
 - **Verification:** `git log -p` on `normalize.ts` confirms the deleted `effortOnly()` helper and both call sites now use unfiltered `r`/`byCanonical[...]` (current lines 154, 184-187). `pipeline.ts:101`'s `fitInput` filter is global, not per-canonical, so a speed-work-only canonical is stripped before `byCan`/`byFam` and never reappears. `fitNormalizationModel` remains exported from `packages/pipeline/src/index.ts:20` with no internal guard.
 
-### 3. Sheet validator dropped all per-row weight/reps/date validation — ✅ CONFIRMED
+### 3. Sheet validator dropped all per-row weight/reps/date validation — ✅ FIXED (HANDOFF.md Task B3)
 
 - **File:** `packages/api/src/validation/pipelineSheetValidator.ts:123-141`
 - The old `validateSheetCsv` flagged per row: missing/non-numeric weight, missing/`<=0`/non-integer reps, out-of-range RPE, missing/invalid dates. The new loop only checks for an empty exercise name, then unconditionally counts the row as parsed. `headerRow` is also hardcoded to `0`, dropping the old preamble/header-index detection.
@@ -39,28 +46,28 @@
 - **Fix:** restored the entire `SCHWARTZ_MALONE_FEMALE` table (w 90-250) to the verified `45a13a9` values — the only segment with confirmed provenance and zero internal violations. `SCHWARTZ_MALONE_MALE` was left untouched (independently confirmed to have zero monotonicity violations already, despite its own smaller unexplained drift from `45a13a9` — not in scope, no observable bug).
 - **Verification:** `npm run build -w packages/api` clean; `npm test -w packages/api` 287/287 (285 baseline + 2 new regression tests in `strengthScores.test.ts` asserting the full 90-250lb female range is monotonically non-increasing for a fixed total, and specifically that 237/238 no longer score higher than 236). Cross-package regression also re-run: pipeline 77/77, app 40/40 (both unaffected, female SM table is api-package-only), `npx eslint packages/app packages/api` clean, `git status --short` confirms only `strengthScores.ts` + `strengthScores.test.ts` changed.
 
-### 5. Session date shifts a day in UTC+ timezones — ✅ CONFIRMED
+### 5. Session date shifts a day in UTC+ timezones — ✅ FIXED (HANDOFF.md Task A2)
 
 - **File:** `packages/api/src/session/lastSessionDetail.ts:39`
 - `new Date(date).toISOString().split('T')[0]` converts a local-midnight timestamp (`parseDate` uses `setHours(0,0,0,0)`) to UTC.
 - **Failure scenario:** User in UTC+10 logs a session dated 2026-07-08; local midnight = `2026-07-07T14:00:00Z` → last-session panel shows 2026-07-07. Sibling code (`pipelineChartUtils.localDateKey`, `volume.ts`) correctly uses local getters; the unit test masks the bug by constructing dates at UTC midnight.
 - **Verification:** `parseDate` (both `csv.ts:11-16` and `freeform/parser.ts:7-12`) uses `setHours(0,0,0,0)` (local midnight); `lastSessionDetail.ts:39`'s `toISOString()` renders in UTC. `pipelineChartUtils.ts:62-68` and `volume.ts:11-12` do use local getters as claimed. `lastSessionDetail.test.ts:26-27` constructs dates via `new Date('2026-01-15')`, a date-only ISO string that parses as UTC midnight per spec — masking the bug regardless of runner timezone, exactly as claimed.
 
-### 6. CSV reps parsed with no NaN guard — ✅ CONFIRMED
+### 6. CSV reps parsed with no NaN guard — ✅ FIXED (HANDOFF.md Task A1)
 
 - **File:** `packages/pipeline/src/parse/csv.ts:73`
 - `parseInt(repsStr)` is used directly with no `isNaN` check; the required-field check only rejects empty strings. (The removed `if (reps === null)` guard was dead code — `parseInt` never returns `null` — so this was broken before the PR too, but the PR touches the function.)
 - **Failure scenario:** A reps cell of `AMRAP`, `max`, or `-` emits `reps: NaN` → `calcE1RM(weight, NaN)` = NaN → `Math.max` poisons the entire day/series value, silently corrupting the chart instead of raising a `ParseError`.
 - **Verification:** `csv.ts:73`'s `parseInt(repsStr)` has no `isNaN` guard; the deleted `if (reps === null)` check was indeed dead code (`parseInt` returns `NaN`, never `null`), confirming this was broken before the PR too. `calcE1RM(w, NaN, rpe)` returns `NaN`; `derivers.ts:24,32` feed results through `Math.max(...)`, which returns `NaN` if any argument is `NaN` — confirmed silent poisoning path.
 
-### 7. Last-session date derived from max-effort sets only (moderate confidence) — ✅ CONFIRMED
+### 7. Last-session date derived from max-effort sets only (moderate confidence) — ✅ FIXED (HANDOFF.md Task A3)
 
 - **File:** `packages/api/src/model/modelSelectors.ts:23`
 - `collectSessionDates` iterates only `tabRows[lift].maxEffort`; the deleted `useLastSessionStats` fed all pairs into session stats.
 - **Failure scenario:** The most recent training day is pure speed/volume work → `lastSessionDate` points to an older max-effort day, and `App.tsx` anchors the default date range to the wrong date.
 - **Verification:** `modelSelectors.ts:23`'s `collectSessionDates` does `LIFT_TABS.flatMap(lift => tabRows[lift].maxEffort)` — max-effort only. The deleted `useLastSessionStats` (removed in `41ca0dd`) wrapped `@dyel/core`'s `buildSessionStats`, which looped over every `[exercise, session]` pair. `App.tsx:11,55,70-74` confirms `lastSessionDate` feeds `defaultDateRangeFromLastSession` directly.
 
-### 8. Cross-feature barrel rule evaded by `../../features/...` import paths — ✅ CONFIRMED
+### 8. Cross-feature barrel rule evaded by `../../features/...` import paths — ✅ FIXED (HANDOFF.md Task B4)
 
 - **Files:** `packages/app/src/features/validation/ValidatorPage.tsx:6-8`, `packages/app/src/features/validation/PipelineValidationPage.tsx:5`, `packages/app/src/features/index-page/useIndexData.ts:2`
 - Four deep imports into `data-source` internals violate the CLAUDE.md cross-feature barrel rule ("a feature may import a sibling feature only via that feature's `index.ts` barrel"). They slip past ESLint because the guard patterns in `eslint.config.js` match `../data-source/*` but not the equivalent `../../features/data-source/*` form. The `data-source` barrel already exports every symbol involved.
@@ -69,21 +76,21 @@
 
 ## Cleanup
 
-### 9. kg→lbs factor `2.20462262185` inlined in three new files — ✅ CONFIRMED
+### 9. kg→lbs factor `2.20462262185` inlined in three new files — ✅ FIXED (HANDOFF.md Task A5)
 
 - **Files:** `packages/api/src/getCompetitionTotal.ts:21`, `packages/api/src/volume/volume.ts:8`, `packages/api/src/strengthScores.ts:383`
 - `weightUnit.ts` declares itself the single source of truth ("do not reintroduce local KG_TO_LBS constants elsewhere") and provides `convertWeight`/`roundWeight`. `getCompetitionTotal.ts:21` is a verbatim reimplementation of `roundWeight`.
 - **Cost:** Three drifting copies of the conversion; a future correction silently diverges competition totals, tonnage, and strength scores from every other converted weight.
 - **Verification:** `weightUnit.ts` defines `KG_TO_LBS = 2.20462262185` with the "do not reintroduce" comment; all three cited files (`getCompetitionTotal.ts:21`, `volume.ts:8`, `strengthScores.ts:383`) literally reinline the same constant at the exact lines cited.
 
-### 10. Per-deriver recomputation in the pipeline hot path — ✅ CONFIRMED
+### 10. Per-deriver recomputation in the pipeline hot path — ✅ FIXED (HANDOFF.md Task C1)
 
 - **File:** `packages/pipeline/src/pipeline.ts:122` (also `:134`, `:107-110`)
 - `offsetAdjustRecords(tagged, model)` is called inside the `allDeriverIds.map(...)` callbacks in both adjusted-map builders, and `buildPoints`/`buildPointsByLabel` each re-run `Map.groupBy` over all tagged records per deriver — 8+ full O(records) allocating passes per `runPipelineModel` call (each sheet load / athlete change).
 - **Cheaper form:** Hoist one `adjusted` array and one grouping per key shape (canonical, label) above the map builders. Related smaller item: `packages/api/src/conjugate/conjugateBestSet.ts:29-31` recomputes `calcE1RM` for the reduce accumulator every step (~2n calls instead of n).
 - **Verification:** `offsetAdjustRecords` is called inside `allDeriverIds.map(...)` at `pipeline.ts:120,134`; `buildPoints`/`buildPointsByLabel` each run a fresh `Map.groupBy` per deriver id across 4 map builders — confirmed redundant O(records) passes beyond 8 whenever an `addlWtOffset` canonical exists. `conjugateBestSet.ts:29-31`'s reduce recomputes `calcE1RM(a...)` every iteration — confirmed ~2(n-1) calls instead of n.
 
-### 11. Build artifact committed — ✅ CONFIRMED
+### 11. Build artifact committed — ✅ FIXED (HANDOFF.md Task A4)
 
 - **File:** `packages/pipeline/tsconfig.tsbuildinfo`
 - Git-tracked and not covered by any `.gitignore`; it's a machine-specific TypeScript incremental-compilation cache rewritten on every `tsc -b`.

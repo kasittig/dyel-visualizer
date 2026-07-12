@@ -19,7 +19,8 @@ Every record carries `meta.rawUnit` / `meta.rawWeight` (audit trail).
 ## Adapters
 
 - `csv.ts`: dataset unit sniffed from headers ("weight (lbs)"); record-level
-  from a unit column or cell suffix ("225lbs").
+  from a unit column or cell suffix ("225lbs"). Reps via `parseInt` + `isNaN`
+  hard-fail → `ParseError` on non-numeric input (e.g., "AMRAP", "max").
 - `freeform/`: line-oriented, one exercise entry per line, e.g.
   `7/3 comp squat 1rm 200kg`. Whitespace-insensitive tokenizer + per-line
   semantic role assignment (NOT positional templates):
