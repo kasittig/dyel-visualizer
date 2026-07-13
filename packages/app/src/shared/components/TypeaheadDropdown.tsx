@@ -25,14 +25,11 @@ export function TypeaheadDropdown({
 
   const outerRef = useRef<HTMLDivElement>(null);
   const popoverContentRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
 
-  // Determine which options to show (filtered or full list)
   const visibleOptions = showFullList
     ? options
     : options.filter((opt) => opt.toLowerCase().includes(inputText.toLowerCase()));
 
-  // Sync value prop to inputText when not focused
   useEffect(() => {
     if (!focused && value !== null) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -40,7 +37,6 @@ export function TypeaheadDropdown({
     }
   }, [value, focused]);
 
-  // Handle click outside
   useEffect(() => {
     if (!open) {
       return;
@@ -56,7 +52,13 @@ export function TypeaheadDropdown({
     return () => document.removeEventListener('mousedown', handleMouseDown, { capture: true });
   }, [open]);
 
-  // Handle keyboard navigation
+  const selectOption = (selected: string) => {
+    setInputText(selected);
+    onChange(selected);
+    setOpen(false);
+    setShowFullList(false);
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (!open) {
       if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
@@ -70,60 +72,22 @@ export function TypeaheadDropdown({
 
     if (e.key === 'ArrowDown') {
       e.preventDefault();
-      setHighlightedIndex((prev) => {
-        const max = visibleOptions.length - 1;
-        if (prev === null) {
-          return 0;
-        }
-        return Math.min(prev + 1, max);
-      });
+      setHighlightedIndex((prev) =>
+        Math.min(prev === null ? 0 : prev + 1, visibleOptions.length - 1)
+      );
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
-      setHighlightedIndex((prev) => {
-        if (prev === null || prev === 0) {
-          return 0;
-        }
-        return prev - 1;
-      });
+      setHighlightedIndex((prev) => Math.max(0, (prev ?? 1) - 1));
     } else if (e.key === 'Enter') {
       e.preventDefault();
       if (highlightedIndex !== null && highlightedIndex < visibleOptions.length) {
-        const selected = visibleOptions[highlightedIndex];
-        setInputText(selected);
-        onChange(selected);
-        setOpen(false);
-        setShowFullList(false);
+        selectOption(visibleOptions[highlightedIndex]);
       }
     } else if (e.key === 'Escape') {
       e.preventDefault();
       setOpen(false);
       setShowFullList(false);
     }
-  };
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newText = e.target.value;
-    setInputText(newText);
-    setShowFullList(false);
-    setHighlightedIndex(null);
-    setOpen(true);
-  };
-
-  const handleInputFocus = () => {
-    setOpen(true);
-    setShowFullList(false);
-    setFocused(true);
-  };
-
-  const handleInputBlur = () => {
-    setFocused(false);
-  };
-
-  const handleOptionClick = (option: string) => {
-    setInputText(option);
-    onChange(option);
-    setOpen(false);
-    setShowFullList(false);
   };
 
   const handleToggleClick = () => {
@@ -143,14 +107,24 @@ export function TypeaheadDropdown({
         <Popover.Anchor asChild>
           <div className={styles.container}>
             <input
-              ref={inputRef}
               type="text"
               value={inputText}
               placeholder={placeholder}
-              onChange={handleInputChange}
-              onFocus={handleInputFocus}
-              onBlur={handleInputBlur}
               onKeyDown={handleKeyDown}
+              onChange={(e) => {
+                setInputText(e.target.value);
+                setShowFullList(false);
+                setHighlightedIndex(null);
+                setOpen(true);
+              }}
+              onFocus={() => {
+                setOpen(true);
+                setShowFullList(false);
+                setFocused(true);
+              }}
+              onBlur={() => {
+                setFocused(false);
+              }}
               className={styles.input}
             />
             <button
@@ -181,10 +155,16 @@ export function TypeaheadDropdown({
           <Popover.Content
             ref={popoverContentRef}
             sideOffset={6}
-            onOpenAutoFocus={(e) => e.preventDefault()}
-            onInteractOutside={(e) => e.preventDefault()}
-            onFocusOutside={(e) => e.preventDefault()}
             className={styles.popover}
+            onOpenAutoFocus={(e) => {
+              e.preventDefault();
+            }}
+            onInteractOutside={(e) => {
+              e.preventDefault();
+            }}
+            onFocusOutside={(e) => {
+              e.preventDefault();
+            }}
           >
             <div className={styles.list}>
               {visibleOptions.length > 0 ? (
@@ -192,10 +172,10 @@ export function TypeaheadDropdown({
                   <button
                     key={option}
                     type="button"
-                    className={`${styles.option} ${
-                      idx === highlightedIndex ? styles.optionHighlighted : ''
-                    }`}
-                    onClick={() => handleOptionClick(option)}
+                    onClick={() => {
+                      selectOption(option);
+                    }}
+                    className={`${styles.option} ${idx === highlightedIndex ? styles.optionHighlighted : ''}`}
                   >
                     {option}
                   </button>
