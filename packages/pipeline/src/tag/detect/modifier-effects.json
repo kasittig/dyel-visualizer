@@ -51,8 +51,8 @@
   },
   "bar:dumbbell:bench": {
     "effects": ["UNILATERAL", "STABILIZER_DEMAND", "PEC_DOMINANT"],
-    "min": 75,
-    "max": 90
+    "min": 35,
+    "max": 40
   },
   "bar:bamboo:bench": {
     "effects": ["STABILIZER_DEMAND"],

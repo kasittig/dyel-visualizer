@@ -55,8 +55,7 @@ export function parseExercise(name: string): ParsedExercise {
     addlWts.push({ kind: 'rev. bands', magnitude });
   }
 
-  const isDumbbell = lower.includes('dumbbell') || tokens.has('db');
-  const type = isDumbbell ? 'accessory' : (parseLiftType(base, tokens) ?? 'accessory');
+  const type = parseLiftType(base, tokens) ?? 'accessory';
 
   if (type === 'accessory') {
     return {
