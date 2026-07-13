@@ -17,12 +17,12 @@ describe('defaultCompExerciseCanonical', () => {
   it('handles base conditions and filtering fallbacks', () => {
     expect(defaultCompExerciseCanonical([])).toBeNull();
     expect(defaultCompExerciseCanonical([rec('squat')])).toBe('squat');
-
-    const elements = [
-      rec('squat-ssb', ['lift:squat', 'bar:ssb']),
-      rec('squat-cambered', ['lift:squat', 'bar:cambered']),
-    ];
-    expect(defaultCompExerciseCanonical(elements)).toBe('squat-ssb');
+    expect(
+      defaultCompExerciseCanonical([
+        rec('squat-ssb', ['lift:squat', 'bar:ssb']),
+        rec('squat-cambered', ['lift:squat', 'bar:cambered']),
+      ])
+    ).toBe('squat-ssb');
   });
 
   it.each([
@@ -59,24 +59,23 @@ describe('defaultCompExerciseCanonical', () => {
       [rec('squat-pause', ['lift:squat', 'equip:pause']), rec('squat')],
       'squat',
     ],
-  ])('%s', (_, records, expected) => {
-    expect(defaultCompExerciseCanonical(records)).toBe(expected);
-  });
+  ])('%s', (_, records, expected) => expect(defaultCompExerciseCanonical(records)).toBe(expected));
 
   it.each([
     ['matches sumo target stance', 'sumo', 'deadlift-sumo'],
     ['matches conventional target stance', 'conventional', 'deadlift-conventional'],
     ['falls back when target stance is absent', 'conventional', 'deadlift-sumo'],
   ])('deadlift stance routing: %s', (_, stance, expected) => {
-    const records = [
+    const r = [
       rec('deadlift-sumo', ['lift:deadlift', 'stance:sumo']),
       rec('deadlift-conventional', ['lift:deadlift', 'stance:conventional']),
       rec('deadlift-box', ['lift:deadlift', 'equip:box']),
     ];
-    const targetRecords =
-      expected === 'deadlift-sumo' && stance === 'conventional'
-        ? [records[0], records[2]]
-        : records;
-    expect(defaultCompExerciseCanonical(targetRecords, stance)).toBe(expected);
+    expect(
+      defaultCompExerciseCanonical(
+        expected === 'deadlift-sumo' && stance === 'conventional' ? [r[0], r[2]] : r,
+        stance
+      )
+    ).toBe(expected);
   });
 });

@@ -1,28 +1,25 @@
 import { useState, useMemo, useEffect } from 'react';
 import type { DateRange } from 'react-day-picker';
-import type { AthleteContext } from '@dyel/api';
 import { useLocalStorageState } from '../shared/hooks/useLocalStorageState';
 import type { InputMode, PageTab, DeadliftStancePreference } from './appTabs';
 
 export function useAppSettings() {
   useState(() => {
-    const params = new URLSearchParams(window.location.search);
-    const qUrl = params.get('sheet');
-    const qMode = params.get('mode');
-    const qText = params.get('text');
-
-    if (qMode === 'text') {
+    const p = new URLSearchParams(window.location.search),
+      u = p.get('sheet'),
+      m = p.get('mode'),
+      t = p.get('text');
+    if (m === 'text') {
       localStorage.setItem('dyel:inputMode', JSON.stringify('text'));
-    } else if (qUrl !== null) {
+    } else if (u !== null) {
       localStorage.setItem('dyel:inputMode', JSON.stringify('url'));
     }
-    if (qUrl !== null) {
-      localStorage.setItem('dyel:url', JSON.stringify(qUrl));
+    if (u !== null) {
+      localStorage.setItem('dyel:url', JSON.stringify(u));
     }
-    if (qText !== null) {
-      localStorage.setItem('dyel:pastedText', JSON.stringify(qText));
+    if (t !== null) {
+      localStorage.setItem('dyel:pastedText', JSON.stringify(t));
     }
-    return null;
   });
 
   const [url, setUrl] = useLocalStorageState<string>(
@@ -35,41 +32,39 @@ export function useAppSettings() {
   const [refreshToken, setRefreshToken] = useState(0);
   const [activeTab, setActiveTab] = useLocalStorageState<PageTab>('dyel:activeTab', 'sigma');
   const [shownResetToken, setShownResetToken] = useState(0);
-  const [deadliftStance, setDeadliftStance] = useLocalStorageState<DeadliftStancePreference>(
+  const [deadliftStance, setDeadliftStance] = useLocalStorageState<DeadliftStancePreference | null>(
     'dyel:deadliftStance',
-    'sumo'
+    null
   );
   const [dateRange, setDateRange] = useState<DateRange>({ from: undefined, to: undefined });
-
-  const athlete: AthleteContext = useMemo(
-    () => ({ sex: 'M', bodyweight: 80, deadliftStance }),
-    [deadliftStance]
-  );
+  const athleteBase = useMemo(() => ({ sex: 'M' as const, bodyweight: 80 }), []);
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
+    const p = new URLSearchParams(window.location.search);
     if (inputMode === 'text') {
-      params.set('mode', 'text');
-      params.delete('sheet');
+      p.set('mode', 'text');
+      p.delete('sheet');
       if (pastedText) {
-        params.set('text', pastedText);
+        p.set('text', pastedText);
       } else {
-        params.delete('text');
+        p.delete('text');
       }
     } else {
-      params.delete('mode');
-      params.delete('text');
+      p.delete('mode');
+      p.delete('text');
       if (url) {
-        params.set('sheet', url);
+        p.set('sheet', url);
       } else {
-        params.delete('sheet');
+        p.delete('sheet');
       }
     }
-    history.replaceState(null, '', `?${params.toString()}`);
+    history.replaceState(null, '', `?${p.toString()}`);
   }, [inputMode, url, pastedText]);
 
-  const updateToken = () => {
-    setPanelForcedOpen(false);
+  const tok = (clr = false) => {
+    if (clr) {
+      setPanelForcedOpen(false);
+    }
     setShownResetToken((t) => t + 1);
   };
 
@@ -90,20 +85,20 @@ export function useAppSettings() {
     setShownResetToken,
     deadliftStance,
     setDeadliftStance,
-    athlete,
+    athleteBase,
     dateRange,
     setDateRange,
     handleUrlChange: (u: string) => {
       setUrl(u);
-      updateToken();
+      tok(true);
     },
     handleTextChange: (t: string) => {
       setPastedText(t);
-      updateToken();
+      tok(true);
     },
     handleModeChange: (m: InputMode) => {
       setInputMode(m);
-      setShownResetToken((t) => t + 1);
+      tok();
     },
   };
 }
