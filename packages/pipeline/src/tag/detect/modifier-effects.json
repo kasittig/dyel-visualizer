@@ -54,6 +54,11 @@
     "min": 35,
     "max": 40
   },
+  "bar:dumbbell:deadlift": {
+    "effects": ["UNILATERAL", "STABILIZER_DEMAND"],
+    "min": 30,
+    "max": 40
+  },
   "bar:bamboo:bench": {
     "effects": ["STABILIZER_DEMAND"],
     "min": 80,
