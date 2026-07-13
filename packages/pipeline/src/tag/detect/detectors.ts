@@ -27,7 +27,7 @@ export const STANCE_DETECTORS: Detector<ConjugateStance> = [
   ['narrow', (l) => l.includes('narrow')],
   ['wide', (l, t) => l.includes('wide grip') || t.has('wide')],
   ['medium', (l, t) => l.includes('medium grip') || t.has('medium')],
-  ['romanian', (l) => l.includes('romanian')],
+  ['romanian', (l) => l.includes('romanian') || l.includes('rdl')],
   ['sumo', (l) => l.includes('sumo')],
   ['conventional', (l) => l.includes('conventional')],
   ['front', (l) => l.includes('front')],
@@ -57,5 +57,5 @@ export const TYPE_DETECTORS: Detector<LiftType> = [
       l.includes('board') ||
       l.includes('slingshot'),
   ],
-  ['deadlift', (l) => l.includes('deadlift') || l.includes('rack')],
+  ['deadlift', (l) => l.includes('deadlift') || l.includes('rack') || l.includes('rdl')],
 ];
