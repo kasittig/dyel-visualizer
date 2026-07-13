@@ -2,7 +2,7 @@ import type { LiftType } from '@dyel/api';
 
 export type PageTab = LiftType | 'calculator' | 'sigma';
 export type InputMode = 'url' | 'text';
-export type DeadliftStancePreference = 'sumo' | 'conventional';
+export type DeadliftStancePreference = 'sumo' | 'conventional' | 'auto';
 
 export const MAIN_TABS = [
   { id: 'squat' as LiftType, label: 'Squat' },

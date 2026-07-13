@@ -15,6 +15,7 @@ const LABELS = {
 export function DiagnosticsPanel({
   deadliftStance,
   onDeadliftStanceChange,
+  resolvedDeadliftStance,
   onVariationClick,
   highlightedVariation,
   liftType,
@@ -22,6 +23,7 @@ export function DiagnosticsPanel({
 }: {
   deadliftStance: DeadliftStancePreference;
   onDeadliftStanceChange: (s: DeadliftStancePreference) => void;
+  resolvedDeadliftStance?: 'sumo' | 'conventional';
   onVariationClick?: (name: string | null) => void;
   highlightedVariation?: string | null;
   liftType: string;
@@ -82,7 +84,7 @@ export function DiagnosticsPanel({
             {hasDeadlift && (
               <fieldset className={styles.stanceRow}>
                 <legend className={styles.stanceLegend}>Primary pull</legend>
-                {(['conventional', 'sumo'] as const).map((s) => (
+                {(['conventional', 'sumo', 'auto'] as const).map((s) => (
                   <label key={s} className={styles.stanceLabel}>
                     <input
                       type="radio"
@@ -91,7 +93,9 @@ export function DiagnosticsPanel({
                       onChange={() => onDeadliftStanceChange(s)}
                       className={styles.stanceRadio}
                     />
-                    {s[0].toUpperCase() + s.slice(1)}
+                    {s === 'auto' && resolvedDeadliftStance
+                      ? `Auto (currently ${resolvedDeadliftStance[0].toUpperCase() + resolvedDeadliftStance.slice(1)})`
+                      : s[0].toUpperCase() + s.slice(1)}
                   </label>
                 ))}
               </fieldset>

@@ -12,6 +12,7 @@ export function LiftTabPanel({
   targetName,
   deadliftStance,
   onDeadliftStanceChange,
+  resolvedDeadliftStance,
   dateRange,
   onDateRangeChange,
   unit,
@@ -20,6 +21,7 @@ export function LiftTabPanel({
   targetName: string;
   deadliftStance: DeadliftStancePreference;
   onDeadliftStanceChange: (s: DeadliftStancePreference) => void;
+  resolvedDeadliftStance?: 'sumo' | 'conventional';
   dateRange: DateRange;
   onDateRangeChange: (range: DateRange) => void;
   unit: 'lbs' | 'kg';
@@ -54,6 +56,7 @@ export function LiftTabPanel({
         liftType={liftType}
         deadliftStance={deadliftStance}
         onDeadliftStanceChange={onDeadliftStanceChange}
+        resolvedDeadliftStance={resolvedDeadliftStance}
         onVariationClick={handleVariationClick}
         highlightedVariation={selectedVariation}
         unit={unit}

@@ -1,7 +1,7 @@
 import { useMemo, useEffect } from 'react';
-import type { AthleteContext, PipelineModel } from '@dyel/api';
-import { buildPipelineModel, parseTextData } from '@dyel/api';
-import type { InputMode } from './appTabs';
+import type { AthleteContext, PipelineModel, RawInput } from '@dyel/api';
+import { buildPipelineModel, parseTextData, resolveAutoDeadliftStance } from '@dyel/api';
+import type { InputMode, DeadliftStancePreference } from './appTabs';
 import { extractSheetRef } from '../features/data-source/sheetRef';
 import {
   serializeSheetCache,
@@ -18,12 +18,32 @@ export interface PipelineOrchestrationReturn {
   textValidation: { hasText: boolean; isValid: boolean };
 }
 
+function buildResolvedModel(
+  raw: RawInput[],
+  athleteBase: Pick<AthleteContext, 'sex' | 'bodyweight'>,
+  deadliftStance: DeadliftStancePreference
+): PipelineModel {
+  const provisional: AthleteContext = {
+    ...athleteBase,
+    deadliftStance: deadliftStance === 'auto' ? 'sumo' : deadliftStance,
+  };
+  const model = buildPipelineModel(raw, provisional);
+  if (deadliftStance !== 'auto') {
+    return model;
+  }
+  const resolved = resolveAutoDeadliftStance(model);
+  return resolved === provisional.deadliftStance
+    ? model
+    : buildPipelineModel(raw, { ...athleteBase, deadliftStance: resolved });
+}
+
 export function usePipelineOrchestration(
   inputMode: InputMode,
   url: string,
   pastedText: string,
   refreshToken: number,
-  athlete: AthleteContext
+  athleteBase: Pick<AthleteContext, 'sex' | 'bodyweight'>,
+  deadliftStance: DeadliftStancePreference
 ): PipelineOrchestrationReturn {
   const ref = useMemo(() => extractSheetRef(url), [url]);
   const invalidUrl = url.length > 0 && !ref;
@@ -46,11 +66,11 @@ export function usePipelineOrchestration(
       return { status: rawStatus, model: null };
     }
     try {
-      return { status: 'success', model: buildPipelineModel(raw, athlete) };
+      return { status: 'success', model: buildResolvedModel(raw, athleteBase, deadliftStance) };
     } catch {
       return { status: 'error', model: null };
     }
-  }, [raw, athlete, rawStatus]);
+  }, [raw, athleteBase, deadliftStance, rawStatus]);
 
   useEffect(() => {
     if (pStatus === 'success' && raw.length > 0 && ref && inputMode === 'url') {
@@ -74,13 +94,13 @@ export function usePipelineOrchestration(
     }
     if ((rawStatus === 'idle' || rawStatus === 'loading') && effRaw !== raw && effRaw.length > 0) {
       try {
-        return buildPipelineModel(effRaw, athlete);
+        return buildResolvedModel(effRaw, athleteBase, deadliftStance);
       } catch {
         return null;
       }
     }
     return null;
-  }, [pStatus, model, rawStatus, effRaw, raw, athlete]);
+  }, [pStatus, model, rawStatus, effRaw, raw, athleteBase, deadliftStance]);
 
   const textValidation = useMemo(() => {
     if (inputMode !== 'text' || pastedText.trim().length === 0) {

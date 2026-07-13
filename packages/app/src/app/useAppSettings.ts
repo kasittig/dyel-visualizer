@@ -1,6 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
 import type { DateRange } from 'react-day-picker';
-import type { AthleteContext } from '@dyel/api';
 import { useLocalStorageState } from '../shared/hooks/useLocalStorageState';
 import type { InputMode, PageTab, DeadliftStancePreference } from './appTabs';
 
@@ -41,10 +40,7 @@ export function useAppSettings() {
   );
   const [dateRange, setDateRange] = useState<DateRange>({ from: undefined, to: undefined });
 
-  const athlete: AthleteContext = useMemo(
-    () => ({ sex: 'M', bodyweight: 80, deadliftStance }),
-    [deadliftStance]
-  );
+  const athleteBase = useMemo(() => ({ sex: 'M' as const, bodyweight: 80 }), []);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -90,7 +86,7 @@ export function useAppSettings() {
     setShownResetToken,
     deadliftStance,
     setDeadliftStance,
-    athlete,
+    athleteBase,
     dateRange,
     setDateRange,
     handleUrlChange: (u: string) => {

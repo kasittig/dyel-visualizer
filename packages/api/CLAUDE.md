@@ -42,13 +42,12 @@ literal (previously duplicated across three files — `getCompetitionTotal.ts`, 
 for kg↔display-unit conversions; only import the raw constant where a scoring formula needs the
 unrounded factor directly.
 
-**Known unused barrel exports (documented, not yet removed):** `selectBestE1RMPoint`
-(`repCalculator/repCalculatorUtils.ts`), `mergeWideRechartsRows` (`chart/pipelineChartUtils.ts`),
-and `facetFamilyKey` (`conjugate/facets.ts`) currently have no consumers in `packages/app` via the
-`@dyel/api` barrel (per CODE_REVIEW.md's "Dead barrel exports" note). `mergeWideRechartsRows` and
-`facetFamilyKey` do each have one same-package internal consumer, reached via a relative import
-rather than the barrel. Left in place pending a decision on whether to remove or find their
-intended call site — flagging here so they aren't mistaken for actively-used public API.
+**Known unused barrel exports (documented, not yet removed):** `mergeWideRechartsRows`
+(`chart/pipelineChartUtils.ts`) and `facetFamilyKey` (`conjugate/facets.ts`) currently have no
+consumers in `packages/app` via the `@dyel/api` barrel (per CODE_REVIEW.md's "Dead barrel exports"
+note). Both do each have one same-package internal consumer, reached via a relative import rather
+than the barrel. Left in place pending a decision on whether to remove or find their intended call
+site — flagging here so they aren't mistaken for actively-used public API.
 
 ## Dependencies
 
@@ -68,6 +67,7 @@ ahead of the pipeline run. `validateTextData` (pasted free-text) does not use it
 | `buildPipelineModel`                                                                                                                                                                                           | `pipeline/buildPipelineModel.ts`          | `(raw: RawInput[], athlete: AthleteContext) => PipelineModel` — raw-input entry point (see Convention above); thin wrapper over pipeline's `runPipelineModel`                                                                                                                                                            |
 | `validatePipelineRun`                                                                                                                                                                                          | `pipeline/validatePipelineRun.ts`         | `(raw: RawInput[], athlete: AthleteContext) => PipelineResult` — raw-input entry point (see Convention above); wraps pipeline's `runPipeline` with the app's exact call shape (no dataset specs, default render params)                                                                                                  |
 | `defaultCompExerciseCanonical`                                                                                                                                                                                 | `sheet/defaultExercise.ts`                | `(records: TaggedSetRecord[], deadliftStance?) => string \| null`                                                                                                                                                                                                                                                        |
+| `resolveAutoDeadliftStance`                                                                                                                                                                                    | `sheet/autoDeadliftStance.ts`             | `(model: PipelineModel) => 'sumo' \| 'conventional'` — picks whichever deadlift stance variant has the higher best e1RM, defaulting to sumo on tie/missing data                                                                                                                                                          |
 | **Display utilities**                                                                                                                                                                                          |                                           |                                                                                                                                                                                                                                                                                                                          |
 | `convertWeight`, `roundWeight`, `formatWeight`                                                                                                                                                                 | `weightUnit.ts`                           | `(kg: number, unit: DisplayUnit) => number \| string` — convert kg to display unit, optionally round or format with unit suffix                                                                                                                                                                                          |
 | `DisplayUnit` (type)                                                                                                                                                                                           | `weightUnit.ts`                           | `'lbs' \| 'kg'` — weight display unit                                                                                                                                                                                                                                                                                    |
