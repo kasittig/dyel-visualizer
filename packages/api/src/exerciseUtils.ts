@@ -1,13 +1,12 @@
 import { CONJUGATE_BARS, CONJUGATE_STANCES, CONJUGATE_EQUIPMENT } from './conjugate/facets';
 
-const capitalize = (s: string): string => s.charAt(0).toUpperCase() + s.slice(1);
+const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
 const BAR_DISPLAY: Record<string, string> = {
   ssb: 'SSB',
   american: 'American Bar',
   swiss: 'Swiss Bar',
   cambered: 'Cambered Bar',
-  standard: '',
   trap: 'Trap Bar',
   zercher: 'Zercher',
   duffalo: 'Duffalo Bar',
@@ -15,6 +14,7 @@ const BAR_DISPLAY: Record<string, string> = {
   bamboo: 'Bamboo Bar',
   belt: 'Belt',
   goblet: 'Goblet',
+  standard: '',
 };
 
 const LIFT_DISPLAY: Record<string, string> = {
@@ -22,149 +22,118 @@ const LIFT_DISPLAY: Record<string, string> = {
   bench: 'Bench Press',
   deadlift: 'Deadlift',
 };
+const BAND_MAGS = new Set(['light', 'mini', 'micro', 'heavy', 'medium']);
 
 function formatEquipmentToken(equipment: string, magnitude: string | null): string {
+  const m = magnitude ?? '1';
   if (equipment === 'board') {
-    return `${magnitude ?? '1'}-Board`;
-  } else if (equipment === 'blocks') {
-    return `${magnitude ?? '1'}" Blocks`;
-  } else if (equipment === 'deficit') {
-    return `${magnitude ?? '1'}" Deficit`;
-  } else {
-    return capitalize(equipment);
+    return `${m}-Board`;
   }
+  if (equipment === 'blocks') {
+    return `${m}" Blocks`;
+  }
+  if (equipment === 'deficit') {
+    return `${m}" Deficit`;
+  }
+  return cap(equipment);
 }
 
 function formatAddlWtClause(kind: string, magnitude: string | null): string {
-  const noun =
-    kind === 'chains'
-      ? 'chains'
-      : kind === 'bands'
-        ? 'bands'
-        : kind === 'rev-bands'
-          ? 'reverse bands'
-          : kind;
-
-  const bandMagnitudes = new Set(['light', 'mini', 'micro', 'heavy', 'medium']);
-
-  if (magnitude) {
-    if (kind === 'chains' && /^\d+$/.test(magnitude)) {
-      return `${magnitude} ${noun}`;
-    } else if ((kind === 'bands' || kind === 'rev-bands') && bandMagnitudes.has(magnitude)) {
-      return `${magnitude} ${noun}`;
-    }
+  const noun = kind === 'rev-bands' ? 'reverse bands' : kind;
+  if (magnitude && ((kind === 'chains' && /^\d+$/.test(magnitude)) || BAND_MAGS.has(magnitude))) {
+    return `${magnitude} ${noun}`;
   }
   return noun;
 }
 
 export function formatExerciseDisplayName(canonical: string): string {
+  const fallback = () => canonical.split('-').map(cap).join(' ');
   try {
-    const tokens = canonical.split('-');
-    if (!canonical || tokens.length === 0) {
+    if (!canonical) {
       return '';
     }
-
-    const liftType = tokens[0];
-    const rest = tokens.slice(1);
-
-    const liftTypes = new Set(['squat', 'bench', 'deadlift']);
-    if (!liftTypes.has(liftType)) {
-      return tokens.map(capitalize).join(' ');
+    const tokens = canonical.split('-');
+    const [liftType, ...rest] = tokens;
+    if (!new Set(['squat', 'bench', 'deadlift']).has(liftType)) {
+      return fallback();
     }
 
-    const barSet: Set<string> = new Set(CONJUGATE_BARS);
-    const stanceSet: Set<string> = new Set(CONJUGATE_STANCES);
-    const equipmentSet: Set<string> = new Set(CONJUGATE_EQUIPMENT);
-    const addlWtSet = new Set(['chains', 'bands', 'rev-bands']);
+    const barSet = new Set<string>(CONJUGATE_BARS);
+    const stanceSet = new Set<string>(CONJUGATE_STANCES);
+    const equipSet = new Set<string>(CONJUGATE_EQUIPMENT);
 
-    const normalized = [...rest];
-
-    for (let i = 0; i < normalized.length - 1; i++) {
-      if (normalized[i] === 'rev' && normalized[i + 1] === 'bands') {
-        normalized.splice(i, 2, 'rev-bands');
+    const norm: string[] = [];
+    for (let i = 0; i < rest.length; i++) {
+      if (rest[i] === 'rev' && rest[i + 1] === 'bands') {
+        norm.push('rev-bands');
+        i++;
+      } else {
+        norm.push(rest[i]);
       }
     }
 
-    let bar: string | null = null;
-    let stance: string | null = null;
-    let equipment: string | null = null;
-    let equipmentMagnitude: string | null = null;
+    let bar: string | null = null,
+      stance: string | null = null,
+      equipment: string | null = null,
+      equipMag: string | null = null;
     const addlWts: Array<{ kind: string; magnitude: string | null }> = [];
 
     let i = 0;
-    while (i < normalized.length) {
-      const token = normalized[i];
+    while (i < norm.length) {
+      const tok = norm[i];
+      const next = norm[i + 1];
+      const isNum = next && /^\d+$/.test(next);
 
-      if (barSet.has(token) && !bar) {
-        bar = token;
+      if (barSet.has(tok) && !bar) {
+        bar = tok;
         i++;
-      } else if (stanceSet.has(token) && !stance) {
-        stance = token;
+      } else if (stanceSet.has(tok) && !stance) {
+        stance = tok;
         i++;
-      } else if (equipmentSet.has(token) && !equipment) {
-        equipment = token;
-        const nextToken = normalized[i + 1];
-        if (
-          (equipment === 'board' || equipment === 'blocks' || equipment === 'deficit') &&
-          nextToken &&
-          /^\d+$/.test(nextToken)
-        ) {
-          equipmentMagnitude = nextToken;
-          i += 2;
-        } else {
-          i++;
-        }
-      } else if (addlWtSet.has(token)) {
-        const nextToken = normalized[i + 1];
-        let magnitude: string | null = null;
-
-        if (token === 'chains' && nextToken && /^\d+$/.test(nextToken)) {
-          magnitude = nextToken;
+      } else if (equipSet.has(tok) && !equipment) {
+        equipment = tok;
+        const hasMag = ['board', 'blocks', 'deficit'].includes(tok) && isNum;
+        equipMag = hasMag ? next : null;
+        i += hasMag ? 2 : 1;
+      } else if (new Set(['chains', 'bands', 'rev-bands']).has(tok)) {
+        let mag: string | null = null;
+        if (tok === 'chains' && isNum) {
+          mag = next;
           i += 2;
         } else if (
-          (token === 'bands' || token === 'rev-bands') &&
-          nextToken &&
-          new Set(['light', 'mini', 'micro', 'heavy', 'medium', 'unspecified']).has(nextToken)
+          tok !== 'chains' &&
+          next &&
+          new Set([...BAND_MAGS, 'unspecified'] as string[]).has(next)
         ) {
-          magnitude = nextToken === 'unspecified' ? null : nextToken;
+          mag = next === 'unspecified' ? null : next;
           i += 2;
         } else {
           i++;
         }
-        addlWts.push({ kind: token, magnitude });
+        addlWts.push({ kind: tok, magnitude: mag });
       } else {
         i++;
       }
     }
 
-    const prefix: string[] = [];
-    if (bar) {
-      const barDisplay = BAR_DISPLAY[bar];
-      if (barDisplay) {
-        prefix.push(barDisplay);
-      }
+    const pre: string[] = [];
+    if (bar && BAR_DISPLAY[bar]) {
+      pre.push(BAR_DISPLAY[bar]);
     }
     if (stance && stance !== 'competition') {
-      prefix.push(capitalize(stance));
+      pre.push(cap(stance));
     }
     if (equipment) {
-      prefix.push(formatEquipmentToken(equipment, equipmentMagnitude));
+      pre.push(formatEquipmentToken(equipment, equipMag));
     }
 
-    const baseLift = LIFT_DISPLAY[liftType] || capitalize(liftType);
-    const mainName = prefix.length > 0 ? prefix.join(' ') + ' ' + baseLift : baseLift;
+    const base = LIFT_DISPLAY[liftType] || cap(liftType);
+    const main = pre.length ? `${pre.join(' ')} ${base}` : base;
 
-    if (addlWts.length === 0) {
-      return mainName;
-    }
-
-    const clause =
-      'w/' + addlWts.map((aw) => formatAddlWtClause(aw.kind, aw.magnitude)).join(' + ');
-    return `${mainName} ${clause}`;
+    return addlWts.length
+      ? `${main} w/${addlWts.map((aw) => formatAddlWtClause(aw.kind, aw.magnitude)).join(' + ')}`
+      : main;
   } catch {
-    return canonical
-      .split('-')
-      .map((token) => capitalize(token))
-      .join(' ');
+    return fallback();
   }
 }
