@@ -46,7 +46,7 @@ Single-page React app with no backend. Data comes from either a user-supplied Go
 | `features/conjugate-info/` | `ConjugateInfoPage`                                                                                                                                                                                                                             |
 | `features/index-page/`     | `IndexPage`, `useIndexData`, `parseIndexCsv`                                                                                                                                                                                                    |
 | `shared/charts/`           | Reusable Recharts components: `BaseRadarChart`, `DateLineChart` (+`ChartEmpty`), `TooltipCard` (+`ChartTooltip`), `colors.ts`, `CONVENTIONS.md`, `charts.module.css` (shared CSS module `composes`d by feature-owned chart `.module.css` files) |
-| `shared/components/`       | Cross-feature UI: `CollapsibleSection`, `DateRangePicker`, `EditableDateChip`, `ErrorBoundary`                                                                                                                                                  |
+| `shared/components/`       | Cross-feature UI: `CollapsibleSection`, `DateRangePicker`, `EditableDateChip`, `ErrorBoundary`, `TypeaheadDropdown`                                                                                                                             |
 | `shared/hooks/`            | `useCsvResource`, `useLocalStorageState`                                                                                                                                                                                                        |
 | `shared/dateUtils.ts`      | Pure date-formatting helpers — no React dependency                                                                                                                                                                                              |
 
@@ -107,7 +107,7 @@ ESLint's `no-restricted-imports` patterns now enforce both the `../<name>/*` and
 - `app/`: `App.tsx`, settings/orchestration/visualizer-data hooks, `PipelineContext.tsx` with `PipelineProvider`/`usePipelineModel()`
 - `features/*/`: feature hooks and components; each has an `index.ts` barrel and `CLAUDE.md`
 - `shared/charts/`: reusable Recharts components and chart color constants
-- `shared/components/`: cross-feature UI primitives (DateRangePicker, ErrorBoundary, etc.)
+- `shared/components/`: cross-feature UI primitives (DateRangePicker, ErrorBoundary, TypeaheadDropdown, etc.)
 - `shared/hooks/`: cross-feature React hooks (useCsvResource, useLocalStorageState)
 - `shared/dateUtils.ts`: pure date-formatting helpers
 
