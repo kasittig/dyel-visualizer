@@ -7,25 +7,19 @@ export type LifterPipelineResult =
   | { status: 'error'; name: string; url: string; message: string };
 
 /**
- * Raw-input entry point: parses an index CSV (name/url pairs), fetches each linked sheet's CSV
- * via the injected fetcher, and runs each through the pipeline independently. A single lifter's
- * fetch/parse failure does not abort the batch — it surfaces as a `status: 'error'` result
- * alongside the other lifters' `status: 'success'` results.
- *
- * `fetchCsv` is injected because @dyel/api has no DOM/fetch dependency (see CLAUDE.md) —
- * packages/app supplies its existing `fetchSheetCsv`.
+ * Parses an index CSV, fetches each sheet concurrently, and pipelines them.
+ * A single failure yields an error result without breaking the batch.
  */
 export async function loadIndexPipelineModels(
   indexCsv: string,
   athlete: AthleteContext,
   fetchCsv: (url: string) => Promise<string>
 ): Promise<LifterPipelineResult[]> {
-  const entries = parseIndexCsv(indexCsv);
   return Promise.all(
-    entries.map(async ({ name, url }): Promise<LifterPipelineResult> => {
+    parseIndexCsv(indexCsv).map(async ({ name, url }): Promise<LifterPipelineResult> => {
       try {
-        const csv = await fetchCsv(url);
-        const model = buildPipelineModel([{ name: `${name}.csv`, content: csv }], athlete);
+        const content = await fetchCsv(url);
+        const model = buildPipelineModel([{ name: `${name}.csv`, content }], athlete);
         return { status: 'success', name, url, model };
       } catch (err) {
         return {
