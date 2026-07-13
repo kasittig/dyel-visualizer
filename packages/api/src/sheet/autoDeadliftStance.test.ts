@@ -3,12 +3,8 @@ import type { Point, PipelineModel } from '@dyel/pipeline';
 import { resolveAutoDeadliftStance } from './autoDeadliftStance';
 
 const pt = (series: string, v: number, t: number): Point => ({ series, v, t, tags: new Set() });
-
-// resolveAutoDeadliftStance only reads `pointsByDeriver`, so the mock only needs that field.
-const mockModel = (e1rmPoints: Point[] = []): PipelineModel =>
-  ({
-    pointsByDeriver: new Map([['e1rm-max-effort', e1rmPoints]]),
-  }) as Pick<PipelineModel, 'pointsByDeriver'> as PipelineModel;
+const mockModel = (pts: Point[]) =>
+  ({ pointsByDeriver: new Map([['e1rm-max-effort', pts]]) }) as PipelineModel;
 
 describe('resolveAutoDeadliftStance', () => {
   it.each([

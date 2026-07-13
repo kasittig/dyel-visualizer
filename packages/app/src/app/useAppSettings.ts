@@ -5,23 +5,21 @@ import type { InputMode, PageTab, DeadliftStancePreference } from './appTabs';
 
 export function useAppSettings() {
   useState(() => {
-    const params = new URLSearchParams(window.location.search);
-    const qUrl = params.get('sheet');
-    const qMode = params.get('mode');
-    const qText = params.get('text');
-
-    if (qMode === 'text') {
+    const p = new URLSearchParams(window.location.search),
+      u = p.get('sheet'),
+      m = p.get('mode'),
+      t = p.get('text');
+    if (m === 'text') {
       localStorage.setItem('dyel:inputMode', JSON.stringify('text'));
-    } else if (qUrl !== null) {
+    } else if (u !== null) {
       localStorage.setItem('dyel:inputMode', JSON.stringify('url'));
     }
-    if (qUrl !== null) {
-      localStorage.setItem('dyel:url', JSON.stringify(qUrl));
+    if (u !== null) {
+      localStorage.setItem('dyel:url', JSON.stringify(u));
     }
-    if (qText !== null) {
-      localStorage.setItem('dyel:pastedText', JSON.stringify(qText));
+    if (t !== null) {
+      localStorage.setItem('dyel:pastedText', JSON.stringify(t));
     }
-    return null;
   });
 
   const [url, setUrl] = useLocalStorageState<string>(
@@ -39,33 +37,34 @@ export function useAppSettings() {
     null
   );
   const [dateRange, setDateRange] = useState<DateRange>({ from: undefined, to: undefined });
-
   const athleteBase = useMemo(() => ({ sex: 'M' as const, bodyweight: 80 }), []);
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
+    const p = new URLSearchParams(window.location.search);
     if (inputMode === 'text') {
-      params.set('mode', 'text');
-      params.delete('sheet');
+      p.set('mode', 'text');
+      p.delete('sheet');
       if (pastedText) {
-        params.set('text', pastedText);
+        p.set('text', pastedText);
       } else {
-        params.delete('text');
+        p.delete('text');
       }
     } else {
-      params.delete('mode');
-      params.delete('text');
+      p.delete('mode');
+      p.delete('text');
       if (url) {
-        params.set('sheet', url);
+        p.set('sheet', url);
       } else {
-        params.delete('sheet');
+        p.delete('sheet');
       }
     }
-    history.replaceState(null, '', `?${params.toString()}`);
+    history.replaceState(null, '', `?${p.toString()}`);
   }, [inputMode, url, pastedText]);
 
-  const updateToken = () => {
-    setPanelForcedOpen(false);
+  const tok = (clr = false) => {
+    if (clr) {
+      setPanelForcedOpen(false);
+    }
     setShownResetToken((t) => t + 1);
   };
 
@@ -91,15 +90,15 @@ export function useAppSettings() {
     setDateRange,
     handleUrlChange: (u: string) => {
       setUrl(u);
-      updateToken();
+      tok(true);
     },
     handleTextChange: (t: string) => {
       setPastedText(t);
-      updateToken();
+      tok(true);
     },
     handleModeChange: (m: InputMode) => {
       setInputMode(m);
-      setShownResetToken((t) => t + 1);
+      tok();
     },
   };
 }

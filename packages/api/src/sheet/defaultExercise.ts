@@ -6,53 +6,45 @@ export function defaultCompExerciseCanonical(
   records: TaggedSetRecord[],
   deadliftStance = 'sumo'
 ): string | null {
-  if (records.length === 0) {
+  if (!records.length) {
     return null;
   }
-  const fallback = records[0].canonical;
 
-  const allComp = records.filter((rec) => {
-    if (rec.tags.has('comp-lift')) {
-      return true;
-    }
-    const f = facetsFromTags(rec.tags);
-    return (
-      (f.bar ?? 'standard') === 'standard' &&
-      (f.stance ?? 'competition') === 'competition' &&
-      f.addlWts.length === 0
-    );
-  });
+  const allComp = records.filter(
+    (r) =>
+      r.tags.has('comp-lift') ||
+      ((f) =>
+        (f.bar ?? 'standard') === 'standard' &&
+        (f.stance ?? 'competition') === 'competition' &&
+        !f.addlWts.length)(facetsFromTags(r.tags))
+  );
 
-  if (allComp.length > 0) {
+  if (allComp.length) {
     const cmdBench = allComp.find(
-      (rec) => facetsFromTags(rec.tags).equipment === 'pause' && liftTypeOf(rec) === 'bench'
+      (r) => facetsFromTags(r.tags).equipment === 'pause' && liftTypeOf(r) === 'bench'
     );
     if (cmdBench) {
       return cmdBench.canonical;
     }
-
-    const comp = allComp.find((rec) => facetsFromTags(rec.tags).equipment === null);
+    const comp = allComp.find((r) => facetsFromTags(r.tags).equipment === null);
     if (comp) {
       return comp.canonical;
     }
   }
 
-  if (records.some((rec) => liftTypeOf(rec) === 'deadlift')) {
-    const matchDl = records.find((rec) => {
-      if (liftTypeOf(rec) !== 'deadlift') {
-        return false;
-      }
-      const f = facetsFromTags(rec.tags);
-      return (
-        (f.bar ?? 'standard') === 'standard' &&
-        (f.stance ?? 'competition') === deadliftStance &&
-        f.addlWts.length === 0
-      );
-    });
+  if (records.some((r) => liftTypeOf(r) === 'deadlift')) {
+    const matchDl = records.find(
+      (r) =>
+        liftTypeOf(r) === 'deadlift' &&
+        ((f) =>
+          (f.bar ?? 'standard') === 'standard' &&
+          (f.stance ?? 'competition') === deadliftStance &&
+          !f.addlWts.length)(facetsFromTags(r.tags))
+    );
     if (matchDl) {
       return matchDl.canonical;
     }
   }
 
-  return fallback;
+  return records[0].canonical;
 }

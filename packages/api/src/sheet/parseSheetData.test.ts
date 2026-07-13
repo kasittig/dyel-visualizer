@@ -20,7 +20,6 @@ const rec = (tags: string[] = [], opts?: { sets?: number; rpe?: number }): Tagge
   sets: opts?.sets,
   rpe: opts?.rpe,
 });
-
 const athlete: AthleteContext = { sex: 'M', bodyweight: 90, deadliftStance: 'sumo' };
 
 describe('liftTypeOf', () => {
@@ -29,9 +28,7 @@ describe('liftTypeOf', () => {
     ['bench family', ['lift:bench'], 'bench'],
     ['deadlift family', ['lift:deadlift'], 'deadlift'],
     ['accessory tag fallback', ['other-tag'], 'accessory'],
-  ])('%s', (_, tags, expected) => {
-    expect(liftTypeOf(rec(tags))).toBe(expected);
-  });
+  ])('%s', (_, tags, expected) => expect(liftTypeOf(rec(tags))).toBe(expected));
 });
 
 describe('splitByEffort', () => {
@@ -63,7 +60,7 @@ describe('splitByEffort', () => {
 
 describe('groupByLiftType', () => {
   it('groups records across types and handles effort splits', () => {
-    const records = [
+    const res = groupByLiftType([
       rec(['lift:squat'], { sets: 1 }),
       rec(['lift:squat'], { sets: 3 }),
       rec(['lift:bench'], { rpe: 8 }),
@@ -71,22 +68,16 @@ describe('groupByLiftType', () => {
       rec(['lift:deadlift'], { sets: 1 }),
       rec(['lift:deadlift'], { sets: 5 }),
       rec(['acc-tag'], { sets: 3 }),
-    ];
-    const res = groupByLiftType(records);
-
+    ]);
     expect(res.squat.all).toHaveLength(2);
     expect(res.squat.maxEffort).toHaveLength(1);
     expect(res.squat.volume).toHaveLength(1);
-
     expect(res.bench.maxEffort).toHaveLength(1);
     expect(res.bench.volume).toHaveLength(1);
-
     expect(res.deadlift.maxEffort).toHaveLength(1);
     expect(res.deadlift.volume).toHaveLength(1);
-
     expect(res.accessory.maxEffort).toHaveLength(1);
     expect(res.accessory.volume).toHaveLength(0);
-
     expect(groupByLiftType([]).squat.all).toHaveLength(0);
   });
 });
@@ -96,7 +87,6 @@ describe('parseSheetData (end-to-end)', () => {
     const csv =
       'Date,Exercise,Reps,Weight (lbs),Sets,RPE\n2026-01-01,Squat,5,225,3,\n2026-01-01,Squat,3,275,1,9\n2026-01-02,Bench,8,185,4,\n2026-01-02,Bench Press,1,225,,8\n2026-01-03,Deadlift,3,315,1,8\n2026-01-03,Conventional Deadlift,5,275,2,';
     const res = parseSheetData(csv, athlete);
-
     expect(res.squat.maxEffort).toHaveLength(1);
     expect(res.squat.volume).toHaveLength(1);
     expect(res.bench.maxEffort).toHaveLength(1);
