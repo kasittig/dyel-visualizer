@@ -1,4 +1,4 @@
-import { parseIndexCsv, type IndexEntry } from './parseIndexCsv';
+import { parseIndexCsv, type IndexEntry } from '@dyel/api';
 import { publishedCsvUrl } from '../data-source';
 import { useCsvResource } from '../../shared/hooks/useCsvResource';
 

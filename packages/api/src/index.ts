@@ -22,6 +22,11 @@ export type {
   LiftType,
 } from '@dyel/pipeline';
 export { parseSheetData, groupByLiftType } from './sheet/parseSheetData';
+export { parseIndexCsv, type IndexEntry } from './sheet/parseIndexCsv';
+export {
+  loadIndexPipelineModels,
+  type LifterPipelineResult,
+} from './sheet/loadIndexPipelineModels';
 export { buildPipelineModel } from './pipeline/buildPipelineModel';
 export { validatePipelineRun } from './pipeline/validatePipelineRun';
 export {
