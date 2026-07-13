@@ -51,8 +51,7 @@ export function App() {
     athleteBase,
     deadliftStance
   );
-  const resolvedDeadliftStance =
-    effModel?.athlete.deadliftStance ?? (deadliftStance === 'auto' ? 'sumo' : deadliftStance);
+  const resolvedDeadliftStance = effModel?.athlete.deadliftStance ?? deadliftStance ?? 'sumo';
   const {
     tabRows,
     visibleLiftIds,
@@ -162,9 +161,8 @@ export function App() {
                   key={shownResetToken}
                   liftType={liftTab}
                   targetName={targetCanonicals[liftTab]!}
-                  deadliftStance={deadliftStance}
+                  deadliftStance={resolvedDeadliftStance}
                   onDeadliftStanceChange={setDeadliftStance}
-                  resolvedDeadliftStance={resolvedDeadliftStance}
                   dateRange={dateRange}
                   onDateRangeChange={setDateRange}
                   unit={dataUnit}

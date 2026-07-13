@@ -34,9 +34,9 @@ export function useAppSettings() {
   const [refreshToken, setRefreshToken] = useState(0);
   const [activeTab, setActiveTab] = useLocalStorageState<PageTab>('dyel:activeTab', 'sigma');
   const [shownResetToken, setShownResetToken] = useState(0);
-  const [deadliftStance, setDeadliftStance] = useLocalStorageState<DeadliftStancePreference>(
+  const [deadliftStance, setDeadliftStance] = useLocalStorageState<DeadliftStancePreference | null>(
     'dyel:deadliftStance',
-    'sumo'
+    null
   );
   const [dateRange, setDateRange] = useState<DateRange>({ from: undefined, to: undefined });
 

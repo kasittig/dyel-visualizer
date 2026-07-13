@@ -21,14 +21,14 @@ export interface PipelineOrchestrationReturn {
 function buildResolvedModel(
   raw: RawInput[],
   athleteBase: Pick<AthleteContext, 'sex' | 'bodyweight'>,
-  deadliftStance: DeadliftStancePreference
+  deadliftStance: DeadliftStancePreference | null
 ): PipelineModel {
   const provisional: AthleteContext = {
     ...athleteBase,
-    deadliftStance: deadliftStance === 'auto' ? 'sumo' : deadliftStance,
+    deadliftStance: deadliftStance ?? 'sumo',
   };
   const model = buildPipelineModel(raw, provisional);
-  if (deadliftStance !== 'auto') {
+  if (deadliftStance !== null) {
     return model;
   }
   const resolved = resolveAutoDeadliftStance(model);
@@ -43,7 +43,7 @@ export function usePipelineOrchestration(
   pastedText: string,
   refreshToken: number,
   athleteBase: Pick<AthleteContext, 'sex' | 'bodyweight'>,
-  deadliftStance: DeadliftStancePreference
+  deadliftStance: DeadliftStancePreference | null
 ): PipelineOrchestrationReturn {
   const ref = useMemo(() => extractSheetRef(url), [url]);
   const invalidUrl = url.length > 0 && !ref;

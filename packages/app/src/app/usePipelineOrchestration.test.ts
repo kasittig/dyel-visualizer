@@ -73,11 +73,11 @@ describe('usePipelineOrchestration', () => {
     expect(result.current.model!.athlete.deadliftStance).toBe(expectedStance);
   });
 
-  it('resolves auto to conventional when conventional is stronger', () => {
+  it('resolves null (auto) to conventional when conventional is stronger', () => {
     mockUseResolvedRawInput.mockReturnValue({ status: 'success', raw: deadliftFixture });
 
     const { result } = renderHook(() =>
-      usePipelineOrchestration('url', 'https://example.com', '', 0, athleteBase, 'auto')
+      usePipelineOrchestration('url', 'https://example.com', '', 0, athleteBase, null)
     );
 
     expect(result.current.status).toBe('success');
@@ -86,11 +86,11 @@ describe('usePipelineOrchestration', () => {
     expect(result.current.model!.athlete.deadliftStance).toBe('conventional');
   });
 
-  it('resolves auto with only sumo entries to sumo', () => {
+  it('resolves null (auto) with only sumo entries to sumo', () => {
     mockUseResolvedRawInput.mockReturnValue({ status: 'success', raw: sumoOnlyFixture });
 
     const { result } = renderHook(() =>
-      usePipelineOrchestration('url', 'https://example.com', '', 0, athleteBase, 'auto')
+      usePipelineOrchestration('url', 'https://example.com', '', 0, athleteBase, null)
     );
 
     expect(result.current.status).toBe('success');
@@ -98,14 +98,14 @@ describe('usePipelineOrchestration', () => {
     expect(result.current.model!.athlete.deadliftStance).toBe('sumo');
   });
 
-  it('resolves auto with only conventional entries to conventional', () => {
+  it('resolves null (auto) with only conventional entries to conventional', () => {
     mockUseResolvedRawInput.mockReturnValue({
       status: 'success',
       raw: conventionalOnlyFixture,
     });
 
     const { result } = renderHook(() =>
-      usePipelineOrchestration('url', 'https://example.com', '', 0, athleteBase, 'auto')
+      usePipelineOrchestration('url', 'https://example.com', '', 0, athleteBase, null)
     );
 
     expect(result.current.status).toBe('success');
@@ -113,11 +113,11 @@ describe('usePipelineOrchestration', () => {
     expect(result.current.model!.athlete.deadliftStance).toBe('conventional');
   });
 
-  it('resolves auto with no deadlift data to sumo (default)', () => {
+  it('resolves null (auto) with no deadlift data to sumo (default)', () => {
     mockUseResolvedRawInput.mockReturnValue({ status: 'success', raw: noDeadliftFixture });
 
     const { result } = renderHook(() =>
-      usePipelineOrchestration('url', 'https://example.com', '', 0, athleteBase, 'auto')
+      usePipelineOrchestration('url', 'https://example.com', '', 0, athleteBase, null)
     );
 
     expect(result.current.status).toBe('success');
