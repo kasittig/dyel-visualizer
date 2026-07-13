@@ -116,3 +116,4 @@ export {
   type EffectSummary,
 } from './diagnostics/diagnosticsSelectors';
 export { formatEffect, formatAddlWtOffset } from './diagnostics/diagnosticsUtils';
+export { formatExerciseDisplayName } from './exerciseUtils';
