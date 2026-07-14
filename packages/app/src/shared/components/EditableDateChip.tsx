@@ -1,9 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import type { DateRange } from 'react-day-picker';
-import { formatDate, parseDate } from '../dateUtils';
+import { formatDate, parseDate, shortDate } from '../dateUtils';
 import styles from './EditableDateChip.module.css';
-
-const shortDate = (d?: Date) => (d ? `${d.getMonth() + 1}/${d.getDate()}` : '');
 
 export function EditableDateChip({
   dateRange,

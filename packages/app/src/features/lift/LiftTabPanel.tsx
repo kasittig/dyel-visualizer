@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { ConjugateCharts } from './ConjugateCharts';
 import { DiagnosticsPanel } from './DiagnosticsPanel';
 import { VariationRadarChart } from './VariationRadarChart';
+import { AccessoryTable } from './AccessoryTable';
 import { CollapsibleSection } from '../../shared/components/CollapsibleSection';
 import { EditableDateChip } from '../../shared/components/EditableDateChip';
 import type { DateRange } from 'react-day-picker';
@@ -58,6 +59,14 @@ export function LiftTabPanel({
         highlightedVariation={selectedVariation}
         unit={unit}
       />
+      {liftType === 'accessory' && (
+        <AccessoryTable
+          unit={unit}
+          dateRange={dateRange}
+          highlightedVariation={selectedVariation}
+          onVariationClick={handleVariationClick}
+        />
+      )}
     </>
   );
 }

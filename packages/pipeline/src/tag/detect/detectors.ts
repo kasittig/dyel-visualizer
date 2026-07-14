@@ -59,3 +59,10 @@ export const TYPE_DETECTORS: Detector<LiftType> = [
   ],
   ['deadlift', (l) => l.includes('deadlift') || l.includes('rack') || l.includes('rdl')],
 ];
+
+export const CORE_PATTERN =
+  /\b(abs?|core|plank|crunch(es)?|hollow|sit[\s-]?up|situp|russian twist|leg raise|pallof|wood\s?chop|dead bug|v[\s-]?up)\b/;
+
+export function isCoreExercise(rawName: string): boolean {
+  return CORE_PATTERN.test(rawName.toLowerCase());
+}

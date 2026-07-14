@@ -1,6 +1,14 @@
 import { describe, it, expect } from 'vitest';
 import type { SetRecord } from '../types';
-import { tagRecords, resolveCanonicalNames, matches, classifyExerciseName } from './tag';
+import {
+  tagRecords,
+  resolveCanonicalNames,
+  matches,
+  classifyExerciseName,
+  classifyAccessorySubtypes,
+} from './tag';
+import type { TaggedSetRecord } from './tag';
+import { isCoreExercise } from './detect/detectors';
 
 describe('resolveCanonicalNames', () => {
   it('rewrites exercise, deduplicates unresolved entries, and matches keys', () => {
@@ -161,5 +169,120 @@ describe('classifyExerciseName', () => {
     const result = classifyExerciseName(name);
     expect(result.type).toBe(expectedType);
     expect(result.isUnknown).toBe(expectedIsUnknown);
+  });
+});
+
+describe('classifyAccessorySubtypes', () => {
+  const tr = (
+    canonical: string,
+    date: number,
+    tags: string[],
+    rawExercise?: string
+  ): TaggedSetRecord => ({
+    date,
+    canonical,
+    exercise: canonical,
+    weight: 100,
+    reps: 5,
+    tags: new Set(tags),
+    effects: [],
+    baselineRange: null,
+    meta: rawExercise ? { rawExercise } : undefined,
+  });
+
+  it.each([
+    [
+      'core-keyword exercise (Plank) on day with bench',
+      [
+        tr('bench', 1706745600000, ['lift:bench', 'comp-lift']),
+        tr('plank', 1706745600000, ['lift:accessory'], 'Plank'),
+      ],
+      1,
+      ['lift:accessory', 'accessory:core'],
+    ],
+    [
+      'non-core accessory on day with only bench',
+      [
+        tr('bench', 1706745600000, ['lift:bench', 'comp-lift']),
+        tr('face-pulls', 1706745600000, ['lift:accessory'], 'Face Pulls'),
+      ],
+      1,
+      ['lift:accessory', 'accessory:upper'],
+    ],
+    [
+      'non-core accessory on day with only squat',
+      [
+        tr('squat', 1706745600000, ['lift:squat', 'comp-lift']),
+        tr('leg-press', 1706745600000, ['lift:accessory'], 'Leg Press'),
+      ],
+      1,
+      ['lift:accessory', 'accessory:lower'],
+    ],
+    [
+      'non-core accessory on day with only deadlift',
+      [
+        tr('deadlift', 1706745600000, ['lift:deadlift', 'comp-lift']),
+        tr('back-ext', 1706745600000, ['lift:accessory'], 'Back Extension'),
+      ],
+      1,
+      ['lift:accessory', 'accessory:lower'],
+    ],
+    [
+      'non-core accessory on day with both bench and squat',
+      [
+        tr('bench', 1706745600000, ['lift:bench', 'comp-lift']),
+        tr('squat', 1706745600000, ['lift:squat', 'comp-lift']),
+        tr('dips', 1706745600000, ['lift:accessory'], 'Dips'),
+      ],
+      2,
+      ['lift:accessory'],
+    ],
+    [
+      'non-core accessory on day with no comp-lift',
+      [
+        tr('face-pulls', 1706745600000, ['lift:accessory'], 'Face Pulls'),
+        tr('db-curl', 1706745600000, ['lift:accessory'], 'Dumbbell Curls'),
+      ],
+      0,
+      ['lift:accessory'],
+    ],
+    [
+      'core-keyword exercise on day with no comp-lift',
+      [tr('plank', 1706745600000, ['lift:accessory'], 'Plank')],
+      0,
+      ['lift:accessory', 'accessory:core'],
+    ],
+    [
+      'comp-lift record passes through unchanged',
+      [tr('bench', 1706745600000, ['lift:bench', 'comp-lift'])],
+      0,
+      ['lift:bench', 'comp-lift'],
+    ],
+  ])('classifyAccessorySubtypes: %s', (_, input, recordIndex, expectedTags) => {
+    const result = classifyAccessorySubtypes(input);
+    expect(result[recordIndex].tags).toEqual(new Set(expectedTags));
+  });
+});
+
+describe('isCoreExercise', () => {
+  it.each([
+    ['Plank', true],
+    ['Ab Wheel Rollout', true],
+    ['Russian Twist', true],
+    ['Sit-up', true],
+    ['Crunch', true],
+    ['Crunches', true],
+    ['Hollow Body Hold', true],
+    ['Pallof Press', true],
+    ['Wood Chop', true],
+    ['Dead Bug', true],
+    ['V-up', true],
+    ['Leg Raise', true],
+    ['Cable Fly', false],
+    ['Table Row', false],
+    ['Barbell Row', false],
+    ['Leg Press', false],
+  ])('isCoreExercise: %s is %s', (name, expected) => {
+    expect(isCoreExercise(name)).toBe(expected);
   });
 });

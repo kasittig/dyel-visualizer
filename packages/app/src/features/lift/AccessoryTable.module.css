@@ -1,0 +1,7 @@
+/* Empty state message */
+.emptyState {
+  color: var(--muted);
+  font-style: italic;
+  font-size: 0.9rem;
+  margin: 1rem 0;
+}

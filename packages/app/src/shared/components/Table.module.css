@@ -1,0 +1,55 @@
+.card {
+  composes: chartCard from '../charts/charts.module.css';
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+.thead {
+  border-bottom: 1px solid var(--border);
+  font-family: var(--heading);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text);
+}
+.bodyRow {
+  border-bottom: 1px solid var(--border);
+}
+.bodyRowSelected {
+  background-color: color-mix(in srgb, var(--accent, #8839ef) 12%, transparent);
+}
+
+.cell {
+  padding: 0.5rem 0.75rem;
+}
+.cellLeft {
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+}
+.cellMono {
+  padding: 0.5rem 0.75rem;
+  font-family: var(--mono);
+  text-align: right;
+}
+.cellText {
+  padding: 0.5rem 0.75rem;
+  color: var(--text);
+}
+.cellDiagnostic {
+  padding: 0.5rem 0.75rem;
+  font-weight: 600;
+  color: var(--diagnostic-color);
+}
+
+.sortable {
+  user-select: none;
+}
+.sortActive {
+  color: var(--accent);
+}
+.sortIndicator {
+  font-size: 0.7em;
+}

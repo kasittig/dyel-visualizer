@@ -17,8 +17,11 @@ since the lifter explicitly rated the effort. `e1rm` and `e1rm-max-effort` share
 classification but differ in what happens when a whole day is speed-work-only: `e1rm`
 falls back to deriving from the speed-work sets anyway (never drops a day); `e1rm-max-effort`
 returns `null` for that day instead (caller excludes it). Use `e1rm` for series that must
-never drop a day; use `e1rm-max-effort` where day-level parity with legacy's
-max-effort-only fitting/rendering matters (e.g. `conjugateChartSpecs.ts`).
+never drop a day (this includes accessory lift-type series, since accessory logging is
+almost always multi-set/no-RPE and the max-effort/speed-work split has no accessory
+equivalent); use `e1rm-max-effort` where day-level parity with legacy's max-effort-only
+fitting/rendering matters for a true comp lift (squat/bench/deadlift — see
+`conjugateChartSpecs.ts`, which branches on `liftType` for exactly this reason).
 
 Derivers iterate the day's records — multipliers were already expanded in
 parse/; never re-multiply.

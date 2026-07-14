@@ -1,8 +1,21 @@
 import { useState, type CSSProperties } from 'react';
 import type { DeadliftStancePreference } from '../../app/appTabs';
 import { usePipelineDiagnostics } from './usePipelineDiagnostics';
-import { formatEffect, formatAddlWtOffset, type DisplayUnit } from '@dyel/api';
-import { CollapsibleSection } from '../../shared/components/CollapsibleSection';
+import {
+  formatEffect,
+  formatAddlWtOffset,
+  type DisplayUnit,
+  type DiagnosticVariant,
+} from '@dyel/api';
+import {
+  CollapsibleSection,
+  TableCard,
+  Table,
+  TableHeadRow,
+  TableRow,
+  TableCell,
+} from '../../shared/components';
+import { useSortableRows } from '../../shared/hooks';
 import styles from './DiagnosticsPanel.module.css';
 
 const LABELS = {
@@ -11,6 +24,8 @@ const LABELS = {
   weakness: ['Weakness', 'var(--danger)'],
   stale: ['Stale', 'var(--muted)'],
 };
+
+type SortColumn = 'variation' | 'effects' | 'averageIndex' | 'expectedBaseline' | 'diagnostic';
 
 export function DiagnosticsPanel({
   deadliftStance,
@@ -30,10 +45,31 @@ export function DiagnosticsPanel({
   const [activeEffect, setActiveEffect] = useState<string | null>(null);
   const { variants, hasDeadlift, weakEffects, overtrainedEffects } =
     usePipelineDiagnostics(liftType);
+  const { sortedRows, sortKey, direction, toggleSort } = useSortableRows<
+    DiagnosticVariant,
+    SortColumn
+  >(variants, {
+    variation: (r) => r.displayName,
+    effects: (r) =>
+      [
+        ...r.effects.map(formatEffect),
+        ...(r.addlWtOffset !== undefined
+          ? [formatAddlWtOffset(r.addlWtOffset.offsetKg, unit)]
+          : []),
+      ].join(', '),
+    averageIndex: (r) => r.averageIndex ?? -Infinity,
+    expectedBaseline: (r) => r.expectedBaseline ?? '',
+    diagnostic: (r) => (LABELS[r.status as keyof typeof LABELS] ?? ['Stale'])[0] as string,
+  });
 
   if (variants.length === 0) {
     return null;
   }
+
+  const headerSort = (column: SortColumn) => ({
+    onSort: () => toggleSort(column),
+    sortDirection: sortKey === column ? direction : null,
+  });
 
   const handleEffectClick = (e: string) => {
     setActiveEffect((prev) => (prev === e ? null : e));
@@ -43,7 +79,7 @@ export function DiagnosticsPanel({
   return (
     <div className={styles.wrapper}>
       <CollapsibleSection label="Diagnostics">
-        <div className={styles.card}>
+        <TableCard>
           <div className={styles.cardPadded}>
             {(weakEffects.length > 0 || overtrainedEffects.length > 0) && (
               <div className={styles.summary}>
@@ -97,18 +133,26 @@ export function DiagnosticsPanel({
               </fieldset>
             )}
           </div>
-          <table className={styles.table}>
-            <thead>
-              <tr className={styles.thead}>
-                <th className={styles.cellLeft}>Variation</th>
-                <th className={styles.cellLeft}>Effects</th>
-                <th className={styles.cellMono}>Avg Index</th>
-                <th className={styles.cellMono}>Baseline Range</th>
-                <th className={styles.cellLeft}>Diagnostic</th>
-              </tr>
-            </thead>
+          <Table>
+            <TableHeadRow>
+              <TableCell as="th" variant="left" {...headerSort('variation')}>
+                Variation
+              </TableCell>
+              <TableCell as="th" variant="left" {...headerSort('effects')}>
+                Effects
+              </TableCell>
+              <TableCell as="th" variant="mono" {...headerSort('averageIndex')}>
+                Avg Index
+              </TableCell>
+              <TableCell as="th" variant="mono" {...headerSort('expectedBaseline')}>
+                Baseline Range
+              </TableCell>
+              <TableCell as="th" variant="left" {...headerSort('diagnostic')}>
+                Diagnostic
+              </TableCell>
+            </TableHeadRow>
             <tbody>
-              {variants.map((r) => {
+              {sortedRows.map((r) => {
                 const [lbl, color] = LABELS[r.status as keyof typeof LABELS] ?? [
                   'Stale',
                   'var(--muted)',
@@ -117,40 +161,37 @@ export function DiagnosticsPanel({
                   r.displayName === highlightedVariation ||
                   (activeEffect !== null && r.effects.includes(activeEffect));
                 return (
-                  <tr
+                  <TableRow
                     key={r.displayName}
-                    className={
-                      isHigh ? `${styles.bodyRow} ${styles.bodyRowSelected}` : styles.bodyRow
-                    }
+                    selected={isHigh}
                     onClick={() => {
                       setActiveEffect(null);
                       onVariationClick?.(r.displayName);
                     }}
-                    style={{ cursor: onVariationClick ? 'pointer' : undefined }}
                   >
-                    <td className={styles.cell}>{r.displayName}</td>
-                    <td className={styles.cellText}>
+                    <TableCell>{r.displayName}</TableCell>
+                    <TableCell variant="text">
                       {[
                         ...r.effects.map(formatEffect),
                         ...(r.addlWtOffset !== undefined
                           ? [formatAddlWtOffset(r.addlWtOffset.offsetKg, unit)]
                           : []),
                       ].join(', ')}
-                    </td>
-                    <td className={styles.cellMono}>{r.averageIndex?.toFixed(1) ?? '-'}%</td>
-                    <td className={styles.cellMono}>{r.expectedBaseline}</td>
-                    <td
-                      className={styles.cellDiagnostic}
+                    </TableCell>
+                    <TableCell variant="mono">{r.averageIndex?.toFixed(1) ?? '-'}%</TableCell>
+                    <TableCell variant="mono">{r.expectedBaseline}</TableCell>
+                    <TableCell
+                      variant="diagnostic"
                       style={{ '--diagnostic-color': color } as CSSProperties}
                     >
                       {lbl}
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 );
               })}
             </tbody>
-          </table>
-        </div>
+          </Table>
+        </TableCard>
       </CollapsibleSection>
     </div>
   );

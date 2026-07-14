@@ -4,7 +4,14 @@ export { ParseError, resolveUnit, ParserRegistry } from './parse/parser';
 export { csvParser } from './parse/csv';
 export { freeformParser, parseFreeformText } from './parse/freeform/parser';
 export type { TaggedSetRecord } from './tag/tag';
-export { tagRecords, resolveCanonicalNames, matches, classifyExerciseName } from './tag/tag';
+export {
+  tagRecords,
+  resolveCanonicalNames,
+  matches,
+  classifyExerciseName,
+  classifyAccessorySubtypes,
+  buildAccessoryTaggedRecords,
+} from './tag/tag';
 export type {
   ConjugateBar,
   ConjugateStance,

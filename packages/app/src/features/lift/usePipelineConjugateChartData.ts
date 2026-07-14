@@ -1,6 +1,5 @@
 import { useMemo } from 'react';
 import type { DateRange } from 'react-day-picker';
-import type { ChartPoint, BestSet } from '@dyel/api';
 import { usePipelineModel } from '../../app/PipelineContext';
 import { usePipelineDatasets } from '../sigma';
 import {
@@ -9,10 +8,11 @@ import {
   buildConjugateChartData,
   roundBestSetsForDisplay,
   dateRangeToRenderParams,
+  type ChartPoint,
+  type BestSet,
 } from '@dyel/api';
 
 export const NORMALIZED_KEY = 'normalized';
-
 export interface PipelineConjugateChartData {
   variations: string[];
   data: ChartPoint[];
@@ -36,7 +36,7 @@ export function usePipelineConjugateChartData(
   const specs = useMemo(() => conjugateChartSpecs(liftType), [liftType]);
   const ui = useMemo(
     () => dateRangeToRenderParams(dateRange?.from, dateRange?.to),
-    [dateRange.from, dateRange.to]
+    [dateRange?.from, dateRange?.to]
   );
   const datasets = usePipelineDatasets(specs, ui);
 
@@ -44,14 +44,17 @@ export function usePipelineConjugateChartData(
     if (status !== 'success' || !model) {
       return EMPTY;
     }
-    const rawVariations = datasets.variations ?? [];
-    const rawNormalized = datasets.normalized ?? [];
-    const { variations, data } = buildConjugateChartData(rawVariations, rawNormalized, unit);
+
+    const { variations, data } = buildConjugateChartData(
+      datasets.variations ?? [],
+      datasets.normalized ?? [],
+      unit
+    );
 
     return {
       variations,
       data,
-      showNormalized: rawNormalized.length > 0,
+      showNormalized: !!datasets.normalized?.length,
       bestSetByLabelAndDate: roundBestSetsForDisplay(
         buildBestSetByLabelAndDate(model.tagged, liftType),
         unit
