@@ -1,12 +1,16 @@
 import { useMemo } from 'react';
-import type { AccessoryTableRow, AccessorySubtype, DisplayUnit } from '@dyel/api';
-import { buildAccessoryTableRows, formatLastSessionSummary } from '@dyel/api';
 import { usePipelineModel } from '../../app/PipelineContext';
+import {
+  buildAccessoryTableRows,
+  formatLastSessionSummary,
+  type AccessoryTableRow,
+  type AccessorySubtype,
+  type DisplayUnit,
+} from '@dyel/api';
 
 export interface AccessoryTableDisplay extends AccessoryTableRow {
   lastPerformedDisplay: string;
 }
-
 export interface AccessoryTableGroup {
   subtype: AccessorySubtype;
   label: string;
@@ -14,20 +18,12 @@ export interface AccessoryTableGroup {
 }
 
 const EMPTY: AccessoryTableGroup[] = [];
-
-const getSubtypeLabel = (subtype: AccessorySubtype): string => {
-  switch (subtype) {
-    case 'upper':
-      return 'Upper';
-    case 'lower':
-      return 'Lower';
-    case 'core':
-      return 'Core';
-    case null:
-      return 'Unclassified';
-  }
+const SUBTYPE_MAP: Record<string, string> = {
+  upper: 'Upper',
+  lower: 'Lower',
+  core: 'Core',
+  null: 'Unclassified',
 };
-
 const SUBTYPE_ORDER: AccessorySubtype[] = ['upper', 'lower', 'core', null];
 
 export function useAccessoryTable(unit: DisplayUnit): AccessoryTableGroup[] {
@@ -43,22 +39,14 @@ export function useAccessoryTable(unit: DisplayUnit): AccessoryTableGroup[] {
       lastPerformedDisplay: formatLastSessionSummary(row.lastSession, unit),
     }));
 
-    // Group rows by subtype using Map.groupBy
-    const groupedBySubtype = Map.groupBy(rows, (row) => row.subtype);
+    const grouped = Map.groupBy(rows, (row) => row.subtype);
 
-    // Build ordered groups, filtering out empty ones
-    const groups: AccessoryTableGroup[] = [];
-    for (const subtype of SUBTYPE_ORDER) {
-      const groupRows = groupedBySubtype.get(subtype);
-      if (groupRows && groupRows.length > 0) {
-        groups.push({
-          subtype,
-          label: getSubtypeLabel(subtype),
-          rows: groupRows,
-        });
+    return SUBTYPE_ORDER.reduce<AccessoryTableGroup[]>((acc, subtype) => {
+      const match = grouped.get(subtype);
+      if (match?.length) {
+        acc.push({ subtype, label: SUBTYPE_MAP[String(subtype)], rows: match });
       }
-    }
-
-    return groups;
+      return acc;
+    }, []);
   }, [status, model, unit]);
 }

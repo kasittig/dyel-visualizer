@@ -1,17 +1,19 @@
-import { useAccessoryTable } from './useAccessoryTable';
 import type { DisplayUnit } from '@dyel/api';
+import { useAccessoryTable } from './useAccessoryTable';
 import { CollapsibleSection } from '../../shared/components/CollapsibleSection';
 import styles from './AccessoryTable.module.css';
+
+interface AccessoryTableProps {
+  unit: DisplayUnit;
+  highlightedVariation?: string | null;
+  onVariationClick?: (v: string) => void;
+}
 
 export function AccessoryTable({
   unit,
   highlightedVariation,
   onVariationClick,
-}: {
-  unit: DisplayUnit;
-  highlightedVariation?: string | null;
-  onVariationClick?: (v: string) => void;
-}) {
+}: AccessoryTableProps) {
   const groups = useAccessoryTable(unit);
 
   if (groups.length === 0) {
@@ -20,8 +22,8 @@ export function AccessoryTable({
 
   return (
     <>
-      {groups.map((group) => (
-        <CollapsibleSection key={group.subtype ?? 'null'} label={group.label}>
+      {groups.map(({ subtype, label, rows }) => (
+        <CollapsibleSection key={subtype ?? 'null'} label={label}>
           <table className={styles.table}>
             <thead>
               <tr className={styles.thead}>
@@ -30,22 +32,17 @@ export function AccessoryTable({
               </tr>
             </thead>
             <tbody>
-              {group.rows.map((row) => {
-                const isHighlighted = row.label === highlightedVariation;
-                return (
-                  <tr
-                    key={row.label}
-                    className={
-                      isHighlighted ? `${styles.bodyRow} ${styles.bodyRowSelected}` : styles.bodyRow
-                    }
-                    onClick={() => onVariationClick?.(row.label)}
-                    style={{ cursor: onVariationClick ? 'pointer' : undefined }}
-                  >
-                    <td className={styles.cellLeft}>{row.label}</td>
-                    <td className={styles.cell}>{row.lastPerformedDisplay}</td>
-                  </tr>
-                );
-              })}
+              {rows.map(({ label: rowLabel, lastPerformedDisplay }) => (
+                <tr
+                  key={rowLabel}
+                  onClick={() => onVariationClick?.(rowLabel)}
+                  style={{ cursor: onVariationClick ? 'pointer' : undefined }}
+                  className={`${styles.bodyRow} ${rowLabel === highlightedVariation ? styles.bodyRowSelected : ''}`.trim()}
+                >
+                  <td className={styles.cellLeft}>{rowLabel}</td>
+                  <td className={styles.cell}>{lastPerformedDisplay}</td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </CollapsibleSection>
