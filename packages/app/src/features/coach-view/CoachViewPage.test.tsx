@@ -1,27 +1,20 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, screen, cleanup } from '@testing-library/react';
-import type { PipelineModel, AthleteContext } from '@dyel/api';
-import type { LifterPipelineResult } from '@dyel/api';
+import type { PipelineModel, AthleteContext, LifterPipelineResult } from '@dyel/api';
 import { CoachViewPage } from './CoachViewPage';
-import type { CoachViewRow, useCoachViewSelection } from './useCoachViewSelection';
+import type { CoachViewRow } from './useCoachViewSelection';
 
-// Mock the hooks
-vi.mock('./useCoachViewData', () => ({
-  useCoachViewData: vi.fn(),
-}));
+type SelectionState = ReturnType<typeof useCoachViewSelection>;
 
-vi.mock('./useCoachViewSelection', () => ({
-  useCoachViewSelection: vi.fn(),
-}));
+vi.mock('./useCoachViewData', () => ({ useCoachViewData: vi.fn() }));
+vi.mock('./useCoachViewSelection', () => ({ useCoachViewSelection: vi.fn() }));
 
 const { useCoachViewData } = await import('./useCoachViewData');
 const { useCoachViewSelection } = await import('./useCoachViewSelection');
 
 afterEach(cleanup);
 
-// Factory helpers for mock data
 const mockAthlete: AthleteContext = { sex: 'M', bodyweight: 90, deadliftStance: 'sumo' };
-
 const mockPipelineModel = (overrides?: Partial<PipelineModel>): PipelineModel => ({
   model: { baseline: {}, variantFactor: {}, addlWtOffset: {} },
   diagnostics: { byCanonical: new Map(), allFindings: [] },
@@ -47,22 +40,10 @@ const mockPipelineModel = (overrides?: Partial<PipelineModel>): PipelineModel =>
 const mockLifterResult = (
   name: string,
   status: 'success' | 'error' = 'success'
-): LifterPipelineResult => {
-  if (status === 'error') {
-    return {
-      status: 'error',
-      name,
-      url: `https://example.com/${name}`,
-      message: 'Failed to load',
-    };
-  }
-  return {
-    status: 'success',
-    name,
-    url: `https://example.com/${name}`,
-    model: mockPipelineModel(),
-  };
-};
+): LifterPipelineResult =>
+  status === 'error'
+    ? { status: 'error', name, url: `https://example.com{name}`, message: 'Failed to load' }
+    : { status: 'success', name, url: `https://example.com{name}`, model: mockPipelineModel() };
 
 const mockRow = (overrides?: Partial<CoachViewRow>): CoachViewRow => ({
   lifterName: 'John Doe',
@@ -73,7 +54,7 @@ const mockRow = (overrides?: Partial<CoachViewRow>): CoachViewRow => ({
   ...overrides,
 });
 
-const mockCoachViewSelection = (overrides?: Partial<ReturnType<typeof useCoachViewSelection>>) => ({
+const mockSelection = (overrides?: Partial<SelectionState>): SelectionState => ({
   exerciseOptions: ['Bench Press', 'Squat', 'Deadlift'],
   displayNameToCanonical: new Map([
     ['Bench Press', 'bench-classic'],
@@ -84,7 +65,7 @@ const mockCoachViewSelection = (overrides?: Partial<ReturnType<typeof useCoachVi
   setSelectedDisplayName: vi.fn(),
   reps: 1,
   setReps: vi.fn(),
-  unit: 'lbs' as const,
+  unit: 'lbs',
   setUnit: vi.fn(),
   toggleUnit: vi.fn(),
   selectedCanonical: null,
@@ -95,17 +76,12 @@ const mockCoachViewSelection = (overrides?: Partial<ReturnType<typeof useCoachVi
 
 describe('CoachViewPage', () => {
   beforeEach(() => {
-    // useCoachViewSelection is called unconditionally (rules of hooks), even while
-    // useCoachViewData is still loading/erroring, so give it a sane default here;
-    // individual success-state tests override this via mockReturnValue.
-    vi.mocked(useCoachViewSelection).mockReturnValue(mockCoachViewSelection());
+    vi.mocked(useCoachViewSelection).mockReturnValue(mockSelection());
   });
 
   it('renders loading state', () => {
     vi.mocked(useCoachViewData).mockReturnValue({ status: 'loading' });
-
     render(<CoachViewPage />);
-
     expect(screen.getByText(/loading lifters/i)).toBeDefined();
   });
 
@@ -114,18 +90,16 @@ describe('CoachViewPage', () => {
       status: 'error',
       message: 'Failed to fetch sheets',
     });
-
     render(<CoachViewPage />);
-
     expect(screen.getByText('Failed to fetch sheets')).toBeDefined();
   });
 
   it.each([
-    ['with no selection', [], mockCoachViewSelection({ selectedCanonical: null, rows: [] }), false],
+    ['with no selection', [], mockSelection({ selectedCanonical: null, rows: [] }), false],
     [
       'with selection and rows',
       [],
-      mockCoachViewSelection({
+      mockSelection({
         selectedCanonical: 'bench-classic',
         selectedDisplayName: 'Bench Press',
         rows: [
@@ -138,7 +112,7 @@ describe('CoachViewPage', () => {
     [
       'with errored lifters',
       [],
-      mockCoachViewSelection({
+      mockSelection({
         selectedCanonical: 'squat-classic',
         selectedDisplayName: 'Squat',
         rows: [mockRow({ lifterName: 'Charlie' })],
@@ -146,81 +120,54 @@ describe('CoachViewPage', () => {
       }),
       true,
     ],
-  ])('renders success state %s', (_, lifterResults, selectionState, shouldShowErrorNote) => {
-    const results = lifterResults.length > 0 ? lifterResults : [mockLifterResult('Lifter 1')];
-    vi.mocked(useCoachViewData).mockReturnValue({ status: 'success', data: results });
-    vi.mocked(useCoachViewSelection).mockReturnValue(selectionState);
+  ] as Array<[string, LifterPipelineResult[], SelectionState, boolean]>)(
+    'renders success state %s',
+    (_, lifterResults, selectionState, shouldShowErrorNote) => {
+      vi.mocked(useCoachViewData).mockReturnValue({
+        status: 'success',
+        data: lifterResults.length ? lifterResults : [mockLifterResult('Lifter 1')],
+      });
+      vi.mocked(useCoachViewSelection).mockReturnValue(selectionState);
+      render(<CoachViewPage />);
 
-    render(<CoachViewPage />);
+      expect(screen.getByPlaceholderText('Search exercise...')).toBeDefined();
+      expect((screen.getByRole('spinbutton') as HTMLInputElement).value).toBe('1');
+      expect(screen.getByRole('button', { name: 'lbs' })).toBeDefined();
 
-    // TypeaheadDropdown should be rendered
-    expect(screen.getByPlaceholderText('Search exercise...')).toBeDefined();
-
-    // Reps input should be visible
-    const repsInput = screen.getByRole('spinbutton') as HTMLInputElement;
-    expect(repsInput).toBeDefined();
-    expect(repsInput.value).toBe('1');
-
-    // Unit toggle button should be present
-    expect(screen.getByRole('button', { name: 'lbs' })).toBeDefined();
-
-    // If there are selected canonical and rows, table should render
-    if (selectionState.selectedCanonical && selectionState.rows.length > 0) {
-      expect(screen.getByText(new RegExp(selectionState.selectedDisplayName))).toBeDefined();
-      expect(screen.getByRole('table')).toBeDefined();
-      expect(screen.getAllByRole('row')).toHaveLength(
-        selectionState.rows.length + 1 // +1 for header
-      );
-
-      // Check if rows are rendered by checking for lifter names
-      for (const row of selectionState.rows) {
-        expect(screen.getByText(row.lifterName)).toBeDefined();
+      if (selectionState.selectedCanonical && selectionState.rows.length) {
+        expect(screen.getByText(new RegExp(selectionState.selectedDisplayName))).toBeDefined();
+        expect(screen.getByRole('table')).toBeDefined();
+        expect(screen.getAllByRole('row')).toHaveLength(selectionState.rows.length + 1);
+        selectionState.rows.forEach((r) => expect(screen.getByText(r.lifterName)).toBeDefined());
+      }
+      if (shouldShowErrorNote) {
+        expect(screen.getByText(/\d+ lifters could not be loaded/)).toBeDefined();
       }
     }
+  );
 
-    // Check error note if there are errored lifters
-    if (shouldShowErrorNote) {
-      expect(screen.getByText(/\d+ lifters could not be loaded/)).toBeDefined();
+  it.each([
+    [1, '1 lifter could not be loaded', 'bench-classic', 'Bench Press'],
+    [3, '3 lifters could not be loaded', 'deadlift-classic', 'Deadlift'],
+  ] as Array<[number, string, string, string]>)(
+    'displays correct wording when erroredLifterCount is %i',
+    (count, text, canonical, display) => {
+      vi.mocked(useCoachViewData).mockReturnValue({
+        status: 'success',
+        data: [mockLifterResult('Lifter 1')],
+      });
+      vi.mocked(useCoachViewSelection).mockReturnValue(
+        mockSelection({
+          selectedCanonical: canonical,
+          selectedDisplayName: display,
+          rows: [mockRow()],
+          erroredLifterCount: count,
+        })
+      );
+      render(<CoachViewPage />);
+      expect(screen.getByText(text)).toBeDefined();
     }
-  });
-
-  it('displays singular "lifter" when erroredLifterCount is 1', () => {
-    vi.mocked(useCoachViewData).mockReturnValue({
-      status: 'success',
-      data: [mockLifterResult('Lifter 1')],
-    });
-    vi.mocked(useCoachViewSelection).mockReturnValue(
-      mockCoachViewSelection({
-        selectedCanonical: 'bench-classic',
-        selectedDisplayName: 'Bench Press',
-        rows: [mockRow()],
-        erroredLifterCount: 1,
-      })
-    );
-
-    render(<CoachViewPage />);
-
-    expect(screen.getByText('1 lifter could not be loaded')).toBeDefined();
-  });
-
-  it('displays plural "lifters" when erroredLifterCount > 1', () => {
-    vi.mocked(useCoachViewData).mockReturnValue({
-      status: 'success',
-      data: [mockLifterResult('Lifter 1')],
-    });
-    vi.mocked(useCoachViewSelection).mockReturnValue(
-      mockCoachViewSelection({
-        selectedCanonical: 'deadlift-classic',
-        selectedDisplayName: 'Deadlift',
-        rows: [mockRow()],
-        erroredLifterCount: 3,
-      })
-    );
-
-    render(<CoachViewPage />);
-
-    expect(screen.getByText('3 lifters could not be loaded')).toBeDefined();
-  });
+  );
 
   it('shows empty state when exercise selected but no rows', () => {
     vi.mocked(useCoachViewData).mockReturnValue({
@@ -228,15 +175,13 @@ describe('CoachViewPage', () => {
       data: [mockLifterResult('Lifter 1')],
     });
     vi.mocked(useCoachViewSelection).mockReturnValue(
-      mockCoachViewSelection({
+      mockSelection({
         selectedCanonical: 'bench-classic',
         selectedDisplayName: 'Bench Press',
         rows: [],
       })
     );
-
     render(<CoachViewPage />);
-
     expect(screen.getByText('No data for this exercise yet')).toBeDefined();
   });
 
@@ -246,7 +191,7 @@ describe('CoachViewPage', () => {
       data: [mockLifterResult('Lifter 1')],
     });
     vi.mocked(useCoachViewSelection).mockReturnValue(
-      mockCoachViewSelection({
+      mockSelection({
         selectedCanonical: 'bench-classic',
         selectedDisplayName: 'Bench Press',
         rows: [
@@ -261,9 +206,7 @@ describe('CoachViewPage', () => {
         ],
       })
     );
-
     render(<CoachViewPage />);
-
     expect(screen.getByText('Alice')).toBeDefined();
     expect(screen.getByText('Dana')).toBeDefined();
     expect(screen.getByText('No data logged')).toBeDefined();

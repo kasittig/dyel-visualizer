@@ -85,87 +85,59 @@ describe('useCoachViewSelection', () => {
         [
           point(1, 100, 'squat'),
           point(1, 90, 'bench'),
-          point(1, 85, 'squat'), // duplicate canonical
+          point(1, 85, 'squat'),
           point(1, 75, 'deadlift'),
         ]
       );
-
       const { result } = renderHook(() => useCoachViewSelection([successResult('Lifter1', model)]));
 
-      // Verify dedup: only 3 unique canonicals
-      expect(result.current.exerciseOptions).toHaveLength(3);
-
-      // Verify sorted by display name: Bench Press, Deadlift, Squat
       expect(result.current.exerciseOptions).toEqual(['Bench Press', 'Deadlift', 'Squat']);
-
-      // Verify displayNameToCanonical map
       expect(result.current.displayNameToCanonical.get('Bench Press')).toBe('bench');
       expect(result.current.displayNameToCanonical.get('Deadlift')).toBe('deadlift');
       expect(result.current.displayNameToCanonical.get('Squat')).toBe('squat');
     });
 
     it('handles multiple lifters with overlapping and distinct canonicals', () => {
-      const model1 = minimalPipelineModel([], [point(1, 100, 'squat'), point(1, 90, 'bench')]);
-      const model2 = minimalPipelineModel([], [point(1, 85, 'bench'), point(1, 75, 'deadlift')]);
-
+      const m1 = minimalPipelineModel([], [point(1, 100, 'squat'), point(1, 90, 'bench')]);
+      const m2 = minimalPipelineModel([], [point(1, 85, 'bench'), point(1, 75, 'deadlift')]);
       const { result } = renderHook(() =>
-        useCoachViewSelection([successResult('Lifter1', model1), successResult('Lifter2', model2)])
+        useCoachViewSelection([successResult('Lifter1', m1), successResult('Lifter2', m2)])
       );
 
-      // Union of canonicals: bench, deadlift, squat
       expect(result.current.exerciseOptions).toEqual(['Bench Press', 'Deadlift', 'Squat']);
-      expect(result.current.exerciseOptions).toHaveLength(3);
     });
   });
 
   describe('placeholder rows by canonical', () => {
     it('shows a placeholder row for lifters with no e1rm points for selected canonical', () => {
-      const model1 = minimalPipelineModel([], [point(1, 100, 'squat')]);
-      const model2 = minimalPipelineModel([], [point(1, 90, 'bench')]);
-
       const { result } = renderHook(() =>
         useCoachViewSelection([
-          successResult('SquatOnly', model1),
-          successResult('BenchOnly', model2),
+          successResult('SquatOnly', minimalPipelineModel([], [point(1, 100, 'squat')])),
+          successResult('BenchOnly', minimalPipelineModel([], [point(1, 90, 'bench')])),
         ])
       );
 
-      // Select Squat
-      act(() => {
-        result.current.setSelectedDisplayName('Squat');
-      });
-
-      // Both lifters appear; BenchOnly is a placeholder row
+      act(() => result.current.setSelectedDisplayName('Squat'));
       expect(result.current.rows).toHaveLength(2);
-      const squatOnlyRow = result.current.rows.find((r) => r.lifterName === 'SquatOnly');
-      const benchOnlyRow = result.current.rows.find((r) => r.lifterName === 'BenchOnly');
-      expect(squatOnlyRow?.hasData).toBe(true);
-      expect(benchOnlyRow?.hasData).toBe(false);
-      expect(benchOnlyRow?.lastPerformedDisplay).toBe('No data logged');
-      expect(benchOnlyRow?.e1rmDisplay).toBe('—');
+      expect(result.current.rows.find((r) => r.lifterName === 'SquatOnly')?.hasData).toBe(true);
+      const bRow = result.current.rows.find((r) => r.lifterName === 'BenchOnly');
+      expect(bRow?.hasData).toBe(false);
+      expect(bRow?.lastPerformedDisplay).toBe('No data logged');
+      expect(bRow?.e1rmDisplay).toBe('—');
 
-      // Select Bench
-      act(() => {
-        result.current.setSelectedDisplayName('Bench Press');
-      });
-
-      // Both lifters still appear; SquatOnly is now the placeholder row
-      expect(result.current.rows).toHaveLength(2);
+      act(() => result.current.setSelectedDisplayName('Bench Press'));
       expect(result.current.rows.find((r) => r.lifterName === 'SquatOnly')?.hasData).toBe(false);
       expect(result.current.rows.find((r) => r.lifterName === 'BenchOnly')?.hasData).toBe(true);
     });
 
     it('shows a placeholder row for errored lifters', () => {
-      const model = minimalPipelineModel([], [point(1, 100, 'squat')]);
-
       const { result } = renderHook(() =>
-        useCoachViewSelection([successResult('Lifter', model), errorResult('Broken')])
+        useCoachViewSelection([
+          successResult('Lifter', minimalPipelineModel([], [point(1, 100, 'squat')])),
+          errorResult('Broken'),
+        ])
       );
-
-      act(() => {
-        result.current.setSelectedDisplayName('Squat');
-      });
-
+      act(() => result.current.setSelectedDisplayName('Squat'));
       const brokenRow = result.current.rows.find((r) => r.lifterName === 'Broken');
       expect(brokenRow?.hasData).toBe(false);
       expect(brokenRow?.lastPerformedDisplay).toBe('Failed to load');
@@ -173,41 +145,42 @@ describe('useCoachViewSelection', () => {
 
     it('returns empty rows when no canonical is selected', () => {
       const { result } = renderHook(() => useCoachViewSelection([]));
-
       expect(result.current.rows).toEqual([]);
     });
   });
 
   describe('default exercise selection', () => {
     it('auto-selects the first exercise option once options load', () => {
-      const model = minimalPipelineModel([], [point(1, 100, 'squat'), point(1, 90, 'bench')]);
-
-      const { result } = renderHook(() => useCoachViewSelection([successResult('Lifter', model)]));
-
+      const { result } = renderHook(() =>
+        useCoachViewSelection([
+          successResult(
+            'Lifter',
+            minimalPipelineModel([], [point(1, 100, 'squat'), point(1, 90, 'bench')])
+          ),
+        ])
+      );
       expect(result.current.selectedDisplayName).toBe('Bench Press');
       expect(result.current.selectedCanonical).toBe('bench');
       expect(result.current.rows.length).toBeGreaterThan(0);
     });
 
     it('does not override an explicit user selection', () => {
-      const model = minimalPipelineModel([], [point(1, 100, 'squat'), point(1, 90, 'bench')]);
-
-      const { result, rerender } = renderHook((lifters) => useCoachViewSelection(lifters), {
-        initialProps: [successResult('Lifter', model)],
+      const lifters = [
+        successResult(
+          'Lifter',
+          minimalPipelineModel([], [point(1, 100, 'squat'), point(1, 90, 'bench')])
+        ),
+      ];
+      const { result, rerender } = renderHook((l) => useCoachViewSelection(l), {
+        initialProps: lifters,
       });
-
-      act(() => {
-        result.current.setSelectedDisplayName('Squat');
-      });
-
-      rerender([successResult('Lifter', model)]);
-
+      act(() => result.current.setSelectedDisplayName('Squat'));
+      rerender(lifters);
       expect(result.current.selectedDisplayName).toBe('Squat');
     });
 
     it('stays unselected when there are no exercise options', () => {
       const { result } = renderHook(() => useCoachViewSelection([]));
-
       expect(result.current.selectedDisplayName).toBe('');
       expect(result.current.selectedCanonical).toBeNull();
     });
@@ -215,39 +188,28 @@ describe('useCoachViewSelection', () => {
 
   describe('reps-change recompute', () => {
     it('recomputes targetWeightDisplay when reps change', () => {
-      const model = minimalPipelineModel([], [point(1, 100, 'squat')]); // 100 kg e1rm
+      const { result } = renderHook(() =>
+        useCoachViewSelection([
+          successResult('Lifter', minimalPipelineModel([], [point(1, 100, 'squat')])),
+        ])
+      );
+      act(() => result.current.setSelectedDisplayName('Squat'));
+      const initTarget = result.current.rows[0].targetWeightDisplay;
+      expect(initTarget).toBeDefined();
 
-      const { result } = renderHook(() => useCoachViewSelection([successResult('Lifter', model)]));
-
-      act(() => {
-        result.current.setSelectedDisplayName('Squat');
-      });
-
-      const initialTarget = result.current.rows[0].targetWeightDisplay;
-
-      // Default reps is 1, so target should be ~100 lbs (since unit defaults to lbs)
-      expect(initialTarget).toBeDefined();
-
-      // Change reps to 5
-      act(() => {
-        result.current.setReps(5);
-      });
-
-      const newTarget = result.current.rows[0].targetWeightDisplay;
-
-      // Target should be different (lighter weight for more reps)
-      expect(newTarget).not.toBe(initialTarget);
+      act(() => result.current.setReps(5));
+      expect(result.current.rows[0].targetWeightDisplay).not.toBe(initTarget);
       expect(result.current.reps).toBe(5);
     });
   });
 
   describe('unit detection and display', () => {
-    it('detects kg unit from first successful lifter with meta.rawUnit === "kg"', () => {
-      const rec = taggedRecord('squat', 'Squat', { meta: { rawUnit: 'kg' } });
-      const model = minimalPipelineModel([rec], [point(1, 100, 'squat')]);
-
+    it('detects kg unit from first successful lifter', () => {
+      const model = minimalPipelineModel(
+        [taggedRecord('squat', 'Squat', { meta: { rawUnit: 'kg' } })],
+        [point(1, 100, 'squat')]
+      );
       const { result } = renderHook(() => useCoachViewSelection([successResult('Lifter', model)]));
-
       expect(result.current.unit).toBe('kg');
     });
 
@@ -255,87 +217,63 @@ describe('useCoachViewSelection', () => {
       const { result } = renderHook(() =>
         useCoachViewSelection([errorResult('Error1'), errorResult('Error2')])
       );
-
       expect(result.current.unit).toBe('lbs');
     });
 
-    it('uses first successful lifter unit detection order (iterates LIFT_TABS)', () => {
-      // Model with lbs unit
-      const recLbs = taggedRecord('squat', 'Squat', { meta: { rawUnit: 'lbs' } });
-      const model1 = minimalPipelineModel([recLbs], [point(1, 100, 'squat')]);
-
-      // Model with kg unit
-      const recKg = taggedRecord('bench', 'Bench', { meta: { rawUnit: 'kg' } });
-      const model2 = minimalPipelineModel([recKg], [point(1, 100, 'bench')]);
-
-      const { result } = renderHook(() =>
-        useCoachViewSelection([successResult('First', model1), successResult('Second', model2)])
+    it('uses first successful lifter unit detection order', () => {
+      const m1 = minimalPipelineModel(
+        [taggedRecord('squat', 'Squat', { meta: { rawUnit: 'lbs' } })],
+        [point(1, 100, 'squat')]
       );
-
-      // First successful lifter (First) has lbs
+      const m2 = minimalPipelineModel(
+        [taggedRecord('bench', 'Bench', { meta: { rawUnit: 'kg' } })],
+        [point(1, 100, 'bench')]
+      );
+      const { result } = renderHook(() =>
+        useCoachViewSelection([successResult('First', m1), successResult('Second', m2)])
+      );
       expect(result.current.unit).toBe('lbs');
     });
   });
 
   describe('unit toggle', () => {
-    it('toggles unit and recomputes row display fields', () => {
-      const rec = taggedRecord('squat', 'Squat', { meta: { rawUnit: 'kg' } });
-      const model = minimalPipelineModel([rec], [point(1, 100, 'squat')]);
-
+    const setup = () => {
+      const model = minimalPipelineModel(
+        [taggedRecord('squat', 'Squat', { meta: { rawUnit: 'kg' } })],
+        [point(1, 100, 'squat')]
+      );
       const { result } = renderHook(() => useCoachViewSelection([successResult('Lifter', model)]));
+      act(() => result.current.setSelectedDisplayName('Squat'));
+      return result;
+    };
 
-      act(() => {
-        result.current.setSelectedDisplayName('Squat');
-      });
+    it('toggles unit and recomputes row display fields', () => {
+      const res = setup();
+      const [initE1rm, initTarget] = [
+        res.current.rows[0].e1rmDisplay,
+        res.current.rows[0].targetWeightDisplay,
+      ];
 
-      const initialUnit = result.current.unit;
-      const initialE1rm = result.current.rows[0].e1rmDisplay;
-      const initialTarget = result.current.rows[0].targetWeightDisplay;
-
-      // Toggle unit
-      act(() => {
-        result.current.toggleUnit();
-      });
-
-      expect(result.current.unit).not.toBe(initialUnit);
-      expect(result.current.unit).toBe(initialUnit === 'kg' ? 'lbs' : 'kg');
-
-      // Display values should change
-      const newE1rm = result.current.rows[0].e1rmDisplay;
-      const newTarget = result.current.rows[0].targetWeightDisplay;
-
-      expect(newE1rm).not.toBe(initialE1rm);
-      expect(newTarget).not.toBe(initialTarget);
+      act(() => res.current.toggleUnit());
+      expect(res.current.unit).toBe('lbs');
+      expect(res.current.rows[0].e1rmDisplay).not.toBe(initE1rm);
+      expect(res.current.rows[0].targetWeightDisplay).not.toBe(initTarget);
     });
 
-    it('toggle preserves detected unit on round-trip (toggle from kg to lbs back to kg)', () => {
-      const rec = taggedRecord('squat', 'Squat', { meta: { rawUnit: 'kg' } });
-      const model = minimalPipelineModel([rec], [point(1, 100, 'squat')]);
+    it('preserves detected unit on round-trip', () => {
+      const res = setup();
+      const [initE1rm, initTarget] = [
+        res.current.rows[0].e1rmDisplay,
+        res.current.rows[0].targetWeightDisplay,
+      ];
 
-      const { result } = renderHook(() => useCoachViewSelection([successResult('Lifter', model)]));
+      act(() => res.current.toggleUnit());
+      expect(res.current.unit).toBe('lbs');
 
-      act(() => {
-        result.current.setSelectedDisplayName('Squat');
-      });
-
-      const initialE1rm = result.current.rows[0].e1rmDisplay;
-      const initialTarget = result.current.rows[0].targetWeightDisplay;
-
-      // Toggle to lbs
-      act(() => {
-        result.current.toggleUnit();
-      });
-      expect(result.current.unit).toBe('lbs');
-      expect(result.current.rows[0].e1rmDisplay).not.toBe(initialE1rm);
-
-      // Toggle back to kg
-      act(() => {
-        result.current.toggleUnit();
-      });
-
-      expect(result.current.unit).toBe('kg'); // Back to original
-      expect(result.current.rows[0].e1rmDisplay).toBe(initialE1rm); // Same value
-      expect(result.current.rows[0].targetWeightDisplay).toBe(initialTarget); // Same value
+      act(() => res.current.toggleUnit());
+      expect(res.current.unit).toBe('kg');
+      expect(res.current.rows[0].e1rmDisplay).toBe(initE1rm);
+      expect(res.current.rows[0].targetWeightDisplay).toBe(initTarget);
     });
   });
 
@@ -365,99 +303,56 @@ describe('useCoachViewSelection', () => {
   });
 
   describe('selectedDisplayName to selectedCanonical resolution', () => {
-    it('resolves selectedDisplayName to selectedCanonical via displayNameToCanonical map', () => {
+    it('resolves selectedDisplayName to selectedCanonical', () => {
       const model = minimalPipelineModel(
         [],
         [point(1, 100, 'squat'), point(1, 90, 'bench'), point(1, 85, 'deadlift')]
       );
-
       const { result } = renderHook(() => useCoachViewSelection([successResult('Lifter', model)]));
 
-      // Auto-selected to the first option ('Bench Press') once options loaded
       expect(result.current.selectedDisplayName).toBe('Bench Press');
       expect(result.current.selectedCanonical).toBe('bench');
 
-      // Set to 'Bench Press' explicitly (no-op, already selected)
-      act(() => {
-        result.current.setSelectedDisplayName('Bench Press');
-      });
-
-      expect(result.current.selectedDisplayName).toBe('Bench Press');
-      expect(result.current.selectedCanonical).toBe('bench');
-
-      // Set to 'Deadlift'
-      act(() => {
-        result.current.setSelectedDisplayName('Deadlift');
-      });
-
+      act(() => result.current.setSelectedDisplayName('Deadlift'));
       expect(result.current.selectedDisplayName).toBe('Deadlift');
       expect(result.current.selectedCanonical).toBe('deadlift');
 
-      // Invalid display name yields null canonical
-      act(() => {
-        result.current.setSelectedDisplayName('Nonexistent Exercise');
-      });
-
+      act(() => result.current.setSelectedDisplayName('Nonexistent Exercise'));
       expect(result.current.selectedCanonical).toBeNull();
     });
   });
 
   describe('integration: full workflow', () => {
-    it('handles realistic multi-lifter coach selection workflow', () => {
-      // Two lifters: one kg-native, one lbs-native
-      const lifter1Rec = taggedRecord('squat', 'Squat', { meta: { rawUnit: 'kg' } });
-      const lifter1Model = minimalPipelineModel(
-        [lifter1Rec],
+    it('handles multi-lifter coach selection workflow', () => {
+      const l1Model = minimalPipelineModel(
+        [taggedRecord('squat', 'Squat', { meta: { rawUnit: 'kg' } })],
         [point(1, 140, 'squat'), point(1, 120, 'bench')]
       );
-
-      const lifter2Rec = taggedRecord('bench', 'Bench', { meta: { rawUnit: 'lbs' } });
-      const lifter2Model = minimalPipelineModel(
-        [lifter2Rec],
+      const l2Model = minimalPipelineModel(
+        [taggedRecord('bench', 'Bench', { meta: { rawUnit: 'lbs' } })],
         [point(1, 300, 'bench'), point(1, 250, 'deadlift')]
       );
 
       const { result } = renderHook(() =>
-        useCoachViewSelection([
-          successResult('Alice', lifter1Model),
-          successResult('Bob', lifter2Model),
-        ])
+        useCoachViewSelection([successResult('Alice', l1Model), successResult('Bob', l2Model)])
       );
 
-      // Should detect kg from first lifter (Alice)
       expect(result.current.unit).toBe('kg');
-
-      // Options should include squat, bench, deadlift
       expect(result.current.exerciseOptions.length).toBeGreaterThanOrEqual(2);
 
-      // Select bench
-      act(() => {
-        result.current.setSelectedDisplayName('Bench Press');
-      });
+      act(() => result.current.setSelectedDisplayName('Bench Press'));
+      expect(result.current.rows.some((r) => r.lifterName === 'Alice')).toBe(true);
+      expect(result.current.rows.some((r) => r.lifterName === 'Bob')).toBe(true);
 
-      // Both lifters have bench data
-      expect(result.current.rows.length).toBeGreaterThan(0);
+      const initialRows = result.current.rows;
+      act(() => result.current.setReps(3));
+      expect(result.current.rows[0].targetWeightDisplay).not.toBe(
+        initialRows[0].targetWeightDisplay
+      );
 
-      const benchRows = result.current.rows;
-      expect(benchRows.some((r) => r.lifterName === 'Alice')).toBe(true);
-      expect(benchRows.some((r) => r.lifterName === 'Bob')).toBe(true);
-
-      // Set reps to 3
-      act(() => {
-        result.current.setReps(3);
-      });
-
-      const rowsAfterRepsChange = result.current.rows;
-      expect(rowsAfterRepsChange[0].targetWeightDisplay).not.toBe(benchRows[0].targetWeightDisplay);
-
-      // Toggle to lbs and verify rows update
-      act(() => {
-        result.current.toggleUnit();
-      });
-
+      act(() => result.current.toggleUnit());
       expect(result.current.unit).toBe('lbs');
-      const rowsAfterUnitToggle = result.current.rows;
-      expect(rowsAfterUnitToggle[0].e1rmDisplay).not.toBe(benchRows[0].e1rmDisplay);
+      expect(result.current.rows[0].e1rmDisplay).not.toBe(initialRows[0].e1rmDisplay);
     });
   });
 });

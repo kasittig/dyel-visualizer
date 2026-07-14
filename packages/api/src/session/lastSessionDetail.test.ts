@@ -28,26 +28,28 @@ const rec = (
   meta: rawExercise ? { rawExercise } : undefined,
 });
 
-describe('buildLastSessionDetail', () => {
-  const now = new Date(2026, 0, 15);
-  const yest = new Date(2026, 0, 14);
-  const twoDays = new Date(2026, 0, 13);
+const d0 = new Date(2026, 0, 15),
+  d1 = new Date(2026, 0, 14),
+  d2 = new Date(2026, 0, 13);
+const getLocDate = (d: Date) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
+describe('buildLastSessionDetail', () => {
   it.each([
     ['empty input', [], new Map()],
     [
       'single record',
-      [rec(now, 'bench', 5, 100, 8)],
+      [rec(d0, 'bench', 5, 100, 8)],
       new Map([['bench', { date: '2026-01-15', sets: 1, reps: 5, weight: 100, rpe: 8 }]]),
     ],
     [
       'aggregates sets count',
-      [rec(now, 'bench', 5, 100, 8), rec(now, 'bench', 5, 100, 8), rec(now, 'bench', 3, 80, 6)],
+      [rec(d0, 'bench', 5, 100, 8), rec(d0, 'bench', 5, 100, 8), rec(d0, 'bench', 3, 80, 6)],
       new Map([['bench', { date: '2026-01-15', sets: 3, reps: 5, weight: 100, rpe: 8 }]]),
     ],
     [
       'separate labels same date',
-      [rec(now, 'bench', 5, 100, 8, 'Bench Press'), rec(now, 'bench-comp', 3, 80, 6, 'Bench (CG)')],
+      [rec(d0, 'bench', 5, 100, 8, 'Bench Press'), rec(d0, 'bench-comp', 3, 80, 6, 'Bench (CG)')],
       new Map([
         ['Bench Press', { date: '2026-01-15', sets: 1, reps: 5, weight: 100, rpe: 8 }],
         ['Bench (CG)', { date: '2026-01-15', sets: 1, reps: 3, weight: 80, rpe: 6 }],
@@ -55,92 +57,82 @@ describe('buildLastSessionDetail', () => {
     ],
     [
       'picks most recent date',
-      [
-        rec(twoDays, 'bench', 5, 95, 7),
-        rec(yest, 'bench', 5, 98, 7.5),
-        rec(now, 'bench', 5, 100, 8),
-      ],
+      [rec(d2, 'bench', 5, 95, 7), rec(d1, 'bench', 5, 98, 7.5), rec(d0, 'bench', 5, 100, 8)],
       new Map([['bench', { date: '2026-01-15', sets: 1, reps: 5, weight: 100, rpe: 8 }]]),
     ],
     [
       'optional rpe to null',
-      [rec(now, 'bench', 5, 100)],
+      [rec(d0, 'bench', 5, 100)],
       new Map([['bench', { date: '2026-01-15', sets: 1, reps: 5, weight: 100, rpe: null }]]),
     ],
     [
       'rawExercise used as label',
-      [rec(now, 'bench', 5, 100, 8, 'Bench (Comp)')],
+      [rec(d0, 'bench', 5, 100, 8, 'Bench (Comp)')],
       new Map([['Bench (Comp)', { date: '2026-01-15', sets: 1, reps: 5, weight: 100, rpe: 8 }]]),
     ],
-  ])('%s', (_, input, expected: Map<string, LastSessionDetail>) => {
-    expect(buildLastSessionDetail(input, 'bench')).toEqual(expected);
-  });
+  ] as Array<[string, TaggedSetRecord[], Map<string, LastSessionDetail>]>)(
+    '%s',
+    (_, input, expected) => {
+      expect(buildLastSessionDetail(input, 'bench')).toEqual(expected);
+    }
+  );
 
   it('filters by lift type tag and formats date to YYYY-MM-DD', () => {
     const res = buildLastSessionDetail(
       [
-        rec(now, 'squat', 5, 100, 8, undefined, 'squat'),
+        rec(d0, 'squat', 5, 100, 8, undefined, 'squat'),
         rec(new Date(2026, 6, 8), 'bench', 5, 100, 8),
       ],
       'bench'
     );
-    expect(res.size).toBe(1);
-    if (!res.has('bench')) {
-      throw new Error('Missing expected bench entry');
-    }
     expect(res.get('bench')?.date).toBe('2026-07-08');
   });
 
   it('formats local-constructed dates correctly (catches timezone bugs)', () => {
     const localDate = new Date(2026, 6, 8);
-    const expectedDate = `${localDate.getFullYear()}-${String(localDate.getMonth() + 1).padStart(2, '0')}-${String(localDate.getDate()).padStart(2, '0')}`;
-    const res = buildLastSessionDetail([rec(localDate, 'bench', 5, 100, 8)], 'bench');
-    if (!res.has('bench')) {
-      throw new Error('Missing expected bench entry');
-    }
-    expect(res.get('bench')?.date).toBe(expectedDate);
+    expect(
+      buildLastSessionDetail([rec(localDate, 'bench', 5, 100, 8)], 'bench').get('bench')?.date
+    ).toBe(getLocDate(localDate));
   });
 });
 
 describe('buildLastSessionDetailForCanonical', () => {
-  const now = new Date(2026, 4, 3);
-  const yest = new Date(2026, 4, 2);
-  const twoDays = new Date(2026, 4, 1);
-
+  const n = new Date(2026, 4, 3),
+    y = new Date(2026, 4, 2),
+    t = new Date(2026, 4, 1);
   it.each([
     ['empty input', [], 'bench', null],
-    ['no matching canonical', [rec(now, 'squat', 5, 100, 8)], 'bench', null],
+    ['no matching canonical', [rec(n, 'squat', 5, 100, 8)], 'bench', null],
     [
       'single record',
-      [rec(now, 'bench', 5, 100, 8)],
+      [rec(n, 'bench', 5, 100, 8)],
       'bench',
       { date: '2026-05-03', sets: 1, reps: 5, weight: 100, rpe: 8 },
     ],
     [
       'picks most recent date among multiple',
-      [
-        rec(twoDays, 'bench', 5, 95, 7),
-        rec(yest, 'bench', 5, 98, 7.5),
-        rec(now, 'bench', 5, 100, 8),
-      ],
+      [rec(t, 'bench', 5, 95, 7), rec(y, 'bench', 5, 98, 7.5), rec(n, 'bench', 5, 100, 8)],
       'bench',
       { date: '2026-05-03', sets: 1, reps: 5, weight: 100, rpe: 8 },
     ],
     [
       'optional rpe to null',
-      [rec(now, 'bench', 5, 100)],
+      [rec(n, 'bench', 5, 100)],
       'bench',
       { date: '2026-05-03', sets: 1, reps: 5, weight: 100, rpe: null },
     ],
     [
       'aggregates sets count',
-      [rec(now, 'bench', 5, 100, 8), rec(now, 'bench', 5, 100, 8), rec(now, 'bench', 3, 80, 6)],
+      [rec(n, 'bench', 5, 100, 8), rec(n, 'bench', 5, 100, 8), rec(n, 'bench', 3, 80, 6)],
       'bench',
       { date: '2026-05-03', sets: 3, reps: 5, weight: 100, rpe: 8 },
     ],
-  ])('%s', (_, input, canonical, expected) => {
-    expect(buildLastSessionDetailForCanonical(input, canonical)).toEqual(expected);
-  });
+  ] as Array<[string, TaggedSetRecord[], string, LastSessionDetail | null]>)(
+    '%s',
+    (_, input, canonical, expected) => {
+      expect(buildLastSessionDetailForCanonical(input, canonical)).toEqual(expected);
+    }
+  );
 });
 
 describe('formatLastSessionSummary', () => {
@@ -169,7 +161,10 @@ describe('formatLastSessionSummary', () => {
       'kg',
       '5/3 (1x3 @ 111 kg)',
     ],
-  ])('%s', (_, detail, unit, expected) => {
-    expect(formatLastSessionSummary(detail, unit)).toBe(expected);
-  });
+  ] as Array<[string, LastSessionDetail, 'lbs' | 'kg', string]>)(
+    '%s',
+    (_, detail, unit, expected) => {
+      expect(formatLastSessionSummary(detail, unit)).toBe(expected);
+    }
+  );
 });

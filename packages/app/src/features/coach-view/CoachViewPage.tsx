@@ -5,8 +5,6 @@ import styles from './CoachViewPage.module.css';
 
 export function CoachViewPage() {
   const dataState = useCoachViewData();
-  // useCoachViewSelection must run unconditionally (rules of hooks) even before data has
-  // loaded; pass an empty array so it returns empty/default derived state until then.
   const {
     exerciseOptions,
     selectedDisplayName,
@@ -50,58 +48,65 @@ export function CoachViewPage() {
           min={1}
           max={20}
           value={reps}
+          className={styles.repsInput}
           onChange={(e) => {
             const val = parseInt(e.target.value, 10);
             setReps(Number.isNaN(val) || val < 1 ? 1 : val);
           }}
-          className={styles.repsInput}
         />
         <button className={styles.unitToggle} onClick={toggleUnit} type="button">
-          {unit === 'lbs' ? 'lbs' : 'kg'}
+          {unit}
         </button>
       </div>
 
       {selectedCanonical && (
-        <div className={styles.headerLine}>
-          EXERCISE: {selectedDisplayName} # reps: {reps}
-        </div>
-      )}
-
-      {selectedCanonical && rows.length === 0 && (
-        <div className={styles.emptyState}>No data for this exercise yet</div>
-      )}
-
-      {selectedCanonical && rows.length > 0 && (
         <>
-          <table className={styles.table}>
-            <thead>
-              <tr className={styles.thead}>
-                <th className={styles.cellLeft}>Lifter</th>
-                <th className={styles.cellMono}>e1RM</th>
-                <th className={styles.cellLeft}>Last time performed</th>
-                <th className={styles.cellLeft}>Target weight</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((row) => {
-                const valueClass = row.hasData ? '' : ` ${styles.placeholderCell}`;
-                return (
-                  <tr key={row.lifterName} className={styles.bodyRow}>
-                    <td className={styles.cellLeft}>{row.lifterName}</td>
-                    <td className={`${styles.cellMono}${valueClass}`}>{row.e1rmDisplay}</td>
-                    <td className={`${styles.cellLeft}${valueClass}`}>
-                      {row.lastPerformedDisplay}
-                    </td>
-                    <td className={`${styles.cellLeft}${valueClass}`}>{row.targetWeightDisplay}</td>
+          <div className={styles.headerLine}>
+            EXERCISE: {selectedDisplayName} # reps: {reps}
+          </div>
+          {!rows.length ? (
+            <div className={styles.emptyState}>No data for this exercise yet</div>
+          ) : (
+            <>
+              <table className={styles.table}>
+                <thead>
+                  <tr className={styles.thead}>
+                    <th className={styles.cellLeft}>Lifter</th>
+                    <th className={styles.cellMono}>e1RM</th>
+                    <th className={styles.cellLeft}>Last time performed</th>
+                    <th className={styles.cellLeft}>Target weight</th>
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
-          {erroredLifterCount > 0 && (
-            <p className={styles.errorNote}>
-              {erroredLifterCount} lifter{erroredLifterCount === 1 ? '' : 's'} could not be loaded
-            </p>
+                </thead>
+                <tbody>
+                  {rows.map((row) => (
+                    <tr key={row.lifterName} className={styles.bodyRow}>
+                      <td className={styles.cellLeft}>{row.lifterName}</td>
+                      <td
+                        className={`${styles.cellMono} ${!row.hasData ? styles.placeholderCell : ''}`}
+                      >
+                        {row.e1rmDisplay}
+                      </td>
+                      <td
+                        className={`${styles.cellLeft} ${!row.hasData ? styles.placeholderCell : ''}`}
+                      >
+                        {row.lastPerformedDisplay}
+                      </td>
+                      <td
+                        className={`${styles.cellLeft} ${!row.hasData ? styles.placeholderCell : ''}`}
+                      >
+                        {row.targetWeightDisplay}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {erroredLifterCount > 0 && (
+                <p className={styles.errorNote}>
+                  {erroredLifterCount} lifter{erroredLifterCount === 1 ? '' : 's'} could not be
+                  loaded
+                </p>
+              )}
+            </>
           )}
         </>
       )}

@@ -1,16 +1,14 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import type { LifterPipelineResult } from '@dyel/api';
+import type { PipelineModel } from '@dyel/pipeline';
 import { useCoachViewData } from './useCoachViewData';
 
 vi.mock('../data-source');
-vi.mock('@dyel/api', async () => {
-  const actual = await vi.importActual<typeof import('@dyel/api')>('@dyel/api');
-  return {
-    ...actual,
-    loadIndexPipelineModels: vi.fn(),
-  };
-});
+vi.mock('@dyel/api', async () => ({
+  ...(await vi.importActual<typeof import('@dyel/api')>('@dyel/api')),
+  loadIndexPipelineModels: vi.fn(),
+}));
 
 const mockFetchSheetCsv = vi.mocked((await import('../data-source')).fetchSheetCsv);
 const mockLoadIndexPipelineModels = vi.mocked((await import('@dyel/api')).loadIndexPipelineModels);
@@ -43,7 +41,7 @@ describe('useCoachViewData', () => {
         status: 'success',
         name: 'Athlete 1',
         url: 'https://example.com/sheet1',
-        model: fixtureModel,
+        model: fixtureModel as unknown as PipelineModel,
       },
     ];
 
@@ -61,7 +59,6 @@ describe('useCoachViewData', () => {
 
   it('loading → error', async () => {
     mockFetchSheetCsv.mockRejectedValue(new Error('Network error'));
-
     const { result } = renderHook(() => useCoachViewData());
     expect(result.current.status).toBe('loading');
 
