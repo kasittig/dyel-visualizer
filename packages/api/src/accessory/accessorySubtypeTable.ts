@@ -6,6 +6,7 @@ export type AccessorySubtype = 'upper' | 'lower' | 'core' | null;
 export interface AccessoryTableRow {
   label: string;
   subtype: AccessorySubtype;
+  effects: string[];
   lastSession: LastSessionDetail;
   sessionCount: number;
   sessionCountInRange: number;
@@ -44,6 +45,7 @@ export function buildAccessoryTableRows(
       acc.push({
         label,
         subtype,
+        effects: [...(records[0]?.effects ?? [])],
         lastSession,
         sessionCount: sessionDates.size,
         sessionCountInRange: inRangeSessionDates.size,

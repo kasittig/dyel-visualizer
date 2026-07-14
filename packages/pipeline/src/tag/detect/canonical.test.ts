@@ -59,20 +59,23 @@ describe('buildTagsAndEffects with magnitude-qualified lookup', () => {
       ['Squat (light bands)', 'addl:bands:light'],
       ['Deadlift (heavy rev. bands)', 'addl:rev-bands:heavy'],
     ].forEach(([ex, tag]: string[]) => {
-      expect(buildTagsAndEffects(parseExercise(ex)).tags.has(tag)).toBe(true);
+      expect(buildTagsAndEffects(parseExercise(ex), ex).tags.has(tag)).toBe(true);
     });
 
-    const revRes = buildTagsAndEffects(parseExercise('Deadlift (light rev. bands)'));
+    const revRes = buildTagsAndEffects(
+      parseExercise('Deadlift (light rev. bands)'),
+      'Deadlift (light rev. bands)'
+    );
     expect(revRes.tags.has('addl:rev-bands:light')).toBe(true);
     expect(new Set(revRes.effects)).toEqual(new Set(['SUPRAMAXIMAL', 'LOCKOUT']));
 
-    const bndRes = buildTagsAndEffects(parseExercise('Bench (mini bands)'));
+    const bndRes = buildTagsAndEffects(parseExercise('Bench (mini bands)'), 'Bench (mini bands)');
     expect(bndRes.tags.has('addl:bands:mini')).toBe(true);
     expect(new Set(bndRes.effects)).toEqual(new Set(['BAR_SPEED']));
   });
 
   it('preserves single-chain layouts and maps component effects', () => {
-    const res = buildTagsAndEffects(parseExercise('Sumo Squat (chains)'));
+    const res = buildTagsAndEffects(parseExercise('Sumo Squat (chains)'), 'Sumo Squat (chains)');
     expect(res.tags.has('addl:chains:1')).toBe(true);
     expect(res.tags.has('lift:squat')).toBe(true);
     expect(res.tags.has('stance:sumo')).toBe(true);
@@ -94,42 +97,72 @@ describe('buildTagsAndEffects baseline % range', () => {
       { min: 81, max: 100 },
     ],
   ])('%s', (_, ex: string, expected: { min: number; max: number } | null) => {
-    expect(buildTagsAndEffects(parseExercise(ex)).range).toEqual(expected);
+    expect(buildTagsAndEffects(parseExercise(ex), ex).range).toEqual(expected);
   });
 });
 
 describe('buildTagsAndEffects deadlift stance resolution', () => {
   it('handles variations of deadlift stance compounding mechanics', () => {
-    expect(buildTagsAndEffects(parseExercise('Deadlift'), 'sumo').range).toBeNull();
-    expect(buildTagsAndEffects(parseExercise('Deadlift'), 'sumo').effects).toEqual([]);
-    expect(buildTagsAndEffects(parseExercise('Deadlift'), 'sumo').tags.has('comp-lift')).toBe(true);
-    expect(buildTagsAndEffects(parseExercise('Deadlift'), 'conventional').range).toBeNull();
-    expect(buildTagsAndEffects(parseExercise('Deadlift'), 'conventional').effects).toEqual([]);
+    expect(buildTagsAndEffects(parseExercise('Deadlift'), 'Deadlift', 'sumo').range).toBeNull();
+    expect(buildTagsAndEffects(parseExercise('Deadlift'), 'Deadlift', 'sumo').effects).toEqual([]);
+    expect(
+      buildTagsAndEffects(parseExercise('Deadlift'), 'Deadlift', 'sumo').tags.has('comp-lift')
+    ).toBe(true);
+    expect(
+      buildTagsAndEffects(parseExercise('Deadlift'), 'Deadlift', 'conventional').range
+    ).toBeNull();
+    expect(
+      buildTagsAndEffects(parseExercise('Deadlift'), 'Deadlift', 'conventional').effects
+    ).toEqual([]);
 
-    const oppSumo = buildTagsAndEffects(parseExercise('Opposite Deadlift'), 'sumo');
+    const oppSumo = buildTagsAndEffects(
+      parseExercise('Opposite Deadlift'),
+      'Opposite Deadlift',
+      'sumo'
+    );
     expect(oppSumo.range).toEqual({ min: 90, max: 100 });
     expect(new Set(oppSumo.effects)).toEqual(new Set(['HAMSTRING_DOMINANT', 'POSTERIOR_CHAIN']));
 
-    const oppConv = buildTagsAndEffects(parseExercise('Opposite Deadlift'), 'conventional');
+    const oppConv = buildTagsAndEffects(
+      parseExercise('Opposite Deadlift'),
+      'Opposite Deadlift',
+      'conventional'
+    );
     expect(oppConv.range).toEqual({ min: 90, max: 100 });
     expect(new Set(oppConv.effects)).toEqual(new Set(['HIP_DOMINANT', 'POSTERIOR_CHAIN']));
 
-    const explSumo = buildTagsAndEffects(parseExercise('Sumo Deadlift'), 'conventional');
+    const explSumo = buildTagsAndEffects(
+      parseExercise('Sumo Deadlift'),
+      'Sumo Deadlift',
+      'conventional'
+    );
     expect(explSumo.range).toEqual({ min: 90, max: 100 });
     expect(new Set(explSumo.effects)).toEqual(new Set(['HIP_DOMINANT', 'POSTERIOR_CHAIN']));
 
-    const explConv = buildTagsAndEffects(parseExercise('Conventional Deadlift'), 'sumo');
+    const explConv = buildTagsAndEffects(
+      parseExercise('Conventional Deadlift'),
+      'Conventional Deadlift',
+      'sumo'
+    );
     expect(explConv.range).toEqual({ min: 90, max: 100 });
     expect(new Set(explConv.effects)).toEqual(new Set(['HAMSTRING_DOMINANT', 'POSTERIOR_CHAIN']));
 
-    expect(buildTagsAndEffects(parseExercise('Squat'), 'sumo').range).toBeNull();
-    expect(buildTagsAndEffects(parseExercise('Squat'), 'sumo').effects).toEqual([]);
+    expect(buildTagsAndEffects(parseExercise('Squat'), 'Squat', 'sumo').range).toBeNull();
+    expect(buildTagsAndEffects(parseExercise('Squat'), 'Squat', 'sumo').effects).toEqual([]);
 
-    const explSquatStance = buildTagsAndEffects(parseExercise('Sumo Squat'), 'conventional');
+    const explSquatStance = buildTagsAndEffects(
+      parseExercise('Sumo Squat'),
+      'Sumo Squat',
+      'conventional'
+    );
     expect(explSquatStance.range).toEqual({ min: 90, max: 100 });
     expect(new Set(explSquatStance.effects)).toEqual(new Set(['HIP_DOMINANT', 'POSTERIOR_CHAIN']));
 
-    const deficit = buildTagsAndEffects(parseExercise('Deadlift (2" deficit)'), 'sumo');
+    const deficit = buildTagsAndEffects(
+      parseExercise('Deadlift (2" deficit)'),
+      'Deadlift (2" deficit)',
+      'sumo'
+    );
     expect(deficit.range).toEqual({ min: 75, max: 85 });
     expect(new Set(deficit.effects)).toEqual(new Set(['EXTENDED_ROM', 'BOTTOM_RANGE']));
   });
@@ -161,7 +194,7 @@ describe('equipment magnitude produces distinct tags, effects, and ranges', () =
   ])(
     '%s produces expected tags and range',
     (_, ex: string, tags: string[], range: { min: number; max: number }, effects: string[]) => {
-      const res = buildTagsAndEffects(parseExercise(ex));
+      const res = buildTagsAndEffects(parseExercise(ex), ex);
       tags.forEach((t: string) => {
         expect(res.tags.has(t)).toBe(true);
       });
@@ -178,7 +211,7 @@ describe('equipment magnitude produces distinct tags, effects, and ranges', () =
         ['Deadlift (3 blocks)', { min: 125, max: 135 }],
       ] as const
     ).forEach(([ex, range]) => {
-      expect(buildTagsAndEffects(parseExercise(ex)).range).toEqual(range);
+      expect(buildTagsAndEffects(parseExercise(ex), ex).range).toEqual(range);
     });
 
     (
@@ -187,14 +220,14 @@ describe('equipment magnitude produces distinct tags, effects, and ranges', () =
         ['Deadlift (2 deficit)', { min: 75, max: 85 }],
       ] as const
     ).forEach(([ex, range]) => {
-      expect(buildTagsAndEffects(parseExercise(ex)).range).toEqual(range);
+      expect(buildTagsAndEffects(parseExercise(ex), ex).range).toEqual(range);
     });
   });
 });
 
 describe('equipment magnitude fallback for unmapped magnitudes (regression guard)', () => {
   it('unmapped magnitude falls back to base key when no explicit entry exists', () => {
-    const res = buildTagsAndEffects(parseExercise('Bench (4 board)'));
+    const res = buildTagsAndEffects(parseExercise('Bench (4 board)'), 'Bench (4 board)');
     expect(res.tags.has('equip:board')).toBe(true);
     expect(res.tags.has('equip:board-4')).toBe(true);
     expect(res.range).toEqual({ min: 105, max: 115 });

@@ -66,3 +66,20 @@ export const CORE_PATTERN =
 export function isCoreExercise(rawName: string): boolean {
   return CORE_PATTERN.test(rawName.toLowerCase());
 }
+
+export type AccessoryEffect = 'BACK' | 'SHOULDERS' | 'TRICEPS' | 'POSTERIOR_CHAIN';
+
+export const ACCESSORY_EFFECT_DETECTORS: Detector<AccessoryEffect> = [
+  ['BACK', (l) => /\blats?\b/.test(l) || /\brows?\b/.test(l)],
+  ['SHOULDERS', (l, t) => t.has('ohp') || l.includes('overhead')],
+  ['TRICEPS', (l, t) => /\btriceps?\b/.test(l) || t.has('tri')],
+  ['POSTERIOR_CHAIN', (l, t) => /\bglutes?\b/.test(l) || t.has('ghr')],
+];
+
+export function classifyAccessoryEffects(rawName: string): AccessoryEffect[] {
+  const lower = rawName.toLowerCase();
+  const tokens = new Set(lower.split(/[\s(),]+/).filter(Boolean));
+  return ACCESSORY_EFFECT_DETECTORS.filter(([, match]) => match(lower, tokens)).map(
+    ([effect]) => effect
+  );
+}
