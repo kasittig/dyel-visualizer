@@ -46,11 +46,15 @@ const row = (
   sets = 1,
   reps = 10,
   weight = 100,
-  rpe = 7
+  rpe = 7,
+  sessionCount = 1,
+  sessionCountInRange = sessionCount
 ) => ({
   label,
   subtype,
   lastSession: { date, sets, reps, weight, rpe },
+  sessionCount,
+  sessionCountInRange,
 });
 
 describe('buildAccessoryTableRows', () => {
@@ -91,11 +95,44 @@ describe('buildAccessoryTableRows', () => {
     [
       'picks most recent date for subtype determination',
       [rec(d1, 'leg-curl', 12, 80, 6, 'lower'), rec(d0, 'leg-curl', 12, 85, 7, 'upper')],
-      [row('Leg Curl', 'upper', '2026-01-15', 1, 12, 85, 7)],
+      [row('Leg Curl', 'upper', '2026-01-15', 1, 12, 85, 7, 2)],
     ],
   ])('%s', (_, input, expected) => {
     // Sort logic inherently verified via grouped assertions
     const result = buildAccessoryTableRows(input);
     expect(result).toEqual(expected.sort((a, b) => a.label.localeCompare(b.label)));
+  });
+
+  it.each([
+    [
+      'no range given: in-range count equals all-time count',
+      undefined,
+      undefined,
+      row('Leg Curl', 'upper', '2026-01-15', 1, 12, 85, 7, 2, 2),
+    ],
+    [
+      'range covering all sessions',
+      d1,
+      d0,
+      row('Leg Curl', 'upper', '2026-01-15', 1, 12, 85, 7, 2, 2),
+    ],
+    [
+      'range excluding earlier session',
+      d0,
+      d0,
+      row('Leg Curl', 'upper', '2026-01-15', 1, 12, 85, 7, 2, 1),
+    ],
+    [
+      'range excluding all sessions',
+      new Date(2026, 1, 1),
+      new Date(2026, 1, 2),
+      row('Leg Curl', 'upper', '2026-01-15', 1, 12, 85, 7, 2, 0),
+    ],
+  ])('%s', (_, from, to, expected) => {
+    const input = [
+      rec(d1, 'leg-curl', 12, 80, 6, 'lower'),
+      rec(d0, 'leg-curl', 12, 85, 7, 'upper'),
+    ];
+    expect(buildAccessoryTableRows(input, from, to)).toEqual([expected]);
   });
 });

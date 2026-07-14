@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import type { DateRange } from 'react-day-picker';
 import { usePipelineModel } from '../../app/PipelineContext';
 import {
   buildAccessoryTableRows,
@@ -26,7 +27,7 @@ const SUBTYPE_MAP: Record<string, string> = {
 };
 const SUBTYPE_ORDER: AccessorySubtype[] = ['upper', 'lower', 'core', null];
 
-export function useAccessoryTable(unit: DisplayUnit): AccessoryTableGroup[] {
+export function useAccessoryTable(unit: DisplayUnit, dateRange?: DateRange): AccessoryTableGroup[] {
   const { status, model } = usePipelineModel();
 
   return useMemo(() => {
@@ -34,10 +35,12 @@ export function useAccessoryTable(unit: DisplayUnit): AccessoryTableGroup[] {
       return EMPTY;
     }
 
-    const rows = buildAccessoryTableRows(model.tagged).map((row) => ({
-      ...row,
-      lastPerformedDisplay: formatLastSessionSummary(row.lastSession, unit),
-    }));
+    const rows = buildAccessoryTableRows(model.tagged, dateRange?.from, dateRange?.to).map(
+      (row) => ({
+        ...row,
+        lastPerformedDisplay: formatLastSessionSummary(row.lastSession, unit),
+      })
+    );
 
     const grouped = Map.groupBy(rows, (row) => row.subtype);
 
@@ -48,5 +51,5 @@ export function useAccessoryTable(unit: DisplayUnit): AccessoryTableGroup[] {
       }
       return acc;
     }, []);
-  }, [status, model, unit]);
+  }, [status, model, unit, dateRange?.from, dateRange?.to]);
 }

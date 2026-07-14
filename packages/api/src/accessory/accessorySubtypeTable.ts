@@ -1,16 +1,23 @@
 import { matches, type TaggedSetRecord } from '@dyel/pipeline';
 import { buildLastSessionDetail, type LastSessionDetail } from '../session/lastSessionDetail';
+import { isRecordInDateRange } from '../dateRange/dateRangeUtils';
 
 export type AccessorySubtype = 'upper' | 'lower' | 'core' | null;
 export interface AccessoryTableRow {
   label: string;
   subtype: AccessorySubtype;
   lastSession: LastSessionDetail;
+  sessionCount: number;
+  sessionCountInRange: number;
 }
 
 const SUBTYPES: Exclude<AccessorySubtype, null>[] = ['core', 'upper', 'lower'];
 
-export function buildAccessoryTableRows(tagged: TaggedSetRecord[]): AccessoryTableRow[] {
+export function buildAccessoryTableRows(
+  tagged: TaggedSetRecord[],
+  from?: Date,
+  to?: Date
+): AccessoryTableRow[] {
   const lastSessionByLabel = buildLastSessionDetail(tagged, 'accessory');
   const filtered = tagged.filter((r) => matches(r.tags, { all: ['lift:accessory'] }));
 
@@ -25,7 +32,22 @@ export function buildAccessoryTableRows(tagged: TaggedSetRecord[]): AccessoryTab
       const latestTags = records.find((r) => r.date === latestDate)?.tags;
       const subtype = SUBTYPES.find((s) => latestTags?.has(`accessory:${s}`)) ?? null;
 
-      acc.push({ label, subtype, lastSession });
+      const sessionDates = new Set<number>();
+      const inRangeSessionDates = new Set<number>();
+      for (const r of records) {
+        sessionDates.add(r.date);
+        if (isRecordInDateRange(r.date, from, to)) {
+          inRangeSessionDates.add(r.date);
+        }
+      }
+
+      acc.push({
+        label,
+        subtype,
+        lastSession,
+        sessionCount: sessionDates.size,
+        sessionCountInRange: inRangeSessionDates.size,
+      });
       return acc;
     }, [])
     .sort((a, b) => a.label.localeCompare(b.label));

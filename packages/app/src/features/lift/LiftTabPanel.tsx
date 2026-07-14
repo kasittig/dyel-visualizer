@@ -62,6 +62,7 @@ export function LiftTabPanel({
       {liftType === 'accessory' && (
         <AccessoryTable
           unit={unit}
+          dateRange={dateRange}
           highlightedVariation={selectedVariation}
           onVariationClick={handleVariationClick}
         />
