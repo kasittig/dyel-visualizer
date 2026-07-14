@@ -73,6 +73,35 @@ describe('TypeaheadDropdown', () => {
     expect((screen.getByPlaceholderText('Search...') as HTMLInputElement).value).toBe('Apple');
   });
 
+  it('prevents default on option mousedown so the input never blurs mid-selection', async () => {
+    // Regression test: in a real browser, pressing down on an option button shifts focus
+    // away from the input, firing `blur` before `click`. That blur used to trigger an effect
+    // that reverted `inputText` from the (still-stale) `value` prop back to the prior
+    // selection, which re-filters `visibleOptions` and unmounts the pressed button out from
+    // under the pending click — so the click, and thus the selection, was silently dropped.
+    // The fix is an `onMouseDown` handler on each option that calls `preventDefault()`, which
+    // suppresses the browser's implicit focus shift (and therefore the blur) while leaving
+    // `click`/`onClick` unaffected.
+    const cb = vi.fn();
+    render(<TypeaheadDropdown options={opts} value="Banana" onChange={cb} />);
+    const input = screen.getByPlaceholderText('Search...');
+    fireEvent.focus(input);
+    fireEvent.change(input, { target: { value: 'apr' } });
+    await wait();
+    expect(getOpts()).toHaveLength(1);
+
+    const option = screen.getByText('Apricot');
+    const mouseDownEvent = new MouseEvent('mousedown', { bubbles: true, cancelable: true });
+    fireEvent(option, mouseDownEvent);
+    expect(mouseDownEvent.defaultPrevented).toBe(true);
+
+    // With the blur suppressed, the list stays filtered/stable and the click reaches the
+    // same option element.
+    expect(getOpts()).toHaveLength(1);
+    fireEvent.click(option);
+    expect(cb).toHaveBeenCalledWith('Apricot');
+  });
+
   it('highlights option with ArrowDown and selects with Enter', async () => {
     const cb = vi.fn();
     render(<TypeaheadDropdown options={opts} value={null} onChange={cb} />);
