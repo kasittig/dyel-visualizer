@@ -1,5 +1,7 @@
 import type { ConjugateAddlWt, ConjugateStance, ParsedExercise } from './conjugate-types';
+import { classifyAccessoryEffects } from './detectors';
 import modifierEffects from './modifier-effects.json';
+import { parseExercise } from './parseExercise';
 
 const ADDL_WT_SLUGS: Record<ConjugateAddlWt, string> = {
   chains: 'chains',
@@ -75,13 +77,14 @@ export interface BaselineRange {
 }
 
 export function buildTagsAndEffects(
-  ex: ParsedExercise,
+  rawName: string,
   deadliftStance: 'sumo' | 'conventional' = 'sumo'
 ): { tags: Set<string>; effects: string[]; range: BaselineRange | null } {
+  const ex = parseExercise(rawName);
   const tags = new Set<string>([`lift:${ex.type}`]),
     effects = new Set<string>();
   if (ex.type === 'accessory') {
-    return { tags, effects: [], range: null };
+    return { tags, effects: classifyAccessoryEffects(rawName), range: null };
   }
 
   const hasBar = ex.bar && ex.bar !== 'standard',

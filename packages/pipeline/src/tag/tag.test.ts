@@ -8,7 +8,7 @@ import {
   classifyAccessorySubtypes,
 } from './tag';
 import type { TaggedSetRecord } from './tag';
-import { isCoreExercise } from './detect/detectors';
+import { isCoreExercise, classifyAccessoryEffects } from './detect/detectors';
 
 describe('resolveCanonicalNames', () => {
   it('rewrites exercise, deduplicates unresolved entries, and matches keys', () => {
@@ -284,5 +284,23 @@ describe('isCoreExercise', () => {
     ['Leg Press', false],
   ])('isCoreExercise: %s is %s', (name, expected) => {
     expect(isCoreExercise(name)).toBe(expected);
+  });
+});
+
+describe('classifyAccessoryEffects', () => {
+  it.each([
+    ['Lat Pulldown', ['BACK']],
+    ['Barbell Row', ['BACK']],
+    ['Seated Cable Rows', ['BACK']],
+    ['Lateral Raise', []],
+    ['Dumbbell OHP', ['SHOULDERS']],
+    ['Overhead Press', ['SHOULDERS']],
+    ['Tricep Pushdown', ['TRICEPS']],
+    ['Skull Crusher (Tri)', ['TRICEPS']],
+    ['Glute Bridge', ['POSTERIOR_CHAIN']],
+    ['GHR', ['POSTERIOR_CHAIN']],
+    ['Bicep Curl', ['BICEPS']],
+  ])('classifies "%s" as %s', (name, expected) => {
+    expect(classifyAccessoryEffects(name)).toEqual(expected);
   });
 });

@@ -21,7 +21,7 @@ interface AccessoryTableProps {
   onVariationClick?: (v: string) => void;
 }
 
-type SortCol = 'label' | 'lastPerformed' | 'sessionCountInRange' | 'sessionCount';
+type SortCol = 'label' | 'effects' | 'lastPerformed' | 'sessionCountInRange' | 'sessionCount';
 
 function SubtypeTable({
   label,
@@ -41,6 +41,7 @@ function SubtypeTable({
     SortCol
   >(rows, {
     label: (r) => r.label,
+    effects: (r) => r.effectsDisplay,
     lastPerformed: (r) => r.lastSession.date,
     sessionCountInRange: (r) => r.sessionCountInRange,
     sessionCount: (r) => r.sessionCount,
@@ -59,6 +60,9 @@ function SubtypeTable({
             <TableCell as="th" variant="left" {...sortProps('label')}>
               Exercise
             </TableCell>
+            <TableCell as="th" {...sortProps('effects')}>
+              Effects
+            </TableCell>
             <TableCell as="th" {...sortProps('lastPerformed')}>
               Last performed
             </TableCell>
@@ -71,13 +75,20 @@ function SubtypeTable({
           </TableHeadRow>
           <tbody>
             {sortedRows.map(
-              ({ label: rLabel, lastPerformedDisplay, sessionCount, sessionCountInRange }) => (
+              ({
+                label: rLabel,
+                effectsDisplay,
+                lastPerformedDisplay,
+                sessionCount,
+                sessionCountInRange,
+              }) => (
                 <TableRow
                   key={rLabel}
                   selected={rLabel === highlightedVariation}
                   onClick={() => onVariationClick?.(rLabel)}
                 >
                   <TableCell variant="left">{rLabel}</TableCell>
+                  <TableCell>{effectsDisplay}</TableCell>
                   <TableCell>{lastPerformedDisplay}</TableCell>
                   <TableCell>{sessionCountInRange}</TableCell>
                   <TableCell>{sessionCount}</TableCell>

@@ -3,6 +3,7 @@ import type { DateRange } from 'react-day-picker';
 import { usePipelineModel } from '../../app/PipelineContext';
 import {
   buildAccessoryTableRows,
+  formatEffect,
   formatLastSessionSummary,
   type AccessoryTableRow,
   type AccessorySubtype,
@@ -11,6 +12,7 @@ import {
 
 export interface AccessoryTableDisplay extends AccessoryTableRow {
   lastPerformedDisplay: string;
+  effectsDisplay: string;
 }
 export interface AccessoryTableGroup {
   subtype: AccessorySubtype;
@@ -39,6 +41,7 @@ export function useAccessoryTable(unit: DisplayUnit, dateRange?: DateRange): Acc
       (row) => ({
         ...row,
         lastPerformedDisplay: formatLastSessionSummary(row.lastSession, unit),
+        effectsDisplay: row.effects.length ? row.effects.map(formatEffect).join(', ') : '—',
       })
     );
 

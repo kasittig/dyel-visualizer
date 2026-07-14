@@ -58,6 +58,17 @@ Effects are looked up per present component as `${namespace}:${value}:${type}` i
 `detect/modifier-effects.json` and unioned (deduped via `Set`) onto
 `TaggedSetRecord.effects`.
 
+For accessory records, effects are additionally populated via `classifyAccessoryEffects`
+(in `detect/detectors.ts`), a keyword classifier mapping the raw exercise name to zero or
+more of `BACK` / `SHOULDERS` / `TRICEPS` / `POSTERIOR_CHAIN`. Keywords are matched via
+word-boundary regexes to avoid substring false positives (e.g., "lateral raise" must not
+match "lat"): `\blats?\b` or `\brows?\b` → BACK; `ohp` token or "overhead" → SHOULDERS;
+`\btriceps?\b` or `tri` token → TRICEPS; `\bglutes?\b` or `ghr` token → POSTERIOR_CHAIN.
+This uses the same discipline as `isCoreExercise` (word-boundary/token-match, not raw
+substring matching) to prevent incidental collisions.
+
+For a step-by-step guide to adding a new effect category, see `ADDING_EFFECTS.md` in this directory.
+
 ## Unknown heuristic
 
 A record is unknown when `parseExercise(raw)` yields `type === 'accessory'` with

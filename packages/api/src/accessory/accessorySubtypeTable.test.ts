@@ -13,7 +13,8 @@ const rec = (
   weight = 100,
   rpe = 7,
   sub?: string,
-  tags?: string[]
+  tags?: string[],
+  effects: string[] = []
 ): TaggedSetRecord => ({
   date: d.getTime(),
   exercise: name,
@@ -21,7 +22,7 @@ const rec = (
   weight,
   reps,
   rpe,
-  effects: [],
+  effects,
   baselineRange: null,
   meta: {
     rawExercise: name
@@ -48,10 +49,12 @@ const row = (
   weight = 100,
   rpe = 7,
   sessionCount = 1,
-  sessionCountInRange = sessionCount
+  sessionCountInRange = sessionCount,
+  effects: string[] = []
 ) => ({
   label,
   subtype,
+  effects,
   lastSession: { date, sets, reps, weight, rpe },
   sessionCount,
   sessionCountInRange,
@@ -134,5 +137,21 @@ describe('buildAccessoryTableRows', () => {
       rec(d0, 'leg-curl', 12, 85, 7, 'upper'),
     ];
     expect(buildAccessoryTableRows(input, from, to)).toEqual([expected]);
+  });
+
+  it.each([
+    [
+      'record with effects produces row with effects',
+      [rec(d0, 'lat-pulldown', 8, 100, 7, 'upper', undefined, ['BACK'])],
+      [row('Lat Pulldown', 'upper', '2026-01-15', 1, 8, 100, 7, 1, 1, ['BACK'])],
+    ],
+    [
+      'record without effects override produces row with empty effects',
+      [rec(d0, 'lat-pulldown', 8, 100, 7, 'upper')],
+      [row('Lat Pulldown', 'upper', '2026-01-15', 1, 8, 100, 7, 1, 1, [])],
+    ],
+  ])('%s', (_, input, expected) => {
+    const result = buildAccessoryTableRows(input);
+    expect(result).toEqual(expected);
   });
 });
