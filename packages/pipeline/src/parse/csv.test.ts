@@ -42,6 +42,10 @@ describe('csvParser — date formats', () => {
     ['unpadded M/D/YYYY', '2/6/2026', '2026-02-06'],
     ['zero-padded MM/DD/YYYY', '02/06/2026', '2026-02-06'],
     ['single-digit month and day', '2/6/2026', '2026-02-06'],
+    // A real published sheet formatted its date column as M/D/YY (e.g. "1/1/26"), which
+    // hard-failed the whole file on the first row before this shape was accepted.
+    ['unpadded M/D/YY (2-digit year)', '1/1/26', '2026-01-01'],
+    ['zero-padded MM/DD/YY (2-digit year)', '03/02/26', '2026-03-02'],
   ])('parses %s', (_, dateCell, expected) => {
     const record = parse(`Date,Exercise,Reps,Weight (lbs)\n${dateCell},Bench,5,225\n`)[0];
     expect(record.date).toBe(getDay(expected));

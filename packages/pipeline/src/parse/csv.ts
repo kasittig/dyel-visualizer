@@ -16,11 +16,17 @@ function parseDate(dateStr: string, lineNum?: number, rawStr?: string): number {
   // (e.g. "2/2/2026"), not ISO — accept that shape too so a real published sheet with an
   // unformatted date column (the common case) parses instead of hard-failing the whole file.
   const usSlash = trimmed.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  // Some sheets' date columns are formatted as M/D/YY (2-digit year, e.g. "1/1/26") rather
+  // than M/D/YYYY — a real published sheet hit this and hard-failed on the very first row
+  // (a single bad row aborts the whole file's .map()), so accept it too. Assumes 20xx.
+  const usSlashShortYear = trimmed.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2})$/);
   const match = iso
     ? [iso[1], iso[2], iso[3]]
     : usSlash
       ? [usSlash[3], usSlash[1], usSlash[2]]
-      : null;
+      : usSlashShortYear
+        ? [`20${usSlashShortYear[3]}`, usSlashShortYear[1], usSlashShortYear[2]]
+        : null;
   if (!match) {
     throw new ParseError(`Invalid date: ${dateStr}`, lineNum, rawStr);
   }
