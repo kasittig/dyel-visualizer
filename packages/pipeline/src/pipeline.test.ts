@@ -1,223 +1,115 @@
-import type { Point, SetRecord } from './types';
-import type { RawInput, ParseContext } from './parse/parser';
-import { ParseError, ParserRegistry } from './parse/parser';
-import { csvParser } from './parse/csv';
-import { freeformParser } from './parse/freeform/parser';
-import type { TaggedSetRecord } from './tag/tag';
-import { resolveCanonicalNames, tagRecords } from './tag/tag';
-import { derivers } from './derive/derivers';
-import type { NormalizationModel } from './derive/normalize';
-import { fitNormalizationModel, normalizeE1rm, offsetAdjustRecords } from './derive/normalize';
-import type { AthleteContext } from './derive/athlete';
-import type { DiagnosticsReport } from './analyze/diagnose';
-import { diagnose } from './analyze/diagnose';
-import type { DatasetSpec, RenderParams, RechartsRow } from './dataset/build';
-import { buildDataset } from './dataset/build';
+import { describe, it, expect } from 'vitest';
+import { runPipelineModel } from './pipeline';
+import type { PipelineModel } from './pipeline';
 
-const PARSE_CONTEXT: ParseContext = { fallback: 'lbs' };
+const ath = () => ({ sex: 'M' as const, bodyweight: 90, deadliftStance: 'conventional' as const });
 
-export interface PipelineResult {
-  datasets: Record<string, RechartsRow[]>;
-  diagnostics: DiagnosticsReport;
-  unknownExercises: string[];
-  unnormalized: string[];
-  parseErrors: ParseError[];
-  model: NormalizationModel;
-}
+describe('pipeline orchestration', () => {
+  it('fits normalization model on full tagged set including speed-work records', () => {
+    // Freeform log: regular bench (baseline) + speed-work dumbbell bench variant
+    // Speed-work is identified by sets>=2 with no RPE
+    // The critical test: if pipeline.ts reverted to old pre-filter (filtering out sets>=2),
+    // bench-dumbbell would not be included in fitting and would have no variantFactor.
+    // With current pipeline.ts (fitting on full tagged set), it should have a variantFactor.
+    const log = `units: kg
+2024-01-01 Bench 100 x5 @8
+2024-01-02 Bench 105 x5 @8
+2024-01-03 Bench 110 x5 @8
+2024-01-04 Bench 115 x5 @8
+2024-01-02 Dumbbell Bench 3x5 @ 45
+2024-01-07 Dumbbell Bench 3x5 @ 50`;
 
-export interface PipelineModel {
-  model: NormalizationModel;
-  diagnostics: DiagnosticsReport;
-  unknownExercises: string[];
-  unnormalized: string[];
-  parseErrors: ParseError[];
-  pointsByDeriver: Map<string, Point[]>;
-  pointsByLabelByDeriver: Map<string, Point[]>;
-  pointsByDeriverAdjusted: Map<string, Point[]>;
-  pointsByLabelByDeriverAdjusted: Map<string, Point[]>;
-  tagged: TaggedSetRecord[];
-  athlete: AthleteContext;
-}
+    const model = runPipelineModel([{ name: 'log.txt', content: log }], ath()) as PipelineModel;
 
-function buildPoints(tagged: TaggedSetRecord[], deriverId: string): Point[] {
-  const d = derivers[deriverId];
-  return Array.from(Map.groupBy(tagged, (r) => `${r.date}::${r.canonical}`).values()).flatMap(
-    (sets) => {
-      const v = d.derive(sets);
-      return v === null
-        ? []
-        : [{ t: sets[0].date, v, series: sets[0].canonical, tags: sets[0].tags }];
-    }
-  );
-}
+    // Verify baseline is regular bench (has more records than dumbbell variant)
+    expect(model.model.baseline['lift:bench']).toBe('bench');
 
-function buildPointsByLabel(tagged: TaggedSetRecord[], deriverId: string): Point[] {
-  const d = derivers[deriverId];
-  return Array.from(
-    Map.groupBy(tagged, (r) => `${r.date}::${r.meta?.rawExercise ?? r.canonical}`).values()
-  ).flatMap((sets) => {
-    const v = d.derive(sets);
-    return v === null
-      ? []
-      : [
-          {
-            t: sets[0].date,
-            v,
-            series: sets[0].meta?.rawExercise ?? sets[0].canonical,
-            tags: sets[0].tags,
-          },
-        ];
+    // Critical assertion: bench-dumbbell should have a variantFactor
+    // This ONLY happens if speed-work records (sets>=2, no rpe) were included in fitting.
+    // If pipeline.ts used the old pre-filter (filtering out sets>=2, no rpe before passing
+    // to fitNormalizationModel), then bench-dumbbell would have zero records passed to fit,
+    // and would have no variantFactor.
+    expect(model.model.variantFactor['bench-dumbbell']).toBeDefined();
+    expect(model.model.variantFactor['bench-dumbbell']?.factor).toBeGreaterThan(0);
   });
-}
 
-export function runPipelineModel(
-  raw: RawInput[],
-  athlete: AthleteContext,
-  now?: number
-): PipelineModel {
-  const timestamp = now ?? Date.now();
-  const registry = new ParserRegistry();
-  registry.registerMany([csvParser, freeformParser]);
+  it('produces distinct adjusted vs non-adjusted point maps for offset-adjusted records', () => {
+    // Freeform log with chains variant
+    // Chains have additional weight that should be offset-adjusted
+    const log = `2024-01-01 Bench 100kg x5 @8
+2024-01-01 Bench (chains) 80kg x5
+2024-01-05 Bench 105kg x5 @8
+2024-01-05 Bench (chains) 85kg x5`;
 
-  const parseErrors: ParseError[] = [];
-  const records: SetRecord[] = [];
+    const model = runPipelineModel([{ name: 'log.txt', content: log }], ath()) as PipelineModel;
 
-  for (const input of raw) {
-    try {
-      records.push(...registry.parse(input, PARSE_CONTEXT));
-    } catch (err) {
-      if (err instanceof ParseError) {
-        parseErrors.push(err);
-      } else {
-        throw err;
+    // Verify model has offset for bench-chains (or bench-chains variant)
+    const chainVariant = Object.keys(model.model.addlWtOffset).find(
+      (k) => k.includes('chain') || k.includes('Chain')
+    );
+    expect(chainVariant).toBeDefined();
+
+    if (!chainVariant) {
+      throw new Error('Expected chains variant with offset');
+    }
+
+    const offset = model.model.addlWtOffset[chainVariant].offsetKg;
+    expect(offset).toBeGreaterThan(0);
+
+    // Get e1rm points before and after adjustment
+    const unadjustedPoints = model.pointsByDeriver.get('e1rm') ?? [];
+    const adjustedPoints = model.pointsByDeriverAdjusted.get('e1rm') ?? [];
+
+    // Find points for the chain variant in both sets
+    const unadjustedChainPoints = unadjustedPoints.filter((p) => p.series === chainVariant);
+    const adjustedChainPoints = adjustedPoints.filter((p) => p.series === chainVariant);
+
+    // Both should have records
+    expect(unadjustedChainPoints.length).toBeGreaterThan(0);
+    expect(adjustedChainPoints.length).toBeGreaterThan(0);
+
+    // The adjusted points should have higher e1rm values (because offset was added to weight).
+    // Verify at least one adjusted point differs from its unadjusted counterpart.
+    let foundDifference = false;
+    for (const adjusted of adjustedChainPoints) {
+      const unadjusted = unadjustedChainPoints.find((p) => p.t === adjusted.t);
+      if (unadjusted && Math.abs(adjusted.v - unadjusted.v) > 0.01) {
+        foundDifference = true;
+        // Adjusted should be higher (more weight due to offset)
+        expect(adjusted.v).toBeGreaterThan(unadjusted.v);
+        break;
       }
     }
-  }
+    expect(foundDifference).toBe(true);
+  });
 
-  const { resolved, unknown: unkAliases } = resolveCanonicalNames(records);
-  const { tagged, unknown: unkCanonicals } = tagRecords(resolved, athlete.deadliftStance);
-  const unknownExercises = [...new Set([...unkAliases, ...unkCanonicals])];
+  it.each([
+    [
+      'single-set records (effort)',
+      `2024-01-01 Bench 100kg x5 @8
+2024-01-05 Bench 105kg x5 @8`,
+    ],
+    [
+      'speed-work with fallback',
+      `2024-01-01 Bench 100kg x5 @8
+2024-01-05 Bench (speed) 3x5 @ 85kg
+2024-01-08 Bench (speed) 3x5 @ 90kg`,
+    ],
+  ])('generates valid models and points for %s', (_, log) => {
+    const model = runPipelineModel([{ name: 'log.txt', content: log }], ath());
 
-  const fitInput = tagged.filter(
-    (r) => r.sets === undefined || r.sets === 1 || r.rpe !== undefined
-  );
-  const model = fitNormalizationModel(fitInput, { minSamples: 1 }, athlete);
-  const allDeriverIds = Object.keys(derivers);
+    // Model should be properly structured
+    expect(model.model.baseline).toBeDefined();
+    expect(model.model.variantFactor).toBeDefined();
+    expect(model.pointsByDeriver).toBeInstanceOf(Map);
+    expect(model.pointsByDeriverAdjusted).toBeInstanceOf(Map);
 
-  const pointsByDeriver = new Map(allDeriverIds.map((id) => [id, buildPoints(tagged, id)]));
-  const pointsByLabelByDeriver = new Map(
-    allDeriverIds.map((id) => [id, buildPointsByLabel(tagged, id)])
-  );
-  const addlWtCanonicals = new Set(Object.keys(model.addlWtOffset));
+    // All deriver types should be present
+    expect(model.pointsByDeriver.has('e1rm')).toBe(true);
+    expect(model.pointsByDeriver.has('tonnage')).toBe(true);
+    expect(model.pointsByDeriver.has('top-set')).toBe(true);
 
-  const pointsByDeriverAdjusted = new Map(
-    allDeriverIds.map((id) => {
-      const original = pointsByDeriver.get(id)!;
-      if (addlWtCanonicals.size === 0) {
-        return [id, original];
-      }
-      const adjustedByKey = new Map(
-        buildPoints(offsetAdjustRecords(tagged, model), id)
-          .filter((p) => addlWtCanonicals.has(p.series))
-          .map((p) => [`${p.t}::${p.series}`, p])
-      );
-      return [id, original.map((p) => adjustedByKey.get(`${p.t}::${p.series}`) ?? p)];
-    })
-  );
-
-  const pointsByLabelByDeriverAdjusted = new Map(
-    allDeriverIds.map((id) => {
-      const original = pointsByLabelByDeriver.get(id)!;
-      if (addlWtCanonicals.size === 0) {
-        return [id, original];
-      }
-      return [id, buildPointsByLabel(offsetAdjustRecords(tagged, model), id)];
-    })
-  );
-
-  const unnormalized = Array.from(Map.groupBy(pointsByDeriver.get('e1rm')!, (p) => p.series))
-    .map(([, pts]) => pts.reduce((a, b) => (b.t > a.t ? b : a)))
-    .filter((latest) => normalizeE1rm(latest.series, latest.v, model) === null)
-    .map((latest) => latest.series);
-
-  const effectsByCanonical = new Map(tagged.map((r) => [r.canonical, [...r.effects]]));
-  const displayNameLatest = new Map<string, { date: number; name: string }>();
-
-  for (const r of tagged) {
-    const existing = displayNameLatest.get(r.canonical);
-    if (!existing || r.date > existing.date) {
-      displayNameLatest.set(r.canonical, {
-        date: r.date,
-        name: r.meta?.rawExercise ?? r.canonical,
-      });
-    }
-  }
-
-  const displayNameByCanonical = new Map(Array.from(displayNameLatest, ([k, v]) => [k, v.name]));
-  const baselineRangeByCanonical = new Map(
-    tagged.flatMap((r) => (r.baselineRange ? [[r.canonical, r.baselineRange] as const] : []))
-  );
-
-  const diagnostics = diagnose(
-    pointsByDeriver.get('e1rm')!,
-    model,
-    effectsByCanonical,
-    { tolerance: 0.05, staleDays: 90 },
-    timestamp,
-    displayNameByCanonical,
-    baselineRangeByCanonical
-  );
-
-  return {
-    model,
-    diagnostics,
-    unknownExercises,
-    unnormalized,
-    parseErrors,
-    pointsByDeriver,
-    pointsByLabelByDeriver,
-    pointsByDeriverAdjusted,
-    pointsByLabelByDeriverAdjusted,
-    tagged,
-    athlete,
-  };
-}
-
-export function buildDatasetsFromModel(
-  pipelineModel: PipelineModel,
-  specs: DatasetSpec[],
-  ui: RenderParams
-): Record<string, RechartsRow[]> {
-  return Object.fromEntries(
-    specs.map((s) => {
-      const pts =
-        s.kind === 'composite'
-          ? pipelineModel.pointsByDeriverAdjusted.get(s.derive)!
-          : s.kind === 'series' && s.groupBy === 'label' && s.normalize
-            ? pipelineModel.pointsByLabelByDeriverAdjusted.get(s.derive)!
-            : s.kind === 'series' && s.groupBy === 'label'
-              ? pipelineModel.pointsByLabelByDeriver.get(s.derive)!
-              : pipelineModel.pointsByDeriver.get(s.derive)!;
-      return [s.id, buildDataset(pts, s, ui, pipelineModel.model, pipelineModel.athlete)];
-    })
-  );
-}
-
-export function runPipeline(
-  raw: RawInput[],
-  specs: DatasetSpec[],
-  athlete: AthleteContext,
-  ui: RenderParams,
-  now?: number
-): PipelineResult {
-  const timestamp = now ?? Date.now();
-  const pipelineModel = runPipelineModel(raw, athlete, timestamp);
-  return {
-    datasets: buildDatasetsFromModel(pipelineModel, specs, ui),
-    diagnostics: pipelineModel.diagnostics,
-    unknownExercises: pipelineModel.unknownExercises,
-    unnormalized: pipelineModel.unnormalized,
-    parseErrors: pipelineModel.parseErrors,
-    model: pipelineModel.model,
-  };
-}
+    // Adjusted points should also be present
+    expect(model.pointsByDeriverAdjusted.has('e1rm')).toBe(true);
+  });
+});

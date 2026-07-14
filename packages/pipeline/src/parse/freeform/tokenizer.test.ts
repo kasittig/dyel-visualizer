@@ -39,4 +39,25 @@ describe('tokenizer', () => {
       return tokenize('x5');
     }).toThrow();
   });
+
+  it.each([
+    ['fused @N as RPE (below 10)', '315x5 @8', { weights: [{ value: 315 }], reps: 5, rpe: 8 }],
+    [
+      'fused @N as RPE (with decimal)',
+      '225x3 @9.5',
+      { weights: [{ value: 225 }], reps: 3, rpe: 9.5 },
+    ],
+    ['fused @N as weight (above 10)', '3x5 @225', { weights: [{ value: 225 }], reps: 5 }],
+    ['fused @N as weight (high value)', '5x3 @315', { weights: [{ value: 315 }], reps: 3 }],
+    ['fused @N with kg unit', '5x3 @315kg', { weights: [{ value: 315, unit: 'kg' }], reps: 3 }],
+    ['fused @N with lbs unit', '4x6 @225lbs', { weights: [{ value: 225, unit: 'lbs' }], reps: 6 }],
+    ['multi-set with fused weight @315', '3x5 @315', { weights: [{ value: 315 }], reps: 5 }],
+    [
+      'multi-set with fused weight @225kg',
+      '4x5 @225kg',
+      { weights: [{ value: 225, unit: 'kg' }], reps: 5 },
+    ],
+  ])('classifies fused @N tokens correctly: %s', (_, input, expected) => {
+    expect(tokenize(input)).toMatchObject(expected);
+  });
 });

@@ -5,6 +5,8 @@ import {
   findBestE1RMFromPipeline,
   resolveE1RMEstimate,
   roundTo5,
+  predictRepsForWeight,
+  predictWeightForReps,
 } from './repCalculatorUtils';
 
 const pt = (series: string, v: number, t: number): Point => ({ series, v, t, tags: new Set() });
@@ -162,5 +164,44 @@ describe('roundTo5', () => {
     [22.6, 25],
   ])('rounds %s to %s', (input, expected) => {
     expect(roundTo5(input)).toBe(expected);
+  });
+});
+
+describe('predictRepsForWeight', () => {
+  it.each([
+    ['weight <= 0', 300, 0, 1],
+    ['weight <= 0 (negative)', 300, -50, 1],
+    ['weight >= e1rm', 300, 300, 1],
+    ['weight > e1rm', 300, 350, 1],
+    ['typical case (e1rm=300, weight=225)', 300, 225, 9],
+    ['low weight (e1rm=300, weight=100)', 300, 100, 60],
+    ['near e1rm (e1rm=300, weight=290)', 300, 290, 1],
+  ])('%s', (_, e1rm, weight, expected) => {
+    expect(predictRepsForWeight(e1rm, weight)).toBe(expected);
+  });
+
+  it('returns integer result for in-domain weight', () => {
+    const result = predictRepsForWeight(300, 225);
+    expect(Number.isInteger(result)).toBe(true);
+  });
+
+  it('monotonically decreases as weight increases', () => {
+    const e1rm = 400;
+    const weights = [50, 100, 150, 200, 250, 300, 350];
+    const reps = weights.map((w) => predictRepsForWeight(e1rm, w));
+    for (let i = 0; i < reps.length - 1; i++) {
+      expect(reps[i]).toBeGreaterThanOrEqual(reps[i + 1]);
+    }
+  });
+});
+
+describe('predictWeightForReps', () => {
+  it.each([
+    ['reps <= 0', 300, 0, 0],
+    ['reps <= 0 (negative)', 300, -5, 0],
+    ['single rep (1RM)', 300, 1, 300],
+    ['typical case (e1rm=300, reps=5)', 300, 5, expect.any(Number)],
+  ])('%s', (_, e1rm, reps, expected) => {
+    expect(predictWeightForReps(e1rm, reps)).toEqual(expected);
   });
 });

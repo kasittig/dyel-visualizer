@@ -33,4 +33,21 @@ describe('parseTextData', () => {
     expect(parseTextData('comp squat 300', 'kg')[0][1].unit).toBe('kg');
     expect(parseTextData('comp squat 1rm 300', 'kg')[0][1].unit).toBe('kg');
   });
+
+  it('uses provided now parameter for all parsed entries', () => {
+    const fixedDate = new Date('2025-01-15T10:30:00Z');
+    const mixed = parseTextData(
+      'comp squat 1rm 300lbs\ncomp bench 225lbs x5\ncomp deadlift 3rm 180kg',
+      'lbs',
+      fixedDate
+    );
+    expect(mixed).toHaveLength(3);
+    // All entries should have the exact same date
+    expect(mixed[0][1].date).toEqual(fixedDate);
+    expect(mixed[1][1].date).toEqual(fixedDate);
+    expect(mixed[2][1].date).toEqual(fixedDate);
+    // Verify they are the same object reference
+    expect(mixed[0][1].date).toBe(mixed[1][1].date);
+    expect(mixed[1][1].date).toBe(mixed[2][1].date);
+  });
 });

@@ -10,6 +10,7 @@ describe('validateSheetCsv (pipeline-native)', () => {
   it.each([
     ['valid sheet', GOOD, 'ok', 4, 4],
     ['no header', 'foo,bar\n1,2', 'error', 0, 0],
+    ['header only (no data rows)', 'date,exercise,weight (lbs),reps,sets', 'error', 0, 0],
     ['missing required columns', 'date,exercise,reps\n2024-11-04,Squat,2', 'error', 0, 0],
     [
       'invalid rows',
@@ -107,5 +108,11 @@ describe('validateSheetCsv (pipeline-native)', () => {
 
   it('reports headerRow: null when no header found', () => {
     expect(validateSheetCsv('foo,bar\n1,2').headerRow).toBeNull();
+  });
+
+  it('returns specific error message for header only (zero data rows)', () => {
+    const result = validateSheetCsv('date,exercise,weight (lbs),reps,sets');
+    expect(result.issues[0]).toBe('No data rows found. Add at least one row of exercise data.');
+    expect(result.verdict).toBe('error');
   });
 });

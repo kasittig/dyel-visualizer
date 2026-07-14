@@ -96,7 +96,15 @@ export function facetFamilyKey(canonical: string): string {
 
   while (parts.length > 1) {
     const last = parts[parts.length - 1];
-    if (/^\d+$/.test(last) && addlSlugs.includes(parts[parts.length - 2])) {
+    const prev = parts.length >= 2 ? parts[parts.length - 2] : undefined;
+    if (/^\d+$/.test(last) && prev !== undefined && addlSlugs.includes(prev)) {
+      // Check if this is rev-bands with magnitude
+      if (parts.length >= 3 && prev === 'bands' && parts[parts.length - 3] === 'rev') {
+        parts.splice(-3); // Remove rev + bands + magnitude
+      } else {
+        parts.splice(-2); // Remove addlSlug + magnitude
+      }
+    } else if (last === 'bands' && prev === 'rev') {
       parts.splice(-2);
     } else if (addlSlugs.includes(last)) {
       parts.pop();

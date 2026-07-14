@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { act, renderHook } from '@testing-library/react';
-import type { PipelineModel, TaggedSetRecord, SplitRows, LiftType } from '@dyel/api';
+import type { TaggedSetRecord, SplitRows, LiftType } from '@dyel/api';
 import { usePipelineRepCalculator } from './usePipelineRepCalculator';
+import { pipelineModelMock } from '../../test/helpers/pipelineModelFactory';
 
 vi.mock('../../app/PipelineContext');
 const mockUsePipelineModel = vi.mocked(
@@ -37,19 +38,13 @@ const emptyRows = (): Record<LiftType, SplitRows> => ({
   accessory: splitRows([]),
 });
 
-const mockModel = (v = 200): PipelineModel => ({
-  model: { baseline: { 'lift:squat': 'squat' }, variantFactor: {}, addlWtOffset: {} },
-  diagnostics: { variants: [], weaknesses: [], unassessed: [] },
-  unknownExercises: [],
-  unnormalized: [],
-  parseErrors: [],
-  pointsByLabelByDeriver: new Map(),
-  pointsByDeriverAdjusted: new Map(),
-  athlete: { sex: 'M', bodyweight: 90, deadliftStance: 'sumo' },
-  pointsByDeriver: new Map([
-    ['e1rm-max-effort', [{ t: 1, v, series: 'squat', tags: new Set(['lift:squat']) }]],
-  ]),
-});
+const mockModel = (v = 200) =>
+  pipelineModelMock({
+    model: { baseline: { 'lift:squat': 'squat' }, variantFactor: {}, addlWtOffset: {} },
+    pointsByDeriver: new Map([
+      ['e1rm-max-effort', [{ t: 1, v, series: 'squat', tags: new Set(['lift:squat']) }]],
+    ]),
+  });
 
 describe('usePipelineRepCalculator', () => {
   beforeEach(() => {

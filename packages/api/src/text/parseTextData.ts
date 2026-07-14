@@ -18,7 +18,8 @@ interface ParsedSession {
 
 export function parseTextData(
   text: string,
-  default_unit: LiftUnits = 'lbs'
+  default_unit: LiftUnits = 'lbs',
+  now: Date = new Date()
 ): Array<[ParsedExercise, ParsedSession]> {
   const result: Array<[ParsedExercise, ParsedSession]> = [];
   const lines = text
@@ -27,7 +28,7 @@ export function parseTextData(
     .filter((l) => l.length > 0);
 
   for (const line of lines) {
-    const parsed = parseTextLine(line, default_unit);
+    const parsed = parseTextLine(line, default_unit, now);
     if (parsed) {
       result.push(parsed);
     }
@@ -37,7 +38,8 @@ export function parseTextData(
 
 function parseTextLine(
   line: string,
-  default_unit: LiftUnits
+  default_unit: LiftUnits,
+  now: Date
 ): [ParsedExercise, ParsedSession] | null {
   const tokens = line.split(/\s+/);
   if (tokens.length < 2) {
@@ -46,7 +48,7 @@ function parseTextLine(
 
   const rm = tryRepMaxGrammar(tokens);
   if (rm) {
-    return buildResult(rm.exercise, rm.weight, rm.unit || default_unit, rm.reps, 1, null);
+    return buildResult(rm.exercise, rm.weight, rm.unit || default_unit, rm.reps, 1, null, now);
   }
 
   const sxr = trySetsxRepsGrammar(tokens);
@@ -57,7 +59,8 @@ function parseTextLine(
       sxr.unit || default_unit,
       sxr.reps,
       sxr.sets,
-      null
+      null,
+      now
     );
   }
 
@@ -69,7 +72,8 @@ function parseTextLine(
       plain.unit || default_unit,
       plain.reps,
       1,
-      null
+      null,
+      now
     );
   }
   return null;
@@ -152,7 +156,8 @@ function buildResult(
   unit: string | undefined,
   reps: number,
   sets: number,
-  rpe: number | null
+  rpe: number | null,
+  now: Date
 ): [ParsedExercise, ParsedSession] | null {
   if (!exName.trim() || isNaN(wtLbs) || reps <= 0) {
     return null;
@@ -162,6 +167,6 @@ function buildResult(
 
   return [
     { type: classifyExerciseName(exName).type, displayName: exName },
-    { date: new Date(), weight: wtLbs, reps, sets, unit: finalUnit, e1rm, rpe },
+    { date: now, weight: wtLbs, reps, sets, unit: finalUnit, e1rm, rpe },
   ];
 }

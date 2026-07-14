@@ -64,6 +64,13 @@ describe('buildBestSetByLabelAndDate', () => {
         ['Bench (Competition)', new Map([[dStr, { sets: 1, reps: 5, weight: 100, rpe: 8 }]])],
       ]),
     ],
+    [
+      'exercise label containing `::`',
+      [record(day, 'bench', 5, 100, 8, { rawExercise: 'Close Grip::Pin Bench' })],
+      new Map([
+        ['Close Grip::Pin Bench', new Map([[dStr, { sets: 1, reps: 5, weight: 100, rpe: 8 }]])],
+      ]),
+    ],
   ])('%s', (_, input, expected: Map<string, Map<string, BestSet>>) => {
     expect(buildBestSetByLabelAndDate(input, 'bench')).toEqual(expected);
   });

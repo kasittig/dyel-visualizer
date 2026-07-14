@@ -5,11 +5,19 @@ import { tokenize, TokenizerError } from './tokenizer';
 import { convertToKg } from '../unitConversion';
 
 function parseDate(dateStr: string, lineNum: number, rawLine: string): number {
-  const d = new Date(dateStr);
-  if (Number.isNaN(d.getTime())) {
+  const match = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) {
     throw new ParseError(`Invalid date: ${dateStr}`, lineNum, rawLine);
   }
-  return d.setHours(0, 0, 0, 0);
+  const timestamp = Date.UTC(
+    parseInt(match[1], 10),
+    parseInt(match[2], 10) - 1,
+    parseInt(match[3], 10)
+  );
+  if (Number.isNaN(timestamp)) {
+    throw new ParseError(`Invalid date: ${dateStr}`, lineNum, rawLine);
+  }
+  return timestamp;
 }
 
 export function parseFreeformText(content: string, ctx: ParseContext): SetRecord[] {

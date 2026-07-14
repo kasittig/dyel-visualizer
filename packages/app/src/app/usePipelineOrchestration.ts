@@ -72,7 +72,7 @@ export function usePipelineOrchestration(
 
   const effRaw = useMemo(
     () =>
-      rawStatus === 'success' || rawStatus === 'loading' || inputMode === 'text'
+      rawStatus === 'success' || inputMode === 'text'
         ? raw
         : cache && cache.sheetKey === url
           ? cache.raw

@@ -28,7 +28,7 @@ describe('freeformParser', () => {
       const simple = freeformParser.parse(file('2026-01-10 Bench 315x5 @8\n'), ctx);
       expect(simple).toHaveLength(1);
       expect(simple[0]).toMatchObject({
-        date: new Date('2026-01-10').setHours(0, 0, 0, 0),
+        date: Date.UTC(2026, 0, 10),
         exercise: 'Bench',
         weight: 315 * LBS,
         reps: 5,
@@ -134,6 +134,49 @@ describe('freeformParser', () => {
       expect(parseFreeformText(content, ctx)).toEqual(
         freeformParser.parse({ name: 'test.txt', content }, ctx)
       );
+    });
+  });
+
+  describe('parseDate (timezone correctness)', () => {
+    it.each([
+      ['Jan 10', '2026-01-10', Date.UTC(2026, 0, 10)],
+      ['Feb 28', '2026-02-28', Date.UTC(2026, 1, 28)],
+      ['Dec 31', '2026-12-31', Date.UTC(2026, 11, 31)],
+      ['Jan 1 start of year', '2026-01-01', Date.UTC(2026, 0, 1)],
+      ['Mar 1 after Feb 28', '2026-03-01', Date.UTC(2026, 2, 1)],
+      ['leap year Feb 29', '2024-02-29', Date.UTC(2024, 1, 29)],
+      ['month boundary Apr 30', '2026-04-30', Date.UTC(2026, 3, 30)],
+      ['mid-year Jun 15', '2026-06-15', Date.UTC(2026, 5, 15)],
+    ])('parses %s correctly with UTC timezone', (_, dateStr: string, expected: number) => {
+      expect(parseFreeformText(`${dateStr} Bench 100x5\n`, ctx)[0].date).toBe(expected);
+    });
+
+    it('rejects malformed dates', () => {
+      const invalidFormats = [
+        '01-10-2026 Bench 100x5',
+        '2026/01/10 Bench 100x5',
+        '2026-1-10 Bench 100x5',
+        '2026-01-5 Bench 100x5',
+        '2026-01 Bench 100x5',
+        '01/10 Bench 100x5',
+      ];
+      invalidFormats.forEach((line) => {
+        expect(() => {
+          parseFreeformText(`${line}\n`, ctx);
+        }).toThrow(ParseError);
+      });
+    });
+
+    it('maintains consistent UTC midnight timestamp across locales', () => {
+      const dates = ['2026-01-10', '2026-12-25', '2026-06-15'];
+      dates.forEach((dateStr) => {
+        const parsed = parseFreeformText(`${dateStr} Bench 100x5\n`, ctx)[0];
+        const [year, month, day] = dateStr.split('-').map(Number);
+        const expected = Date.UTC(year, month - 1, day);
+        expect(parsed.date).toBe(expected);
+        // Verify the timestamp represents midnight UTC (modulo 86400000 ms/day should be 0)
+        expect(parsed.date % 86400000).toBe(0);
+      });
     });
   });
 });
