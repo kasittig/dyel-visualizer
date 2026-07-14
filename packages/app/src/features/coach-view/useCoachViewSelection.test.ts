@@ -124,9 +124,11 @@ describe('useCoachViewSelection', () => {
       expect(bRow?.hasData).toBe(false);
       expect(bRow?.lastPerformedDisplay).toBe('No data logged');
       expect(bRow?.e1rmDisplay).toBe('—');
+      expect(bRow?.sessionCount).toBe(0);
 
       act(() => result.current.setSelectedDisplayName('Bench Press'));
       expect(result.current.rows.find((r) => r.lifterName === 'SquatOnly')?.hasData).toBe(false);
+      expect(result.current.rows.find((r) => r.lifterName === 'SquatOnly')?.sessionCount).toBe(0);
       expect(result.current.rows.find((r) => r.lifterName === 'BenchOnly')?.hasData).toBe(true);
     });
 
@@ -141,6 +143,7 @@ describe('useCoachViewSelection', () => {
       const brokenRow = result.current.rows.find((r) => r.lifterName === 'Broken');
       expect(brokenRow?.hasData).toBe(false);
       expect(brokenRow?.lastPerformedDisplay).toBe('Failed to load');
+      expect(brokenRow?.sessionCount).toBe(0);
     });
 
     it('returns empty rows when no canonical is selected', () => {
@@ -319,6 +322,135 @@ describe('useCoachViewSelection', () => {
 
       act(() => result.current.setSelectedDisplayName('Nonexistent Exercise'));
       expect(result.current.selectedCanonical).toBeNull();
+    });
+  });
+
+  describe('per-lifter overrides', () => {
+    it('lets a per-lifter exercise override resolve independently for that row only', () => {
+      const l1 = minimalPipelineModel([], [point(1, 100, 'squat'), point(1, 90, 'bench')]);
+      const l2 = minimalPipelineModel([], [point(1, 150, 'squat'), point(1, 140, 'bench')]);
+      const { result } = renderHook(() =>
+        useCoachViewSelection([successResult('Alice', l1), successResult('Bob', l2)])
+      );
+      act(() => result.current.setSelectedDisplayName('Squat'));
+      const aliceRow = () => result.current.rows.find((r) => r.lifterName === 'Alice')!;
+      const bobRow = () => result.current.rows.find((r) => r.lifterName === 'Bob')!;
+
+      act(() => aliceRow().onExerciseChange('Bench Press'));
+
+      expect(aliceRow().effectiveDisplayName).toBe('Bench Press');
+      expect(bobRow().effectiveDisplayName).toBe('Squat');
+    });
+
+    it('lets a per-lifter reps override resolve independently and only affects that row', () => {
+      const l1 = minimalPipelineModel([], [point(1, 100, 'squat')]);
+      const l2 = minimalPipelineModel([], [point(1, 150, 'squat')]);
+      const { result } = renderHook(() =>
+        useCoachViewSelection([successResult('Alice', l1), successResult('Bob', l2)])
+      );
+      act(() => result.current.setSelectedDisplayName('Squat'));
+      const aliceRow = () => result.current.rows.find((r) => r.lifterName === 'Alice')!;
+      const bobRow = () => result.current.rows.find((r) => r.lifterName === 'Bob')!;
+      const bobInitialTarget = bobRow().targetWeightDisplay;
+
+      act(() => aliceRow().onRepsChange(5));
+
+      expect(aliceRow().effectiveReps).toBe(5);
+      expect(bobRow().effectiveReps).toBe(1);
+      expect(bobRow().targetWeightDisplay).toBe(bobInitialTarget);
+    });
+
+    it('setSelectedDisplayName clears exercise overrides but reps overrides survive', () => {
+      const model = minimalPipelineModel(
+        [],
+        [point(1, 100, 'squat'), point(1, 90, 'bench'), point(1, 80, 'deadlift')]
+      );
+      const { result } = renderHook(() => useCoachViewSelection([successResult('Alice', model)]));
+      act(() => result.current.setSelectedDisplayName('Squat'));
+      act(() => result.current.rows[0].onExerciseChange('Bench Press'));
+      act(() => result.current.rows[0].onRepsChange(7));
+      act(() => result.current.setSelectedDisplayName('Deadlift'));
+
+      expect(result.current.rows[0].effectiveDisplayName).toBe('Deadlift');
+      expect(result.current.rows[0].effectiveReps).toBe(7);
+    });
+
+    it('setReps clears reps overrides but exercise overrides survive', () => {
+      const model = minimalPipelineModel(
+        [],
+        [point(1, 100, 'squat'), point(1, 90, 'bench'), point(1, 80, 'deadlift')]
+      );
+      const { result } = renderHook(() => useCoachViewSelection([successResult('Alice', model)]));
+      act(() => result.current.setSelectedDisplayName('Squat'));
+      act(() => result.current.rows[0].onExerciseChange('Bench Press'));
+      act(() => result.current.rows[0].onRepsChange(7));
+      act(() => result.current.setReps(3));
+
+      expect(result.current.rows[0].effectiveDisplayName).toBe('Bench Press');
+      expect(result.current.rows[0].effectiveReps).toBe(3);
+    });
+
+    it('a per-lifter override with no matching data placeholders only that row', () => {
+      const l1 = minimalPipelineModel([], [point(1, 100, 'squat')]);
+      const l2 = minimalPipelineModel([], [point(1, 150, 'squat')]);
+      const { result } = renderHook(() =>
+        useCoachViewSelection([successResult('Alice', l1), successResult('Bob', l2)])
+      );
+      act(() => result.current.setSelectedDisplayName('Squat'));
+      const aliceRow = () => result.current.rows.find((r) => r.lifterName === 'Alice')!;
+      const bobRow = () => result.current.rows.find((r) => r.lifterName === 'Bob')!;
+
+      act(() => aliceRow().onExerciseChange('Bench Press'));
+
+      expect(aliceRow().hasData).toBe(false);
+      expect(aliceRow().lastPerformedDisplay).toBe('No data logged');
+      expect(bobRow().hasData).toBe(true);
+    });
+  });
+
+  describe('sessionCount computation', () => {
+    it('counts distinct session dates for selected canonical', () => {
+      const date1 = 1000000000;
+      const date2 = 2000000000;
+      const date3 = 3000000000;
+      const model = minimalPipelineModel(
+        [
+          taggedRecord('squat', 'Squat', { date: date1 }),
+          taggedRecord('squat', 'Squat', { date: date1 }),
+          taggedRecord('squat', 'Squat', { date: date2 }),
+          taggedRecord('squat', 'Squat', { date: date3 }),
+        ],
+        [point(1, 100, 'squat')]
+      );
+      const { result } = renderHook(() => useCoachViewSelection([successResult('Lifter', model)]));
+
+      act(() => result.current.setSelectedDisplayName('Squat'));
+      expect(result.current.rows[0].sessionCount).toBe(3);
+    });
+
+    it('reflects sessionCount based on per-lifter exercise override', () => {
+      const date1 = 1000000000;
+      const date2 = 2000000000;
+      const squat3Dates = [
+        taggedRecord('squat', 'Squat', { date: date1 }),
+        taggedRecord('squat', 'Squat', { date: date2 }),
+        taggedRecord('squat', 'Squat', { date: 3000000000 }),
+      ];
+      const bench2Dates = [
+        taggedRecord('bench', 'Bench', { date: date1 }),
+        taggedRecord('bench', 'Bench', { date: date2 }),
+      ];
+      const model = minimalPipelineModel(
+        [...squat3Dates, ...bench2Dates],
+        [point(1, 100, 'squat'), point(1, 90, 'bench')]
+      );
+      const { result } = renderHook(() => useCoachViewSelection([successResult('Lifter', model)]));
+
+      act(() => result.current.setSelectedDisplayName('Squat'));
+      expect(result.current.rows[0].sessionCount).toBe(3);
+
+      act(() => result.current.rows[0].onExerciseChange('Bench Press'));
+      expect(result.current.rows[0].sessionCount).toBe(2);
     });
   });
 

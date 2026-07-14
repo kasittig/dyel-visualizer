@@ -3,6 +3,7 @@ import type { DisplayUnit, LifterPipelineResult } from '@dyel/api';
 import {
   buildExerciseDisplayNameIndex,
   buildLastSessionDetailForCanonical,
+  buildSessionCountForCanonical,
   convertE1RMToDisplayUnit,
   detectDataUnit,
   formatLastSessionSummary,
@@ -12,12 +13,22 @@ import {
   roundTo5,
 } from '@dyel/api';
 
+interface LifterOverride {
+  displayName?: string;
+  reps?: number;
+}
+
 export interface CoachViewRow {
   lifterName: string;
   e1rmDisplay: string;
   lastPerformedDisplay: string;
   targetWeightDisplay: string;
+  sessionCount: number;
   hasData: boolean;
+  effectiveDisplayName: string;
+  effectiveReps: number;
+  onExerciseChange: (displayName: string) => void;
+  onRepsChange: (reps: number) => void;
 }
 
 export function useCoachViewSelection(results: LifterPipelineResult[]) {
@@ -44,6 +55,10 @@ export function useCoachViewSelection(results: LifterPipelineResult[]) {
     return firstActive ? detectDataUnit(groupByLiftType(firstActive.model.tagged)) : 'lbs';
   });
 
+  const [overridesByLifter, setOverridesByLifter] = useState<Map<string, LifterOverride>>(
+    new Map()
+  );
+
   // Auto-select the first exercise option once options load, without overriding an explicit
   // user selection — derived directly rather than via a setState-in-effect (which would double
   // render), per decision to keep this a pure render-time derivation.
@@ -52,6 +67,29 @@ export function useCoachViewSelection(results: LifterPipelineResult[]) {
   const selectedCanonical = selectedDisplayName
     ? (displayNameToCanonical.get(selectedDisplayName) ?? null)
     : null;
+
+  const setSelectedDisplayNameAndReset = (name: string) => {
+    setSelectedDisplayName(name);
+    setOverridesByLifter((prev) => {
+      const next = new Map<string, LifterOverride>();
+      for (const [k, v] of prev) {
+        next.set(k, { ...v, displayName: undefined });
+      }
+      return next;
+    });
+  };
+
+  const setRepsAndReset = (r: number) => {
+    setReps(r);
+    setOverridesByLifter((prev) => {
+      const next = new Map<string, LifterOverride>();
+      for (const [k, v] of prev) {
+        next.set(k, { ...v, reps: undefined });
+      }
+      return next;
+    });
+  };
+
   const toggleUnit = () => setUnit((prev) => (prev === 'lbs' ? 'kg' : 'lbs'));
 
   const rows = useMemo<CoachViewRow[]>(() => {
@@ -59,47 +97,106 @@ export function useCoachViewSelection(results: LifterPipelineResult[]) {
       return [];
     }
 
-    const placeholder = (name: string, msg: string): CoachViewRow => ({
+    const placeholder = (
+      name: string,
+      msg: string,
+      effectiveDisplayName: string,
+      effectiveReps: number,
+      onExerciseChange: (displayName: string) => void,
+      onRepsChange: (reps: number) => void
+    ): CoachViewRow => ({
       lifterName: name,
       e1rmDisplay: '—',
       lastPerformedDisplay: msg,
       targetWeightDisplay: '—',
+      sessionCount: 0,
       hasData: false,
+      effectiveDisplayName,
+      effectiveReps,
+      onExerciseChange,
+      onRepsChange,
     });
 
     return results.map((res): CoachViewRow => {
+      const override = overridesByLifter.get(res.name);
+      const effectiveDisplayName = override?.displayName ?? selectedDisplayName;
+      const effectiveCanonical = displayNameToCanonical.get(effectiveDisplayName) ?? null;
+      const effectiveReps = override?.reps ?? reps;
+
+      const onExerciseChange = (displayName: string) =>
+        setOverridesByLifter((prev) => {
+          const next = new Map(prev);
+          next.set(res.name, { ...next.get(res.name), displayName });
+          return next;
+        });
+
+      const onRepsChange = (r: number) =>
+        setOverridesByLifter((prev) => {
+          const next = new Map(prev);
+          next.set(res.name, { ...next.get(res.name), reps: r });
+          return next;
+        });
+
       if (res.status !== 'success') {
-        return placeholder(res.name, 'Failed to load');
+        return placeholder(
+          res.name,
+          'Failed to load',
+          effectiveDisplayName,
+          effectiveReps,
+          onExerciseChange,
+          onRepsChange
+        );
       }
 
       const points = (res.model.pointsByDeriver.get('e1rm') ?? []).filter(
-        (p) => p.series === selectedCanonical
+        (p) => p.series === effectiveCanonical
       );
       if (!points.length) {
-        return placeholder(res.name, 'No data logged');
+        return placeholder(
+          res.name,
+          'No data logged',
+          effectiveDisplayName,
+          effectiveReps,
+          onExerciseChange,
+          onRepsChange
+        );
       }
 
       const latestPoint = points.reduce((max, curr) => (curr.t > max.t ? curr : max));
-      const detail = buildLastSessionDetailForCanonical(res.model.tagged, selectedCanonical);
+      const detail = buildLastSessionDetailForCanonical(res.model.tagged, effectiveCanonical!);
+      const sessionCount = buildSessionCountForCanonical(res.model.tagged, effectiveCanonical!);
 
       return {
         lifterName: res.name,
         e1rmDisplay: formatWeight(latestPoint.v, unit),
         lastPerformedDisplay: detail ? formatLastSessionSummary(detail, unit) : '',
-        targetWeightDisplay: `${roundTo5(predictWeightForReps(convertE1RMToDisplayUnit(latestPoint.v, unit), reps))} ${unit}`,
+        targetWeightDisplay: `${roundTo5(predictWeightForReps(convertE1RMToDisplayUnit(latestPoint.v, unit), effectiveReps))} ${unit}`,
+        sessionCount,
         hasData: true,
+        effectiveDisplayName,
+        effectiveReps,
+        onExerciseChange,
+        onRepsChange,
       };
     });
-  }, [selectedCanonical, reps, unit, results]);
+  }, [
+    selectedCanonical,
+    reps,
+    unit,
+    results,
+    selectedDisplayName,
+    overridesByLifter,
+    displayNameToCanonical,
+  ]);
 
   return {
     exerciseOptions,
     displayNameToCanonical,
     selectedCanonical,
     selectedDisplayName,
-    setSelectedDisplayName,
+    setSelectedDisplayName: setSelectedDisplayNameAndReset,
     reps,
-    setReps,
+    setReps: setRepsAndReset,
     unit,
     setUnit,
     toggleUnit,

@@ -57,6 +57,7 @@ export function TableRow({
 export function TableCell({
   as: Tag = 'td',
   variant = 'default',
+  className: extraClassName,
   style,
   onSort,
   sortDirection,
@@ -64,6 +65,7 @@ export function TableCell({
 }: {
   as?: 'td' | 'th';
   variant?: CellVariant;
+  className?: string;
   style?: CSSProperties;
   onSort?: MouseEventHandler<HTMLTableCellElement>;
   sortDirection?: SortDirection | null;
@@ -73,6 +75,7 @@ export function TableCell({
     CELL_CLASS[variant],
     onSort && styles.sortable,
     sortDirection && styles.sortActive,
+    extraClassName,
   ]
     .filter(Boolean)
     .join(' ');

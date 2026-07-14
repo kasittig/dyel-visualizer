@@ -3,6 +3,7 @@ import type { TaggedSetRecord } from '@dyel/pipeline';
 import {
   buildLastSessionDetail,
   buildLastSessionDetailForCanonical,
+  buildSessionCountForCanonical,
   formatLastSessionSummary,
 } from './lastSessionDetail';
 
@@ -125,6 +126,37 @@ describe('buildLastSessionDetailForCanonical', () => {
     ],
   ])('%s', (_, input, canonical, expected) => {
     expect(buildLastSessionDetailForCanonical(input, canonical)).toEqual(expected);
+  });
+});
+
+describe('buildSessionCountForCanonical', () => {
+  const n = new Date(2026, 4, 3),
+    y = new Date(2026, 4, 2),
+    t = new Date(2026, 4, 1);
+  it.each([
+    ['empty input', [], 'bench', 0],
+    ['no matching canonical', [rec(n, 'squat', 5, 100, 8)], 'bench', 0],
+    ['single session, one date', [rec(n, 'bench', 5, 100, 8)], 'bench', 1],
+    [
+      'multiple sets on same date',
+      [rec(n, 'bench', 5, 100, 8), rec(n, 'bench', 5, 100, 8), rec(n, 'bench', 3, 80, 6)],
+      'bench',
+      1,
+    ],
+    [
+      'multiple distinct dates',
+      [rec(t, 'bench', 5, 95, 7), rec(y, 'bench', 5, 98, 7.5), rec(n, 'bench', 5, 100, 8)],
+      'bench',
+      3,
+    ],
+    [
+      'mixed canonicals, only matching counted',
+      [rec(n, 'bench', 5, 100, 8), rec(y, 'squat', 5, 100, 8), rec(t, 'bench', 5, 95, 7)],
+      'bench',
+      2,
+    ],
+  ])('%s', (_, input, canonical, expected) => {
+    expect(buildSessionCountForCanonical(input, canonical)).toBe(expected);
   });
 });
 

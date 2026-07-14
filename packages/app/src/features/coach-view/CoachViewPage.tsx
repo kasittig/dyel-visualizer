@@ -1,7 +1,14 @@
 import clsx from 'clsx';
 import { useCoachViewData } from './useCoachViewData';
 import { useCoachViewSelection } from './useCoachViewSelection';
-import { TypeaheadDropdown } from '../../shared/components';
+import {
+  TypeaheadDropdown,
+  TableCard,
+  Table,
+  TableHeadRow,
+  TableRow,
+  TableCell,
+} from '../../shared/components';
 import styles from './CoachViewPage.module.css';
 
 export function CoachViewPage() {
@@ -84,42 +91,88 @@ export function CoachViewPage() {
             <div className={styles.emptyState}>No data for this exercise yet</div>
           ) : (
             <>
-              <table className={styles.table}>
-                <thead>
-                  <tr className={styles.thead}>
-                    <th className={styles.cellMono}>Lifter</th>
-                    <th className={clsx(styles.cellMono, styles.columnDivider)}>Target weight</th>
-                    <th className={styles.cellMono}>Last performed</th>
-                    <th className={styles.cellMono}>e1RM</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {rows.map((row) => (
-                    <tr key={row.lifterName} className={styles.bodyRow}>
-                      <td className={styles.cellMono}>{row.lifterName}</td>
-                      <td
-                        className={clsx(
-                          styles.cellMono,
-                          styles.columnDivider,
-                          !row.hasData && styles.placeholderCell
-                        )}
-                      >
-                        {row.targetWeightDisplay}
-                      </td>
-                      <td
-                        className={`${styles.cellMono} ${!row.hasData ? styles.placeholderCell : ''}`}
-                      >
-                        {row.lastPerformedDisplay}
-                      </td>
-                      <td
-                        className={`${styles.cellMono} ${!row.hasData ? styles.placeholderCell : ''}`}
-                      >
-                        {row.e1rmDisplay}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <TableCard>
+                <Table>
+                  <TableHeadRow>
+                    <TableCell as="th" variant="mono">
+                      Lifter
+                    </TableCell>
+                    <TableCell as="th" variant="mono">
+                      Exercise
+                    </TableCell>
+                    <TableCell as="th" variant="mono">
+                      Reps
+                    </TableCell>
+                    <TableCell as="th" variant="mono">
+                      # Sessions
+                    </TableCell>
+                    <TableCell as="th" variant="mono" className={styles.columnDivider}>
+                      Target weight
+                    </TableCell>
+                    <TableCell as="th" variant="mono">
+                      Last performed
+                    </TableCell>
+                    <TableCell as="th" variant="mono">
+                      e1RM
+                    </TableCell>
+                  </TableHeadRow>
+                  <tbody>
+                    {rows.map((row) => (
+                      <TableRow key={row.lifterName}>
+                        <TableCell variant="mono">{row.lifterName}</TableCell>
+                        <TableCell variant="mono">
+                          <TypeaheadDropdown
+                            options={exerciseOptions}
+                            value={row.effectiveDisplayName || null}
+                            onChange={row.onExerciseChange}
+                            placeholder="Search exercise..."
+                          />
+                        </TableCell>
+                        <TableCell variant="mono">
+                          <input
+                            type="number"
+                            min={1}
+                            max={20}
+                            value={row.effectiveReps}
+                            className={styles.repsInput}
+                            onChange={(e) => {
+                              const val = parseInt(e.target.value, 10);
+                              row.onRepsChange(Number.isNaN(val) || val < 1 ? 1 : val);
+                            }}
+                          />
+                        </TableCell>
+                        <TableCell
+                          variant="mono"
+                          className={clsx(!row.hasData && styles.placeholderCell)}
+                        >
+                          {row.sessionCount}
+                        </TableCell>
+                        <TableCell
+                          variant="mono"
+                          className={clsx(
+                            styles.columnDivider,
+                            !row.hasData && styles.placeholderCell
+                          )}
+                        >
+                          {row.targetWeightDisplay}
+                        </TableCell>
+                        <TableCell
+                          variant="mono"
+                          className={clsx(!row.hasData && styles.placeholderCell)}
+                        >
+                          {row.lastPerformedDisplay}
+                        </TableCell>
+                        <TableCell
+                          variant="mono"
+                          className={clsx(!row.hasData && styles.placeholderCell)}
+                        >
+                          {row.e1rmDisplay}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </tbody>
+                </Table>
+              </TableCard>
               {erroredLifterCount > 0 && (
                 <p className={styles.errorNote}>
                   {erroredLifterCount} lifter{erroredLifterCount === 1 ? '' : 's'} could not be

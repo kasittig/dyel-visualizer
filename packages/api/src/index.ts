@@ -68,6 +68,7 @@ export type { ConjugateChartData } from './conjugate/conjugateChartData';
 export {
   buildLastSessionDetail,
   buildLastSessionDetailForCanonical,
+  buildSessionCountForCanonical,
   formatLastSessionSummary,
 } from './session/lastSessionDetail';
 export type { LastSessionDetail } from './session/lastSessionDetail';

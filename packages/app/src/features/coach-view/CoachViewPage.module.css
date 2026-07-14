@@ -1,20 +1,3 @@
-/* Reuse table styles from DiagnosticsPanel */
-.table {
-  composes: table from '../lift/DiagnosticsPanel.module.css';
-}
-.thead {
-  composes: thead from '../lift/DiagnosticsPanel.module.css';
-}
-.cellLeft {
-  composes: cellLeft from '../lift/DiagnosticsPanel.module.css';
-}
-.cellMono {
-  composes: cellMono from '../lift/DiagnosticsPanel.module.css';
-}
-.bodyRow {
-  composes: bodyRow from '../lift/DiagnosticsPanel.module.css';
-}
-
 /* Page container */
 .main {
   padding: 2rem;

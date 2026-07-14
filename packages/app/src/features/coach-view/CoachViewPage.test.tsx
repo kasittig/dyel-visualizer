@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { render, screen, cleanup } from '@testing-library/react';
+import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import type { PipelineModel, AthleteContext, LifterPipelineResult } from '@dyel/api';
 import { CoachViewPage } from './CoachViewPage';
 import type { CoachViewRow } from './useCoachViewSelection';
@@ -50,7 +50,12 @@ const mockRow = (overrides?: Partial<CoachViewRow>): CoachViewRow => ({
   e1rmDisplay: '225 lbs',
   lastPerformedDisplay: 'Today',
   targetWeightDisplay: '185 lbs',
+  sessionCount: 4,
   hasData: true,
+  effectiveDisplayName: 'Bench Press',
+  effectiveReps: 1,
+  onExerciseChange: vi.fn(),
+  onRepsChange: vi.fn(),
   ...overrides,
 });
 
@@ -130,18 +135,20 @@ describe('CoachViewPage', () => {
       vi.mocked(useCoachViewSelection).mockReturnValue(selectionState);
       render(<CoachViewPage />);
 
-      expect(screen.getByPlaceholderText('Search exercise...')).toBeDefined();
-      expect((screen.getByRole('spinbutton') as HTMLInputElement).value).toBe('1');
+      const exerciseInputs = screen.getAllByPlaceholderText('Search exercise...');
+      expect(exerciseInputs.length).toBeGreaterThan(0);
+      expect((screen.getAllByRole('spinbutton')[0] as HTMLInputElement).value).toBe('1');
       expect(screen.getByRole('button', { name: 'lbs' })).toBeDefined();
 
       if (selectionState.selectedCanonical && selectionState.rows.length) {
-        expect(screen.getByPlaceholderText('Search exercise...')).toHaveProperty(
-          'value',
+        expect((exerciseInputs[0] as HTMLInputElement).value).toBe(
           selectionState.selectedDisplayName
         );
         expect(screen.getByRole('table')).toBeDefined();
         expect(screen.getAllByRole('row')).toHaveLength(selectionState.rows.length + 1);
+        expect(screen.getByText('# Sessions')).toBeDefined();
         selectionState.rows.forEach((r) => expect(screen.getByText(r.lifterName)).toBeDefined());
+        expect(screen.getAllByText('4').length).toBeGreaterThan(0);
       }
       if (shouldShowErrorNote) {
         expect(screen.getByText(/\d+ lifters could not be loaded/)).toBeDefined();
@@ -214,5 +221,66 @@ describe('CoachViewPage', () => {
     expect(screen.getByText('Dana')).toBeDefined();
     expect(screen.getByText('No data logged')).toBeDefined();
     expect(screen.getAllByText('—')).toHaveLength(2);
+  });
+
+  it('renders a per-row exercise dropdown and reps input for each lifter', () => {
+    vi.mocked(useCoachViewData).mockReturnValue({
+      status: 'success',
+      data: [mockLifterResult('Lifter 1'), mockLifterResult('Lifter 2')],
+    });
+    vi.mocked(useCoachViewSelection).mockReturnValue(
+      mockSelection({
+        selectedCanonical: 'bench-classic',
+        selectedDisplayName: 'Bench Press',
+        rows: [mockRow({ lifterName: 'Alice' }), mockRow({ lifterName: 'Bob' })],
+      })
+    );
+    render(<CoachViewPage />);
+
+    // one exercise input for the top-level control + one per row
+    expect(screen.getAllByPlaceholderText('Search exercise...')).toHaveLength(3);
+    expect(screen.getAllByRole('spinbutton')).toHaveLength(3);
+  });
+
+  it('calls the row-specific onExerciseChange/onRepsChange when that row changes', () => {
+    const aliceRepsChange = vi.fn();
+    vi.mocked(useCoachViewData).mockReturnValue({
+      status: 'success',
+      data: [mockLifterResult('Lifter 1'), mockLifterResult('Lifter 2')],
+    });
+    vi.mocked(useCoachViewSelection).mockReturnValue(
+      mockSelection({
+        selectedCanonical: 'bench-classic',
+        selectedDisplayName: 'Bench Press',
+        rows: [
+          mockRow({ lifterName: 'Alice', onRepsChange: aliceRepsChange }),
+          mockRow({ lifterName: 'Bob' }),
+        ],
+      })
+    );
+    render(<CoachViewPage />);
+
+    const spinbuttons = screen.getAllByRole('spinbutton') as HTMLInputElement[];
+    // index 0 is the top-level reps input; index 1 is Alice's row
+    fireEvent.change(spinbuttons[1], { target: { value: '4' } });
+    expect(aliceRepsChange).toHaveBeenCalledWith(4);
+  });
+
+  it('renders per-row inputs even for placeholder rows with no data', () => {
+    vi.mocked(useCoachViewData).mockReturnValue({
+      status: 'success',
+      data: [mockLifterResult('Lifter 1')],
+    });
+    vi.mocked(useCoachViewSelection).mockReturnValue(
+      mockSelection({
+        selectedCanonical: 'bench-classic',
+        selectedDisplayName: 'Bench Press',
+        rows: [mockRow({ lifterName: 'Dana', hasData: false })],
+      })
+    );
+    render(<CoachViewPage />);
+
+    expect(screen.getAllByPlaceholderText('Search exercise...')).toHaveLength(2);
+    expect(screen.getAllByRole('spinbutton')).toHaveLength(2);
   });
 });

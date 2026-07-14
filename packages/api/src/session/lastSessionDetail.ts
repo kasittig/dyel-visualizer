@@ -71,6 +71,19 @@ export function buildLastSessionDetailForCanonical(
   };
 }
 
+export function buildSessionCountForCanonical(
+  tagged: TaggedSetRecord[],
+  canonical: string
+): number {
+  const sessionDates = new Set<number>();
+  for (const r of tagged) {
+    if (r.canonical === canonical) {
+      sessionDates.add(r.date);
+    }
+  }
+  return sessionDates.size;
+}
+
 export function formatLastSessionSummary(detail: LastSessionDetail, unit: DisplayUnit): string {
   const d = new Date(`${detail.date}T00:00:00`);
   return `${d.getMonth() + 1}/${d.getDate()} (${detail.sets}x${detail.reps} @ ${formatWeight(detail.weight, unit)})`;
