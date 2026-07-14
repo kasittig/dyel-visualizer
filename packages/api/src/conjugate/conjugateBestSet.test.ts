@@ -94,4 +94,26 @@ describe('buildBestSetByLabelAndDate', () => {
     );
     expect(res.get('bench')?.get(dStr)?.sets).toBe(2);
   });
+
+  it('does not exclude speed-work days for accessories', () => {
+    const res = buildBestSetByLabelAndDate(
+      [
+        record(day, 'db-curl', 12, 25, undefined, { liftType: 'accessory', sets: '4' }),
+        record(day, 'db-curl', 12, 25, undefined, { liftType: 'accessory', sets: '4' }),
+      ],
+      'accessory'
+    );
+    expect(res.get('db-curl')?.get(dStr)).toEqual({ sets: 4, reps: 12, weight: 25, rpe: null });
+  });
+
+  it('considers all sets (not just RPE-tagged) when picking the best accessory set', () => {
+    const res = buildBestSetByLabelAndDate(
+      [
+        record(day, 'db-curl', 12, 25, undefined, { liftType: 'accessory', sets: '4' }),
+        record(day, 'db-curl', 8, 35, 8, { liftType: 'accessory', sets: '4' }),
+      ],
+      'accessory'
+    );
+    expect(res.get('db-curl')?.get(dStr)).toEqual({ sets: 4, reps: 8, weight: 35, rpe: 8 });
+  });
 });

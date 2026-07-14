@@ -23,7 +23,7 @@ export function buildBestSetByLabelAndDate(
     const sepIdx = key.lastIndexOf('::');
     const label = key.slice(0, sepIdx);
     const date = key.slice(sepIdx + 2);
-    const effortSets = records.filter((r) => !isSpeedWork(r));
+    const effortSets = liftType === 'accessory' ? records : records.filter((r) => !isSpeedWork(r));
     if (!effortSets.length) {
       continue;
     }
