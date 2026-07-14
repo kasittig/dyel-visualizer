@@ -34,6 +34,26 @@ describe('csvParser — error handling', () => {
   });
 });
 
+describe('csvParser — date formats', () => {
+  it.each([
+    ['ISO YYYY-MM-DD', '2026-02-06', '2026-02-06'],
+    // Google Sheets' default published-CSV export renders unpadded M/D/YYYY (e.g. a real
+    // sheet's "2/2/2026" for Feb 2, 2026) rather than ISO — must parse, not hard-fail the file.
+    ['unpadded M/D/YYYY', '2/6/2026', '2026-02-06'],
+    ['zero-padded MM/DD/YYYY', '02/06/2026', '2026-02-06'],
+    ['single-digit month and day', '2/6/2026', '2026-02-06'],
+  ])('parses %s', (_, dateCell, expected) => {
+    const record = parse(`Date,Exercise,Reps,Weight (lbs)\n${dateCell},Bench,5,225\n`)[0];
+    expect(record.date).toBe(getDay(expected));
+  });
+
+  it('throws ParseError on an unrecognized date shape', () => {
+    expect(() => parse('Date,Exercise,Reps,Weight (lbs)\nFeb 6 2026,Bench,5,225\n')).toThrow(
+      ParseError
+    );
+  });
+});
+
 describe('csvParser — header scanning', () => {
   it.each([
     [
