@@ -1,0 +1,24 @@
+/* Reuse table styles from DiagnosticsPanel */
+.table {
+  composes: table from './DiagnosticsPanel.module.css';
+}
+.thead {
+  composes: thead from './DiagnosticsPanel.module.css';
+}
+.cellLeft {
+  composes: cellLeft from './DiagnosticsPanel.module.css';
+}
+.cell {
+  composes: cell from './DiagnosticsPanel.module.css';
+}
+.bodyRow {
+  composes: bodyRow from './DiagnosticsPanel.module.css';
+}
+
+/* Empty state message */
+.emptyState {
+  color: var(--muted);
+  font-style: italic;
+  font-size: 0.9rem;
+  margin: 1rem 0;
+}
