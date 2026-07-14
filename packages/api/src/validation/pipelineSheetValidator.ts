@@ -29,42 +29,36 @@ export interface SheetValidationResult {
 }
 
 const MAX_ROW_ISSUES = 10;
-const emptyColumns: ColumnInfo = {
+const emptyCols = (): ColumnInfo => ({
   hasExercise: false,
   hasDate: false,
   hasWeight: false,
   hasReps: false,
   hasSets: false,
   weightUnit: null,
-};
-const emptyLiftTypes = () => ({ squat: 0, bench: 0, deadlift: 0, accessory: 0 });
+});
+const emptyLifts = () => ({ squat: 0, bench: 0, deadlift: 0, accessory: 0 });
 
 function findHeaderLineIndex(lines: string[]): number {
-  return lines.findIndex((line) => {
-    if (line.trim().length === 0) {
-      return false;
-    }
-    const cells = line.split(',').map((c) => c.trim().toLowerCase());
-    return cells.some((cell) => cell.startsWith('exercise'));
-  });
+  return lines.findIndex(
+    (l) => l.trim() && l.split(',').some((c) => c.trim().toLowerCase().startsWith('exercise'))
+  );
 }
 
 export function validateSheetCsv(csv: string): SheetValidationResult {
   const lines = csv.split('\n');
-  const headerIdx = findHeaderLineIndex(lines);
-  const csvToParse = headerIdx === -1 ? csv : lines.slice(headerIdx).join('\n');
+  const headIdx = findHeaderLineIndex(lines);
+  const { data, meta } = Papa.parse<Record<string, string>>(
+    headIdx === -1 ? csv : lines.slice(headIdx).join('\n'),
+    { header: true, skipEmptyLines: 'greedy' }
+  );
 
-  const { data, meta } = Papa.parse<Record<string, string>>(csvToParse, {
-    header: true,
-    skipEmptyLines: 'greedy',
-  });
-
-  if (!meta.fields || data.length === 0) {
+  if (!meta.fields || !data.length) {
     return {
       verdict: 'error',
       headerRow: null,
-      columns: emptyColumns,
-      rows: { total: 0, parsed: 0, liftTypes: emptyLiftTypes() },
+      columns: emptyCols(),
+      rows: { total: 0, parsed: 0, liftTypes: emptyLifts() },
       issues: [
         "No header row found. Add a row with an 'exercise' column (and 'date', 'weight', 'reps').",
       ],
@@ -74,165 +68,145 @@ export function validateSheetCsv(csv: string): SheetValidationResult {
   }
 
   const hMap = new Map(meta.fields.map((h) => [h.toLowerCase(), h]));
-  const findH = (f: string) => {
-    return Array.from(hMap.entries()).find(([k]) => k.startsWith(f.toLowerCase()))?.[1];
-  };
+  const findH = (f: string) =>
+    [...hMap.entries()].find(([k]) => k.startsWith(f.toLowerCase()))?.[1];
 
-  const hasExercise = !!findH('exercise');
-  const hasDate = !!findH('date');
-  const hasWeight = !!findH('weight');
-  const hasReps = !!findH('reps');
-  const hasSets = !!findH('sets');
-
-  const detectedUnit = (findH('weight') || '').match(/\((kg|lbs)\)$/)?.[1];
+  const [exKey, wtKey, rpKey, dtKey, rpeKey, stKey] = [
+    'exercise',
+    'weight',
+    'reps',
+    'date',
+    'rpe',
+    'sets',
+  ].map(findH);
+  const unit = (wtKey || '').match(/\((kg|lbs)\)$/)?.[1];
   const columns: ColumnInfo = {
-    hasExercise,
-    hasDate,
-    hasWeight,
-    hasReps,
-    hasSets,
-    weightUnit: detectedUnit === 'kg' ? 'kg' : detectedUnit === 'lbs' ? 'lbs' : null,
+    hasExercise: !!exKey,
+    hasDate: !!dtKey,
+    hasWeight: !!wtKey,
+    hasReps: !!rpKey,
+    hasSets: !!stKey,
+    weightUnit: unit === 'kg' || unit === 'lbs' ? unit : null,
   };
 
-  const issues: string[] = [];
-  const warnings: string[] = [];
-
-  if (!hasExercise) {
+  const issues: string[] = [],
+    warnings: string[] = [];
+  if (!exKey) {
     issues.push("Missing required column: 'exercise'");
   }
-  if (!hasDate) {
+  if (!dtKey) {
     warnings.push("Missing column: 'date'. All sessions will be assigned today's date.");
   }
-  if (!hasWeight) {
+  if (!wtKey) {
     issues.push("Missing required column: 'weight' — add a 'weight (lbs)'/'weight (kg)' column");
   }
-  if (!hasReps) {
+  if (!rpKey) {
     warnings.push("Missing column: 'reps'. Assuming one rep performed for all exercises.");
   }
 
-  if (issues.length > 0) {
+  const headerRow = headIdx === -1 ? null : headIdx;
+  if (issues.length) {
     return {
       verdict: 'error',
-      headerRow: headerIdx === -1 ? null : headerIdx,
+      headerRow,
       columns,
-      rows: { total: 0, parsed: 0, liftTypes: emptyLiftTypes() },
+      rows: { total: 0, parsed: 0, liftTypes: emptyLifts() },
       issues,
       warnings,
       rowIssues: [],
     };
   }
-
-  if (columns.weightUnit === null) {
+  if (!columns.weightUnit) {
     warnings.push(
       "Weight column has no unit — rename it to 'weight (lbs)' or 'weight (kg)' to be explicit. The app currently assumes lbs."
     );
   }
 
-  const liftTypes = emptyLiftTypes();
-  const rowIssues: SheetValidationIssue[] = [];
-  let numParsed = 0;
-  let rowsFullyFailed = 0;
-  const exerciseKey = findH('exercise');
-  const weightKey = findH('weight');
-  const repsKey = findH('reps');
-  const dateKey = findH('date');
-  const rpeKey = findH('rpe');
+  const liftTypes = emptyLifts(),
+    rowIssues: SheetValidationIssue[] = [];
+  let parsed = 0,
+    failed = 0;
 
-  for (let i = 0; i < data.length; i++) {
-    const row = data[i];
-    const rowNum = i + 1;
-    const exerciseName = exerciseKey ? row[exerciseKey]?.trim() : '';
-    const rowProblems: string[] = [];
-    const rowWarnings: string[] = [];
+  data.forEach((row, i) => {
+    const name = row[exKey!]?.trim() || '',
+      wtStr = row[wtKey!]?.trim() || '',
+      rpStr = row[rpKey!]?.trim() || '',
+      dtStr = row[dtKey!]?.trim() || '',
+      rpeStr = row[rpeKey!]?.trim() || '';
+    const bad: string[] = [],
+      warn: string[] = [];
 
-    // Exercise validation
-    if (!exerciseName) {
-      rowProblems.push('Exercise name is empty');
+    if (!name) {
+      bad.push('Exercise name is empty');
+    }
+    if (!wtStr) {
+      bad.push('Weight is missing');
+    } else if (isNaN(parseFloat(wtStr))) {
+      bad.push(`Invalid weight: "${wtStr}" (must be a number)`);
     }
 
-    // Weight validation
-    const weightStr = weightKey ? row[weightKey]?.trim() : '';
-    if (!weightStr) {
-      rowProblems.push('Weight is missing');
+    if (!rpStr) {
+      warn.push('Reps is missing. Will assume 1 rep was performed');
     } else {
-      const weight = parseFloat(weightStr);
-      if (isNaN(weight)) {
-        rowProblems.push(`Invalid weight: "${weightStr}" (must be a number)`);
+      const rp = parseFloat(rpStr);
+      if (isNaN(rp) || !Number.isInteger(rp) || rp <= 0) {
+        bad.push(`Invalid reps: "${rpStr}" (must be a positive whole number)`);
       }
     }
 
-    // Reps validation
-    const repsStr = repsKey ? row[repsKey]?.trim() : '';
-    if (!repsStr) {
-      rowWarnings.push('Reps is missing. Will assume 1 rep was performed');
-    } else {
-      const reps = parseFloat(repsStr);
-      if (isNaN(reps) || !Number.isInteger(reps) || reps <= 0) {
-        rowProblems.push(`Invalid reps: "${repsStr}" (must be a positive whole number)`);
-      }
+    if (!dtStr) {
+      warn.push('Date is missing');
+    } else if (isNaN(new Date(dtStr).getTime())) {
+      bad.push(`Invalid date: "${dtStr}"`);
     }
-
-    // Date validation
-    const dateStr = dateKey ? row[dateKey]?.trim() : '';
-    if (!dateStr) {
-      rowWarnings.push('Date is missing');
-    } else if (isNaN(new Date(dateStr).getTime())) {
-      rowProblems.push(`Invalid date: "${dateStr}"`);
-    }
-
-    // RPE validation (optional)
-    const rpeStr = rpeKey ? row[rpeKey]?.trim() : '';
     if (rpeStr) {
-      const rpeVal = parseFloat(rpeStr);
-      if (isNaN(rpeVal) || rpeVal < 1 || rpeVal > 10) {
-        rowWarnings.push(`Invalid RPE: "${rpeStr}" (must be a number between 1 and 10)`);
+      const rpe = parseFloat(rpeStr);
+      if (isNaN(rpe) || rpe < 1 || rpe > 10) {
+        warn.push(`Invalid RPE: "${rpeStr}" (must be a number between 1 and 10)`);
       }
     }
 
-    // Accumulate issues and decide row fate
-    if (rowProblems.length > 0) {
-      rowsFullyFailed++;
+    if (bad.length) {
+      failed++;
       if (rowIssues.length < MAX_ROW_ISSUES) {
-        rowIssues.push({ row: rowNum, exercise: exerciseName || '(empty)', issues: rowProblems });
+        rowIssues.push({ row: i + 1, exercise: name || '(empty)', issues: bad });
       }
     } else {
-      if (rowWarnings.length > 0 && rowIssues.length < MAX_ROW_ISSUES) {
-        rowIssues.push({ row: rowNum, exercise: exerciseName, issues: rowWarnings });
+      if (warn.length && rowIssues.length < MAX_ROW_ISSUES) {
+        rowIssues.push({ row: i + 1, exercise: name, issues: warn });
       }
-      numParsed++;
-      const classified = classifyExerciseName(exerciseName);
-      if (!classified.isUnknown) {
-        liftTypes[classified.type] += 1;
+      parsed++;
+      const cl = classifyExerciseName(name);
+      if (!cl.isUnknown) {
+        liftTypes[cl.type as keyof typeof liftTypes]++;
       }
     }
-  }
+  });
 
   const total = data.length;
-  if (numParsed === 0 && total > 0) {
+  if (!parsed && total) {
     issues.push(
       `None of the ${total} data row${total === 1 ? '' : 's'} could be parsed. See row issues below.`
     );
-  } else if (rowsFullyFailed > 0) {
+  } else if (failed) {
     warnings.push(
-      `${rowsFullyFailed} of ${total} row${rowsFullyFailed === 1 ? '' : 's'} couldn't be parsed and will be skipped.`
+      `${failed} of ${total} row${failed === 1 ? '' : 's'} couldn't be parsed and will be skipped.`
     );
-    if (rowsFullyFailed > MAX_ROW_ISSUES) {
+    if (failed > MAX_ROW_ISSUES) {
       warnings.push(`Showing the first ${MAX_ROW_ISSUES} row errors — fix these and re-validate.`);
     }
   }
-
-  if (numParsed > 0 && !liftTypes.squat && !liftTypes.bench && !liftTypes.deadlift) {
+  if (parsed && !liftTypes.squat && !liftTypes.bench && !liftTypes.deadlift) {
     warnings.push(
       'No squat, bench, or deadlift exercises were recognized — only accessories. Check exercise naming rules in the onboarding guide.'
     );
   }
 
   return {
-    verdict:
-      issues.length > 0 || numParsed === 0 ? 'error' : warnings.length > 0 ? 'warning' : 'ok',
-    headerRow: headerIdx === -1 ? null : headerIdx,
+    verdict: issues.length || !parsed ? 'error' : warnings.length ? 'warning' : 'ok',
+    headerRow,
     columns,
-    rows: { total, parsed: numParsed, liftTypes },
+    rows: { total, parsed, liftTypes },
     issues,
     warnings,
     rowIssues,
