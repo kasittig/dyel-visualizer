@@ -4,7 +4,6 @@ import {
   buildLastSessionDetail,
   buildLastSessionDetailForCanonical,
   formatLastSessionSummary,
-  type LastSessionDetail,
 } from './lastSessionDetail';
 
 const rec = (
@@ -70,14 +69,11 @@ describe('buildLastSessionDetail', () => {
       [rec(d0, 'bench', 5, 100, 8, 'Bench (Comp)')],
       new Map([['Bench (Comp)', { date: '2026-01-15', sets: 1, reps: 5, weight: 100, rpe: 8 }]]),
     ],
-  ] as Array<[string, TaggedSetRecord[], Map<string, LastSessionDetail>]>)(
-    '%s',
-    (_, input, expected) => {
-      expect(buildLastSessionDetail(input, 'bench')).toEqual(expected);
-    }
-  );
+  ])('%s', (_, input, expected) => {
+    expect(buildLastSessionDetail(input, 'bench')).toEqual(expected);
+  });
 
-  it('filters by lift type tag and formats date to YYYY-MM-DD', () => {
+  it('filters by lift type tag and formats date', () => {
     const res = buildLastSessionDetail(
       [
         rec(d0, 'squat', 5, 100, 8, undefined, 'squat'),
@@ -88,7 +84,7 @@ describe('buildLastSessionDetail', () => {
     expect(res.get('bench')?.date).toBe('2026-07-08');
   });
 
-  it('formats local-constructed dates correctly (catches timezone bugs)', () => {
+  it('formats local-constructed dates correctly', () => {
     const localDate = new Date(2026, 6, 8);
     expect(
       buildLastSessionDetail([rec(localDate, 'bench', 5, 100, 8)], 'bench').get('bench')?.date
@@ -127,12 +123,9 @@ describe('buildLastSessionDetailForCanonical', () => {
       'bench',
       { date: '2026-05-03', sets: 3, reps: 5, weight: 100, rpe: 8 },
     ],
-  ] as Array<[string, TaggedSetRecord[], string, LastSessionDetail | null]>)(
-    '%s',
-    (_, input, canonical, expected) => {
-      expect(buildLastSessionDetailForCanonical(input, canonical)).toEqual(expected);
-    }
-  );
+  ])('%s', (_, input, canonical, expected) => {
+    expect(buildLastSessionDetailForCanonical(input, canonical)).toEqual(expected);
+  });
 });
 
 describe('formatLastSessionSummary', () => {
@@ -161,10 +154,7 @@ describe('formatLastSessionSummary', () => {
       'kg',
       '5/3 (1x3 @ 111 kg)',
     ],
-  ] as Array<[string, LastSessionDetail, 'lbs' | 'kg', string]>)(
-    '%s',
-    (_, detail, unit, expected) => {
-      expect(formatLastSessionSummary(detail, unit)).toBe(expected);
-    }
-  );
+  ])('%s', (_, detail, unit, expected) => {
+    expect(formatLastSessionSummary(detail, unit)).toBe(expected);
+  });
 });

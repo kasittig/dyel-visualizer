@@ -58,7 +58,7 @@ const TESTS = [
   ['bulgarian-split-squat', 'Bulgarian Split Squat'],
   ['foobar-widget', 'Foobar Widget'],
   ['', ''],
-] as Array<[string, string]>;
+];
 
 describe('formatExerciseDisplayName', () => {
   it.each(TESTS)('formats "%s" -> "%s"', (canonical, expected) => {
@@ -103,10 +103,7 @@ describe('buildExerciseDisplayNameIndex', () => {
         { canonical: 'squat', displayName: 'Squat' },
       ],
     ],
-  ] as Array<[string, string[], Array<{ canonical: string; displayName: string }>]>)(
-    '%s',
-    (_, canonicals, expected) => {
-      expect(buildExerciseDisplayNameIndex(canonicals)).toEqual(expected);
-    }
-  );
+  ])('%s', (_, canonicals, expected) => {
+    expect(buildExerciseDisplayNameIndex(canonicals)).toEqual(expected);
+  });
 });
