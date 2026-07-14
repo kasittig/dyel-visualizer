@@ -28,13 +28,34 @@ export function tokenize(line: string): TokenizerOutput {
     const t = tokens[i];
     const next = tokens[i + 1];
     if (t.startsWith('@') && t.length > 1) {
-      rpe = parseFloat(t.slice(1));
+      const suffix = t.slice(1);
+      const w = parseWeight(suffix);
+      if (w) {
+        if (w.unit || w.value > 10) {
+          // Has unit or value > 10 → weight annotation
+          weights.push(w);
+        } else {
+          // Unitless and ≤ 10 → RPE
+          rpe = w.value;
+        }
+      }
     } else if (/^x\d+$/i.test(t) || /^\d+rm$/i.test(t)) {
       reps = parseInt(t.replace(/x|rm/gi, ''), 10);
     } else if (/^\d+x\d+$/i.test(t)) {
       const [a, b] = t.split(/x/i).map(Number);
       reps = b;
-      if (!tokens.slice(i + 1).includes('@')) {
+      // Check if there's an explicit weight elsewhere on the line
+      const hasExplicitWeight = tokens.slice(i + 1).some((tok) => {
+        if (tok === '@') {
+          return true; // bare @ means weight follows
+        }
+        if (tok.startsWith('@') && tok.length > 1) {
+          const w = parseWeight(tok.slice(1));
+          return w && (w.unit || w.value > 10); // weight if has unit or value > 10
+        }
+        return !!parseWeight(tok);
+      });
+      if (!hasExplicitWeight) {
         weights.push({ value: a });
       }
     } else if (t.includes('/')) {

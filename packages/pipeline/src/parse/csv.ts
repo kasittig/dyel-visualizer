@@ -9,12 +9,16 @@ const parseNum = (v: string) => {
   return isNaN(n) ? null : n;
 };
 
-function parseDate(dateStr: string): number {
-  const d = new Date(dateStr);
-  if (isNaN(d.getTime())) {
-    throw new Error(`Invalid date: ${dateStr}`);
+function parseDate(dateStr: string, lineNum?: number, rawStr?: string): number {
+  const match = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) {
+    throw new ParseError(`Invalid date: ${dateStr}`, lineNum, rawStr);
   }
-  return d.setHours(0, 0, 0, 0);
+  const [, yearStr, monthStr, dayStr] = match;
+  const year = parseInt(yearStr, 10);
+  const month = parseInt(monthStr, 10);
+  const day = parseInt(dayStr, 10);
+  return Date.UTC(year, month - 1, day);
 }
 
 function findHeaderLineIndex(lines: string[]): number {
@@ -24,9 +28,9 @@ function findHeaderLineIndex(lines: string[]): number {
 }
 
 function extractUnitFromCell(v: string): { weight: number; unit: Unit } | null {
-  const m = v.match(/^([\d.]+)(kg|lbs)$/);
+  const m = v.match(/^(\d+(?:\.\d+)?)(kg|lbs)$/i);
   const w = m ? parseNum(m[1]) : null;
-  return m && w !== null ? { weight: w, unit: m[2] as Unit } : null;
+  return m && w !== null ? { weight: w, unit: m[2].toLowerCase() as Unit } : null;
 }
 
 export const csvParser: Parser = {
@@ -78,6 +82,9 @@ export const csvParser: Parser = {
       if (isNaN(reps)) {
         throw new ParseError(`Invalid reps: ${rStr}`, lineNum, rawStr);
       }
+      if (reps <= 0) {
+        throw new ParseError(`Reps must be positive: ${reps}`, lineNum, rawStr);
+      }
 
       let weight: number | null, rUnit: Unit | undefined;
       const cell = extractUnitFromCell(wStr);
@@ -86,6 +93,10 @@ export const csvParser: Parser = {
         weight = cell.weight;
         rUnit = cell.unit;
       } else {
+        const lowerWStr = wStr.toLowerCase();
+        if (lowerWStr.endsWith('kg') || lowerWStr.endsWith('lbs')) {
+          throw new ParseError(`Invalid weight: ${wStr}`, lineNum, rawStr);
+        }
         weight = parseNum(wStr);
         if (weight === null) {
           throw new ParseError(`Invalid weight: ${wStr}`, lineNum, rawStr);
@@ -95,12 +106,16 @@ export const csvParser: Parser = {
         }
       }
 
+      if (weight < 0) {
+        throw new ParseError(`Weight must be non-negative: ${weight}`, lineNum, rawStr);
+      }
+
       const fUnit = resolveUnit(rUnit, effCtx);
       const rpe = row[rRpe] ? parseNum(row[rRpe]) : null;
       const sets = row[rSets] ? parseNum(row[rSets]) : null;
 
       return {
-        date: parseDate(dStr),
+        date: parseDate(dStr, lineNum, rawStr),
         exercise: ex,
         weight: convertToKg(weight, fUnit),
         reps,

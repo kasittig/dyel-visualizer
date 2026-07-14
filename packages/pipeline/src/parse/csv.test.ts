@@ -5,7 +5,10 @@ import type { ParseContext } from './parser';
 
 const ctx: ParseContext = { fallback: 'lbs' };
 const parse = (content: string) => csvParser.parse({ name: 'sheet.csv', content }, ctx);
-const getDay = (dateStr: string) => new Date(dateStr).setHours(0, 0, 0, 0);
+const getDay = (dateStr: string) => {
+  const [year, month, day] = dateStr.split('-').map(Number);
+  return Date.UTC(year, month - 1, day);
+};
 
 describe('csvParser — Sets column', () => {
   it.each([
@@ -76,5 +79,44 @@ describe('csvParser — header scanning', () => {
     expect(() => parse(csv)).toThrow(
       expect.objectContaining({ name: 'ParseError', line: expectedLine })
     );
+  });
+});
+
+describe('csvParser — weight validation', () => {
+  it.each([
+    ['negative weight', 'Date,Exercise,Reps,Weight (lbs)\n2026-01-05,Bench,3,-85\n'],
+    [
+      'malformed multi-decimal unit',
+      'Date,Exercise,Reps,Weight (lbs)\n2026-01-05,Bench,3,1.2.3lbs\n',
+    ],
+  ])('throws ParseError on %s', (_, csv) => {
+    expect(() => parse(csv)).toThrow(ParseError);
+  });
+
+  it.each([
+    ['225KG uppercase', 'Date,Exercise,Reps,Weight (lbs)\n2026-01-05,Bench,3,225KG\n', 225],
+    ['225Kg mixed case', 'Date,Exercise,Reps,Weight (lbs)\n2026-01-05,Bench,3,225Kg\n', 225],
+    [
+      '225LBS uppercase',
+      'Date,Exercise,Reps,Weight (lbs)\n2026-01-05,Bench,3,225LBS\n',
+      225 * 0.453592,
+    ],
+    [
+      '225lbs lowercase',
+      'Date,Exercise,Reps,Weight (lbs)\n2026-01-05,Bench,3,225lbs\n',
+      225 * 0.453592,
+    ],
+  ])('parses case-insensitive units: %s', (_, csv, expectedWeightKg) => {
+    const [record] = parse(csv);
+    expect(record.weight).toBeCloseTo(expectedWeightKg, 2);
+  });
+});
+
+describe('csvParser — reps validation', () => {
+  it.each([
+    ['zero reps', 'Date,Exercise,Reps,Weight (lbs)\n2026-01-05,Bench,0,85\n'],
+    ['negative reps', 'Date,Exercise,Reps,Weight (lbs)\n2026-01-05,Bench,-5,85\n'],
+  ])('throws ParseError on %s', (_, csv) => {
+    expect(() => parse(csv)).toThrow(ParseError);
   });
 });
