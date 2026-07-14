@@ -16,6 +16,16 @@ function parseDate(dateStr: string): number {
   return d.setHours(0, 0, 0, 0);
 }
 
+function findHeaderLineIndex(lines: string[]): number {
+  for (let i = 0; i < lines.length; i++) {
+    const cells = lines[i].split(',').map((cell) => cell.trim().toLowerCase());
+    if (cells.some((cell) => cell.startsWith('exercise'))) {
+      return i;
+    }
+  }
+  return -1;
+}
+
 function extractUnitFromCell(v: string): { weight: number; unit: Unit } | null {
   const m = v.match(/^([\d.]+)(kg|lbs)$/);
   const w = m ? parseFloat_(m[1]) : null;
@@ -29,7 +39,12 @@ export const csvParser: Parser = {
   },
 
   parse(input: RawInput, ctx: ParseContext): SetRecord[] {
-    const { data, meta } = Papa.parse<Record<string, string>>(input.content, {
+    const lines = input.content.split('\n');
+    const headerLineIndex = findHeaderLineIndex(lines);
+    const contentToParse =
+      headerLineIndex === -1 ? input.content : lines.slice(headerLineIndex).join('\n');
+
+    const { data, meta } = Papa.parse<Record<string, string>>(contentToParse, {
       header: true,
       skipEmptyLines: 'greedy',
     });
@@ -47,9 +62,14 @@ export const csvParser: Parser = {
       })?.[1];
     };
 
+    const headerErrorLine = headerLineIndex === -1 ? 1 : headerLineIndex + 1;
     ['Date', 'Exercise', 'Reps', 'Weight'].forEach((f) => {
       if (!findH(f)) {
-        throw new ParseError(`Missing required column: ${f}`, 1, (meta.fields || []).join(','));
+        throw new ParseError(
+          `Missing required column: ${f}`,
+          headerErrorLine,
+          (meta.fields || []).join(',')
+        );
       }
     });
 
@@ -60,7 +80,7 @@ export const csvParser: Parser = {
       };
 
     return data.map((row, idx) => {
-      const lineNum = idx + 2,
+      const lineNum = idx + 2 + (headerLineIndex === -1 ? 0 : headerLineIndex),
         rawStr = Object.values(row).join(','),
         dateStr = row[hMap.get('date')!],
         ex = row[hMap.get('exercise')!],

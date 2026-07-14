@@ -39,8 +39,22 @@ const emptyColumns: ColumnInfo = {
 };
 const emptyLiftTypes = () => ({ squat: 0, bench: 0, deadlift: 0, accessory: 0 });
 
+function findHeaderLineIndex(lines: string[]): number {
+  return lines.findIndex((line) => {
+    if (line.trim().length === 0) {
+      return false;
+    }
+    const cells = line.split(',').map((c) => c.trim().toLowerCase());
+    return cells.some((cell) => cell.startsWith('exercise'));
+  });
+}
+
 export function validateSheetCsv(csv: string): SheetValidationResult {
-  const { data, meta } = Papa.parse<Record<string, string>>(csv, {
+  const lines = csv.split('\n');
+  const headerIdx = findHeaderLineIndex(lines);
+  const csvToParse = headerIdx === -1 ? csv : lines.slice(headerIdx).join('\n');
+
+  const { data, meta } = Papa.parse<Record<string, string>>(csvToParse, {
     header: true,
     skipEmptyLines: 'greedy',
   });
@@ -99,7 +113,7 @@ export function validateSheetCsv(csv: string): SheetValidationResult {
   if (issues.length > 0) {
     return {
       verdict: 'error',
-      headerRow: 0,
+      headerRow: headerIdx === -1 ? null : headerIdx,
       columns,
       rows: { total: 0, parsed: 0, liftTypes: emptyLiftTypes() },
       issues,
@@ -216,7 +230,7 @@ export function validateSheetCsv(csv: string): SheetValidationResult {
   return {
     verdict:
       issues.length > 0 || numParsed === 0 ? 'error' : warnings.length > 0 ? 'warning' : 'ok',
-    headerRow: 0,
+    headerRow: headerIdx === -1 ? null : headerIdx,
     columns,
     rows: { total, parsed: numParsed, liftTypes },
     issues,

@@ -34,3 +34,50 @@ describe('csvParser — error handling', () => {
     expect(() => parse(csv)).toThrow(ParseError);
   });
 });
+
+describe('csvParser — header scanning', () => {
+  it.each([
+    [
+      'parses correctly with leading title row before header',
+      'My Training Log\nDate,Exercise,Reps,Weight (lbs)\n2026-01-05,Bench,3,85\n',
+      { date: new Date('2026-01-05').setHours(0, 0, 0, 0), exercise: 'Bench', reps: 3 },
+    ],
+    [
+      'parses correctly with leading blank line before header',
+      '\nDate,Exercise,Reps,Weight (lbs)\n2026-01-05,Squat,5,155\n',
+      { date: new Date('2026-01-05').setHours(0, 0, 0, 0), exercise: 'Squat', reps: 5 },
+    ],
+    [
+      'parses correctly with multiple leading non-header rows',
+      'Training Log v2.0\nSession Data\nDate,Exercise,Reps,Weight (lbs)\n2026-01-05,Deadlift,2,225\n',
+      { date: new Date('2026-01-05').setHours(0, 0, 0, 0), exercise: 'Deadlift', reps: 2 },
+    ],
+  ])('%s', (_, csv, expected) => {
+    const [record] = parse(csv);
+    expect(record.date).toBe(expected.date);
+    expect(record.exercise).toBe(expected.exercise);
+    expect(record.reps).toBe(expected.reps);
+  });
+
+  it('reports correct line number for ParseError when header is not on line 1', () => {
+    const csv = 'My Training Log\nDate,Exercise,Reps,Weight (lbs)\n2026-01-05,Bench,invalid,85\n';
+    try {
+      parse(csv);
+      expect.fail('should have thrown ParseError');
+    } catch (err) {
+      expect(err).toBeInstanceOf(ParseError);
+      expect((err as ParseError).line).toBe(3);
+    }
+  });
+
+  it('reports correct line number for ParseError with multiple leading rows', () => {
+    const csv = 'Title\nNotes\nDate,Exercise,Reps,Weight (lbs)\n2026-01-05,Bench,bad,85\n';
+    try {
+      parse(csv);
+      expect.fail('should have thrown ParseError');
+    } catch (err) {
+      expect(err).toBeInstanceOf(ParseError);
+      expect((err as ParseError).line).toBe(4);
+    }
+  });
+});

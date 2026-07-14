@@ -129,4 +129,33 @@ describe('validateSheetCsv (pipeline-native)', () => {
     expect(validRpe.rows.parsed).toBe(1);
     expect(validRpe.rowIssues).toEqual([]);
   });
+
+  it('scans for header row with leading title/notes row', () => {
+    const csv = 'My Squat Log\ndate,exercise,weight (lbs),reps,sets\n2024-11-04,Squat,405,2,1\n';
+    const r = validateSheetCsv(csv);
+    expect(r.verdict).toBe('ok');
+    expect(r.rows.total).toBe(1);
+    expect(r.rows.parsed).toBe(1);
+    expect(r.headerRow).toBe(1);
+  });
+
+  it('scans for header row with leading blank lines', () => {
+    const csv = '\n\ndate,exercise,weight (lbs),reps,sets\n2024-11-04,Squat,405,2,1\n';
+    const r = validateSheetCsv(csv);
+    expect(r.verdict).toBe('ok');
+    expect(r.rows.total).toBe(1);
+    expect(r.rows.parsed).toBe(1);
+    expect(r.headerRow).toBe(2);
+  });
+
+  it('reports headerRow: 0 when header is on first line', () => {
+    const r = validateSheetCsv(GOOD);
+    expect(r.headerRow).toBe(0);
+  });
+
+  it('reports headerRow: null when no header found', () => {
+    const r = validateSheetCsv('foo,bar\n1,2');
+    expect(r.verdict).toBe('error');
+    expect(r.headerRow).toBeNull();
+  });
 });
