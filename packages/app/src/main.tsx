@@ -25,6 +25,10 @@ const PipelineValidationPage = lazy(() =>
   }))
 );
 
+const CoachViewPage = lazy(() =>
+  import('./features/coach-view/CoachViewPage.tsx').then((m) => ({ default: m.CoachViewPage }))
+);
+
 function resolvePageComponent(page: string | null) {
   if (page === 'conjugate') {
     return (
@@ -54,13 +58,20 @@ function resolvePageComponent(page: string | null) {
       </Suspense>
     );
   }
+  if (page === 'coach') {
+    return (
+      <Suspense>
+        <CoachViewPage />
+      </Suspense>
+    );
+  }
   if (page === null) {
     return <App />;
   }
   return <p>Page not found.</p>;
 }
 
-const KNOWN_PAGES = new Set(['conjugate', 'index', 'validator', 'pipeline-validation']);
+const KNOWN_PAGES = new Set(['conjugate', 'index', 'validator', 'pipeline-validation', 'coach']);
 
 function resolvePage(): string | null {
   const queryPage = new URLSearchParams(window.location.search).get('page');

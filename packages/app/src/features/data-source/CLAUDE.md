@@ -2,13 +2,13 @@
 
 Data input UI and utilities for URL-based sheet fetching and pasted-text parsing.
 
-| File                     | Purpose                                                                                                           |
-| ------------------------ | ----------------------------------------------------------------------------------------------------------------- |
-| `SheetUrlPanel.tsx`      | Main data source panel UI; toggles between URL input and paste-text input modes with refresh/mode-change handlers |
-| `GettingStarted.tsx`     | Onboarding checklist shown before any data is entered                                                             |
-| `InputModeToggle.tsx`    | Button toggle for switching between URL and paste-text input modes                                                |
-| `useResolvedRawInput.ts` | React hook resolving `RawInput[]` from either input mode (CSV fetch or pasted text); handles errors and caching   |
-| `sheetRef.ts`            | Pure `extractSheetRef` helper parsing Google Sheets URLs; exports example sheet URLs                              |
-| `sheetFetch.ts`          | CSV fetching utilities: `fetchSheetCsv`, `sheetCsvUrl`, `publishedCsvUrl`, `csvFetchError`                        |
-| `sheetCacheUtils.ts`     | Serialize/deserialize helpers for localStorage-persisted raw-input cache (handles `Date` round-tripping)          |
-| `rawInput.ts`            | Pure `buildRawInput` helper and `PLACEHOLDER_ATHLETE` constant                                                    |
+| File                     | Purpose                                                                                                                                                                                                                                          |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `SheetUrlPanel.tsx`      | Main data source panel UI; toggles between URL input and paste-text input modes with refresh/mode-change handlers                                                                                                                                |
+| `GettingStarted.tsx`     | Onboarding checklist shown before any data is entered                                                                                                                                                                                            |
+| `InputModeToggle.tsx`    | Button toggle for switching between URL and paste-text input modes                                                                                                                                                                               |
+| `useResolvedRawInput.ts` | React hook resolving `RawInput[]` from either input mode (CSV fetch or pasted text); handles errors and caching                                                                                                                                  |
+| `sheetRef.ts`            | Pure `extractSheetRef` helper parsing Google Sheets URLs; exports example sheet URLs                                                                                                                                                             |
+| `sheetFetch.ts`          | CSV fetching utilities: `fetchSheetCsv`, `sheetCsvUrl`, `publishedCsvUrl`, `csvFetchError`, `INDEX_SHEET_ID` (hardcoded published index sheet id, shared by `features/index-page/useIndexData.ts` and `features/coach-view/useCoachViewData.ts`) |
+| `sheetCacheUtils.ts`     | Serialize/deserialize helpers for localStorage-persisted raw-input cache (handles `Date` round-tripping)                                                                                                                                         |
+| `rawInput.ts`            | Pure `buildRawInput` helper and `PLACEHOLDER_ATHLETE` constant                                                                                                                                                                                   |

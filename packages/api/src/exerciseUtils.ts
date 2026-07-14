@@ -23,6 +23,9 @@ const LIFT_DISPLAY: Record<string, string> = {
   deadlift: 'Deadlift',
 };
 const BAND_MAGS = new Set(['light', 'mini', 'micro', 'heavy', 'medium']);
+const LIFTS = new Set(['squat', 'bench', 'deadlift']);
+const ADDL_SETS = new Set(['chains', 'bands', 'rev-bands']);
+const BAND_UNSPEC = new Set([...BAND_MAGS, 'unspecified'] as string[]);
 
 function formatEquipmentToken(equipment: string, magnitude: string | null): string {
   const m = magnitude ?? '1';
@@ -54,7 +57,7 @@ export function formatExerciseDisplayName(canonical: string): string {
     }
     const tokens = canonical.split('-');
     const [liftType, ...rest] = tokens;
-    if (!new Set(['squat', 'bench', 'deadlift']).has(liftType)) {
+    if (!LIFTS.has(liftType)) {
       return fallback();
     }
 
@@ -80,9 +83,9 @@ export function formatExerciseDisplayName(canonical: string): string {
 
     let i = 0;
     while (i < norm.length) {
-      const tok = norm[i];
-      const next = norm[i + 1];
-      const isNum = next && /^\d+$/.test(next);
+      const tok = norm[i],
+        next = norm[i + 1],
+        isNum = next && /^\d+$/.test(next);
 
       if (barSet.has(tok) && !bar) {
         bar = tok;
@@ -95,16 +98,12 @@ export function formatExerciseDisplayName(canonical: string): string {
         const hasMag = ['board', 'blocks', 'deficit'].includes(tok) && isNum;
         equipMag = hasMag ? next : null;
         i += hasMag ? 2 : 1;
-      } else if (new Set(['chains', 'bands', 'rev-bands']).has(tok)) {
+      } else if (ADDL_SETS.has(tok)) {
         let mag: string | null = null;
         if (tok === 'chains' && isNum) {
           mag = next;
           i += 2;
-        } else if (
-          tok !== 'chains' &&
-          next &&
-          new Set([...BAND_MAGS, 'unspecified'] as string[]).has(next)
-        ) {
+        } else if (tok !== 'chains' && next && BAND_UNSPEC.has(next)) {
           mag = next === 'unspecified' ? null : next;
           i += 2;
         } else {
@@ -136,4 +135,12 @@ export function formatExerciseDisplayName(canonical: string): string {
   } catch {
     return fallback();
   }
+}
+
+export function buildExerciseDisplayNameIndex(
+  canonicals: string[]
+): { canonical: string; displayName: string }[] {
+  return Array.from(new Set(canonicals))
+    .map((canonical) => ({ canonical, displayName: formatExerciseDisplayName(canonical) }))
+    .sort((a, b) => a.displayName.localeCompare(b.displayName));
 }

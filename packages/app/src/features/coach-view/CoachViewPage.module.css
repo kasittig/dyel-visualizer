@@ -1,0 +1,129 @@
+/* Reuse table styles from DiagnosticsPanel */
+.table {
+  composes: table from '../lift/DiagnosticsPanel.module.css';
+}
+.thead {
+  composes: thead from '../lift/DiagnosticsPanel.module.css';
+}
+.cellLeft {
+  composes: cellLeft from '../lift/DiagnosticsPanel.module.css';
+}
+.cellMono {
+  composes: cellMono from '../lift/DiagnosticsPanel.module.css';
+}
+.bodyRow {
+  composes: bodyRow from '../lift/DiagnosticsPanel.module.css';
+}
+
+/* Page container */
+.main {
+  padding: 2rem;
+  font-family: var(--sans);
+  text-align: left;
+}
+
+/* Error message styling */
+.errorMsg {
+  color: var(--danger);
+  margin: 0;
+}
+
+/* Header flex row with dropdown, reps input, and unit toggle */
+.header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.headerRow {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+/* Reps input field */
+.repsInput {
+  width: 60px;
+  padding: 0.3rem 0.5rem;
+  font-size: 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--code-bg);
+  color: var(--text-h);
+  font-family: var(--mono);
+  outline: none;
+}
+
+.repsInput:focus {
+  border-color: var(--accent-border);
+  box-shadow: 0 0 0 3px var(--accent-bg);
+}
+
+/* Unit toggle chip group, reused from StrengthScoreCalculator */
+.chipGroup {
+  composes: chipGroup from '../calculator/StrengthScoreCalculator.module.css';
+}
+.chip {
+  composes: chip from '../calculator/StrengthScoreCalculator.module.css';
+}
+.chipActive {
+  composes: chipActive from '../calculator/StrengthScoreCalculator.module.css';
+}
+
+/* Exercise and reps display line */
+.headerLine {
+  margin: 1rem 0;
+  font-weight: 600;
+  font-family: var(--heading);
+  color: var(--text-h);
+  font-size: 0.95rem;
+}
+
+/* Empty state message */
+.emptyState {
+  color: var(--muted);
+  font-style: italic;
+  font-size: 0.9rem;
+  margin: 1rem 0;
+}
+
+/* Error note below table */
+.errorNote {
+  color: var(--muted);
+  font-size: 0.85rem;
+  margin-top: 0.5rem;
+}
+
+/* Placeholder cell text for lifters with no data for the selected exercise */
+.placeholderCell {
+  color: var(--muted);
+  font-style: italic;
+}
+
+/* Thick divider between the Lifter/Target weight column pair and the
+   Last performed/e1RM column pair */
+.columnDivider {
+  border-right: 2px solid var(--border);
+}
+
+.backLink {
+  margin-bottom: 1.5rem;
+}
+
+.accentLink {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.coachViewPage {
+  text-align: left;
+  padding: 1rem;
+  max-width: 700px;
+  font-family: var(--heading);
+  font-size: 2rem;
+  letter-spacing: -0.5px;
+  margin: 0 0 1.5rem;
+  color: var(--text-h);
+}
