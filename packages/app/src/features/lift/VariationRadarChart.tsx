@@ -2,7 +2,7 @@ import { usePipelineVariationRadarData } from './usePipelineVariationRadarData';
 import { BaseRadarChart } from '../../shared/charts/BaseRadarChart';
 import { ChartTooltip, type TooltipLine } from '../../shared/charts/TooltipCard';
 import { CollapsibleSection } from '../../shared/components/CollapsibleSection';
-import { roundWeight, type RadarRow } from '@dyel/api';
+import { formatChartDate, roundWeight, type RadarRow } from '@dyel/api';
 import styles from './VariationRadarChart.module.css';
 
 export function VariationRadarChart({
@@ -43,13 +43,7 @@ export function VariationRadarChart({
                 }
                 const name = (item.payload as RadarRow).variation;
                 const last = lastSessionByLabel.get(name);
-                const dStr = last
-                  ? new Date(`${last.date}T00:00:00`).toLocaleDateString(undefined, {
-                      month: 'short',
-                      day: 'numeric',
-                      year: 'numeric',
-                    })
-                  : 'Never';
+                const dStr = last ? formatChartDate(last.date) : 'Never';
 
                 const lines: TooltipLine[] = [
                   {
