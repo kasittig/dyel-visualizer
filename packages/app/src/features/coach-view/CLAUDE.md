@@ -26,8 +26,9 @@ reps? }>` (`overridesByLifter`) so a coach can pin an individual lifter's row to
 exercise and/or rep count than the top-level selectors. `rows` resolves each lifter's
 `effectiveDisplayName`/`effectiveReps` as `override ?? top-level value`, and each row carries
 `onExerciseChange`/`onRepsChange` closures (bound to that lifter's name) that
-`CoachViewPage.tsx` wires directly into a per-row `TypeaheadDropdown` and reps `<input>`,
-keeping the page component override-map-agnostic. Changing a top-level selector
+`CoachViewPage.tsx` wires directly into a per-row `TypeaheadDropdown` (scoped to that lifter's
+`availableExerciseOptions` — exercises with e1RM data for that lifter, or the full global list
+if the sheet failed to load) and reps `<input>`, keeping the page component override-map-agnostic. Changing a top-level selector
 (`setSelectedDisplayName`/`setReps`) resets only the matching field's per-lifter overrides
 across all lifters — an exercise change doesn't clear reps overrides and vice versa — so a
 lifter's override on the _other_ field survives a global change. Per-row inputs render and

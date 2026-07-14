@@ -122,7 +122,7 @@ export function CoachViewPage() {
                         <TableCell variant="mono">{row.lifterName}</TableCell>
                         <TableCell variant="mono">
                           <TypeaheadDropdown
-                            options={exerciseOptions}
+                            options={row.availableExerciseOptions}
                             value={row.effectiveDisplayName || null}
                             onChange={row.onExerciseChange}
                             placeholder="Search exercise..."

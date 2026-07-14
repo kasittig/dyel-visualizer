@@ -27,6 +27,7 @@ export interface CoachViewRow {
   hasData: boolean;
   effectiveDisplayName: string;
   effectiveReps: number;
+  availableExerciseOptions: string[];
   onExerciseChange: (displayName: string) => void;
   onRepsChange: (reps: number) => void;
 }
@@ -103,7 +104,8 @@ export function useCoachViewSelection(results: LifterPipelineResult[]) {
       effectiveDisplayName: string,
       effectiveReps: number,
       onExerciseChange: (displayName: string) => void,
-      onRepsChange: (reps: number) => void
+      onRepsChange: (reps: number) => void,
+      availableExerciseOptions: string[]
     ): CoachViewRow => ({
       lifterName: name,
       e1rmDisplay: '—',
@@ -113,6 +115,7 @@ export function useCoachViewSelection(results: LifterPipelineResult[]) {
       hasData: false,
       effectiveDisplayName,
       effectiveReps,
+      availableExerciseOptions,
       onExerciseChange,
       onRepsChange,
     });
@@ -122,6 +125,16 @@ export function useCoachViewSelection(results: LifterPipelineResult[]) {
       const effectiveDisplayName = override?.displayName ?? selectedDisplayName;
       const effectiveCanonical = displayNameToCanonical.get(effectiveDisplayName) ?? null;
       const effectiveReps = override?.reps ?? reps;
+
+      const availableExerciseOptions =
+        res.status === 'success'
+          ? exerciseOptions.filter((name) => {
+              const canonical = displayNameToCanonical.get(name);
+              return (res.model.pointsByDeriver.get('e1rm') ?? []).some(
+                (p) => p.series === canonical
+              );
+            })
+          : exerciseOptions;
 
       const onExerciseChange = (displayName: string) =>
         setOverridesByLifter((prev) => {
@@ -144,7 +157,8 @@ export function useCoachViewSelection(results: LifterPipelineResult[]) {
           effectiveDisplayName,
           effectiveReps,
           onExerciseChange,
-          onRepsChange
+          onRepsChange,
+          availableExerciseOptions
         );
       }
 
@@ -158,7 +172,8 @@ export function useCoachViewSelection(results: LifterPipelineResult[]) {
           effectiveDisplayName,
           effectiveReps,
           onExerciseChange,
-          onRepsChange
+          onRepsChange,
+          availableExerciseOptions
         );
       }
 
@@ -175,6 +190,7 @@ export function useCoachViewSelection(results: LifterPipelineResult[]) {
         hasData: true,
         effectiveDisplayName,
         effectiveReps,
+        availableExerciseOptions,
         onExerciseChange,
         onRepsChange,
       };
@@ -187,6 +203,7 @@ export function useCoachViewSelection(results: LifterPipelineResult[]) {
     selectedDisplayName,
     overridesByLifter,
     displayNameToCanonical,
+    exerciseOptions,
   ]);
 
   return {

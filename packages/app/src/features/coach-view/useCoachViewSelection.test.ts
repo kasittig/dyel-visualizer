@@ -454,6 +454,56 @@ describe('useCoachViewSelection', () => {
     });
   });
 
+  describe('availableExerciseOptions filtering', () => {
+    it.each([
+      [
+        'subset filtering: lifter has some but not all exercises',
+        [
+          successResult(
+            'L1',
+            minimalPipelineModel([], [point(1, 100, 'squat'), point(1, 90, 'bench')])
+          ),
+          successResult(
+            'L2',
+            minimalPipelineModel([], [point(1, 110, 'bench'), point(1, 105, 'deadlift')])
+          ),
+        ],
+        { L1: ['Bench Press', 'Squat'], L2: ['Bench Press', 'Deadlift'] },
+      ],
+      [
+        'empty list: lifter has no e1rm data at all',
+        [
+          successResult('L1', minimalPipelineModel([], [point(1, 100, 'squat')])),
+          successResult('L2', minimalPipelineModel([], [])),
+        ],
+        { L1: ['Squat'], L2: [] },
+      ],
+      [
+        'error fallback: errored lifter gets full exerciseOptions',
+        [
+          successResult(
+            'L1',
+            minimalPipelineModel([], [point(1, 100, 'squat'), point(1, 90, 'bench')])
+          ),
+          errorResult('L2'),
+        ],
+        { L1: ['Bench Press', 'Squat'], L2: ['Bench Press', 'Squat'] },
+      ],
+    ])('%s', (_, results, expectedByLifter) => {
+      const { result } = renderHook(() => useCoachViewSelection(results));
+
+      // Set a canonical to populate rows
+      if (result.current.exerciseOptions.length > 0) {
+        act(() => result.current.setSelectedDisplayName(result.current.exerciseOptions[0]));
+      }
+
+      for (const [lifterName, expected] of Object.entries(expectedByLifter)) {
+        const row = result.current.rows.find((r) => r.lifterName === lifterName);
+        expect(row?.availableExerciseOptions).toEqual(expected);
+      }
+    });
+  });
+
   describe('integration: full workflow', () => {
     it('handles multi-lifter coach selection workflow', () => {
       const l1Model = minimalPipelineModel(

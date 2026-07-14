@@ -54,6 +54,7 @@ const mockRow = (overrides?: Partial<CoachViewRow>): CoachViewRow => ({
   hasData: true,
   effectiveDisplayName: 'Bench Press',
   effectiveReps: 1,
+  availableExerciseOptions: ['Bench Press', 'Squat', 'Deadlift'],
   onExerciseChange: vi.fn(),
   onRepsChange: vi.fn(),
   ...overrides,
