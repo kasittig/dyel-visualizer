@@ -299,7 +299,7 @@ describe('classifyAccessoryEffects', () => {
     ['Skull Crusher (Tri)', ['TRICEPS']],
     ['Glute Bridge', ['POSTERIOR_CHAIN']],
     ['GHR', ['POSTERIOR_CHAIN']],
-    ['Bicep Curl', []],
+    ['Bicep Curl', ['BICEPS']],
   ])('classifies "%s" as %s', (name, expected) => {
     expect(classifyAccessoryEffects(name)).toEqual(expected);
   });
