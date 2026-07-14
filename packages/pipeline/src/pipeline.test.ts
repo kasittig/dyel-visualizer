@@ -141,4 +141,33 @@ describe('pipeline orchestration', () => {
       expect([...r.tags].some((t) => t.startsWith('accessory:'))).toBe(false);
     });
   });
+
+  it('includes accessory records in pointsByDeriver/pointsByLabelByDeriver so app Accessories tab charts render', () => {
+    // Regression test: pointsByDeriver/pointsByLabelByDeriver used to be built from compTagged
+    // only, so any spec filtering on `lift:accessory` (e.g. @dyel/api's conjugateChartSpecs,
+    // consumed by the app's Accessories tab) always resolved empty, even though
+    // PipelineModel.tagged itself did include accessory records. Points must be built from the
+    // full tagged set (compTagged + accessoryTagged) for that tab to actually render data.
+    const log = `units: kg
+2024-01-01 Squat 100 x5 @8
+2024-01-01 Bench 80 x5 @8
+2024-01-01 Bicep Curl 15 x10 @8`;
+
+    const model = runPipelineModel([{ name: 'log.txt', content: log }], ath());
+
+    const accessoryTagged = model.tagged.filter((r) => r.tags.has('lift:accessory'));
+    expect(accessoryTagged.length).toBe(1);
+    const accessoryCanonical = accessoryTagged[0].canonical;
+
+    const e1rmPoints = model.pointsByDeriver.get('e1rm') ?? [];
+    expect(e1rmPoints.some((p) => p.series === accessoryCanonical)).toBe(true);
+
+    const e1rmLabelPoints = model.pointsByLabelByDeriver.get('e1rm') ?? [];
+    expect(e1rmLabelPoints.some((p) => p.tags.has('lift:accessory'))).toBe(true);
+
+    // The normalization model itself must remain scoped to comp lifts only — an accessory
+    // canonical should never appear in the fitted baseline/variantFactor.
+    expect(Object.values(model.model.baseline)).not.toContain(accessoryCanonical);
+    expect(model.model.variantFactor[accessoryCanonical]).toBeUndefined();
+  });
 });

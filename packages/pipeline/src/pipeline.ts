@@ -127,8 +127,15 @@ export function runPipelineModel(
   const model = fitNormalizationModel(compTagged, { minSamples: 1 }, athlete);
   const allDeriverIds = Object.keys(derivers);
 
-  const canonicalGroups = groupByDateAndCanonical(compTagged);
-  const labelGroups = groupByDateAndLabel(compTagged);
+  // Points/diagnostics are built from the FULL tagged set (compTagged + accessoryTagged), not
+  // compTagged alone, so the app's Accessories tab (which filters on `lift:accessory` via
+  // conjugateChartSpecs) actually gets chart data instead of always resolving empty. Only the
+  // normalization MODEL itself (above) stays scoped to compTagged — baseline/variant-factor
+  // fitting only ever makes sense for the three comp lifts. Derivers are lift-type-agnostic
+  // (pure weight/reps/rpe math), and `diagnose` already treats any canonical with no fitted
+  // `variantFactor` (true for every accessory canonical) as `unassessed` rather than erroring.
+  const canonicalGroups = groupByDateAndCanonical(tagged);
+  const labelGroups = groupByDateAndLabel(tagged);
   const pointsByDeriver = new Map(
     allDeriverIds.map((id) => [id, buildPointsFromGroups(canonicalGroups, id)])
   );
