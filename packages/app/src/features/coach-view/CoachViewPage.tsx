@@ -1,3 +1,4 @@
+import clsx from 'clsx';
 import { useCoachViewData } from './useCoachViewData';
 import { useCoachViewSelection } from './useCoachViewSelection';
 import { TypeaheadDropdown } from '../../shared/components';
@@ -12,7 +13,7 @@ export function CoachViewPage() {
     reps,
     setReps,
     unit,
-    toggleUnit,
+    setUnit,
     selectedCanonical,
     rows,
     erroredLifterCount,
@@ -36,6 +37,12 @@ export function CoachViewPage() {
 
   return (
     <main className={styles.main}>
+      <p className={styles.backLink}>
+        <a href="." className={styles.accentLink}>
+          ← Back to DYEL Visualizer
+        </a>
+      </p>
+      <div className={styles.coachViewPage}>Coach View</div>
       <div className={styles.header}>
         <TypeaheadDropdown
           options={exerciseOptions}
@@ -43,6 +50,7 @@ export function CoachViewPage() {
           onChange={setSelectedDisplayName}
           placeholder="Search exercise..."
         />
+        for
         <input
           type="number"
           min={1}
@@ -54,16 +62,24 @@ export function CoachViewPage() {
             setReps(Number.isNaN(val) || val < 1 ? 1 : val);
           }}
         />
-        <button className={styles.unitToggle} onClick={toggleUnit} type="button">
-          {unit}
-        </button>
+        rep{reps > 1 ? 's' : ''} (in
+        <div className={styles.chipGroup}>
+          {(['lbs', 'kg'] as const).map((u) => (
+            <button
+              key={u}
+              type="button"
+              onClick={() => setUnit(u)}
+              className={clsx(styles.chip, unit === u && styles.chipActive)}
+            >
+              {u}
+            </button>
+          ))}
+          )
+        </div>
       </div>
 
       {selectedCanonical && (
         <>
-          <div className={styles.headerLine}>
-            EXERCISE: {selectedDisplayName} # reps: {reps}
-          </div>
           {!rows.length ? (
             <div className={styles.emptyState}>No data for this exercise yet</div>
           ) : (
@@ -71,30 +87,34 @@ export function CoachViewPage() {
               <table className={styles.table}>
                 <thead>
                   <tr className={styles.thead}>
-                    <th className={styles.cellLeft}>Lifter</th>
+                    <th className={styles.cellMono}>Lifter</th>
+                    <th className={clsx(styles.cellMono, styles.columnDivider)}>Target weight</th>
+                    <th className={styles.cellMono}>Last performed</th>
                     <th className={styles.cellMono}>e1RM</th>
-                    <th className={styles.cellLeft}>Last time performed</th>
-                    <th className={styles.cellLeft}>Target weight</th>
                   </tr>
                 </thead>
                 <tbody>
                   {rows.map((row) => (
                     <tr key={row.lifterName} className={styles.bodyRow}>
-                      <td className={styles.cellLeft}>{row.lifterName}</td>
+                      <td className={styles.cellMono}>{row.lifterName}</td>
                       <td
-                        className={`${styles.cellMono} ${!row.hasData ? styles.placeholderCell : ''}`}
+                        className={clsx(
+                          styles.cellMono,
+                          styles.columnDivider,
+                          !row.hasData && styles.placeholderCell
+                        )}
                       >
-                        {row.e1rmDisplay}
+                        {row.targetWeightDisplay}
                       </td>
                       <td
-                        className={`${styles.cellLeft} ${!row.hasData ? styles.placeholderCell : ''}`}
+                        className={`${styles.cellMono} ${!row.hasData ? styles.placeholderCell : ''}`}
                       >
                         {row.lastPerformedDisplay}
                       </td>
                       <td
-                        className={`${styles.cellLeft} ${!row.hasData ? styles.placeholderCell : ''}`}
+                        className={`${styles.cellMono} ${!row.hasData ? styles.placeholderCell : ''}`}
                       >
-                        {row.targetWeightDisplay}
+                        {row.e1rmDisplay}
                       </td>
                     </tr>
                   ))}

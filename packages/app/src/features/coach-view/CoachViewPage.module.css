@@ -61,26 +61,15 @@
   box-shadow: 0 0 0 3px var(--accent-bg);
 }
 
-/* Unit toggle button */
-.unitToggle {
-  padding: 0.3rem 0.75rem;
-  font-size: 0.9rem;
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  background: var(--code-bg);
-  color: var(--text);
-  cursor: pointer;
-  font-family: var(--sans);
-  transition:
-    background 0.15s,
-    border-color 0.15s,
-    color 0.15s;
+/* Unit toggle chip group, reused from StrengthScoreCalculator */
+.chipGroup {
+  composes: chipGroup from '../calculator/StrengthScoreCalculator.module.css';
 }
-
-.unitToggle:hover {
-  background: var(--accent-bg);
-  border-color: var(--accent-border);
-  color: var(--accent);
+.chip {
+  composes: chip from '../calculator/StrengthScoreCalculator.module.css';
+}
+.chipActive {
+  composes: chipActive from '../calculator/StrengthScoreCalculator.module.css';
 }
 
 /* Exercise and reps display line */
@@ -111,4 +100,30 @@
 .placeholderCell {
   color: var(--muted);
   font-style: italic;
+}
+
+/* Thick divider between the Lifter/Target weight column pair and the
+   Last performed/e1RM column pair */
+.columnDivider {
+  border-right: 2px solid var(--border);
+}
+
+.backLink {
+  margin-bottom: 1.5rem;
+}
+
+.accentLink {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.coachViewPage {
+  text-align: left;
+  padding: 1rem;
+  max-width: 700px;
+  font-family: var(--heading);
+  font-size: 2rem;
+  letter-spacing: -0.5px;
+  margin: 0 0 1.5rem;
+  color: var(--text-h);
 }

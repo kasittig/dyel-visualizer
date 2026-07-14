@@ -135,7 +135,10 @@ describe('CoachViewPage', () => {
       expect(screen.getByRole('button', { name: 'lbs' })).toBeDefined();
 
       if (selectionState.selectedCanonical && selectionState.rows.length) {
-        expect(screen.getByText(new RegExp(selectionState.selectedDisplayName))).toBeDefined();
+        expect(screen.getByPlaceholderText('Search exercise...')).toHaveProperty(
+          'value',
+          selectionState.selectedDisplayName
+        );
         expect(screen.getByRole('table')).toBeDefined();
         expect(screen.getAllByRole('row')).toHaveLength(selectionState.rows.length + 1);
         selectionState.rows.forEach((r) => expect(screen.getByText(r.lifterName)).toBeDefined());
