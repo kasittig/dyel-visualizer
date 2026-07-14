@@ -23,6 +23,18 @@ Every record carries `meta.rawUnit` / `meta.rawWeight` (audit trail).
   before the actual header. Dataset unit sniffed from headers ("weight (lbs)");
   record-level from a unit column or cell suffix ("225lbs"). Reps via `parseInt`
   - `isNaN` hard-fail → `ParseError` on non-numeric input (e.g., "AMRAP", "max").
+    Date cells accept ISO `YYYY-MM-DD` OR unpadded/padded `M/D/YYYY` OR `M/D/YY` (e.g.
+    `2/6/2026`, `02/06/2026`, `1/1/26`) — unlike `freeform/`'s intentionally ISO-only dates
+    (below), CSV must tolerate both slash shapes because that's the actual date shape
+    Google Sheets' default published-CSV export produces when a sheet's date column has no
+    explicit format applied (the common case for a real user's sheet); rejecting either
+    shape silently discarded every row in the file (a single bad row aborts the whole
+    `.map()`, per the hard-fail policy below), leaving the app with zero tagged records and
+    no lift tabs at all — this is exactly what happened with a real sheet whose column was
+    formatted `M/D/YY` (see `app/test/fixtures/conjugate-top-set-log.csv`). The 2-digit-year
+    shape assumes 20xx (no windowing logic — not worth it until a real 19xx sheet surfaces).
+    All shapes parse via `Date.UTC`, never local-time `Date` construction, to avoid
+    timezone corruption. Any other shape still hard-fails with `ParseError`.
 - `freeform/`: line-oriented, one exercise entry per line, e.g.
   `7/3 comp squat 1rm 200kg`. Whitespace-insensitive tokenizer + per-line
   semantic role assignment (NOT positional templates):

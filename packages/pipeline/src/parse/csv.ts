@@ -10,11 +10,27 @@ const parseNum = (v: string) => {
 };
 
 function parseDate(dateStr: string, lineNum?: number, rawStr?: string): number {
-  const match = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const trimmed = dateStr.trim();
+  const iso = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  // Google Sheets' default published-CSV export renders dates as unpadded M/D/YYYY
+  // (e.g. "2/2/2026"), not ISO — accept that shape too so a real published sheet with an
+  // unformatted date column (the common case) parses instead of hard-failing the whole file.
+  const usSlash = trimmed.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  // Some sheets' date columns are formatted as M/D/YY (2-digit year, e.g. "1/1/26") rather
+  // than M/D/YYYY — a real published sheet hit this and hard-failed on the very first row
+  // (a single bad row aborts the whole file's .map()), so accept it too. Assumes 20xx.
+  const usSlashShortYear = trimmed.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2})$/);
+  const match = iso
+    ? [iso[1], iso[2], iso[3]]
+    : usSlash
+      ? [usSlash[3], usSlash[1], usSlash[2]]
+      : usSlashShortYear
+        ? [`20${usSlashShortYear[3]}`, usSlashShortYear[1], usSlashShortYear[2]]
+        : null;
   if (!match) {
     throw new ParseError(`Invalid date: ${dateStr}`, lineNum, rawStr);
   }
-  const [, yearStr, monthStr, dayStr] = match;
+  const [yearStr, monthStr, dayStr] = match;
   const year = parseInt(yearStr, 10);
   const month = parseInt(monthStr, 10);
   const day = parseInt(dayStr, 10);
