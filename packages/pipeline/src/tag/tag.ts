@@ -70,7 +70,7 @@ export function tagRecords(records: SetRecord[], deadliftStance: 'sumo' | 'conve
       unknown.add(rawExercise);
       return [];
     }
-    const { tags, effects, range } = buildTagsAndEffects(ex, rawExercise, deadliftStance);
+    const { tags, effects, range } = buildTagsAndEffects(rawExercise, deadliftStance);
     return [{ ...r, canonical: r.exercise, tags, effects, baselineRange: range }];
   });
 
@@ -96,7 +96,7 @@ export function buildAccessoryTaggedRecords(
     .filter((r) => unknownSet.has(r.exercise))
     .map((r) => {
       const ex = parseExercise(r.exercise);
-      const { tags, effects, range } = buildTagsAndEffects(ex, r.exercise, deadliftStance);
+      const { tags, effects, range } = buildTagsAndEffects(r.exercise, deadliftStance);
       return {
         ...r,
         canonical: buildCanonical(ex, r.exercise),
