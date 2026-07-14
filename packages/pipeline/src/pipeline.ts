@@ -4,7 +4,12 @@ import { ParseError, ParserRegistry } from './parse/parser';
 import { csvParser } from './parse/csv';
 import { freeformParser } from './parse/freeform/parser';
 import type { TaggedSetRecord } from './tag/tag';
-import { resolveCanonicalNames, tagRecords } from './tag/tag';
+import {
+  resolveCanonicalNames,
+  tagRecords,
+  classifyAccessorySubtypes,
+  buildAccessoryTaggedRecords,
+} from './tag/tag';
 import { derivers } from './derive/derivers';
 import type { NormalizationModel } from './derive/normalize';
 import { fitNormalizationModel, normalizeE1rm, offsetAdjustRecords } from './derive/normalize';
@@ -102,14 +107,28 @@ export function runPipelineModel(
   }
 
   const { resolved, unknown: unkAliases } = resolveCanonicalNames(records);
-  const { tagged, unknown: unkCanonicals } = tagRecords(resolved, athlete.deadliftStance);
+  const { tagged: compTagged, unknown: unkCanonicals } = tagRecords(
+    resolved,
+    athlete.deadliftStance
+  );
   const unknownExercises = [...new Set([...unkAliases, ...unkCanonicals])];
+  // Accessory exercises are always filtered into `unknownExercises` above (see tag/CLAUDE.md's
+  // "Unknown heuristic") — resolveCanonicalNames/tagRecords never tag them. Build real tagged
+  // records for them separately so they still show up in PipelineModel.tagged (and can be
+  // subtype-classified below), without affecting normalization/points/diagnostics, which stay
+  // scoped to comp-lift records only (compTagged).
+  const accessoryTagged = buildAccessoryTaggedRecords(
+    records,
+    unknownExercises,
+    athlete.deadliftStance
+  );
+  const tagged = classifyAccessorySubtypes([...compTagged, ...accessoryTagged]);
 
-  const model = fitNormalizationModel(tagged, { minSamples: 1 }, athlete);
+  const model = fitNormalizationModel(compTagged, { minSamples: 1 }, athlete);
   const allDeriverIds = Object.keys(derivers);
 
-  const canonicalGroups = groupByDateAndCanonical(tagged);
-  const labelGroups = groupByDateAndLabel(tagged);
+  const canonicalGroups = groupByDateAndCanonical(compTagged);
+  const labelGroups = groupByDateAndLabel(compTagged);
   const pointsByDeriver = new Map(
     allDeriverIds.map((id) => [id, buildPointsFromGroups(canonicalGroups, id)])
   );

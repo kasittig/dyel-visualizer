@@ -14,6 +14,7 @@ one-time copy, never a dependency — pipeline never imported from `@dyel/core`,
       { resolved: SetRecord[]; unknown: string[] };
     function tagRecords(records: SetRecord[]):
       { tagged: TaggedSetRecord[]; unknown: string[] };
+    function classifyAccessorySubtypes(tagged: TaggedSetRecord[]): TaggedSetRecord[];
     function matches(tags: ReadonlySet<string>, q: TagQuery): boolean;  // all/any/none
     function classifyExerciseName(name: string): { type: LiftType; isUnknown: boolean };
 
@@ -64,6 +65,31 @@ null bar/stance/equipment and empty `addlWts` — i.e. every accessory lift, sin
 parser always nulls those fields for accessories. This is an accepted, imperfect
 limitation: a genuine accessory lift and an unrecognized/mistyped comp-lift variant are
 indistinguishable by this heuristic; both land in `unknown` for offline review.
+
+## Accessory subtype classification
+
+`classifyAccessorySubtypes` runs after `tagRecords`, not inside `buildTagsAndEffects`, because
+determining upper vs. lower subtype requires knowing what OTHER exercises were logged on the
+same calendar day (`r.date`) — context unavailable when tagging a single record in isolation.
+It groups all tagged records by `date` once (via `Map.groupBy`), then for each record already
+tagged `lift:accessory`:
+
+- If the exercise name matches a core-exercise keyword heuristic (via `isCoreExercise` in
+  `detect/detectors.ts` — a word-boundary regex matching common ab/core keywords: ab/abs, core,
+  plank, crunch/crunches, hollow, sit-up/situp, russian twist, leg raise, pallof, wood chop,
+  dead bug, v-up), it gets tagged `accessory:core`, regardless of day context.
+- Otherwise, it examines whether that day's records include `lift:bench` and/or
+  `lift:squat`/`lift:deadlift`: bench-only day → `accessory:upper`; squat/deadlift-only day →
+  `accessory:lower`.
+- If the day has BOTH bench and squat/deadlift, or NEITHER, the record remains tagged
+  `lift:accessory` with no subtype — an accepted imperfect limitation (see "Unknown heuristic").
+  This treats ambiguity analogously to the existing heuristic: accept no-context cases rather
+  than guess.
+
+The core-keyword heuristic itself is keyword-based (not dictionary-backed), same caveat as the
+rest of this file's parsing: a false negative is possible for an unusual ab-exercise name, a
+false positive theoretically possible for a name containing a matched word coincidentally
+(mitigated by word-boundary `\b` matching, not raw substring matching).
 
 ## Boundaries
 
