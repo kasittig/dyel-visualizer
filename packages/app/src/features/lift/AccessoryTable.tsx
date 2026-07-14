@@ -1,6 +1,9 @@
 import type { DateRange } from 'react-day-picker';
 import type { DisplayUnit } from '@dyel/api';
-import { useAccessoryTable, type AccessoryTableDisplay } from './useAccessoryTable';
+import { useAccessoryTable } from './useAccessoryTable';
+import type { AccessoryTableDisplay } from './useAccessoryTable';
+import { useSortableRows } from '../../shared/hooks';
+import { shortDate } from '../../shared/dateUtils';
 import {
   CollapsibleSection,
   TableCard,
@@ -9,8 +12,6 @@ import {
   TableRow,
   TableCell,
 } from '../../shared/components';
-import { useSortableRows } from '../../shared/hooks';
-import { shortDate } from '../../shared/dateUtils';
 import styles from './AccessoryTable.module.css';
 
 interface AccessoryTableProps {
@@ -20,9 +21,9 @@ interface AccessoryTableProps {
   onVariationClick?: (v: string) => void;
 }
 
-type SortColumn = 'label' | 'lastPerformed' | 'sessionCountInRange' | 'sessionCount';
+type SortCol = 'label' | 'lastPerformed' | 'sessionCountInRange' | 'sessionCount';
 
-function AccessorySubtypeTable({
+function SubtypeTable({
   label,
   rows,
   inRangeHeader,
@@ -37,7 +38,7 @@ function AccessorySubtypeTable({
 }) {
   const { sortedRows, sortKey, direction, toggleSort } = useSortableRows<
     AccessoryTableDisplay,
-    SortColumn
+    SortCol
   >(rows, {
     label: (r) => r.label,
     lastPerformed: (r) => r.lastSession.date,
@@ -45,9 +46,9 @@ function AccessorySubtypeTable({
     sessionCount: (r) => r.sessionCount,
   });
 
-  const headerSort = (column: SortColumn) => ({
-    onSort: () => toggleSort(column),
-    sortDirection: sortKey === column ? direction : null,
+  const sortProps = (col: SortCol) => ({
+    onSort: () => toggleSort(col),
+    sortDirection: sortKey === col ? direction : null,
   });
 
   return (
@@ -55,28 +56,28 @@ function AccessorySubtypeTable({
       <TableCard>
         <Table>
           <TableHeadRow>
-            <TableCell as="th" variant="left" {...headerSort('label')}>
+            <TableCell as="th" variant="left" {...sortProps('label')}>
               Exercise
             </TableCell>
-            <TableCell as="th" {...headerSort('lastPerformed')}>
+            <TableCell as="th" {...sortProps('lastPerformed')}>
               Last performed
             </TableCell>
-            <TableCell as="th" {...headerSort('sessionCountInRange')}>
+            <TableCell as="th" {...sortProps('sessionCountInRange')}>
               {inRangeHeader}
             </TableCell>
-            <TableCell as="th" {...headerSort('sessionCount')}>
+            <TableCell as="th" {...sortProps('sessionCount')}>
               All Time
             </TableCell>
           </TableHeadRow>
           <tbody>
             {sortedRows.map(
-              ({ label: rowLabel, lastPerformedDisplay, sessionCount, sessionCountInRange }) => (
+              ({ label: rLabel, lastPerformedDisplay, sessionCount, sessionCountInRange }) => (
                 <TableRow
-                  key={rowLabel}
-                  selected={rowLabel === highlightedVariation}
-                  onClick={() => onVariationClick?.(rowLabel)}
+                  key={rLabel}
+                  selected={rLabel === highlightedVariation}
+                  onClick={() => onVariationClick?.(rLabel)}
                 >
-                  <TableCell variant="left">{rowLabel}</TableCell>
+                  <TableCell variant="left">{rLabel}</TableCell>
                   <TableCell>{lastPerformedDisplay}</TableCell>
                   <TableCell>{sessionCountInRange}</TableCell>
                   <TableCell>{sessionCount}</TableCell>
@@ -98,11 +99,11 @@ export function AccessoryTable({
 }: AccessoryTableProps) {
   const groups = useAccessoryTable(unit, dateRange);
 
-  if (groups.length === 0) {
+  if (!groups.length) {
     return <div className={styles.emptyState}>No accessory data logged yet</div>;
   }
 
-  const inRangeHeader =
+  const rangeHeader =
     dateRange?.from && dateRange?.to
       ? `${shortDate(dateRange.from)} - ${shortDate(dateRange.to)}`
       : 'Sessions (in range)';
@@ -110,11 +111,11 @@ export function AccessoryTable({
   return (
     <>
       {groups.map(({ subtype, label, rows }) => (
-        <AccessorySubtypeTable
+        <SubtypeTable
           key={subtype ?? 'null'}
           label={label}
           rows={rows}
-          inRangeHeader={inRangeHeader}
+          inRangeHeader={rangeHeader}
           highlightedVariation={highlightedVariation}
           onVariationClick={onVariationClick}
         />

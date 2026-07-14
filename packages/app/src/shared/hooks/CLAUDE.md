@@ -1,6 +1,6 @@
 # shared/hooks
 
-Low-level utility hooks for CSV fetching and localStorage persistence.
+Low-level utility hooks for CSV fetching, localStorage persistence, and generic UI state (table sorting).
 
 | File                      | Purpose                                                                                                                                                                                                                                                         |
 | ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
