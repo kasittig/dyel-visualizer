@@ -172,6 +172,9 @@ export function TypeaheadDropdown({
                   <button
                     key={option}
                     type="button"
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                    }}
                     onClick={() => {
                       selectOption(option);
                     }}
