@@ -20,7 +20,9 @@ export function buildBestSetByLabelAndDate(
   const result = new Map<string, Map<string, BestSet>>();
 
   for (const [key, records] of byLabelAndDate) {
-    const [label, date] = key.split('::');
+    const sepIdx = key.lastIndexOf('::');
+    const label = key.slice(0, sepIdx);
+    const date = key.slice(sepIdx + 2);
     const effortSets = records.filter((r) => !isSpeedWork(r));
     if (!effortSets.length) {
       continue;
