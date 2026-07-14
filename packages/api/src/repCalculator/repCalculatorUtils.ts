@@ -59,7 +59,7 @@ export function predictWeightForReps(e1rm: number, reps: number): number {
 }
 
 export function predictRepsForWeight(e1rm: number, weight: number): number {
-  return weight <= 0 || weight >= e1rm ? 1 : Math.max(1, 30 * (e1rm / weight - 1));
+  return weight <= 0 || weight >= e1rm ? 1 : Math.floor(Math.max(1, 30 * (e1rm / weight - 1)));
 }
 
 export function convertE1RMToDisplayUnit(e1rmKg: number, unit: 'lbs' | 'kg'): number {

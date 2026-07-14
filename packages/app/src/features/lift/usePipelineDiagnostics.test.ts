@@ -1,44 +1,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook } from '@testing-library/react';
-import type { PipelineModel, VariantAssessment } from '@dyel/api';
 import { usePipelineDiagnostics } from './usePipelineDiagnostics';
+import { variantAssessmentMock, pipelineModelMock } from '../../test/helpers/pipelineModelFactory';
 
 vi.mock('../../app/PipelineContext');
 const mockUsePipelineModel = vi.mocked(
   (await import('../../app/PipelineContext')).usePipelineModel
 );
-
-const rec = (
-  canonical: string,
-  lift: string,
-  overrides?: Partial<VariantAssessment>
-): VariantAssessment => ({
-  canonical,
-  displayName: canonical,
-  lift,
-  expectedE1rmKg: 100,
-  actualE1rmKg: 102,
-  ratio: 1.02,
-  status: 'optimal',
-  averageIndex: 100,
-  expectedBaseline: '90-110%',
-  staleDays: 3,
-  effects: ['hypertrophy'],
-  addlWtOffset: { offsetKg: 5, n: 10 },
-  ...overrides,
-});
-
-const mockModel = (variants: VariantAssessment[]): PipelineModel => ({
-  model: { baseline: {}, variantFactor: {}, addlWtOffset: {} },
-  diagnostics: { variants, weaknesses: [], unassessed: [] },
-  unknownExercises: [],
-  unnormalized: [],
-  parseErrors: [],
-  pointsByDeriver: new Map(),
-  pointsByLabelByDeriver: new Map(),
-  pointsByDeriverAdjusted: new Map(),
-  athlete: { sex: 'M', bodyweight: 90, deadliftStance: 'sumo' },
-});
 
 describe('usePipelineDiagnostics', () => {
   beforeEach(() => {
@@ -58,11 +26,20 @@ describe('usePipelineDiagnostics', () => {
     });
 
     const dataset = [
-      rec('squat', 'lift:squat'),
-      rec('bench', 'lift:bench'),
-      rec('deadlift', 'lift:deadlift'),
+      variantAssessmentMock({ canonical: 'squat', displayName: 'squat', lift: 'lift:squat' }),
+      variantAssessmentMock({ canonical: 'bench', displayName: 'bench', lift: 'lift:bench' }),
+      variantAssessmentMock({
+        canonical: 'deadlift',
+        displayName: 'deadlift',
+        lift: 'lift:deadlift',
+      }),
     ];
-    mockUsePipelineModel.mockReturnValue({ status: 'success', model: mockModel(dataset) });
+    mockUsePipelineModel.mockReturnValue({
+      status: 'success',
+      model: pipelineModelMock({
+        diagnostics: { variants: dataset, weaknesses: [], unassessed: [] },
+      }),
+    });
 
     const all = renderHook(() => usePipelineDiagnostics()).result.current;
     const squat = renderHook(() => usePipelineDiagnostics('squat')).result.current;
@@ -81,7 +58,15 @@ describe('usePipelineDiagnostics', () => {
   it('memoizes array references across identical lifecycle renders', () => {
     mockUsePipelineModel.mockReturnValue({
       status: 'success',
-      model: mockModel([rec('squat', 'lift:squat')]),
+      model: pipelineModelMock({
+        diagnostics: {
+          variants: [
+            variantAssessmentMock({ canonical: 'squat', displayName: 'squat', lift: 'lift:squat' }),
+          ],
+          weaknesses: [],
+          unassessed: [],
+        },
+      }),
     });
     const { result, rerender } = renderHook(() => usePipelineDiagnostics('squat'));
     const initialArray = result.current.variants;

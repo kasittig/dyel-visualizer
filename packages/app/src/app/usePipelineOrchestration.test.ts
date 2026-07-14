@@ -2,11 +2,15 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook } from '@testing-library/react';
 import type { RawInput, AthleteContext } from '@dyel/api';
 import { usePipelineOrchestration } from './usePipelineOrchestration';
+import { serializeSheetCache } from '../features/data-source/sheetCacheUtils';
 import * as useResolvedRawInput from '../features/data-source/useResolvedRawInput';
 
 vi.mock('../features/data-source/useResolvedRawInput');
 const mockRes = vi.mocked(useResolvedRawInput.useResolvedRawInput);
 const athleteBase: Pick<AthleteContext, 'sex' | 'bodyweight'> = { sex: 'M', bodyweight: 80 };
+
+// Default mock
+mockRes.mockReturnValue({ status: 'idle', raw: [] });
 
 const dlFix: RawInput[] = [
   {
@@ -44,9 +48,11 @@ const run = (stance: 'sumo' | 'conventional' | null) =>
 describe('usePipelineOrchestration', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    localStorage.clear();
   });
   afterEach(() => {
     vi.restoreAllMocks();
+    localStorage.clear();
   });
 
   it.each([
@@ -95,5 +101,30 @@ describe('usePipelineOrchestration', () => {
     expect(result.current.model!.athlete.deadliftStance).toBe('sumo');
     rerender({ s: 'conventional' as const });
     expect(result.current.model!.athlete.deadliftStance).toBe('conventional');
+  });
+
+  it('shows cached model while loading (stale-while-revalidate)', () => {
+    const cachedRaw: RawInput[] = [
+      {
+        name: 'cached.csv',
+        content: 'date,exercise,weight,reps\n2024-01-01,squat,300,5',
+      },
+    ];
+
+    // Pre-populate localStorage with cached data (simulates previous successful load)
+    const cacheData = serializeSheetCache({
+      sheetKey: 'https://example.com',
+      raw: cachedRaw,
+    });
+    localStorage.setItem('dyel:sheetDataCache', cacheData);
+
+    // Mock useResolvedRawInput to return loading status with empty data (refetch in flight)
+    mockRes.mockReturnValue({ status: 'loading', raw: [] });
+
+    const { result } = run('sumo');
+
+    // While loading with cached data available, should show success status and cached model (stale-while-revalidate)
+    expect(result.current.status).toBe('success');
+    expect(result.current.model).toBeTruthy();
   });
 });

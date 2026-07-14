@@ -7,12 +7,13 @@ function sheetsProxyPlugin(): Plugin {
     name: 'sheets-proxy',
     configureServer(server) {
       server.middlewares.use('/sheets-proxy', async (req, res) => {
-        if (!req.url?.startsWith('/spreadsheets/')) {
+        const url = new URL(req.url, 'https://docs.google.com');
+        if (!url.pathname.startsWith('/spreadsheets/')) {
           res.statusCode = 400;
           res.end('Invalid path');
           return;
         }
-        const targetUrl = `https://docs.google.com${req.url}`;
+        const targetUrl = url.href;
         try {
           // Node's built-in fetch follows redirects, so Google's auth redirects
           // are resolved server-side and never reach the browser as CORS requests.

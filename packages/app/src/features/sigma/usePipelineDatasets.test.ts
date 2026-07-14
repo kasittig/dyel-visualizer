@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook } from '@testing-library/react';
 import { buildChartDatasets } from '@dyel/api';
-import type { PipelineModel, DatasetSpec, RenderParams, Point } from '@dyel/api';
+import type { DatasetSpec, RenderParams, Point } from '@dyel/api';
+import { pipelineModelMock } from '../../test/helpers/pipelineModelFactory';
 import { usePipelineDatasets } from './usePipelineDatasets';
 
 vi.mock('../../app/PipelineContext');
@@ -14,19 +15,6 @@ const p = (t: number, v: number): Point => ({
   v,
   series: 'squat',
   tags: new Set(['lift:squat']),
-});
-const mockModel = (overrides?: Partial<PipelineModel>): PipelineModel => ({
-  model: { baseline: {}, variantFactor: {}, addlWtOffset: {} },
-  diagnostics: { byCanonical: new Map(), allFindings: [] },
-  unknownExercises: [],
-  unnormalized: [],
-  parseErrors: [],
-  pointsByDeriver: new Map([['e1rm', [p(1609459200000, 100), p(1612137600000, 110)]]]),
-  pointsByLabelByDeriver: new Map(),
-  pointsByDeriverAdjusted: new Map([['e1rm', [p(1609459200000, 100), p(1612137600000, 110)]]]),
-  pointsByLabelByDeriverAdjusted: new Map(),
-  athlete: { sex: 'M', bodyweight: 90, deadliftStance: 'sumo' },
-  ...overrides,
 });
 
 const seriesSpec: DatasetSpec = {
@@ -60,7 +48,10 @@ describe('usePipelineDatasets', () => {
     mockUsePipelineModel.mockReturnValue({ status: 'loading', model: null });
     expect(renderHook(() => usePipelineDatasets([seriesSpec], {})).result.current).toEqual({});
 
-    const model = mockModel();
+    const model = pipelineModelMock({
+      pointsByDeriver: new Map([['e1rm', [p(1609459200000, 100), p(1612137600000, 110)]]]),
+      pointsByDeriverAdjusted: new Map([['e1rm', [p(1609459200000, 100), p(1612137600000, 110)]]]),
+    });
     mockUsePipelineModel.mockReturnValue({ status: 'success', model });
     const { result } = renderHook(() => usePipelineDatasets([seriesSpec], {}));
     expect(result.current).toEqual(buildChartDatasets(model, [seriesSpec], {}));
@@ -70,7 +61,10 @@ describe('usePipelineDatasets', () => {
   });
 
   it('tracks memoization dependencies and reference updates across lifecycles', () => {
-    const model1 = mockModel();
+    const model1 = pipelineModelMock({
+      pointsByDeriver: new Map([['e1rm', [p(1609459200000, 100), p(1612137600000, 110)]]]),
+      pointsByDeriverAdjusted: new Map([['e1rm', [p(1609459200000, 100), p(1612137600000, 110)]]]),
+    });
     mockUsePipelineModel.mockReturnValue({ status: 'success', model: model1 });
     const ui1: RenderParams = {};
     const specs = [seriesSpec];
@@ -91,7 +85,13 @@ describe('usePipelineDatasets', () => {
 
     mockUsePipelineModel.mockReturnValue({
       status: 'success',
-      model: mockModel({ athlete: { sex: 'F', bodyweight: 65, deadliftStance: 'conventional' } }),
+      model: pipelineModelMock({
+        athlete: { sex: 'F', bodyweight: 65, deadliftStance: 'conventional' },
+        pointsByDeriver: new Map([['e1rm', [p(1609459200000, 100), p(1612137600000, 110)]]]),
+        pointsByDeriverAdjusted: new Map([
+          ['e1rm', [p(1609459200000, 100), p(1612137600000, 110)]],
+        ]),
+      }),
     });
     rerender({ s: specs, u: ui1 });
     expect(result.current).not.toBe(initialResult);

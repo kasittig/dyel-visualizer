@@ -2,6 +2,24 @@ import type { RenderParams } from '@dyel/pipeline';
 
 export type PresetId = '2w' | '1m' | '3m' | 'all';
 
+/**
+ * Adds `monthOffset` months to a date, clamping the result to the last valid day
+ * of the target month if the original day doesn't exist (e.g., Jan 31 + 1 month → Feb 28/29).
+ */
+function clampToMonth(date: Date, monthOffset: number): Date {
+  const result = new Date(date);
+  const originalDay = result.getDate();
+
+  result.setMonth(result.getMonth() + monthOffset);
+
+  // If date overflowed into the next month, clamp to last day of target month
+  if (result.getDate() !== originalDay) {
+    result.setDate(0);
+  }
+
+  return result;
+}
+
 export function dateRangeToRenderParams(
   from: Date | undefined,
   to: Date | undefined
@@ -27,13 +45,13 @@ export function isRecordInDateRange(
 }
 
 export function presetDateRange(preset: PresetId, today: Date): { from: Date; to: Date } {
-  const from = new Date(today);
+  let from = new Date(today);
   if (preset === '2w') {
     from.setDate(from.getDate() - 14);
   } else if (preset === '1m') {
-    from.setMonth(from.getMonth() - 1);
+    from = clampToMonth(from, -1);
   } else if (preset === '3m') {
-    from.setMonth(from.getMonth() - 3);
+    from = clampToMonth(from, -3);
   } else {
     return { from: new Date(1970, 0, 1), to: today };
   }
@@ -62,11 +80,7 @@ export function activePreset(
 
 export function defaultDateRangeFromLastSession(lastSessionDate: Date): { from: Date; to: Date } {
   return {
-    from: new Date(
-      lastSessionDate.getFullYear(),
-      lastSessionDate.getMonth() - 3,
-      lastSessionDate.getDate()
-    ),
+    from: clampToMonth(lastSessionDate, -3),
     to: lastSessionDate,
   };
 }

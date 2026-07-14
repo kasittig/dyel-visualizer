@@ -71,6 +71,22 @@ describe('presetDateRange & activePreset', () => {
   ])('activePreset returns null when %s', (_, f, t) => {
     expect(activePreset(f, t, today)).toBeNull();
   });
+
+  describe('end-of-month overflow handling', () => {
+    it.each([
+      ['Mar 31 - 1m → Feb 28 (non-leap year)', d(2023, 3, 31), '1m', d(2023, 2, 28)],
+      ['Mar 31 - 1m → Feb 29 (leap year)', d(2024, 3, 31), '1m', d(2024, 2, 29)],
+      ['May 31 - 3m → Feb 28 (non-leap year)', d(2023, 5, 31), '3m', d(2023, 2, 28)],
+      ['May 31 - 3m → Feb 29 (leap year)', d(2024, 5, 31), '3m', d(2024, 2, 29)],
+      ['Jan 31 - 1m → Dec 31', d(2024, 1, 31), '1m', d(2023, 12, 31)],
+      ['Aug 31 - 3m → May 31', d(2024, 8, 31), '3m', d(2024, 5, 31)],
+      ['Dec 31 - 3m → Sep 30', d(2024, 12, 31), '3m', d(2024, 9, 30)],
+    ])('%s', (_, today, preset, expectedFrom) => {
+      const res = presetDateRange(preset as PresetId, today);
+      expect(res.from.toDateString()).toBe(expectedFrom.toDateString());
+      expect(res.to.toDateString()).toBe(today.toDateString());
+    });
+  });
 });
 
 describe('defaultDateRangeFromLastSession', () => {
@@ -82,5 +98,19 @@ describe('defaultDateRangeFromLastSession', () => {
     const res = defaultDateRangeFromLastSession(lastSession);
     expect(res.from.toDateString()).toBe(expFrom.toDateString());
     expect(res.to.toDateString()).toBe(expTo.toDateString());
+  });
+
+  describe('end-of-month overflow handling', () => {
+    it.each([
+      ['May 31 - 3m → Feb 28 (non-leap year)', d(2023, 5, 31), d(2023, 2, 28)],
+      ['May 31 - 3m → Feb 29 (leap year)', d(2024, 5, 31), d(2024, 2, 29)],
+      ['Jan 31 - 3m → Oct 31', d(2024, 1, 31), d(2023, 10, 31)],
+      ['Aug 31 - 3m → May 31', d(2024, 8, 31), d(2024, 5, 31)],
+      ['Dec 31 - 3m → Sep 30', d(2024, 12, 31), d(2024, 9, 30)],
+    ])('%s', (_, lastSession, expectedFrom) => {
+      const res = defaultDateRangeFromLastSession(lastSession);
+      expect(res.from.toDateString()).toBe(expectedFrom.toDateString());
+      expect(res.to.toDateString()).toBe(lastSession.toDateString());
+    });
   });
 });

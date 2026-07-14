@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, cleanup } from '@testing-library/react';
-import type { PipelineModel, AthleteContext } from '@dyel/api';
+import type { AthleteContext } from '@dyel/api';
 import { PipelineProvider, usePipelineModel, type PipelineStatus } from './PipelineContext';
+import { pipelineModelMock } from '../test/helpers/pipelineModelFactory';
 
 function TestConsumer({ id }: { id: string }) {
   const { status, model } = usePipelineModel();
@@ -18,18 +19,7 @@ function TestConsumerThrows() {
 }
 
 const mockAthlete: AthleteContext = { sex: 'M', bodyweight: 90, deadliftStance: 'sumo' };
-const mockModel: PipelineModel = {
-  model: { baseline: {}, variantFactor: {}, addlWtOffset: {} },
-  diagnostics: { byCanonical: new Map(), allFindings: [] },
-  unknownExercises: [],
-  unnormalized: [],
-  parseErrors: [],
-  tagged: [],
-  pointsByDeriver: new Map(),
-  pointsByLabelByDeriver: new Map(),
-  pointsByDeriverAdjusted: new Map(),
-  athlete: mockAthlete,
-};
+const mockModel = pipelineModelMock({ athlete: mockAthlete });
 
 describe('PipelineContext', () => {
   afterEach(() => {

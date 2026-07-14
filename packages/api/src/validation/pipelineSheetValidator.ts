@@ -53,7 +53,7 @@ export function validateSheetCsv(csv: string): SheetValidationResult {
     { header: true, skipEmptyLines: 'greedy' }
   );
 
-  if (!meta.fields || !data.length) {
+  if (!meta.fields) {
     return {
       verdict: 'error',
       headerRow: null,
@@ -62,6 +62,18 @@ export function validateSheetCsv(csv: string): SheetValidationResult {
       issues: [
         "No header row found. Add a row with an 'exercise' column (and 'date', 'weight', 'reps').",
       ],
+      warnings: [],
+      rowIssues: [],
+    };
+  }
+
+  if (!data.length) {
+    return {
+      verdict: 'error',
+      headerRow: null,
+      columns: emptyCols(),
+      rows: { total: 0, parsed: 0, liftTypes: emptyLifts() },
+      issues: ['No data rows found. Add at least one row of exercise data.'],
       warnings: [],
       rowIssues: [],
     };

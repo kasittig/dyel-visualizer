@@ -34,7 +34,7 @@ export function useVisualizerData(
   );
   const visibleLiftIds = useMemo(
     () => new Set(visibleLiftTypes(tabRows, dateRange?.from, dateRange?.to)),
-    [tabRows, dateRange]
+    [tabRows, dateRange?.from, dateRange?.to]
   );
   const volumeRecords = useMemo(() => collectVolumeRecords(tabRows), [tabRows]);
   const dataUnit = useMemo(() => detectDataUnit(tabRows), [tabRows]);
