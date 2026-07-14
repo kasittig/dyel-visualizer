@@ -137,3 +137,14 @@ export function formatExerciseDisplayName(canonical: string): string {
     return fallback();
   }
 }
+
+export function buildExerciseDisplayNameIndex(
+  canonicals: string[]
+): { canonical: string; displayName: string }[] {
+  return Array.from(new Set(canonicals))
+    .map((canonical) => ({
+      canonical,
+      displayName: formatExerciseDisplayName(canonical),
+    }))
+    .sort((a, b) => a.displayName.localeCompare(b.displayName));
+}

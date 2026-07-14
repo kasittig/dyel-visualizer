@@ -1,11 +1,8 @@
 import { parseIndexCsv, type IndexEntry } from '@dyel/api';
-import { publishedCsvUrl } from '../data-source';
+import { publishedCsvUrl, INDEX_SHEET_ID } from '../data-source';
 import { useCsvResource } from '../../shared/hooks/useCsvResource';
 
 export type { IndexEntry };
-
-const INDEX_SHEET_ID =
-  '2PACX-1vTmiDdFL3yDqnm-sK2KvbljacO6Rq9KltzzoOJY1aFu6B2tWPejLDH4XqKW0su0j1IFSI7iA4IGmGbU';
 
 type IndexDataState =
   | { status: 'loading' }

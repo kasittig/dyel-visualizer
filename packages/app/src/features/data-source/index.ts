@@ -9,7 +9,13 @@ export {
   EXAMPLE_SHEET_URL,
   EXAMPLE_VISUALIZER_URL,
 } from './sheetRef';
-export { fetchSheetCsv, sheetCsvUrl, publishedCsvUrl, csvFetchError } from './sheetFetch';
+export {
+  fetchSheetCsv,
+  sheetCsvUrl,
+  publishedCsvUrl,
+  csvFetchError,
+  INDEX_SHEET_ID,
+} from './sheetFetch';
 export { buildRawInput, PLACEHOLDER_ATHLETE } from './rawInput';
 export {
   serializeSheetCache,

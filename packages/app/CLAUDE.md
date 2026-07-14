@@ -20,6 +20,7 @@ Single-page React app with no backend. Data comes from either a user-supplied Go
 - `?page=index` (or `/index`) → `IndexPage` (list of linked sheets fetched from a hardcoded published index sheet)
 - `?page=validator` (or `/validator`) → `ValidatorPage` (sheet/pasted-text structural validation)
 - `?page=pipeline-validation` (or `/pipeline-validation`) → `PipelineValidationPage` (parse errors, unknown exercises, normalization issues via `runPipeline`)
+- `?page=coach` (or `/coach`) → `CoachViewPage` (coach-facing multi-lifter e1RM/target-weight table; fans out over every lifter's `PipelineModel` from the index sheet instead of `PipelineContext`'s single model — see `features/coach-view/CLAUDE.md`)
 - no `?page=` → `App` (main visualizer)
 
 **Data flow (`app/App.tsx` composing `app/*` hooks):**
@@ -44,6 +45,7 @@ Single-page React app with no backend. Data comes from either a user-supplied Go
 | `features/sigma/`          | `SigmaTab`, `SigmaChart`, `TotalChart`, `SessionBarChart`, `usePipelineTotalChartData`, `usePipelineDatasets`, `useSigmaChartData`                                                                                                              |
 | `features/lift/`           | `LiftTabPanel`, `ConjugateCharts`, `usePipelineConjugateChartData`, `VariationRadarChart`, `usePipelineVariationRadarData`, `DiagnosticsPanel`, `usePipelineDiagnostics`                                                                        |
 | `features/conjugate-info/` | `ConjugateInfoPage`                                                                                                                                                                                                                             |
+| `features/coach-view/`     | `CoachViewPage`, `useCoachViewData`, `useCoachViewSelection` — no `PipelineContext`; fans out over every lifter's `PipelineModel` from the index sheet                                                                                          |
 | `features/index-page/`     | `IndexPage`, `useIndexData`, `parseIndexCsv`                                                                                                                                                                                                    |
 | `shared/charts/`           | Reusable Recharts components: `BaseRadarChart`, `DateLineChart` (+`ChartEmpty`), `TooltipCard` (+`ChartTooltip`), `colors.ts`, `CONVENTIONS.md`, `charts.module.css` (shared CSS module `composes`d by feature-owned chart `.module.css` files) |
 | `shared/components/`       | Cross-feature UI: `CollapsibleSection`, `DateRangePicker`, `EditableDateChip`, `ErrorBoundary`, `TypeaheadDropdown`                                                                                                                             |

@@ -6,6 +6,9 @@ const SHEETS_BASE = import.meta.env.DEV
   ? '/sheets-proxy/spreadsheets'
   : 'https://docs.google.com/spreadsheets';
 
+export const INDEX_SHEET_ID =
+  '2PACX-1vTmiDdFL3yDqnm-sK2KvbljacO6Rq9KltzzoOJY1aFu6B2tWPejLDH4XqKW0su0j1IFSI7iA4IGmGbU';
+
 const NOT_PUBLIC_MESSAGE =
   'This sheet is not publicly accessible. Publish it first via File → Share → Publish to web.';
 

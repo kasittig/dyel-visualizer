@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { formatExerciseDisplayName } from './exerciseUtils';
+import { buildExerciseDisplayNameIndex, formatExerciseDisplayName } from './exerciseUtils';
 
 describe('formatExerciseDisplayName', () => {
   it.each([
@@ -71,5 +71,51 @@ describe('formatExerciseDisplayName', () => {
     ['empty string', '', ''],
   ])('%s', (_, canonical, expected) => {
     expect(formatExerciseDisplayName(canonical)).toBe(expected);
+  });
+});
+
+describe('buildExerciseDisplayNameIndex', () => {
+  it.each([
+    ['empty input', [], []],
+    ['single canonical', ['bench'], [{ canonical: 'bench', displayName: 'Bench Press' }]],
+    [
+      'dedup: same canonical twice',
+      ['bench', 'bench'],
+      [{ canonical: 'bench', displayName: 'Bench Press' }],
+    ],
+    [
+      'sort: multiple distinct canonicals by displayName',
+      ['deadlift', 'bench', 'squat'],
+      [
+        { canonical: 'bench', displayName: 'Bench Press' },
+        { canonical: 'deadlift', displayName: 'Deadlift' },
+        { canonical: 'squat', displayName: 'Squat' },
+      ],
+    ],
+    [
+      'dedup and sort combined',
+      ['squat', 'bench', 'bench', 'deadlift', 'squat'],
+      [
+        { canonical: 'bench', displayName: 'Bench Press' },
+        { canonical: 'deadlift', displayName: 'Deadlift' },
+        { canonical: 'squat', displayName: 'Squat' },
+      ],
+    ],
+    [
+      'correctness: board variant',
+      ['bench-board-2'],
+      [{ canonical: 'bench-board-2', displayName: '2-Board Bench Press' }],
+    ],
+    [
+      'correctness: mixed standard and variant',
+      ['deadlift', 'bench-board-2', 'squat'],
+      [
+        { canonical: 'bench-board-2', displayName: '2-Board Bench Press' },
+        { canonical: 'deadlift', displayName: 'Deadlift' },
+        { canonical: 'squat', displayName: 'Squat' },
+      ],
+    ],
+  ])('%s', (_, canonicals, expected) => {
+    expect(buildExerciseDisplayNameIndex(canonicals)).toEqual(expected);
   });
 });

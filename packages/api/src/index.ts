@@ -65,7 +65,11 @@ export type { BestSet } from './conjugate/conjugateBestSet';
 export { conjugateChartSpecs } from './conjugate/conjugateChartSpecs';
 export { buildConjugateChartData, roundBestSetsForDisplay } from './conjugate/conjugateChartData';
 export type { ConjugateChartData } from './conjugate/conjugateChartData';
-export { buildLastSessionDetail } from './session/lastSessionDetail';
+export {
+  buildLastSessionDetail,
+  buildLastSessionDetailForCanonical,
+  formatLastSessionSummary,
+} from './session/lastSessionDetail';
 export type { LastSessionDetail } from './session/lastSessionDetail';
 export {
   snapshotVariationsFromPipeline,
@@ -121,4 +125,4 @@ export {
   type EffectSummary,
 } from './diagnostics/diagnosticsSelectors';
 export { formatEffect, formatAddlWtOffset } from './diagnostics/diagnosticsUtils';
-export { formatExerciseDisplayName } from './exerciseUtils';
+export { formatExerciseDisplayName, buildExerciseDisplayNameIndex } from './exerciseUtils';
