@@ -1,4 +1,5 @@
 import type React from 'react';
+import { formatChartDate } from '@dyel/api';
 import styles from './TooltipCard.module.css';
 
 /** Shared floating card used by the Recharts custom tooltips across the charts. */
@@ -19,9 +20,10 @@ export function ChartTooltip({ label, lines }: { label?: React.ReactNode; lines:
   if (lines.length === 0) {
     return null;
   }
+  const formattedLabel = typeof label === 'string' ? formatChartDate(label) : label;
   return (
     <TooltipCard>
-      {label != null && <div className={styles.date}>{label}</div>}
+      {formattedLabel != null && <div className={styles.date}>{formattedLabel}</div>}
       {lines.map((line) => (
         <div key={line.key} className={styles.item}>
           {line.name != null && (
