@@ -60,9 +60,11 @@ export function LiftTabPanel({
         unit={unit}
       />
       {liftType === 'accessory' && (
-        <CollapsibleSection label="Accessory exercises">
-          <AccessoryTable unit={unit} />
-        </CollapsibleSection>
+        <AccessoryTable
+          unit={unit}
+          highlightedVariation={selectedVariation}
+          onVariationClick={handleVariationClick}
+        />
       )}
     </>
   );

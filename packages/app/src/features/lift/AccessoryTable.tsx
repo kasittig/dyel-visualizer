@@ -3,7 +3,15 @@ import type { DisplayUnit } from '@dyel/api';
 import { CollapsibleSection } from '../../shared/components/CollapsibleSection';
 import styles from './AccessoryTable.module.css';
 
-export function AccessoryTable({ unit }: { unit: DisplayUnit }) {
+export function AccessoryTable({
+  unit,
+  highlightedVariation,
+  onVariationClick,
+}: {
+  unit: DisplayUnit;
+  highlightedVariation?: string | null;
+  onVariationClick?: (v: string) => void;
+}) {
   const groups = useAccessoryTable(unit);
 
   if (groups.length === 0) {
@@ -22,12 +30,22 @@ export function AccessoryTable({ unit }: { unit: DisplayUnit }) {
               </tr>
             </thead>
             <tbody>
-              {group.rows.map((row) => (
-                <tr key={row.label} className={styles.bodyRow}>
-                  <td className={styles.cellLeft}>{row.label}</td>
-                  <td className={styles.cell}>{row.lastPerformedDisplay}</td>
-                </tr>
-              ))}
+              {group.rows.map((row) => {
+                const isHighlighted = row.label === highlightedVariation;
+                return (
+                  <tr
+                    key={row.label}
+                    className={
+                      isHighlighted ? `${styles.bodyRow} ${styles.bodyRowSelected}` : styles.bodyRow
+                    }
+                    onClick={() => onVariationClick?.(row.label)}
+                    style={{ cursor: onVariationClick ? 'pointer' : undefined }}
+                  >
+                    <td className={styles.cellLeft}>{row.label}</td>
+                    <td className={styles.cell}>{row.lastPerformedDisplay}</td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </CollapsibleSection>
