@@ -80,6 +80,7 @@ const getNonAddlSignature = (tags: ReadonlySet<string>): string =>
     .filter(
       (t: string) =>
         !t.startsWith('addl:') &&
+        !['bar:standard', 'stance:competition'].includes(t) &&
         ['lift:', 'bar:', 'stance:', 'equip:'].some((p: string) => t.startsWith(p))
     )
     .sort()

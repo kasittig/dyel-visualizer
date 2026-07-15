@@ -56,7 +56,7 @@ describe('tagRecords', () => {
     expect(res1.tagged[0]).toMatchObject({
       ...rec,
       canonical: 'bench',
-      tags: new Set(['lift:bench', 'comp-lift']),
+      tags: new Set(['lift:bench', 'comp-lift', 'bar:standard', 'stance:competition']),
     });
 
     const r2: SetRecord[] = [
@@ -75,7 +75,9 @@ describe('tagRecords', () => {
     ];
     const res3 = tagRecords(r3);
     expect(res3.unknown).toEqual(['unknown-canonical']);
-    expect(res3.tagged[0].tags).toEqual(new Set(['lift:bench', 'comp-lift']));
+    expect(res3.tagged[0].tags).toEqual(
+      new Set(['lift:bench', 'comp-lift', 'bar:standard', 'stance:competition'])
+    );
     expect(res3.tagged[1].tags).toEqual(new Set(['lift:bench', 'addl:chains:1']));
   });
 });
@@ -194,7 +196,12 @@ describe('classifyAccessorySubtypes', () => {
     [
       'core-keyword exercise (Plank) on day with bench',
       [
-        tr('bench', 1706745600000, ['lift:bench', 'comp-lift']),
+        tr('bench', 1706745600000, [
+          'lift:bench',
+          'comp-lift',
+          'bar:standard',
+          'stance:competition',
+        ]),
         tr('plank', 1706745600000, ['lift:accessory'], 'Plank'),
       ],
       1,
@@ -203,7 +210,12 @@ describe('classifyAccessorySubtypes', () => {
     [
       'non-core accessory on day with only bench',
       [
-        tr('bench', 1706745600000, ['lift:bench', 'comp-lift']),
+        tr('bench', 1706745600000, [
+          'lift:bench',
+          'comp-lift',
+          'bar:standard',
+          'stance:competition',
+        ]),
         tr('face-pulls', 1706745600000, ['lift:accessory'], 'Face Pulls'),
       ],
       1,
@@ -212,7 +224,12 @@ describe('classifyAccessorySubtypes', () => {
     [
       'non-core accessory on day with only squat',
       [
-        tr('squat', 1706745600000, ['lift:squat', 'comp-lift']),
+        tr('squat', 1706745600000, [
+          'lift:squat',
+          'comp-lift',
+          'bar:standard',
+          'stance:competition',
+        ]),
         tr('leg-press', 1706745600000, ['lift:accessory'], 'Leg Press'),
       ],
       1,
@@ -221,7 +238,12 @@ describe('classifyAccessorySubtypes', () => {
     [
       'non-core accessory on day with only deadlift',
       [
-        tr('deadlift', 1706745600000, ['lift:deadlift', 'comp-lift']),
+        tr('deadlift', 1706745600000, [
+          'lift:deadlift',
+          'comp-lift',
+          'bar:standard',
+          'stance:competition',
+        ]),
         tr('back-ext', 1706745600000, ['lift:accessory'], 'Back Extension'),
       ],
       1,
@@ -230,8 +252,18 @@ describe('classifyAccessorySubtypes', () => {
     [
       'non-core accessory on day with both bench and squat',
       [
-        tr('bench', 1706745600000, ['lift:bench', 'comp-lift']),
-        tr('squat', 1706745600000, ['lift:squat', 'comp-lift']),
+        tr('bench', 1706745600000, [
+          'lift:bench',
+          'comp-lift',
+          'bar:standard',
+          'stance:competition',
+        ]),
+        tr('squat', 1706745600000, [
+          'lift:squat',
+          'comp-lift',
+          'bar:standard',
+          'stance:competition',
+        ]),
         tr('dips', 1706745600000, ['lift:accessory'], 'Dips'),
       ],
       2,
@@ -254,9 +286,16 @@ describe('classifyAccessorySubtypes', () => {
     ],
     [
       'comp-lift record passes through unchanged',
-      [tr('bench', 1706745600000, ['lift:bench', 'comp-lift'])],
+      [
+        tr('bench', 1706745600000, [
+          'lift:bench',
+          'comp-lift',
+          'bar:standard',
+          'stance:competition',
+        ]),
+      ],
       0,
-      ['lift:bench', 'comp-lift'],
+      ['lift:bench', 'comp-lift', 'bar:standard', 'stance:competition'],
     ],
   ])('classifyAccessorySubtypes: %s', (_, input, recordIndex, expectedTags) => {
     const result = classifyAccessorySubtypes(input);
