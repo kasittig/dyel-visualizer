@@ -38,19 +38,23 @@ raw name, preserving per-exercise distinctness without a dictionary.
 
 **Magnitude conventions:** When equipment or addlWts are present, they may include a magnitude
 suffix. For chains/bands (`addlWts`), magnitude is parsed as a digit or the word `"double"`
-from the raw exercise label; it defaults to `'1'` when not specified. For board/deficit
-equipment, magnitude is parsed as a digit (optionally followed by a `"` inch mark) from the raw
-label; it also defaults to `'1'`. For blocks specifically, if the digit is followed by a `"`
-inch mark, it is converted to a physical block count via `Math.round(inches / 2)` (blocks are
-~2" each) before being used as the magnitude; plain `N blocks` without an inch mark passes through
-as a literal count unchanged. The magnitude suffix is appended to the canonical as `-${magnitude}`
-only when the magnitude is **not** the default `'1'` — the default is always omitted. Examples:
+from the raw exercise label; it defaults to `'1'` when not specified. For board equipment,
+magnitude is parsed as a digit from the raw label and passed through as a literal value; it
+defaults to `'1'` when not specified. For blocks and deficit equipment, if a magnitude digit
+is followed by a `"` inch mark, it is converted to a physical unit count via `Math.round(inches / 2)`
+(blocks are ~2" apart, deficit pads are ~2" each) before being used as the magnitude; plain
+`N blocks` or `N deficit` without an inch mark passes through as a literal count unchanged.
+Blocks and deficit both default to `'1'` when not specified. The magnitude suffix is appended
+to the canonical as `-${magnitude}` only when the magnitude is **not** the default `'1'` — the
+default is always omitted. Examples:
 
 - `Bench (1 board)` → `bench-board` (default magnitude omitted)
 - `Bench (2 board)` → `bench-board-2` (non-default magnitude appended)
 - `Deadlift (1 block)` → `deadlift-blocks` (default magnitude omitted)
 - `Deadlift (2" blocks)` → `deadlift-blocks` (2" = 1 block = default magnitude omitted)
 - `Deadlift (4" blocks)` → `deadlift-blocks-2` (4" = 2 blocks = non-default magnitude appended)
+- `Deadlift (2" deficit)` → `deadlift-deficit` (2" = 1 deficit unit = default magnitude omitted)
+- `Deadlift (4" deficit)` → `deadlift-deficit-2` (4" = 2 deficit units = non-default magnitude appended)
 
 ## Tag/effects derivation
 
@@ -66,6 +70,17 @@ Effects are looked up per present component as `${namespace}:${value}:${type}` i
 key (`equip:${equipment}[-${magnitude}]:${resolvedStance}:deadlift`) before falling back to the
 stance-agnostic magnitude/base key; this lookup refinement affects only which value is retrieved,
 not the composition order (equipment range still applies first, then stance range).
+
+Block and deficit deadlift equipment ranges are stance-required: the two stances' equipment
+ratios diverge meaningfully in `modifier-effects.json` (see the stance-qualified keys
+`equip:blocks*:sumo/conventional:deadlift` and `equip:deficit:sumo/conventional:deadlift`).
+With no explicit sumo/conventional stance keyword in the exercise name, `range` resolves to
+`null` (which `analyze/diagnose.ts` routes to `unassessed`) rather than falling back to a
+stance-agnostic average. Even with an explicit stance keyword, if that stance/equipment/magnitude
+combination has no matching data entry (e.g., there is currently no magnitude-2 stance-qualified
+deficit entry), `range` still resolves to `null` — a partial range built from only one of the
+two expected multiplicative components would be misleading, so the whole range is treated as
+unassessed instead.
 
 For accessory records, effects are additionally populated via `classifyAccessoryEffects`
 (in `detect/detectors.ts`), a keyword classifier mapping the raw exercise name to zero or

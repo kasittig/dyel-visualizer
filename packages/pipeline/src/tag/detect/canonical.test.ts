@@ -18,7 +18,8 @@ describe('buildCanonical with magnitude-qualified modifiers', () => {
     ['4" block deadlift (converts to 2 blocks)', 'Deadlift (4" blocks)', 'deadlift-blocks-2'],
     ['1 deficit deadlift', 'Deadlift (1 deficit)', 'deadlift-deficit'],
     ['2 deficit deadlift', 'Deadlift (2 deficit)', 'deadlift-deficit-2'],
-    ['2" deficit deadlift', 'Deadlift (2" deficit)', 'deadlift-deficit-2'],
+    ['2" deficit deadlift', 'Deadlift (2" deficit)', 'deadlift-deficit'],
+    ['4" deficit deadlift', 'Deadlift (4" deficit)', 'deadlift-deficit-2'],
   ])('builds distinct canonicals for %s', (_, ex: string, expected: string) => {
     expect(buildCanonical(parseExercise(ex), ex)).toBe(expected);
   });
@@ -95,9 +96,9 @@ describe('buildTagsAndEffects baseline % range', () => {
       { min: 81, max: 100 },
     ],
     [
-      'block deadlift no stance (fallback to base equipment range)',
+      'block deadlift with no explicit stance → unassessed (stance required)',
       'Deadlift (1 block)',
-      { min: 105, max: 115 },
+      null,
     ],
     [
       'sumo block deadlift with stance-qualified range and composition',
@@ -192,9 +193,11 @@ describe('buildTagsAndEffects deadlift stance resolution', () => {
     expect(explSquatStance.range).toEqual({ min: 90, max: 100 });
     expect(new Set(explSquatStance.effects)).toEqual(new Set(['HIP_DOMINANT', 'POSTERIOR_CHAIN']));
 
-    const deficit = buildTagsAndEffects('Deadlift (2" deficit)', 'sumo');
-    expect(deficit.range).toEqual({ min: 75, max: 85 });
-    expect(new Set(deficit.effects)).toEqual(new Set(['EXTENDED_ROM', 'BOTTOM_RANGE']));
+    const deficit = buildTagsAndEffects('Sumo Deadlift (2" deficit)', 'sumo');
+    expect(deficit.range).toEqual({ min: 81, max: 95 });
+    expect(new Set(deficit.effects)).toEqual(
+      new Set(['EXTENDED_ROM', 'BOTTOM_RANGE', 'HIP_DOMINANT', 'POSTERIOR_CHAIN'])
+    );
   });
 });
 
@@ -234,24 +237,37 @@ describe('equipment magnitude produces distinct tags, effects, and ranges', () =
   );
 
   it('evaluates dynamic block and deficit sequence permutations', () => {
+    // Bare (no explicit stance) block/deficit pulls are unassessed — stance is required
+    // to pick the correct equipment ratio (see FIX_DL.md / CLAUDE.md).
     (
       [
-        ['Deadlift (1 block)', { min: 105, max: 115 }],
-        ['Deadlift (2 blocks)', { min: 115, max: 125 }],
-        ['Deadlift (3 blocks)', { min: 125, max: 135 }],
+        'Deadlift (1 block)',
+        'Deadlift (2 blocks)',
+        'Deadlift (3 blocks)',
+        'Deadlift (1 deficit)',
+        'Deadlift (2 deficit)',
+      ] as const
+    ).forEach((ex) => {
+      expect(buildTagsAndEffects(ex).range).toBeNull();
+    });
+
+    // With an explicit stance keyword, magnitude-tiered composition resolves via the
+    // stance-qualified equipment keys.
+    (
+      [
+        ['Sumo Deadlift (1 block)', { min: 88, max: 105 }],
+        ['Sumo Deadlift (4" blocks)', { min: 81, max: 95 }],
+        ['Conventional Deadlift (1 block)', { min: 93, max: 108 }],
+        ['Conventional Deadlift (4" blocks)', { min: 97, max: 115 }],
+        ['Sumo Deadlift (2" deficit)', { min: 81, max: 95 }],
       ] as const
     ).forEach(([ex, range]) => {
       expect(buildTagsAndEffects(ex).range).toEqual(range);
     });
 
-    (
-      [
-        ['Deadlift (1 deficit)', { min: 85, max: 95 }],
-        ['Deadlift (2 deficit)', { min: 75, max: 85 }],
-      ] as const
-    ).forEach(([ex, range]) => {
-      expect(buildTagsAndEffects(ex).range).toEqual(range);
-    });
+    // Known gap: no magnitude-2 stance-qualified deficit entry exists yet, so this
+    // combination still resolves null (not a bug — flagging so it isn't silently assumed).
+    expect(buildTagsAndEffects('Sumo Deadlift (4" deficit)').range).toBeNull();
   });
 });
 

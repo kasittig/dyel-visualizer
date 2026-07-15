@@ -105,6 +105,7 @@ export function buildTagsAndEffects(
     });
   };
   let range: BaselineRange | null = null;
+  let equipmentRangeMissing = false;
 
   const applyRange = (k: string) => {
     const entry = effectsMap[k];
@@ -151,6 +152,12 @@ export function buildTagsAndEffects(
       } else if (magKey && effectsMap[magKey]) {
         // Fall back to magnitude key
         targetKey = magKey;
+      } else if (!effectsMap[baseKey]) {
+        // No stance-qualified, magnitude, or base entry exists for this equipment/magnitude/stance
+        // combination — this is a known data gap, not a fallback opportunity. Composing only the
+        // stance range here would produce a misleading partial result, so the whole range must
+        // resolve unassessed rather than silently averaging in just the stance component.
+        equipmentRangeMissing = true;
       }
       // If neither stance-qualified nor magnitude key exists, use baseKey
     } else {
@@ -192,6 +199,9 @@ export function buildTagsAndEffects(
 
   if (range === null && ex.addlWts.length > 0) {
     range = { min: 100, max: 100 };
+  }
+  if (equipmentRangeMissing) {
+    range = null;
   }
   return { tags, effects: [...effects], range };
 }
