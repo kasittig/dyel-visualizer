@@ -32,7 +32,7 @@ lifts since the canonical format is itself built from parseable keywords.
 ## Canonical format
 
 For non-accessory lifts: `${type}[-${bar}][-${stance}][-${equipment}][-${addlWts...}]`,
-omitting default values (`bar: standard`, `stance: competition`) and any absent component.
+omitting default values (`bar: standard`, and each lift type's default stance — `deadlift: conventional`, `bench: wide`, `squat: lowbar`, per `DEFAULT_STANCE` in `detect/conjugate-types.ts`) and any absent component.
 For accessory lifts (parser always nulls bar/stance/equipment there): a kebab-slugified
 raw name, preserving per-exercise distinctness without a dictionary.
 
@@ -60,7 +60,7 @@ default is always omitted. Examples:
 
 `lift:${type}` always. If the exercise has zero modifiers (default bar/stance,
 no equipment, no addlWts) — i.e. a bare comp lift — it gets `comp-lift` plus explicit
-facet tags `bar:standard` and `stance:competition`. This only ever applies to the three
+facet tags `bar:standard` and the lift type's default stance tag (e.g., `stance:conventional` for deadlift, `stance:wide` for bench, `stance:lowbar` for squat, per `DEFAULT_STANCE` in `detect/conjugate-types.ts`). This only ever applies to the three
 bare canonicals themselves, never a variant. Otherwise it gets `bar:`/`stance:`/`equip:`/
 `addl:` tags for each present non-default component (no `comp-lift`, no other bare tag).
 Effects are looked up per present component as `${namespace}:${value}:${type}` in
@@ -71,16 +71,28 @@ key (`equip:${equipment}[-${magnitude}]:${resolvedStance}:deadlift`) before fall
 stance-agnostic magnitude/base key; this lookup refinement affects only which value is retrieved,
 not the composition order (equipment range still applies first, then stance range).
 
-Block and deficit deadlift equipment ranges are stance-required: the two stances' equipment
-ratios diverge meaningfully in `modifier-effects.json` (see the stance-qualified keys
+The `'competition'` tag (no namespace prefix, unlike `bar:`/`stance:`) marks records logged in a
+competition setting. For squat and bench, this tag is applied automatically whenever their
+resolved stance is `lowbar` or `wide` respectively — which is always the case, since those are
+also their lift-type defaults (applied inside `buildTagsAndEffects` in `detect/canonical.ts`).
+Deadlift's `'competition'` tag is not determined at single-record tag time; it requires comparing
+e1RM across the athlete's sumo vs. conventional deadlifts to identify their stronger stance
+(by best e1RM, ties/no-data defaulting to conventional), which is unavailable in this module.
+Instead, it is applied as a post-tagging patch in `pipeline.ts`'s `runPipelineModel` via a helper
+called `tagCompetitionDeadliftStance`, before any other tag-dependent computation runs — see
+`packages/pipeline/CLAUDE.md` for details.
+
+Bare deadlifts now always resolve a concrete default stance (conventional, via `DEFAULT_STANCE`),
+so they are never unassessed for missing-stance reasons anymore — a bare `"Deadlift (1 block)"`
+resolves its baseline range via the conventional stance-qualified equipment key, same as an
+explicitly-labeled `"Conventional Deadlift (1 block)"`. Block and deficit equipment ratios
+diverge by stance in `modifier-effects.json` (see the stance-qualified keys
 `equip:blocks*:sumo/conventional:deadlift` and `equip:deficit:sumo/conventional:deadlift`).
-With no explicit sumo/conventional stance keyword in the exercise name, `range` resolves to
-`null` (which `analyze/diagnose.ts` routes to `unassessed`) rather than falling back to a
-stance-agnostic average. Even with an explicit stance keyword, if that stance/equipment/magnitude
-combination has no matching data entry (e.g., there is currently no magnitude-2 stance-qualified
-deficit entry), `range` still resolves to `null` — a partial range built from only one of the
-two expected multiplicative components would be misleading, so the whole range is treated as
-unassessed instead.
+If a given stance/equipment/magnitude combination has no matching data entry in the lookup
+(e.g., there is currently no magnitude-2 stance-qualified deficit entry), `range` resolves to
+`null` (which `analyze/diagnose.ts` routes to `unassessed`) — a partial range built from only
+one of the two expected multiplicative components would be misleading, so the whole range is
+treated as unassessed instead.
 
 For accessory records, effects are additionally populated via `classifyAccessoryEffects`
 (in `detect/detectors.ts`), a keyword classifier mapping the raw exercise name to zero or

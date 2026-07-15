@@ -28,8 +28,6 @@ export function App() {
     activeTab,
     setActiveTab,
     shownResetToken,
-    deadliftStance,
-    setDeadliftStance,
     athleteBase,
     dateRange,
     setDateRange,
@@ -43,15 +41,7 @@ export function App() {
     model: effModel,
     invalidUrl,
     textValidation,
-  } = usePipelineOrchestration(
-    inputMode,
-    url,
-    pastedText,
-    refreshToken,
-    athleteBase,
-    deadliftStance
-  );
-  const resolvedDeadliftStance = effModel?.athlete.deadliftStance ?? deadliftStance ?? 'sumo';
+  } = usePipelineOrchestration(inputMode, url, pastedText, refreshToken, athleteBase);
   const {
     tabRows,
     visibleLiftIds,
@@ -61,7 +51,7 @@ export function App() {
     volumeByDate,
     allSessionDates,
     lastSessionDate,
-  } = useVisualizerData(effModel, dateRange, resolvedDeadliftStance);
+  } = useVisualizerData(effModel, dateRange);
 
   const showUrlPanel = panelForcedOpen || effStatus !== 'success';
   const tabs = MAIN_TABS.filter(({ id }) => visibleLiftIds.has(id));
@@ -161,8 +151,6 @@ export function App() {
                   key={shownResetToken}
                   liftType={liftTab}
                   targetName={targetCanonicals[liftTab]!}
-                  deadliftStance={resolvedDeadliftStance}
-                  onDeadliftStanceChange={setDeadliftStance}
                   dateRange={dateRange}
                   onDateRangeChange={setDateRange}
                   unit={dataUnit}

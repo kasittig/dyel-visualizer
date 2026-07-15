@@ -66,11 +66,13 @@ describe('buildTagsAndEffects with magnitude-qualified lookup', () => {
 
     const revRes = buildTagsAndEffects('Deadlift (light rev. bands)');
     expect(revRes.tags.has('addl:rev-bands:light')).toBe(true);
-    expect(new Set(revRes.effects)).toEqual(new Set(['SUPRAMAXIMAL', 'LOCKOUT']));
+    expect(new Set(revRes.effects)).toEqual(
+      new Set(['SUPRAMAXIMAL', 'LOCKOUT', 'HAMSTRING_DOMINANT', 'POSTERIOR_CHAIN'])
+    );
 
     const bndRes = buildTagsAndEffects('Bench (mini bands)');
     expect(bndRes.tags.has('addl:bands:mini')).toBe(true);
-    expect(new Set(bndRes.effects)).toEqual(new Set(['BAR_SPEED']));
+    expect(new Set(bndRes.effects)).toEqual(new Set(['BAR_SPEED', 'UPPER_PECS', 'REDUCED_ROM']));
   });
 
   it('preserves single-chain layouts and maps component effects', () => {
@@ -87,18 +89,22 @@ describe('buildTagsAndEffects with magnitude-qualified lookup', () => {
 
 describe('buildTagsAndEffects baseline % range', () => {
   it.each([
-    ['bare competition lift → no range (unassessed via range)', 'Squat', null],
+    ['bare Squat resolves via default stance:lowbar', 'Squat', { min: 100, max: 100 }],
     ['single pct-bearing modifier (SSB squat)', 'Squat (SSB)', { min: 90, max: 95 }],
-    ['addlWt-only modifier → 100-100% fallback', 'Bench (chains)', { min: 100, max: 100 }],
+    [
+      'addlWt-only modifier with default bench stance composition',
+      'Bench (chains)',
+      { min: 90, max: 100 },
+    ],
     [
       'compound pct-bearing modifiers multiply (equipment then stance)',
       'Sumo Box Squat',
       { min: 81, max: 100 },
     ],
     [
-      'block deadlift with no explicit stance → unassessed (stance required)',
+      'bare block deadlift defaults to conventional stance with composition',
       'Deadlift (1 block)',
-      null,
+      { min: 93, max: 108 },
     ],
     [
       'sumo block deadlift with stance-qualified range and composition',
@@ -126,15 +132,34 @@ describe('buildTagsAndEffects baseline % range', () => {
 });
 
 describe('buildTagsAndEffects bare comp-lift tags', () => {
-  it.each([
-    ['bare Squat gets comp-lift + bar:standard + stance:competition', 'Squat'],
-    ['bare Bench gets comp-lift + bar:standard + stance:competition', 'Bench'],
-    ['bare Deadlift gets comp-lift + bar:standard + stance:competition', 'Deadlift'],
-  ])('%s', (_, ex: string) => {
-    const res = buildTagsAndEffects(ex);
+  it('bare Squat gets comp-lift + bar:standard + stance:lowbar + competition', () => {
+    const res = buildTagsAndEffects('Squat');
     expect(res.tags.has('comp-lift')).toBe(true);
     expect(res.tags.has('bar:standard')).toBe(true);
-    expect(res.tags.has('stance:competition')).toBe(true);
+    expect(res.tags.has('stance:lowbar')).toBe(true);
+    expect(res.tags.has('competition')).toBe(true);
+    expect(res.range).toEqual({ min: 100, max: 100 });
+    expect(new Set(res.effects)).toEqual(new Set([]));
+  });
+
+  it('bare Bench gets comp-lift + bar:standard + stance:wide + competition', () => {
+    const res = buildTagsAndEffects('Bench');
+    expect(res.tags.has('comp-lift')).toBe(true);
+    expect(res.tags.has('bar:standard')).toBe(true);
+    expect(res.tags.has('stance:wide')).toBe(true);
+    expect(res.tags.has('competition')).toBe(true);
+    expect(res.range).toEqual({ min: 90, max: 100 });
+    expect(new Set(res.effects)).toEqual(new Set(['UPPER_PECS', 'REDUCED_ROM']));
+  });
+
+  it('bare Deadlift gets comp-lift + bar:standard + stance:conventional (no competition tag)', () => {
+    const res = buildTagsAndEffects('Deadlift');
+    expect(res.tags.has('comp-lift')).toBe(true);
+    expect(res.tags.has('bar:standard')).toBe(true);
+    expect(res.tags.has('stance:conventional')).toBe(true);
+    expect(res.tags.has('competition')).toBe(false);
+    expect(res.range).toEqual({ min: 90, max: 100 });
+    expect(new Set(res.effects)).toEqual(new Set(['HAMSTRING_DOMINANT', 'POSTERIOR_CHAIN']));
   });
 
   it.each([
@@ -145,9 +170,9 @@ describe('buildTagsAndEffects bare comp-lift tags', () => {
       false,
     ],
     [
-      'Sumo Squat (non-bare, has stance:sumo) does NOT get stance:competition',
+      'Sumo Squat (non-bare, has stance:sumo) does NOT get default stance:lowbar',
       'Sumo Squat',
-      'stance:competition',
+      'stance:lowbar',
       false,
     ],
     [
@@ -162,38 +187,25 @@ describe('buildTagsAndEffects bare comp-lift tags', () => {
   });
 });
 
-describe('buildTagsAndEffects deadlift stance resolution', () => {
-  it('handles variations of deadlift stance compounding mechanics', () => {
-    expect(buildTagsAndEffects('Deadlift', 'sumo').range).toBeNull();
-    expect(buildTagsAndEffects('Deadlift', 'sumo').effects).toEqual([]);
-    expect(buildTagsAndEffects('Deadlift', 'sumo').tags.has('comp-lift')).toBe(true);
-    expect(buildTagsAndEffects('Deadlift', 'conventional').range).toBeNull();
-    expect(buildTagsAndEffects('Deadlift', 'conventional').effects).toEqual([]);
-
-    const oppSumo = buildTagsAndEffects('Opposite Deadlift', 'sumo');
-    expect(oppSumo.range).toEqual({ min: 90, max: 100 });
-    expect(new Set(oppSumo.effects)).toEqual(new Set(['HAMSTRING_DOMINANT', 'POSTERIOR_CHAIN']));
-
-    const oppConv = buildTagsAndEffects('Opposite Deadlift', 'conventional');
-    expect(oppConv.range).toEqual({ min: 90, max: 100 });
-    expect(new Set(oppConv.effects)).toEqual(new Set(['HIP_DOMINANT', 'POSTERIOR_CHAIN']));
-
-    const explSumo = buildTagsAndEffects('Sumo Deadlift', 'conventional');
+describe('buildTagsAndEffects deadlift stance parsing', () => {
+  it('explicit deadlift stances resolve properly with their effects', () => {
+    // Explicit sumo keyword still resolves to sumo stance with effects
+    const explSumo = buildTagsAndEffects('Sumo Deadlift');
     expect(explSumo.range).toEqual({ min: 90, max: 100 });
     expect(new Set(explSumo.effects)).toEqual(new Set(['HIP_DOMINANT', 'POSTERIOR_CHAIN']));
 
-    const explConv = buildTagsAndEffects('Conventional Deadlift', 'sumo');
+    // Explicit conventional keyword also works
+    const explConv = buildTagsAndEffects('Conventional Deadlift');
     expect(explConv.range).toEqual({ min: 90, max: 100 });
     expect(new Set(explConv.effects)).toEqual(new Set(['HAMSTRING_DOMINANT', 'POSTERIOR_CHAIN']));
 
-    expect(buildTagsAndEffects('Squat', 'sumo').range).toBeNull();
-    expect(buildTagsAndEffects('Squat', 'sumo').effects).toEqual([]);
-
-    const explSquatStance = buildTagsAndEffects('Sumo Squat', 'conventional');
+    // Squat stance modifiers work as expected
+    const explSquatStance = buildTagsAndEffects('Sumo Squat');
     expect(explSquatStance.range).toEqual({ min: 90, max: 100 });
     expect(new Set(explSquatStance.effects)).toEqual(new Set(['HIP_DOMINANT', 'POSTERIOR_CHAIN']));
 
-    const deficit = buildTagsAndEffects('Sumo Deadlift (2" deficit)', 'sumo');
+    // Block/deficit deadlifts with explicit sumo still resolve with sumo effects
+    const deficit = buildTagsAndEffects('Sumo Deadlift (2" deficit)');
     expect(deficit.range).toEqual({ min: 81, max: 95 });
     expect(new Set(deficit.effects)).toEqual(
       new Set(['EXTENDED_ROM', 'BOTTOM_RANGE', 'HIP_DOMINANT', 'POSTERIOR_CHAIN'])
@@ -207,22 +219,22 @@ describe('equipment magnitude produces distinct tags, effects, and ranges', () =
       'bench 1-board (default magnitude)',
       'Bench (1 board)',
       ['equip:board'],
-      { min: 105, max: 115 },
-      ['TRICEP_DOMINANT', 'SUPRAMAXIMAL'],
+      { min: 95, max: 115 },
+      ['TRICEP_DOMINANT', 'SUPRAMAXIMAL', 'UPPER_PECS', 'REDUCED_ROM'],
     ],
     [
       'bench 2-board',
       'Bench (2 board)',
       ['equip:board', 'equip:board-2'],
-      { min: 115, max: 125 },
-      ['TRICEP_DOMINANT', 'SUPRAMAXIMAL'],
+      { min: 104, max: 125 },
+      ['TRICEP_DOMINANT', 'SUPRAMAXIMAL', 'UPPER_PECS', 'REDUCED_ROM'],
     ],
     [
       'bench 3-board',
       'Bench (3 board)',
       ['equip:board', 'equip:board-3'],
-      { min: 125, max: 135 },
-      ['TRICEP_DOMINANT', 'SUPRAMAXIMAL'],
+      { min: 113, max: 135 },
+      ['TRICEP_DOMINANT', 'SUPRAMAXIMAL', 'UPPER_PECS', 'REDUCED_ROM'],
     ],
   ])(
     '%s produces expected tags and range',
@@ -237,19 +249,14 @@ describe('equipment magnitude produces distinct tags, effects, and ranges', () =
   );
 
   it('evaluates dynamic block and deficit sequence permutations', () => {
-    // Bare (no explicit stance) block/deficit pulls are unassessed — stance is required
-    // to pick the correct equipment ratio (see FIX_DL.md / CLAUDE.md).
-    (
-      [
-        'Deadlift (1 block)',
-        'Deadlift (2 blocks)',
-        'Deadlift (3 blocks)',
-        'Deadlift (1 deficit)',
-        'Deadlift (2 deficit)',
-      ] as const
-    ).forEach((ex) => {
-      expect(buildTagsAndEffects(ex).range).toBeNull();
-    });
+    // Bare (no explicit stance) block/deficit pulls now resolve via conventional stance,
+    // the new default for bare Deadlifts. Unmapped magnitudes (e.g., magnitude 3 or
+    // magnitude-2 deficit) still resolve null due to missing equipment entries.
+    expect(buildTagsAndEffects('Deadlift (1 block)').range).toEqual({ min: 93, max: 108 });
+    expect(buildTagsAndEffects('Deadlift (2 blocks)').range).toEqual({ min: 97, max: 115 });
+    expect(buildTagsAndEffects('Deadlift (3 blocks)').range).toBeNull();
+    expect(buildTagsAndEffects('Deadlift (1 deficit)').range).toEqual({ min: 83, max: 97 });
+    expect(buildTagsAndEffects('Deadlift (2 deficit)').range).toBeNull();
 
     // With an explicit stance keyword, magnitude-tiered composition resolves via the
     // stance-qualified equipment keys.
@@ -276,7 +283,9 @@ describe('equipment magnitude fallback for unmapped magnitudes (regression guard
     const res = buildTagsAndEffects('Bench (4 board)');
     expect(res.tags.has('equip:board')).toBe(true);
     expect(res.tags.has('equip:board-4')).toBe(true);
-    expect(res.range).toEqual({ min: 105, max: 115 });
-    expect(new Set(res.effects)).toEqual(new Set(['TRICEP_DOMINANT', 'SUPRAMAXIMAL']));
+    expect(res.range).toEqual({ min: 95, max: 115 });
+    expect(new Set(res.effects)).toEqual(
+      new Set(['TRICEP_DOMINANT', 'SUPRAMAXIMAL', 'UPPER_PECS', 'REDUCED_ROM'])
+    );
   });
 });

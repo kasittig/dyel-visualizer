@@ -56,7 +56,7 @@ describe('tagRecords', () => {
     expect(res1.tagged[0]).toMatchObject({
       ...rec,
       canonical: 'bench',
-      tags: new Set(['lift:bench', 'comp-lift', 'bar:standard', 'stance:competition']),
+      tags: new Set(['lift:bench', 'comp-lift', 'bar:standard', 'stance:wide', 'competition']),
     });
 
     const r2: SetRecord[] = [
@@ -76,9 +76,9 @@ describe('tagRecords', () => {
     const res3 = tagRecords(r3);
     expect(res3.unknown).toEqual(['unknown-canonical']);
     expect(res3.tagged[0].tags).toEqual(
-      new Set(['lift:bench', 'comp-lift', 'bar:standard', 'stance:competition'])
+      new Set(['lift:bench', 'comp-lift', 'bar:standard', 'stance:wide', 'competition'])
     );
-    expect(res3.tagged[1].tags).toEqual(new Set(['lift:bench', 'addl:chains:1']));
+    expect(res3.tagged[1].tags).toEqual(new Set(['lift:bench', 'addl:chains:1', 'competition']));
   });
 });
 
@@ -103,7 +103,9 @@ describe('keyword-detector parsing', () => {
       new Set(['lift:bench', 'stance:close'])
     );
     expect(resolveCanonicalNames(rec('floor press')).resolved[0].exercise).toBe('bench-floor');
-    expect(tagRecords(rec('bench-chains')).tagged[0].effects).toEqual(['BAR_SPEED']);
+    expect(new Set(tagRecords(rec('bench-chains')).tagged[0].effects)).toEqual(
+      new Set(['BAR_SPEED', 'UPPER_PECS', 'REDUCED_ROM'])
+    );
 
     const { resolved, tagged } = {
       ...resolveCanonicalNames(rec('sumo squat (chains)')),
@@ -200,7 +202,8 @@ describe('classifyAccessorySubtypes', () => {
           'lift:bench',
           'comp-lift',
           'bar:standard',
-          'stance:competition',
+          'stance:wide',
+          'competition',
         ]),
         tr('plank', 1706745600000, ['lift:accessory'], 'Plank'),
       ],
@@ -214,7 +217,8 @@ describe('classifyAccessorySubtypes', () => {
           'lift:bench',
           'comp-lift',
           'bar:standard',
-          'stance:competition',
+          'stance:wide',
+          'competition',
         ]),
         tr('face-pulls', 1706745600000, ['lift:accessory'], 'Face Pulls'),
       ],
@@ -228,7 +232,8 @@ describe('classifyAccessorySubtypes', () => {
           'lift:squat',
           'comp-lift',
           'bar:standard',
-          'stance:competition',
+          'stance:lowbar',
+          'competition',
         ]),
         tr('leg-press', 1706745600000, ['lift:accessory'], 'Leg Press'),
       ],
@@ -242,7 +247,7 @@ describe('classifyAccessorySubtypes', () => {
           'lift:deadlift',
           'comp-lift',
           'bar:standard',
-          'stance:competition',
+          'stance:conventional',
         ]),
         tr('back-ext', 1706745600000, ['lift:accessory'], 'Back Extension'),
       ],
@@ -256,13 +261,15 @@ describe('classifyAccessorySubtypes', () => {
           'lift:bench',
           'comp-lift',
           'bar:standard',
-          'stance:competition',
+          'stance:wide',
+          'competition',
         ]),
         tr('squat', 1706745600000, [
           'lift:squat',
           'comp-lift',
           'bar:standard',
-          'stance:competition',
+          'stance:lowbar',
+          'competition',
         ]),
         tr('dips', 1706745600000, ['lift:accessory'], 'Dips'),
       ],
@@ -291,11 +298,12 @@ describe('classifyAccessorySubtypes', () => {
           'lift:bench',
           'comp-lift',
           'bar:standard',
-          'stance:competition',
+          'stance:wide',
+          'competition',
         ]),
       ],
       0,
-      ['lift:bench', 'comp-lift', 'bar:standard', 'stance:competition'],
+      ['lift:bench', 'comp-lift', 'bar:standard', 'stance:wide', 'competition'],
     ],
   ])('classifyAccessorySubtypes: %s', (_, input, recordIndex, expectedTags) => {
     const result = classifyAccessorySubtypes(input);

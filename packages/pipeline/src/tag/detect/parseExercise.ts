@@ -1,4 +1,5 @@
 import type { ParsedAddlWt, ParsedExercise } from './conjugate-types';
+import { DEFAULT_STANCE } from './conjugate-types';
 import { BAR_DETECTORS, EQUIPMENT_DETECTORS, STANCE_DETECTORS, TYPE_DETECTORS } from './detectors';
 import type { Detector } from './detectors';
 
@@ -96,7 +97,7 @@ export function parseExercise(name: string): ParsedExercise {
   return {
     type,
     bar: parseBar(lower, tokens) ?? 'standard',
-    stance: parseStance(lower, tokens) ?? 'competition',
+    stance: parseStance(lower, tokens) ?? DEFAULT_STANCE[type],
     addlWts,
     equipment,
     equipmentMagnitude,

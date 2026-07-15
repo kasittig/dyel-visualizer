@@ -1,7 +1,15 @@
 import type { TaggedSetRecord } from '../tag/tag';
 import { calcE1RM, invertE1RM } from './e1rm';
 import { isSpeedWork } from './derivers';
-import type { AthleteContext } from './athlete';
+import { DEFAULT_STANCE } from '../tag/detect/conjugate-types';
+
+// Default-stance tags (e.g. `stance:wide` for bare bench) are facet-neutral, same as
+// `bar:standard` — they mark the absence of an explicit modifier, not a real variant, so
+// they must be excluded from the non-addl signature just like the old single
+// `stance:competition` placeholder was before per-type default stances existed.
+const DEFAULT_STANCE_TAGS = new Set(
+  Object.values(DEFAULT_STANCE).map((stance) => `stance:${stance}`)
+);
 
 export interface NormalizationModel {
   fittedAt: number;
@@ -80,7 +88,8 @@ const getNonAddlSignature = (tags: ReadonlySet<string>): string =>
     .filter(
       (t: string) =>
         !t.startsWith('addl:') &&
-        !['bar:standard', 'stance:competition'].includes(t) &&
+        t !== 'bar:standard' &&
+        !DEFAULT_STANCE_TAGS.has(t) &&
         ['lift:', 'bar:', 'stance:', 'equip:'].some((p: string) => t.startsWith(p))
     )
     .sort()
@@ -88,8 +97,7 @@ const getNonAddlSignature = (tags: ReadonlySet<string>): string =>
 
 export function fitNormalizationModel(
   history: TaggedSetRecord[],
-  opts: { minSamples: number },
-  athlete: AthleteContext
+  opts: { minSamples: number }
 ): NormalizationModel {
   const byCan = Object.groupBy(history, (r: TaggedSetRecord) => r.canonical);
   // Build effort-filtered-with-fallback view: each canonical uses only non-speed-work sets,
@@ -131,15 +139,10 @@ export function fitNormalizationModel(
       e.r.some((r: TaggedSetRecord) => /competition/i.test(r.meta?.rawExercise ?? ''))
     );
     const comp = entries.filter((e) => e.r.some((r: TaggedSetRecord) => r.tags.has('comp-lift')));
-    const prefStance =
+    const stancePool =
       family === 'lift:deadlift'
-        ? athlete.deadliftStance === 'sumo'
-          ? 'sumo'
-          : 'conventional'
-        : null;
-    const stancePool = prefStance
-      ? entries.filter((e) => e.r.some((r: TaggedSetRecord) => r.tags.has(`stance:${prefStance}`)))
-      : [];
+        ? entries.filter((e) => e.r.some((r: TaggedSetRecord) => r.tags.has('competition')))
+        : [];
     const pausedPool =
       family === 'lift:bench'
         ? entries.filter((e) =>

@@ -14,6 +14,7 @@ const baseVariant = (overrides?: Partial<VariantAssessment>): VariantAssessment 
   expectedBaseline: '90-110%',
   staleDays: 3,
   effects: ['hypertrophy'],
+  isCompLift: true,
   addlWtOffset: { offsetKg: 5, n: 10 },
   ...overrides,
 });
@@ -89,6 +90,15 @@ describe('selectDiagnosticVariants', () => {
     const result = selectDiagnosticVariants(baseModel(variants));
     expect(result[0].displayName).toBe('Squat');
     expect(result[1].expectedBaseline).toBeNull();
+  });
+
+  it.each([
+    ['isCompLift: true', true],
+    ['isCompLift: false', false],
+  ])('passes through isCompLift unchanged: %s', (_, isCompLift) => {
+    const v = baseVariant({ isCompLift });
+    const result = selectDiagnosticVariants(baseModel([v]))[0];
+    expect(result.isCompLift).toBe(isCompLift);
   });
 });
 

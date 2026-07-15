@@ -23,7 +23,7 @@ const fixtureModel = {
   pointsByLabelByDeriver: new Map(),
   pointsByDeriverAdjusted: new Map(),
   pointsByLabelByDeriverAdjusted: new Map(),
-  athlete: { sex: 'M', bodyweight: 90, deadliftStance: 'sumo' },
+  athlete: { sex: 'M', bodyweight: 90 },
 };
 
 describe('useCoachViewData', () => {

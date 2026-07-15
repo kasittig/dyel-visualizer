@@ -35,6 +35,8 @@ run and NEVER stored on identity types.
     always marked `'stale'` regardless of underlying ratio. Stale variants still
     compute `ratio`, `averageIndex`, and `expectedBaseline` normally (useful for
     display), but do not contribute votes to weakness aggregation.
+- `VariantAssessment.isCompLift` — mirrors the record's `'comp-lift'` tag; true only for
+  the bare squat/bench/deadlift competition lifts, never for variants or accessories.
 - `VariantAssessment.addlWtOffset` (optional, only present when sample count > 0):
   supplementary weight offset extracted from `model.addlWtOffset[canonical]`, stays in kg.
   Diagnostic display strings are the app's job; emit structured fields only. Consistent with

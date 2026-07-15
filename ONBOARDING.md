@@ -49,7 +49,7 @@ Exercise names are the most important thing to get right. The app parses names a
 
 _Bar type:_ `ssb` / `safety`, `trap`, `cambered`, `zercher`, `duffalo`, `swiss`, `american`, `bamboo`, `belt`, `goblet`, `dumbbell` / `db`
 
-_Stance/grip:_ `sumo`, `conventional`, `close grip` / `cg`, `wide grip`, `narrow`, `medium`, `front`, `romanian`, `slingshot`, `builder`
+_Stance/grip:_ `sumo`, `conventional`, `close grip` / `cg`, `wide grip`, `narrow`, `medium`, `front`, `romanian`, `slingshot`, `builder`, `low bar`
 
 _Equipment:_ `incline`, `decline`, `box`, `board`, `blocks`, `deficit`, `pause` / `command`, `floor`, `rack`
 
@@ -160,7 +160,7 @@ A table that appears below the radar chart. For each variation (excluding access
 - **Optimal** means your training is producing the expected transfer to the competition lift from that exercise.
 - **Stale** means the variation's most recent logged session is old enough (past a 90-day threshold) that its diagnostic can't be trusted — it isn't counted as a weakness or overtrained finding until you log it again.
 
-If you pull conventional or sumo, set the "Primary pull" radio button in the diagnostics panel so deadlift variations are classified correctly.
+Deadlift variation classification is now automatic based on your logged data — no manual stance preference setting is needed.
 
 ---
 

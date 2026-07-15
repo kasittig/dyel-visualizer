@@ -170,4 +170,72 @@ describe('pipeline orchestration', () => {
     expect(Object.values(model.model.baseline)).not.toContain(accessoryCanonical);
     expect(model.model.variantFactor[accessoryCanonical]).toBeUndefined();
   });
+
+  describe('automatic competition deadlift-stance derivation', () => {
+    it.each([
+      [
+        'sumo strictly higher e1RM',
+        `2024-01-01 Sumo Deadlift 150kg x5 @8
+2024-01-01 Deadlift 100kg x5 @8`,
+        'sumo',
+      ],
+      [
+        'conventional strictly higher e1RM',
+        `2024-01-01 Sumo Deadlift 100kg x5 @8
+2024-01-01 Deadlift 150kg x5 @8`,
+        'conventional',
+      ],
+      [
+        'tied e1RM defaults to conventional',
+        `2024-01-01 Sumo Deadlift 100kg x5 @8
+2024-01-01 Deadlift 100kg x5 @8`,
+        'conventional',
+      ],
+      [
+        'no sumo data at all defaults to conventional',
+        `2024-01-01 Deadlift 100kg x5 @8`,
+        'conventional',
+      ],
+    ])('tags "competition" on the %s deadlift stance only', (_, log, winner) => {
+      const model = runPipelineModel([{ name: 'log.txt', content: log }], ath()) as PipelineModel;
+
+      const sumoRecords = model.tagged.filter((r) => r.canonical === 'deadlift-sumo');
+      const conventionalRecords = model.tagged.filter((r) => r.canonical === 'deadlift');
+
+      if (sumoRecords.length) {
+        expect(sumoRecords.every((r) => r.tags.has('competition'))).toBe(winner === 'sumo');
+      }
+      expect(conventionalRecords.every((r) => r.tags.has('competition'))).toBe(
+        winner === 'conventional'
+      );
+    });
+
+    it('always tags bare Squat and Bench as "competition", independent of deadlift data', () => {
+      const log = `2024-01-01 Squat 100kg x5 @8
+2024-01-01 Bench 80kg x5 @8
+2024-01-01 Sumo Deadlift 150kg x5 @8
+2024-01-01 Deadlift 100kg x5 @8`;
+
+      const model = runPipelineModel([{ name: 'log.txt', content: log }], ath()) as PipelineModel;
+
+      const squatRecords = model.tagged.filter((r) => r.canonical === 'squat');
+      const benchRecords = model.tagged.filter((r) => r.canonical === 'bench');
+      expect(squatRecords.length).toBeGreaterThan(0);
+      expect(benchRecords.length).toBeGreaterThan(0);
+      expect(squatRecords.every((r) => r.tags.has('competition'))).toBe(true);
+      expect(benchRecords.every((r) => r.tags.has('competition'))).toBe(true);
+
+      // Confirm this doesn't depend on deadlift data existing at all.
+      const noDeadliftLog = `2024-01-01 Squat 100kg x5 @8
+2024-01-01 Bench 80kg x5 @8`;
+      const noDeadliftModel = runPipelineModel(
+        [{ name: 'log.txt', content: noDeadliftLog }],
+        ath()
+      ) as PipelineModel;
+      const squatOnly = noDeadliftModel.tagged.filter((r) => r.canonical === 'squat');
+      const benchOnly = noDeadliftModel.tagged.filter((r) => r.canonical === 'bench');
+      expect(squatOnly.every((r) => r.tags.has('competition'))).toBe(true);
+      expect(benchOnly.every((r) => r.tags.has('competition'))).toBe(true);
+    });
+  });
 });

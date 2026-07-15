@@ -47,12 +47,11 @@ export function collectVolumeRecords(tabRows: Record<LiftType, SplitRows>): Tagg
 }
 
 export function defaultCanonicalsByLift(
-  tabRows: Record<LiftType, SplitRows>,
-  deadliftStance: string
+  tabRows: Record<LiftType, SplitRows>
 ): Partial<Record<LiftType, string>> {
   const result: Partial<Record<LiftType, string>> = {};
   for (const lift of LIFT_TABS) {
-    const canonical = defaultCompExerciseCanonical(tabRows[lift].all, deadliftStance);
+    const canonical = defaultCompExerciseCanonical(tabRows[lift].all);
     if (canonical) {
       result[lift] = canonical;
     }

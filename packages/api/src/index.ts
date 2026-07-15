@@ -46,7 +46,6 @@ export type {
   ConjugateAddlWt,
 } from '@dyel/pipeline';
 export { defaultCompExerciseCanonical } from './sheet/defaultExercise';
-export { resolveAutoDeadliftStance } from './sheet/autoDeadliftStance';
 export { computeStrengthScores, strengthTierForPercentile } from './strengthScores';
 export { LINE_COLORS } from './colors';
 export { classifyExerciseName } from './validation/classifyExerciseName';

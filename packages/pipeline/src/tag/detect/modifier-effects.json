@@ -74,21 +74,6 @@
     "min": 50,
     "max": 65
   },
-  "stance:competition:squat": {
-    "effects": [],
-    "min": 100,
-    "max": 100
-  },
-  "stance:competition:bench": {
-    "effects": [],
-    "min": 100,
-    "max": 100
-  },
-  "stance:competition:deadlift": {
-    "effects": [],
-    "min": 100,
-    "max": 100
-  },
   "stance:sumo:deadlift": {
     "effects": ["HIP_DOMINANT", "POSTERIOR_CHAIN"],
     "min": 90,
@@ -97,6 +82,11 @@
   "stance:sumo:squat": {
     "effects": ["HIP_DOMINANT", "POSTERIOR_CHAIN"],
     "min": 90,
+    "max": 100
+  },
+  "stance:lowbar:squat": {
+    "effects": [],
+    "min": 100,
     "max": 100
   },
   "stance:conventional:deadlift": {
@@ -163,11 +153,6 @@
     "effects": ["CONDITIONING"],
     "min": 105,
     "max": 115
-  },
-  "stance:opposite:deadlift": {
-    "effects": [],
-    "min": 100,
-    "max": 100
   },
   "equip:incline:bench": {
     "effects": ["UPPER_PECS"],

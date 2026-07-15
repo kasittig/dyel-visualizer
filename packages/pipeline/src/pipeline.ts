@@ -10,6 +10,7 @@ import {
   classifyAccessorySubtypes,
   buildAccessoryTaggedRecords,
 } from './tag/tag';
+import { parseExercise } from './tag/detect/parseExercise';
 import { derivers } from './derive/derivers';
 import type { NormalizationModel } from './derive/normalize';
 import { fitNormalizationModel, normalizeE1rm, offsetAdjustRecords } from './derive/normalize';
@@ -82,6 +83,46 @@ function buildPointsByLabelFromGroups(
   });
 }
 
+function bestE1RMForCanonical(compTagged: TaggedSetRecord[], canonical: string): number | null {
+  const dayGroups = Map.groupBy(
+    compTagged.filter((r) => r.canonical === canonical),
+    (r) => r.date
+  );
+  let best: number | null = null;
+  for (const daySets of dayGroups.values()) {
+    const v = derivers['e1rm-max-effort'].derive(daySets);
+    if (v !== null && (best === null || v > best)) {
+      best = v;
+    }
+  }
+  return best;
+}
+
+// Sumo is the deadlift default only when it has a strictly higher best e1RM than
+// conventional; ties, no sumo data, or no deadlift data at all default to conventional
+// (conventional is also the parser's default stance for bare "Deadlift" entries — see
+// DEFAULT_STANCE in tag/detect/conjugate-types.ts).
+function resolveStrongerDeadliftStance(compTagged: TaggedSetRecord[]): 'sumo' | 'conventional' {
+  const sumo = bestE1RMForCanonical(compTagged, 'deadlift-sumo');
+  const conv = bestE1RMForCanonical(compTagged, 'deadlift');
+  return sumo !== null && conv !== null && sumo > conv ? 'sumo' : 'conventional';
+}
+
+function tagCompetitionDeadliftStance(compTagged: TaggedSetRecord[]): TaggedSetRecord[] {
+  const strongerStance = resolveStrongerDeadliftStance(compTagged);
+  return compTagged.map((r) => {
+    if (!(r.canonical === 'deadlift' || r.canonical.startsWith('deadlift-'))) {
+      return r;
+    }
+    const rawExercise = r.meta?.rawExercise ?? r.canonical;
+    const ex = parseExercise(rawExercise);
+    if (ex.stance !== strongerStance) {
+      return r;
+    }
+    return { ...r, tags: new Set([...r.tags, 'competition']) };
+  });
+}
+
 export function runPipelineModel(
   raw: RawInput[],
   athlete: AthleteContext,
@@ -107,24 +148,22 @@ export function runPipelineModel(
   }
 
   const { resolved, unknown: unkAliases } = resolveCanonicalNames(records);
-  const { tagged: compTagged, unknown: unkCanonicals } = tagRecords(
-    resolved,
-    athlete.deadliftStance
-  );
+  const { tagged: rawCompTagged, unknown: unkCanonicals } = tagRecords(resolved);
+  // The athlete's stronger deadlift stance (sumo vs. conventional) is derived automatically
+  // from their own e1RM data, never supplied externally — see tagCompetitionDeadliftStance.
+  // Every downstream consumer of deadlift records' tags (fitNormalizationModel, tagged,
+  // pointsByDeriver, etc.) must see the patched tags, so this runs before any of them.
+  const compTagged = tagCompetitionDeadliftStance(rawCompTagged);
   const unknownExercises = [...new Set([...unkAliases, ...unkCanonicals])];
   // Accessory exercises are always filtered into `unknownExercises` above (see tag/CLAUDE.md's
   // "Unknown heuristic") — resolveCanonicalNames/tagRecords never tag them. Build real tagged
   // records for them separately so they still show up in PipelineModel.tagged (and can be
   // subtype-classified below), without affecting normalization/points/diagnostics, which stay
   // scoped to comp-lift records only (compTagged).
-  const accessoryTagged = buildAccessoryTaggedRecords(
-    records,
-    unknownExercises,
-    athlete.deadliftStance
-  );
+  const accessoryTagged = buildAccessoryTaggedRecords(records, unknownExercises);
   const tagged = classifyAccessorySubtypes([...compTagged, ...accessoryTagged]);
 
-  const model = fitNormalizationModel(compTagged, { minSamples: 1 }, athlete);
+  const model = fitNormalizationModel(compTagged, { minSamples: 1 });
   const allDeriverIds = Object.keys(derivers);
 
   // Points/diagnostics are built from the FULL tagged set (compTagged + accessoryTagged), not

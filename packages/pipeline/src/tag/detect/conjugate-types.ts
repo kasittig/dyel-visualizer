@@ -17,14 +17,13 @@ export type ConjugateStance =
   | 'narrow'
   | 'sumo'
   | 'conventional'
-  | 'competition'
   | 'front'
-  | 'opposite'
   | 'medium'
   | 'wide'
   | 'romanian'
   | 'slingshot'
-  | 'builder';
+  | 'builder'
+  | 'lowbar';
 
 export type ConjugateEquipment =
   | 'incline'
@@ -45,6 +44,12 @@ export interface ParsedAddlWt {
 }
 
 export type LiftType = 'squat' | 'bench' | 'deadlift' | 'accessory';
+
+export const DEFAULT_STANCE: Record<Exclude<LiftType, 'accessory'>, ConjugateStance> = {
+  squat: 'lowbar',
+  bench: 'wide',
+  deadlift: 'conventional',
+};
 
 export interface ParsedExercise {
   type: LiftType;

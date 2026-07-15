@@ -23,6 +23,9 @@ const LIFT_DISPLAY: Record<string, string> = {
   bench: 'Bench Press',
   deadlift: 'Deadlift',
 };
+const STANCE_DISPLAY: Record<string, string> = {
+  lowbar: 'Low Bar',
+};
 const BAND_MAGS = new Set(['light', 'mini', 'micro', 'heavy', 'medium']);
 const LIFTS = new Set(['squat', 'bench', 'deadlift']);
 const ADDL_SETS = new Set(['chains', 'bands', 'rev-bands']);
@@ -120,8 +123,8 @@ export function formatExerciseDisplayName(canonical: string): string {
     if (bar && BAR_DISPLAY[bar]) {
       pre.push(BAR_DISPLAY[bar]);
     }
-    if (stance && stance !== 'competition') {
-      pre.push(cap(stance));
+    if (stance) {
+      pre.push(STANCE_DISPLAY[stance] ?? cap(stance));
     }
     if (equipment) {
       pre.push(formatEquipmentToken(equipment, equipMag));

@@ -1,5 +1,4 @@
 import { useState, type CSSProperties } from 'react';
-import type { DeadliftStancePreference } from '../../app/appTabs';
 import { usePipelineDiagnostics } from './usePipelineDiagnostics';
 import {
   formatEffect,
@@ -28,23 +27,18 @@ const LABELS = {
 type SortColumn = 'variation' | 'effects' | 'averageIndex' | 'expectedBaseline' | 'diagnostic';
 
 export function DiagnosticsPanel({
-  deadliftStance,
-  onDeadliftStanceChange,
   onVariationClick,
   highlightedVariation,
   liftType,
   unit,
 }: {
-  deadliftStance: DeadliftStancePreference;
-  onDeadliftStanceChange: (s: DeadliftStancePreference) => void;
   onVariationClick?: (name: string | null) => void;
   highlightedVariation?: string | null;
   liftType: string;
   unit: DisplayUnit;
 }) {
   const [activeEffect, setActiveEffect] = useState<string | null>(null);
-  const { variants, hasDeadlift, weakEffects, overtrainedEffects } =
-    usePipelineDiagnostics(liftType);
+  const { variants, weakEffects, overtrainedEffects } = usePipelineDiagnostics(liftType);
   const { sortedRows, sortKey, direction, toggleSort } = useSortableRows<
     DiagnosticVariant,
     SortColumn
@@ -115,23 +109,6 @@ export function DiagnosticsPanel({
                 )}
               </div>
             )}
-            {hasDeadlift && (
-              <fieldset className={styles.stanceRow}>
-                <legend className={styles.stanceLegend}>Primary pull</legend>
-                {(['conventional', 'sumo'] as const).map((s) => (
-                  <label key={s} className={styles.stanceLabel}>
-                    <input
-                      type="radio"
-                      name="deadlift-stance"
-                      checked={deadliftStance === s}
-                      onChange={() => onDeadliftStanceChange(s)}
-                      className={styles.stanceRadio}
-                    />
-                    {s[0].toUpperCase() + s.slice(1)}
-                  </label>
-                ))}
-              </fieldset>
-            )}
           </div>
           <Table>
             <TableHeadRow>
@@ -169,7 +146,14 @@ export function DiagnosticsPanel({
                       onVariationClick?.(r.displayName);
                     }}
                   >
-                    <TableCell>{r.displayName}</TableCell>
+                    <TableCell>
+                      {r.displayName}
+                      {r.isCompLift && (
+                        <span className={styles.compBadge} title="Competition variant">
+                          🏆
+                        </span>
+                      )}
+                    </TableCell>
                     <TableCell variant="text">
                       {[
                         ...r.effects.map(formatEffect),

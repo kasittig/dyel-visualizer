@@ -31,8 +31,7 @@ export const STANCE_DETECTORS: Detector<ConjugateStance> = [
   ['sumo', (l) => l.includes('sumo')],
   ['conventional', (l) => l.includes('conventional')],
   ['front', (l) => l.includes('front')],
-  ['opposite', (l) => l.includes('opposite')],
-  ['competition', (l) => l.includes('competition')],
+  ['lowbar', (l) => l.includes('low bar') || l.includes('low-bar') || l.includes('lowbar')],
 ];
 export const EQUIPMENT_DETECTORS: Detector<ConjugateEquipment> = [
   ['incline', (l) => l.includes('incline')],

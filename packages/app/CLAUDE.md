@@ -25,9 +25,9 @@ Single-page React app with no backend. Data comes from either a user-supplied Go
 
 **Data flow (`app/App.tsx` composing `app/*` hooks):**
 
-1. `useAppSettings()` owns all settings state (`url`, `inputMode`, `pastedText`, `activeTab`, `deadliftStance`, date range, transient UI state), the query-param → localStorage reconciliation, the URL-sync effect, and the `athlete` memo.
+1. `useAppSettings()` owns all settings state (`url`, `inputMode`, `pastedText`, `activeTab`, date range, transient UI state), the query-param → localStorage reconciliation, the URL-sync effect, and the `athlete` memo.
 2. `usePipelineOrchestration(inputMode, url, pastedText, refreshToken, athlete)` resolves a `RawInput[]` via `useResolvedRawInput` (`features/data-source/`) (URL mode calls `fetchSheetCsv` to retrieve the published CSV, using the dev proxy `/sheets-proxy/` during development to handle CORS; text mode directly wraps the pasted text into a `RawInput`), then passes it to `buildPipelineModel(raw, athlete)` from `@dyel/api` (a thin wrapper over `@dyel/pipeline`'s `runPipelineModel`, which performs all parsing, normalization, tagging, and diagnostic computation in a single call), returning a `PipelineModel`. It also owns the raw-data cache (keyed by sheet URL, persisted to `localStorage`) so a revisit renders the last sheet's data instantly instead of a blank/loading state — explicit `?sheet=`/`?mode=`/`?text=` query params always override cached settings.
-3. `useVisualizerData(model, dateRange, deadliftStance)` derives `tabRows`, visible-lift-type filtering, default canonicals, display unit, and volume/session-date data via `@dyel/api` selectors.
+3. `useVisualizerData(model, dateRange)` derives `tabRows`, visible-lift-type filtering, default canonicals, display unit, and volume/session-date data via `@dyel/api` selectors.
 4. The `PipelineModel` is stored in context via `PipelineProvider` and accessed downstream via the `usePipelineModel()` hook (both in `app/PipelineContext.tsx`). Child components use selector hooks from their owning feature directory (e.g., `features/lift/usePipelineConjugateChartData`, `features/sigma/usePipelineTotalChartData`) to derive display-ready data from the model.
 5. Exercise-type tabs (squat / bench / deadlift / accessory) render `features/lift/LiftTabPanel` (which composes `ConjugateCharts` + `VariationRadarChart` + `DiagnosticsPanel`, all colocated in `features/lift/`) consuming the derived data from selectors.
 6. `shared/components/ErrorBoundary` wraps the root in `main.tsx`.
@@ -38,7 +38,7 @@ Single-page React app with no backend. Data comes from either a user-supplied Go
 
 | Directory                  | Contents                                                                                                                                                                                                                                        |
 | -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `app/`                     | `App.tsx`, `PipelineContext.tsx` (`PipelineProvider`/`usePipelineModel`), `useAppSettings`, `usePipelineOrchestration`, `useVisualizerData`, `appTabs.ts` (`PageTab`/`InputMode`/`DeadliftStancePreference` types + `MAIN_TABS`)                |
+| `app/`                     | `App.tsx`, `PipelineContext.tsx` (`PipelineProvider`/`usePipelineModel`), `useAppSettings`, `usePipelineOrchestration`, `useVisualizerData`, `appTabs.ts` (`PageTab`/`InputMode` types + `MAIN_TABS`)                                           |
 | `features/data-source/`    | `SheetUrlPanel`, `InputModeToggle`, `GettingStarted`, `useResolvedRawInput`, `rawInput.ts`, `sheetRef.ts`, `sheetFetch.ts`, `sheetCacheUtils.ts`                                                                                                |
 | `features/validation/`     | `ValidatorPage`, `PipelineValidationPage`, `useSheetValidation`, `useTextValidation`, `usePipelineValidation`                                                                                                                                   |
 | `features/calculator/`     | `RepCalculator`, `usePipelineRepCalculator`, `StrengthScoreCalculator`, `useStrengthScores`                                                                                                                                                     |
@@ -84,7 +84,7 @@ A small set of display-only helpers and constants are allowlisted to import from
 
 ### State layering
 
-- **App-wide state** (`app/useAppSettings`): settings, date range, active tab, UI preferences like deadlift stance; persisted to localStorage and restored on revisit
+- **App-wide state** (`app/useAppSettings`): settings, date range, active tab; persisted to localStorage and restored on revisit
 - **Feature-local state**: a popover's open/closed flag, in-progress form inputs, transient selections — stays in the owning component or feature hook; never moved to app-wide state
 
 ### Cross-feature imports

@@ -25,14 +25,13 @@ export const CONJUGATE_STANCES = [
   'narrow',
   'sumo',
   'conventional',
-  'competition',
   'front',
-  'opposite',
   'medium',
   'wide',
   'romanian',
   'slingshot',
   'builder',
+  'lowbar',
 ] as const satisfies readonly ConjugateStance[];
 export const CONJUGATE_EQUIPMENT = [
   'incline',

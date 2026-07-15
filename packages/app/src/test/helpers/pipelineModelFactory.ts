@@ -21,6 +21,7 @@ export const variantAssessmentMock = (
   staleDays: 3,
   effects: ['hypertrophy'],
   addlWtOffset: { offsetKg: 5, n: 10 },
+  isCompLift: false,
   ...overrides,
 });
 
@@ -50,6 +51,6 @@ export const pipelineModelMock = (overrides?: Partial<PipelineModel>): PipelineM
   pointsByDeriverAdjusted: new Map(),
   pointsByLabelByDeriverAdjusted: new Map(),
   tagged: [],
-  athlete: { sex: 'M', bodyweight: 90, deadliftStance: 'sumo' },
+  athlete: { sex: 'M', bodyweight: 90 },
   ...overrides,
 });
