@@ -194,6 +194,26 @@
     "min": 125,
     "max": 135
   },
+  "equip:blocks:sumo:deadlift": {
+    "effects": ["LOCKOUT"],
+    "min": 97.5,
+    "max": 105
+  },
+  "equip:blocks-2:sumo:deadlift": {
+    "effects": ["LOCKOUT"],
+    "min": 90,
+    "max": 95
+  },
+  "equip:blocks:conventional:deadlift": {
+    "effects": ["LOCKOUT"],
+    "min": 102.5,
+    "max": 107.5
+  },
+  "equip:blocks-2:conventional:deadlift": {
+    "effects": ["LOCKOUT"],
+    "min": 107.5,
+    "max": 115
+  },
   "equip:deficit:deadlift": {
     "effects": ["EXTENDED_ROM", "BOTTOM_RANGE"],
     "min": 85,

@@ -78,8 +78,12 @@ export function parseExercise(name: string): ParsedExercise {
     const doubleMatch = lower.match(/\bdouble\s{1,4}board/);
     equipmentMagnitude = digitMatch ? digitMatch[1] : doubleMatch ? '2' : '1';
   } else if (equipment === 'blocks') {
-    const digitMatch = lower.match(/(\d{1,4})"{0,1}\s{0,4}blocks?/);
-    equipmentMagnitude = digitMatch ? digitMatch[1] : '1';
+    const digitMatch = lower.match(/(\d{1,4})\s{0,1}("{0,1})\s{0,4}blocks?/);
+    equipmentMagnitude = digitMatch
+      ? digitMatch[2] === '"'
+        ? String(Math.round(Number(digitMatch[1]) / 2))
+        : digitMatch[1]
+      : '1';
   } else if (equipment === 'deficit') {
     const digitMatch = lower.match(/(\d{1,4})"{0,1}\s{0,4}deficit/);
     equipmentMagnitude = digitMatch ? digitMatch[1] : '1';
