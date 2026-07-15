@@ -124,6 +124,30 @@ describe('pipeline orchestration', () => {
       expect(conv.every((r) => r.tags.has('competition'))).toBe(winner === 'conventional');
     });
 
+    it('projects each stance forward to `now` rather than comparing raw all-time-best e1RM, so a stale PR does not outrank a currently-improving stance', () => {
+      const log = [
+        '2024-01-01 Sumo Deadlift 150kg x5 @8',
+        '2024-01-01 Deadlift 100kg x5 @8',
+        '2024-01-08 Deadlift 130kg x5 @8',
+      ].join('\n');
+      const now = new Date('2024-02-01').getTime();
+      const model = runPipelineModel(
+        [{ name: 'log.txt', content: log }],
+        ath(),
+        now
+      ) as PipelineModel;
+
+      const sumo = model.tagged.filter((r) => r.canonical === 'deadlift-sumo');
+      const conv = model.tagged.filter((r) => r.canonical === 'deadlift');
+
+      // Raw all-time-best e1RM would favor sumo (175kg e1RM from a single 150kg set) over
+      // conventional's best (151.67kg e1RM from 130kg). But conventional's upward trend
+      // (116.67kg -> 151.67kg over 7 days), extrapolated forward to `now`, surpasses sumo's
+      // flat single-point projection — so conventional should win the "competition" tag.
+      expect(sumo.every((r) => r.tags.has('competition'))).toBe(false);
+      expect(conv.every((r) => r.tags.has('competition'))).toBe(true);
+    });
+
     it('always tags bare Squat and Bench as "competition", independent of deadlift data', () => {
       const logs = [
         `2024-01-01 Squat 100kg x5 @8\n2024-01-01 Bench 80kg x5 @8\n2024-01-01 Sumo Deadlift 150kg x5 @8\n2024-01-01 Deadlift 100kg x5 @8`,

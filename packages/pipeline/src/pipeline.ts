@@ -13,7 +13,12 @@ import {
 import { parseExercise } from './tag/detect/parseExercise';
 import { derivers } from './derive/derivers';
 import type { NormalizationModel } from './derive/normalize';
-import { fitNormalizationModel, normalizeE1rm, offsetAdjustRecords } from './derive/normalize';
+import {
+  fitNormalizationModel,
+  normalizeE1rm,
+  offsetAdjustRecords,
+  projectE1RMToDate,
+} from './derive/normalize';
 import type { AthleteContext } from './derive/athlete';
 import type { DiagnosticsReport } from './analyze/diagnose';
 import { diagnose } from './analyze/diagnose';
@@ -83,22 +88,30 @@ function buildPointsByLabelFromGroups(
   });
 }
 
-function bestE1RMForCanonical(compTagged: TaggedSetRecord[], canonical: string): number | null {
+// Projects a canonical's day-level max-effort e1RM trend forward to `now`, rather than
+// returning the raw all-time best, so a stale PR in one stance can't outrank current
+// strength in the other when comparing stances (see tagCompetitionDeadliftStance).
+function projectedE1RMForCanonical(
+  compTagged: TaggedSetRecord[],
+  canonical: string,
+  now: number
+): number | null {
   const dayGroups = Map.groupBy(
     compTagged.filter((r) => r.canonical === canonical),
     (r) => r.date
   );
-  return Array.from(dayGroups.values())
-    .map((daySets) => derivers['e1rm-max-effort'].derive(daySets))
-    .reduce<number | null>(
-      (best, v) => (v !== null && (best === null || v > best) ? v : best),
-      null
-    );
+  const points = Array.from(dayGroups.values())
+    .map((daySets) => ({ t: daySets[0].date, v: derivers['e1rm-max-effort'].derive(daySets) }))
+    .filter((p): p is { t: number; v: number } => p.v !== null);
+  return points.length ? projectE1RMToDate(points, now) : null;
 }
 
-function tagCompetitionDeadliftStance(compTagged: TaggedSetRecord[]): TaggedSetRecord[] {
-  const sumo = bestE1RMForCanonical(compTagged, 'deadlift-sumo');
-  const conv = bestE1RMForCanonical(compTagged, 'deadlift');
+function tagCompetitionDeadliftStance(
+  compTagged: TaggedSetRecord[],
+  now: number
+): TaggedSetRecord[] {
+  const sumo = projectedE1RMForCanonical(compTagged, 'deadlift-sumo', now);
+  const conv = projectedE1RMForCanonical(compTagged, 'deadlift', now);
   const stronger = sumo !== null && conv !== null && sumo > conv ? 'sumo' : 'conventional';
 
   return compTagged.map((r) => {
@@ -140,10 +153,12 @@ export function runPipelineModel(
   const { resolved, unknown: unkAliases } = resolveCanonicalNames(records);
   const { tagged: rawCompTagged, unknown: unkCanonicals } = tagRecords(resolved);
   // The athlete's stronger deadlift stance (sumo vs. conventional) is derived automatically
-  // from their own e1RM data, never supplied externally — see tagCompetitionDeadliftStance.
-  // Every downstream consumer of deadlift records' tags (fitNormalizationModel, tagged,
-  // pointsByDeriver, etc.) must see the patched tags, so this runs before any of them.
-  const compTagged = tagCompetitionDeadliftStance(rawCompTagged);
+  // from their own e1RM data, projected forward to `now` so a stale PR in one stance can't
+  // outrank current strength in the other, never supplied externally — see
+  // tagCompetitionDeadliftStance. Every downstream consumer of deadlift records' tags
+  // (fitNormalizationModel, tagged, pointsByDeriver, etc.) must see the patched tags, so this
+  // runs before any of them.
+  const compTagged = tagCompetitionDeadliftStance(rawCompTagged, timestamp);
   const unknownExercises = [...new Set([...unkAliases, ...unkCanonicals])];
   // Accessory exercises are always filtered into `unknownExercises` above (see tag/CLAUDE.md's
   // "Unknown heuristic") — resolveCanonicalNames/tagRecords never tag them. Build real tagged
