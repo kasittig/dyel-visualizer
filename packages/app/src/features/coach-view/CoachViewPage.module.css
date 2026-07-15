@@ -110,3 +110,32 @@
   margin: 0 0 1.5rem;
   color: var(--text-h);
 }
+
+/* Facet filter row */
+.facetField {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.facetLabel {
+  font-size: 0.75rem;
+  color: var(--muted);
+  font-family: var(--mono);
+}
+
+.facetSelect {
+  padding: 0.3rem 0.5rem;
+  font-size: 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--code-bg);
+  color: var(--text-h);
+  font-family: var(--mono);
+  outline: none;
+}
+
+.facetSelect:focus {
+  border-color: var(--accent-border);
+  box-shadow: 0 0 0 3px var(--accent-bg);
+}

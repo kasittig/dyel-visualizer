@@ -1,9 +1,22 @@
 import { useMemo, useState } from 'react';
-import type { DisplayUnit, LifterPipelineResult } from '@dyel/api';
+import type {
+  DisplayUnit,
+  LifterPipelineResult,
+  ConjugateBar,
+  ConjugateStance,
+  ConjugateEquipment,
+  ConjugateAddlWt,
+  LiftType,
+} from '@dyel/api';
 import {
   buildExerciseDisplayNameIndex,
   buildLastSessionDetailForCanonical,
   buildSessionCountForCanonical,
+  canonicalsMatchingFacets,
+  CONJUGATE_ADDL_WTS,
+  CONJUGATE_BARS,
+  CONJUGATE_EQUIPMENT,
+  CONJUGATE_STANCES,
   convertE1RMToDisplayUnit,
   detectDataUnit,
   formatLastSessionSummary,
@@ -12,6 +25,7 @@ import {
   predictWeightForReps,
   roundTo5,
 } from '@dyel/api';
+import { LIFT_TYPE_ORDER } from '../../shared/liftTypeLabels';
 
 interface LifterOverride {
   displayName?: string;
@@ -27,6 +41,7 @@ export interface CoachViewRow {
   hasData: boolean;
   effectiveDisplayName: string;
   effectiveReps: number;
+  availableExerciseOptions: string[];
   onExerciseChange: (displayName: string) => void;
   onRepsChange: (reps: number) => void;
 }
@@ -34,7 +49,7 @@ export interface CoachViewRow {
 export function useCoachViewSelection(results: LifterPipelineResult[]) {
   const erroredLifterCount = results.filter((r) => r.status === 'error').length;
 
-  const { exerciseOptions, displayNameToCanonical } = useMemo(() => {
+  const { allExerciseOptions, displayNameToCanonical, liftTypeByDisplayName } = useMemo(() => {
     const canonicalSet = new Set<string>();
     for (const res of results) {
       if (res.status === 'success') {
@@ -43,8 +58,9 @@ export function useCoachViewSelection(results: LifterPipelineResult[]) {
     }
     const index = buildExerciseDisplayNameIndex(Array.from(canonicalSet));
     return {
-      exerciseOptions: index.map((e) => e.displayName),
+      allExerciseOptions: index.map((e) => e.displayName),
       displayNameToCanonical: new Map(index.map((e) => [e.displayName, e.canonical])),
+      liftTypeByDisplayName: new Map(index.map((e) => [e.displayName, e.liftType])),
     };
   }, [results]);
 
@@ -58,6 +74,61 @@ export function useCoachViewSelection(results: LifterPipelineResult[]) {
   const [overridesByLifter, setOverridesByLifter] = useState<Map<string, LifterOverride>>(
     new Map()
   );
+
+  const [selectedBar, setSelectedBar] = useState<ConjugateBar | null>(null);
+  const [selectedStance, setSelectedStance] = useState<ConjugateStance | null>(null);
+  const [selectedEquipment, setSelectedEquipment] = useState<ConjugateEquipment | null>(null);
+  const [selectedAddlWt, setSelectedAddlWt] = useState<ConjugateAddlWt | null>(null);
+  const [selectedLiftType, setSelectedLiftType] = useState<LiftType | null>(null);
+
+  const allTaggedRecords = useMemo(
+    () => results.flatMap((r) => (r.status === 'success' ? r.model.tagged : [])),
+    [results]
+  );
+
+  const anyFacetSelected = !!(selectedBar || selectedStance || selectedEquipment || selectedAddlWt);
+
+  const facetMatchedCanonicals = useMemo(
+    () =>
+      canonicalsMatchingFacets(allTaggedRecords, {
+        bar: selectedBar,
+        stance: selectedStance,
+        equipment: selectedEquipment,
+        addlWt: selectedAddlWt,
+      }),
+    [allTaggedRecords, selectedBar, selectedStance, selectedEquipment, selectedAddlWt]
+  );
+
+  const liftTypeOptions = useMemo(() => {
+    const present = new Set(liftTypeByDisplayName.values());
+    return LIFT_TYPE_ORDER.filter((t) => present.has(t));
+  }, [liftTypeByDisplayName]);
+
+  // IMPORTANT: only apply the facet filter once a coach actively picks a facet. Skipping
+  // filtering entirely when nothing is selected (rather than relying on
+  // `canonicalsMatchingFacets` to "match everything") guarantees the dropdown's default state
+  // is always identical to today's unfiltered behavior, even in edge cases where a lifter's
+  // `tagged` records don't fully cover every canonical present in their e1RM points.
+  const exerciseOptions = useMemo(() => {
+    let opts = allExerciseOptions;
+    if (selectedLiftType) {
+      opts = opts.filter((name) => liftTypeByDisplayName.get(name) === selectedLiftType);
+    }
+    if (anyFacetSelected) {
+      opts = opts.filter((name) => {
+        const canonical = displayNameToCanonical.get(name);
+        return !!canonical && facetMatchedCanonicals.has(canonical);
+      });
+    }
+    return opts;
+  }, [
+    allExerciseOptions,
+    selectedLiftType,
+    liftTypeByDisplayName,
+    anyFacetSelected,
+    displayNameToCanonical,
+    facetMatchedCanonicals,
+  ]);
 
   // Auto-select the first exercise option once options load, without overriding an explicit
   // user selection — derived directly rather than via a setState-in-effect (which would double
@@ -90,6 +161,28 @@ export function useCoachViewSelection(results: LifterPipelineResult[]) {
     });
   };
 
+  const setSelectedBarAndReset = (v: ConjugateBar | null) => {
+    setSelectedBar(v);
+    setSelectedDisplayName('');
+  };
+  const setSelectedStanceAndReset = (v: ConjugateStance | null) => {
+    setSelectedStance(v);
+    setSelectedDisplayName('');
+  };
+  const setSelectedEquipmentAndReset = (v: ConjugateEquipment | null) => {
+    setSelectedEquipment(v);
+    setSelectedDisplayName('');
+  };
+  const setSelectedAddlWtAndReset = (v: ConjugateAddlWt | null) => {
+    setSelectedAddlWt(v);
+    setSelectedDisplayName('');
+  };
+
+  const setSelectedLiftTypeAndReset = (v: LiftType | null) => {
+    setSelectedLiftType(v);
+    setSelectedDisplayName('');
+  };
+
   const toggleUnit = () => setUnit((prev) => (prev === 'lbs' ? 'kg' : 'lbs'));
 
   const rows = useMemo<CoachViewRow[]>(() => {
@@ -103,7 +196,8 @@ export function useCoachViewSelection(results: LifterPipelineResult[]) {
       effectiveDisplayName: string,
       effectiveReps: number,
       onExerciseChange: (displayName: string) => void,
-      onRepsChange: (reps: number) => void
+      onRepsChange: (reps: number) => void,
+      availableExerciseOptions: string[]
     ): CoachViewRow => ({
       lifterName: name,
       e1rmDisplay: '—',
@@ -113,6 +207,7 @@ export function useCoachViewSelection(results: LifterPipelineResult[]) {
       hasData: false,
       effectiveDisplayName,
       effectiveReps,
+      availableExerciseOptions,
       onExerciseChange,
       onRepsChange,
     });
@@ -122,6 +217,16 @@ export function useCoachViewSelection(results: LifterPipelineResult[]) {
       const effectiveDisplayName = override?.displayName ?? selectedDisplayName;
       const effectiveCanonical = displayNameToCanonical.get(effectiveDisplayName) ?? null;
       const effectiveReps = override?.reps ?? reps;
+
+      const availableExerciseOptions =
+        res.status === 'success'
+          ? exerciseOptions.filter((name) => {
+              const canonical = displayNameToCanonical.get(name);
+              return (res.model.pointsByDeriver.get('e1rm') ?? []).some(
+                (p) => p.series === canonical
+              );
+            })
+          : exerciseOptions;
 
       const onExerciseChange = (displayName: string) =>
         setOverridesByLifter((prev) => {
@@ -144,7 +249,8 @@ export function useCoachViewSelection(results: LifterPipelineResult[]) {
           effectiveDisplayName,
           effectiveReps,
           onExerciseChange,
-          onRepsChange
+          onRepsChange,
+          availableExerciseOptions
         );
       }
 
@@ -158,7 +264,8 @@ export function useCoachViewSelection(results: LifterPipelineResult[]) {
           effectiveDisplayName,
           effectiveReps,
           onExerciseChange,
-          onRepsChange
+          onRepsChange,
+          availableExerciseOptions
         );
       }
 
@@ -175,6 +282,7 @@ export function useCoachViewSelection(results: LifterPipelineResult[]) {
         hasData: true,
         effectiveDisplayName,
         effectiveReps,
+        availableExerciseOptions,
         onExerciseChange,
         onRepsChange,
       };
@@ -187,6 +295,7 @@ export function useCoachViewSelection(results: LifterPipelineResult[]) {
     selectedDisplayName,
     overridesByLifter,
     displayNameToCanonical,
+    exerciseOptions,
   ]);
 
   return {
@@ -202,5 +311,20 @@ export function useCoachViewSelection(results: LifterPipelineResult[]) {
     toggleUnit,
     rows,
     erroredLifterCount,
+    selectedBar,
+    setSelectedBar: setSelectedBarAndReset,
+    selectedStance,
+    setSelectedStance: setSelectedStanceAndReset,
+    selectedEquipment,
+    setSelectedEquipment: setSelectedEquipmentAndReset,
+    selectedAddlWt,
+    setSelectedAddlWt: setSelectedAddlWtAndReset,
+    selectedLiftType,
+    setSelectedLiftType: setSelectedLiftTypeAndReset,
+    liftTypeOptions,
+    barOptions: CONJUGATE_BARS,
+    stanceOptions: CONJUGATE_STANCES,
+    equipmentOptions: CONJUGATE_EQUIPMENT,
+    addlWtOptions: CONJUGATE_ADDL_WTS,
   };
 }

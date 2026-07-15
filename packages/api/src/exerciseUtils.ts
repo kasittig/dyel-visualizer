@@ -1,3 +1,4 @@
+import type { LiftType } from '@dyel/pipeline';
 import { CONJUGATE_BARS, CONJUGATE_STANCES, CONJUGATE_EQUIPMENT } from './conjugate/facets';
 
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
@@ -137,10 +138,19 @@ export function formatExerciseDisplayName(canonical: string): string {
   }
 }
 
+export function canonicalLiftType(canonical: string): LiftType {
+  const first = canonical.split('-')[0];
+  return (LIFTS.has(first) ? first : 'accessory') as LiftType;
+}
+
 export function buildExerciseDisplayNameIndex(
   canonicals: string[]
-): { canonical: string; displayName: string }[] {
+): { canonical: string; displayName: string; liftType: LiftType }[] {
   return Array.from(new Set(canonicals))
-    .map((canonical) => ({ canonical, displayName: formatExerciseDisplayName(canonical) }))
+    .map((canonical) => ({
+      canonical,
+      displayName: formatExerciseDisplayName(canonical),
+      liftType: canonicalLiftType(canonical),
+    }))
     .sort((a, b) => a.displayName.localeCompare(b.displayName));
 }

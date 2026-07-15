@@ -49,9 +49,15 @@ export function usePipelineRepCalculator(
     [selectedEquipment, records]
   );
   const exercisesForType = useMemo(() => exercisesForLiftType(records), [records]);
+  const canonicalByLabel = useMemo(
+    () => new Map(exercisesForType.map((e) => [e.label, e.canonical])),
+    [exercisesForType]
+  );
+  const exerciseLabels = useMemo(() => exercisesForType.map((e) => e.label), [exercisesForType]);
   const activeCanonical = records.some((r) => r.canonical === selectedCanonical)
     ? selectedCanonical
     : (exercisesForType[0]?.canonical ?? '');
+  const activeLabel = exercisesForType.find((e) => e.canonical === activeCanonical)?.label ?? '';
   const selectedRecord = useMemo(
     () => records.find((r) => r.canonical === activeCanonical),
     [records, activeCanonical]
@@ -129,6 +135,8 @@ export function usePipelineRepCalculator(
     setLiftType,
     exercisesForType,
     activeCanonical,
+    exerciseLabels,
+    activeLabel,
     selectedRecord,
     selectedBar,
     setSelectedBar,
@@ -146,7 +154,11 @@ export function usePipelineRepCalculator(
     unit,
     estimate,
     displayE1rm,
-    handleSelectedCanonicalChange: (canonical: string) => {
+    handleSelectedCanonicalChange: (label: string) => {
+      const canonical = canonicalByLabel.get(label);
+      if (!canonical) {
+        return;
+      }
       const f = facetsFromTags(records.find((r) => r.canonical === canonical)?.tags ?? new Set());
       setSelectedCanonical(canonical);
       setReps('');

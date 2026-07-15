@@ -9,13 +9,8 @@ import type { LiftType, SplitRows } from '@dyel/api';
 import { usePipelineRepCalculator } from './usePipelineRepCalculator';
 import styles from './RepCalculator.module.css';
 import { CollapsibleSection } from '../../shared/components/CollapsibleSection';
-
-const LIFT_LABELS: Record<LiftType, string> = {
-  squat: 'Squat',
-  bench: 'Bench',
-  deadlift: 'Deadlift',
-  accessory: 'Accessory',
-};
+import { TypeaheadDropdown } from '../../shared/components';
+import { LIFT_TYPE_LABELS, LIFT_TYPE_ORDER } from '../../shared/liftTypeLabels';
 
 export function RepCalculator({
   tabRows,
@@ -28,7 +23,8 @@ export function RepCalculator({
     liftType,
     setLiftType,
     exercisesForType,
-    activeCanonical,
+    exerciseLabels,
+    activeLabel,
     selectedBar,
     setSelectedBar,
     selectedStance,
@@ -58,32 +54,27 @@ export function RepCalculator({
           <div className={styles.field}>
             <div className={styles.fieldLabel}>Lift Type</div>
             <div className={styles.chipGroup}>
-              {(Object.keys(LIFT_LABELS) as LiftType[])
-                .filter((t) => t !== 'accessory' || tabRows.accessory.all.length > 0)
-                .map((t) => (
-                  <button
-                    key={t}
-                    onClick={() => setLiftType(t)}
-                    className={clsx(styles.chip, liftType === t && styles.chipActive)}
-                  >
-                    {LIFT_LABELS[t]}
-                  </button>
-                ))}
+              {LIFT_TYPE_ORDER.filter(
+                (t) => t !== 'accessory' || tabRows.accessory.all.length > 0
+              ).map((t) => (
+                <button
+                  key={t}
+                  onClick={() => setLiftType(t)}
+                  className={clsx(styles.chip, liftType === t && styles.chipActive)}
+                >
+                  {LIFT_TYPE_LABELS[t]}
+                </button>
+              ))}
             </div>
           </div>
           <div className={styles.field}>
             <div className={styles.fieldLabel}>Exercise</div>
-            <select
-              value={activeCanonical}
-              onChange={(e) => handleSelectedCanonicalChange(e.target.value)}
-              className={styles.input}
-            >
-              {exercisesForType.map((ex) => (
-                <option key={ex.canonical} value={ex.canonical}>
-                  {ex.label}
-                </option>
-              ))}
-            </select>
+            <TypeaheadDropdown
+              options={exerciseLabels}
+              value={activeLabel || null}
+              onChange={handleSelectedCanonicalChange}
+              placeholder="Search exercise..."
+            />
           </div>
           {liftType !== 'accessory' && (
             <div className={styles.facetGrid}>
@@ -155,7 +146,7 @@ export function RepCalculator({
         <div className={styles.rightCol}>
           {exercisesForType.length === 0 ? (
             <p className={styles.emptyNote}>
-              No {LIFT_LABELS[liftType].toLowerCase()} exercises found in your data.
+              No {LIFT_TYPE_LABELS[liftType].toLowerCase()} exercises found in your data.
             </p>
           ) : estimate === null ? (
             <p className={styles.emptyNote}>
