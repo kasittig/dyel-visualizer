@@ -87,4 +87,27 @@ describe('canonicalsMatchingFacets', () => {
     expect(canonicalsMatchingFacets([], {})).toEqual(new Set());
     expect(canonicalsMatchingFacets([], { bar: 'ssb' })).toEqual(new Set());
   });
+
+  it.each([
+    ['comp-lift with bar:standard', { bar: 'standard' }, ['bench-comp-standard']],
+    ['comp-lift with stance:competition', { stance: 'competition' }, ['bench-comp-standard']],
+    [
+      'comp-lift with both bar:standard and stance:competition',
+      { bar: 'standard', stance: 'competition' },
+      ['bench-comp-standard'],
+    ],
+  ] as Array<[string, Parameters<typeof canonicalsMatchingFacets>[1], string[]]>)(
+    'matches comp-lift records with realistic new tag shape: %s',
+    (_, selection, expected) => {
+      const compLiftRecords = [
+        rec('bench-comp-standard', [
+          'lift:bench',
+          'comp-lift',
+          'bar:standard',
+          'stance:competition',
+        ]),
+      ];
+      expect(canonicalsMatchingFacets(compLiftRecords, selection)).toEqual(new Set(expected));
+    }
+  );
 });

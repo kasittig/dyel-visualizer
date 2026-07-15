@@ -51,7 +51,8 @@ only when the magnitude is **not** the default `'1'` — the default is always o
 ## Tag/effects derivation
 
 `lift:${type}` always. If the exercise has zero modifiers (default bar/stance,
-no equipment, no addlWts) it also gets `comp-lift` — this only ever applies to the three
+no equipment, no addlWts) — i.e. a bare comp lift — it gets `comp-lift` plus explicit
+facet tags `bar:standard` and `stance:competition`. This only ever applies to the three
 bare canonicals themselves, never a variant. Otherwise it gets `bar:`/`stance:`/`equip:`/
 `addl:` tags for each present non-default component (no `comp-lift`, no other bare tag).
 Effects are looked up per present component as `${namespace}:${value}:${type}` in

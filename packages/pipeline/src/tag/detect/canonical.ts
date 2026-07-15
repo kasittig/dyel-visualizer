@@ -92,6 +92,8 @@ export function buildTagsAndEffects(
   const isBareVariant = !hasBar && !hasStance && !ex.equipment && !ex.addlWts.length;
   if (isBareVariant) {
     tags.add('comp-lift');
+    tags.add('bar:standard');
+    tags.add('stance:competition');
   }
   if (isBareVariant && ex.type !== 'deadlift') {
     return { tags, effects: [], range: null };

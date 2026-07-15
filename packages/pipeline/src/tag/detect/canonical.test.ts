@@ -98,6 +98,43 @@ describe('buildTagsAndEffects baseline % range', () => {
   });
 });
 
+describe('buildTagsAndEffects bare comp-lift tags', () => {
+  it.each([
+    ['bare Squat gets comp-lift + bar:standard + stance:competition', 'Squat'],
+    ['bare Bench gets comp-lift + bar:standard + stance:competition', 'Bench'],
+    ['bare Deadlift gets comp-lift + bar:standard + stance:competition', 'Deadlift'],
+  ])('%s', (_, ex: string) => {
+    const res = buildTagsAndEffects(ex);
+    expect(res.tags.has('comp-lift')).toBe(true);
+    expect(res.tags.has('bar:standard')).toBe(true);
+    expect(res.tags.has('stance:competition')).toBe(true);
+  });
+
+  it.each([
+    [
+      'SSB Squat (non-bare, has bar:ssb) does NOT get bar:standard',
+      'Squat (SSB)',
+      'bar:standard',
+      false,
+    ],
+    [
+      'Sumo Squat (non-bare, has stance:sumo) does NOT get stance:competition',
+      'Sumo Squat',
+      'stance:competition',
+      false,
+    ],
+    [
+      'Bench (chains) (non-bare, has addl:chains) does NOT get comp-lift',
+      'Bench (chains)',
+      'comp-lift',
+      false,
+    ],
+  ])('%s', (_, ex: string, tag: string, shouldHave: boolean) => {
+    const res = buildTagsAndEffects(ex);
+    expect(res.tags.has(tag)).toBe(shouldHave);
+  });
+});
+
 describe('buildTagsAndEffects deadlift stance resolution', () => {
   it('handles variations of deadlift stance compounding mechanics', () => {
     expect(buildTagsAndEffects('Deadlift', 'sumo').range).toBeNull();
