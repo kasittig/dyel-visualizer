@@ -47,3 +47,45 @@ describe('parseExercise blocks magnitude parsing', () => {
     }
   );
 });
+
+describe('parseExercise deficit magnitude parsing', () => {
+  it.each([
+    [
+      'plain deficit magnitude (no inch mark)',
+      '3 deficit deadlift',
+      { equipment: 'deficit', equipmentMagnitude: '3' },
+    ],
+    [
+      'inch-marked deficit (2 inches)',
+      '2" deficit deadlift',
+      { equipment: 'deficit', equipmentMagnitude: '1' },
+    ],
+    [
+      'inch-marked deficit (4 inches = 2 deficit)',
+      '4" deficit deadlift',
+      { equipment: 'deficit', equipmentMagnitude: '2' },
+    ],
+    [
+      'inch-marked deficit with space (2 inches)',
+      '2 " deficit deadlift',
+      { equipment: 'deficit', equipmentMagnitude: '1' },
+    ],
+    [
+      'inch-marked deficit with space (4 inches = 2 deficit)',
+      '4 " deficit deadlift',
+      { equipment: 'deficit', equipmentMagnitude: '2' },
+    ],
+    [
+      'default magnitude when no digit',
+      'deficit deadlift',
+      { equipment: 'deficit', equipmentMagnitude: '1' },
+    ],
+  ])(
+    'converts %s correctly',
+    (_, input: string, expected: { equipment: string; equipmentMagnitude: string }) => {
+      const result = parseExercise(input);
+      expect(result.equipment).toBe(expected.equipment);
+      expect(result.equipmentMagnitude).toBe(expected.equipmentMagnitude);
+    }
+  );
+});
