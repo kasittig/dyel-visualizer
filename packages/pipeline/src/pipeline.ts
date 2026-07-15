@@ -88,35 +88,25 @@ function bestE1RMForCanonical(compTagged: TaggedSetRecord[], canonical: string):
     compTagged.filter((r) => r.canonical === canonical),
     (r) => r.date
   );
-  let best: number | null = null;
-  for (const daySets of dayGroups.values()) {
-    const v = derivers['e1rm-max-effort'].derive(daySets);
-    if (v !== null && (best === null || v > best)) {
-      best = v;
-    }
-  }
-  return best;
-}
-
-// Sumo is the deadlift default only when it has a strictly higher best e1RM than
-// conventional; ties, no sumo data, or no deadlift data at all default to conventional
-// (conventional is also the parser's default stance for bare "Deadlift" entries — see
-// DEFAULT_STANCE in tag/detect/conjugate-types.ts).
-function resolveStrongerDeadliftStance(compTagged: TaggedSetRecord[]): 'sumo' | 'conventional' {
-  const sumo = bestE1RMForCanonical(compTagged, 'deadlift-sumo');
-  const conv = bestE1RMForCanonical(compTagged, 'deadlift');
-  return sumo !== null && conv !== null && sumo > conv ? 'sumo' : 'conventional';
+  return Array.from(dayGroups.values())
+    .map((daySets) => derivers['e1rm-max-effort'].derive(daySets))
+    .reduce<number | null>(
+      (best, v) => (v !== null && (best === null || v > best) ? v : best),
+      null
+    );
 }
 
 function tagCompetitionDeadliftStance(compTagged: TaggedSetRecord[]): TaggedSetRecord[] {
-  const strongerStance = resolveStrongerDeadliftStance(compTagged);
+  const sumo = bestE1RMForCanonical(compTagged, 'deadlift-sumo');
+  const conv = bestE1RMForCanonical(compTagged, 'deadlift');
+  const stronger = sumo !== null && conv !== null && sumo > conv ? 'sumo' : 'conventional';
+
   return compTagged.map((r) => {
-    if (!(r.canonical === 'deadlift' || r.canonical.startsWith('deadlift-'))) {
+    if (!r.canonical.startsWith('deadlift')) {
       return r;
     }
-    const rawExercise = r.meta?.rawExercise ?? r.canonical;
-    const ex = parseExercise(rawExercise);
-    if (ex.stance !== strongerStance) {
+    const ex = parseExercise(r.meta?.rawExercise ?? r.canonical);
+    if (ex.stance !== stronger) {
       return r;
     }
     return { ...r, tags: new Set([...r.tags, 'competition']) };

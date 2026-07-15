@@ -91,7 +91,7 @@ describe('defaultCompExerciseCanonical', () => {
       ],
       'deadlift-sumo',
     ],
-  ])('deadlift stance routing: %s', (_, records, expected) => {
-    expect(defaultCompExerciseCanonical(records)).toBe(expected);
-  });
+  ])('deadlift stance routing: %s', (_, records, expected) =>
+    expect(defaultCompExerciseCanonical(records)).toBe(expected)
+  );
 });
