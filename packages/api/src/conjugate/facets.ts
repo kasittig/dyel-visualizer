@@ -3,6 +3,7 @@ import type {
   ConjugateStance,
   ConjugateEquipment,
   ConjugateAddlWt,
+  TaggedSetRecord,
 } from '@dyel/pipeline';
 
 export const CONJUGATE_BARS = [
@@ -113,4 +114,38 @@ export function facetFamilyKey(canonical: string): string {
     }
   }
   return parts.join('-');
+}
+
+export interface FacetSelection {
+  bar?: ConjugateBar | null;
+  stance?: ConjugateStance | null;
+  equipment?: ConjugateEquipment | null;
+  addlWt?: ConjugateAddlWt | null;
+}
+
+export function canonicalsMatchingFacets(
+  records: TaggedSetRecord[],
+  selection: FacetSelection
+): Set<string> {
+  const matched = new Set<string>();
+  for (const r of records) {
+    if (matched.has(r.canonical)) {
+      continue;
+    }
+    const f = facetsFromTags(r.tags);
+    if (selection.bar && f.bar !== selection.bar) {
+      continue;
+    }
+    if (selection.stance && f.stance !== selection.stance) {
+      continue;
+    }
+    if (selection.equipment && f.equipment !== selection.equipment) {
+      continue;
+    }
+    if (selection.addlWt && !f.addlWts.includes(selection.addlWt)) {
+      continue;
+    }
+    matched.add(r.canonical);
+  }
+  return matched;
 }

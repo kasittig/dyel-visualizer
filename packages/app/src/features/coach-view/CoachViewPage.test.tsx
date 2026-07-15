@@ -77,6 +77,21 @@ const mockSelection = (overrides?: Partial<SelectionState>): SelectionState => (
   selectedCanonical: null,
   rows: [],
   erroredLifterCount: 0,
+  selectedBar: null,
+  setSelectedBar: vi.fn(),
+  selectedStance: null,
+  setSelectedStance: vi.fn(),
+  selectedEquipment: null,
+  setSelectedEquipment: vi.fn(),
+  selectedAddlWt: null,
+  setSelectedAddlWt: vi.fn(),
+  barOptions: ['ssb', 'standard'],
+  stanceOptions: ['sumo', 'conventional'],
+  equipmentOptions: ['board', 'pause'],
+  addlWtOptions: ['bands', 'chains'],
+  selectedLiftType: null,
+  setSelectedLiftType: vi.fn(),
+  liftTypeOptions: ['squat', 'bench', 'deadlift', 'accessory'],
   ...overrides,
 });
 
@@ -221,7 +236,9 @@ describe('CoachViewPage', () => {
     expect(screen.getByText('Alice')).toBeDefined();
     expect(screen.getByText('Dana')).toBeDefined();
     expect(screen.getByText('No data logged')).toBeDefined();
-    expect(screen.getAllByText('—')).toHaveLength(2);
+    // 2 em-dashes from Dana's placeholder cells (e1rmDisplay, targetWeightDisplay)
+    // + 4 em-dashes from the 4 facet select empty options
+    expect(screen.getAllByText('—')).toHaveLength(6);
   });
 
   it('renders a per-row exercise dropdown and reps input for each lifter', () => {
@@ -283,5 +300,114 @@ describe('CoachViewPage', () => {
 
     expect(screen.getAllByPlaceholderText('Search exercise...')).toHaveLength(2);
     expect(screen.getAllByRole('spinbutton')).toHaveLength(2);
+  });
+
+  it('renders facet filter selects and wires their onChange handlers', () => {
+    const setSelectedBar = vi.fn();
+    vi.mocked(useCoachViewData).mockReturnValue({
+      status: 'success',
+      data: [mockLifterResult('Lifter 1')],
+    });
+    vi.mocked(useCoachViewSelection).mockReturnValue(
+      mockSelection({
+        selectedCanonical: 'bench-classic',
+        selectedDisplayName: 'Bench Press',
+        rows: [mockRow()],
+        setSelectedBar,
+      })
+    );
+    render(<CoachViewPage />);
+
+    expect(screen.getByRole('combobox', { name: 'Bar' })).toBeDefined();
+    expect(screen.getByRole('combobox', { name: 'Stance' })).toBeDefined();
+    expect(screen.getByRole('combobox', { name: 'Equipment' })).toBeDefined();
+    expect(screen.getByRole('combobox', { name: 'Additional Weight' })).toBeDefined();
+
+    fireEvent.change(screen.getByRole('combobox', { name: 'Bar' }), {
+      target: { value: 'ssb' },
+    });
+    expect(setSelectedBar).toHaveBeenCalledWith('ssb');
+  });
+
+  it('defaults facet selects to the unfiltered "—" option', () => {
+    vi.mocked(useCoachViewData).mockReturnValue({
+      status: 'success',
+      data: [mockLifterResult('Lifter 1')],
+    });
+    vi.mocked(useCoachViewSelection).mockReturnValue(
+      mockSelection({
+        selectedCanonical: 'bench-classic',
+        selectedDisplayName: 'Bench Press',
+        rows: [mockRow()],
+      })
+    );
+    render(<CoachViewPage />);
+
+    expect((screen.getByRole('combobox', { name: 'Bar' }) as HTMLSelectElement).value).toBe('');
+    expect(
+      (screen.getByRole('combobox', { name: 'Additional Weight' }) as HTMLSelectElement).value
+    ).toBe('');
+  });
+
+  it('renders an All chip plus one chip per liftTypeOptions entry', () => {
+    vi.mocked(useCoachViewData).mockReturnValue({
+      status: 'success',
+      data: [mockLifterResult('Lifter 1')],
+    });
+    vi.mocked(useCoachViewSelection).mockReturnValue(
+      mockSelection({
+        selectedCanonical: 'bench-classic',
+        selectedDisplayName: 'Bench Press',
+        rows: [mockRow()],
+      })
+    );
+    render(<CoachViewPage />);
+
+    expect(screen.getByRole('button', { name: 'All' })).toBeDefined();
+    expect(screen.getByRole('button', { name: 'Squat' })).toBeDefined();
+    expect(screen.getByRole('button', { name: 'Bench' })).toBeDefined();
+    expect(screen.getByRole('button', { name: 'Deadlift' })).toBeDefined();
+    expect(screen.getByRole('button', { name: 'Accessory' })).toBeDefined();
+  });
+
+  it('clicking a lift type chip calls setSelectedLiftType with that type', () => {
+    const setSelectedLiftType = vi.fn();
+    vi.mocked(useCoachViewData).mockReturnValue({
+      status: 'success',
+      data: [mockLifterResult('Lifter 1')],
+    });
+    vi.mocked(useCoachViewSelection).mockReturnValue(
+      mockSelection({
+        selectedCanonical: 'bench-classic',
+        selectedDisplayName: 'Bench Press',
+        rows: [mockRow()],
+        setSelectedLiftType,
+      })
+    );
+    render(<CoachViewPage />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Squat' }));
+    expect(setSelectedLiftType).toHaveBeenCalledWith('squat');
+
+    fireEvent.click(screen.getByRole('button', { name: 'All' }));
+    expect(setSelectedLiftType).toHaveBeenCalledWith(null);
+  });
+
+  it('the All chip is active by default (no lift type selected)', () => {
+    vi.mocked(useCoachViewData).mockReturnValue({
+      status: 'success',
+      data: [mockLifterResult('Lifter 1')],
+    });
+    vi.mocked(useCoachViewSelection).mockReturnValue(
+      mockSelection({
+        selectedCanonical: 'bench-classic',
+        selectedDisplayName: 'Bench Press',
+        rows: [mockRow()],
+      })
+    );
+    render(<CoachViewPage />);
+
+    expect(screen.getByRole('button', { name: 'All' }).className).toMatch(/chipActive/);
+    expect(screen.getByRole('button', { name: 'Squat' }).className).not.toMatch(/chipActive/);
   });
 });

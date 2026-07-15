@@ -62,13 +62,19 @@ describe('usePipelineRepCalculator', () => {
     expect(result.current.selectedBar).toBeNull();
 
     const rows = emptyRows();
-    rows.squat = splitRows([rec('squat'), rec('squat-board', ['lift:squat', 'equip:board-2'])]);
+    rows.squat = splitRows([
+      rec('squat'),
+      rec('squat-board', ['lift:squat', 'equip:board-2'], {
+        meta: { rawUnit: 'kg', rawExercise: 'Squat Board' },
+      }),
+    ]);
     const { result: active } = renderHook(() => usePipelineRepCalculator(rows, {}));
     act(() => {
-      active.current.handleSelectedCanonicalChange('squat-board');
+      active.current.handleSelectedCanonicalChange('Squat Board');
     });
     expect(active.current.selectedEquipment).toBe('board');
     expect(active.current.selectedEquipmentMagnitude).toBe('2');
+    expect(active.current.activeLabel).toBe('Squat Board');
 
     mockUsePipelineModel.mockReturnValue({ status: 'success', model: mockModel() });
     rows.squat = splitRows([rec('squat')]);

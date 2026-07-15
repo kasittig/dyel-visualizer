@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { buildExerciseDisplayNameIndex, formatExerciseDisplayName } from './exerciseUtils';
+import {
+  buildExerciseDisplayNameIndex,
+  canonicalLiftType,
+  formatExerciseDisplayName,
+} from './exerciseUtils';
 
 const TESTS = [
   ['squat-bands-heavy', 'Squat w/heavy bands'],
@@ -69,41 +73,61 @@ describe('formatExerciseDisplayName', () => {
 describe('buildExerciseDisplayNameIndex', () => {
   it.each([
     ['empty input', [], []],
-    ['single canonical', ['bench'], [{ canonical: 'bench', displayName: 'Bench Press' }]],
-    ['dedup', ['bench', 'bench'], [{ canonical: 'bench', displayName: 'Bench Press' }]],
+    [
+      'single canonical',
+      ['bench'],
+      [{ canonical: 'bench', displayName: 'Bench Press', liftType: 'bench' }],
+    ],
+    [
+      'dedup',
+      ['bench', 'bench'],
+      [{ canonical: 'bench', displayName: 'Bench Press', liftType: 'bench' }],
+    ],
     [
       'sort by display name',
       ['deadlift', 'bench', 'squat'],
       [
-        { canonical: 'bench', displayName: 'Bench Press' },
-        { canonical: 'deadlift', displayName: 'Deadlift' },
-        { canonical: 'squat', displayName: 'Squat' },
+        { canonical: 'bench', displayName: 'Bench Press', liftType: 'bench' },
+        { canonical: 'deadlift', displayName: 'Deadlift', liftType: 'deadlift' },
+        { canonical: 'squat', displayName: 'Squat', liftType: 'squat' },
       ],
     ],
     [
       'combined flow',
       ['squat', 'bench', 'bench', 'deadlift', 'squat'],
       [
-        { canonical: 'bench', displayName: 'Bench Press' },
-        { canonical: 'deadlift', displayName: 'Deadlift' },
-        { canonical: 'squat', displayName: 'Squat' },
+        { canonical: 'bench', displayName: 'Bench Press', liftType: 'bench' },
+        { canonical: 'deadlift', displayName: 'Deadlift', liftType: 'deadlift' },
+        { canonical: 'squat', displayName: 'Squat', liftType: 'squat' },
       ],
     ],
     [
       'board variant',
       ['bench-board-2'],
-      [{ canonical: 'bench-board-2', displayName: '2-Board Bench Press' }],
+      [{ canonical: 'bench-board-2', displayName: '2-Board Bench Press', liftType: 'bench' }],
     ],
     [
       'mixed list',
       ['deadlift', 'bench-board-2', 'squat'],
       [
-        { canonical: 'bench-board-2', displayName: '2-Board Bench Press' },
-        { canonical: 'deadlift', displayName: 'Deadlift' },
-        { canonical: 'squat', displayName: 'Squat' },
+        { canonical: 'bench-board-2', displayName: '2-Board Bench Press', liftType: 'bench' },
+        { canonical: 'deadlift', displayName: 'Deadlift', liftType: 'deadlift' },
+        { canonical: 'squat', displayName: 'Squat', liftType: 'squat' },
       ],
     ],
   ])('%s', (_, canonicals, expected) => {
     expect(buildExerciseDisplayNameIndex(canonicals)).toEqual(expected);
+  });
+});
+
+describe('canonicalLiftType', () => {
+  it.each([
+    ['squat canonical', 'squat-ssb-close', 'squat'],
+    ['bench canonical', 'bench-board-2', 'bench'],
+    ['deadlift canonical', 'deadlift-sumo', 'deadlift'],
+    ['non-lift canonical falls back to accessory', 'bicep-curl', 'accessory'],
+    ['empty string falls back to accessory', '', 'accessory'],
+  ])('%s', (_, canonical, expected) => {
+    expect(canonicalLiftType(canonical)).toBe(expected);
   });
 });

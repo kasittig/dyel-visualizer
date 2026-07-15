@@ -1,6 +1,7 @@
 import clsx from 'clsx';
 import { useCoachViewData } from './useCoachViewData';
 import { useCoachViewSelection } from './useCoachViewSelection';
+import { LIFT_TYPE_LABELS } from '../../shared/liftTypeLabels';
 import {
   TypeaheadDropdown,
   TableCard,
@@ -24,6 +25,21 @@ export function CoachViewPage() {
     selectedCanonical,
     rows,
     erroredLifterCount,
+    selectedBar,
+    setSelectedBar,
+    selectedStance,
+    setSelectedStance,
+    selectedEquipment,
+    setSelectedEquipment,
+    selectedAddlWt,
+    setSelectedAddlWt,
+    barOptions,
+    stanceOptions,
+    equipmentOptions,
+    addlWtOptions,
+    selectedLiftType,
+    setSelectedLiftType,
+    liftTypeOptions,
   } = useCoachViewSelection(dataState.status === 'success' ? dataState.data : []);
 
   if (dataState.status === 'loading') {
@@ -83,6 +99,76 @@ export function CoachViewPage() {
           ))}
           )
         </div>
+      </div>
+
+      <div className={styles.headerRow}>
+        <div className={styles.facetField}>
+          <div className={styles.facetLabel}>Lift Type</div>
+          <div className={styles.chipGroup}>
+            <button
+              type="button"
+              onClick={() => setSelectedLiftType(null)}
+              className={clsx(styles.chip, selectedLiftType === null && styles.chipActive)}
+            >
+              All
+            </button>
+            {liftTypeOptions.map((t) => (
+              <button
+                key={t}
+                type="button"
+                onClick={() => setSelectedLiftType(t)}
+                className={clsx(styles.chip, selectedLiftType === t && styles.chipActive)}
+              >
+                {LIFT_TYPE_LABELS[t]}
+              </button>
+            ))}
+          </div>
+        </div>
+        {(
+          [
+            { label: 'Bar', value: selectedBar, change: setSelectedBar, opts: barOptions },
+            {
+              label: 'Stance',
+              value: selectedStance,
+              change: setSelectedStance,
+              opts: stanceOptions,
+            },
+            {
+              label: 'Equipment',
+              value: selectedEquipment,
+              change: setSelectedEquipment,
+              opts: equipmentOptions,
+            },
+            {
+              label: 'Additional Weight',
+              value: selectedAddlWt,
+              change: setSelectedAddlWt,
+              opts: addlWtOptions,
+            },
+          ] as {
+            label: string;
+            value: string | null;
+            change: (v: string | null) => void;
+            opts: readonly string[];
+          }[]
+        ).map(({ label, value, change, opts }) => (
+          <div key={label} className={styles.facetField}>
+            <div className={styles.facetLabel}>{label}</div>
+            <select
+              aria-label={label}
+              value={value ?? ''}
+              onChange={(e) => change(e.target.value || null)}
+              className={styles.facetSelect}
+            >
+              <option value="">—</option>
+              {opts.map((opt) => (
+                <option key={opt} value={opt}>
+                  {opt}
+                </option>
+              ))}
+            </select>
+          </div>
+        ))}
       </div>
 
       {selectedCanonical && (

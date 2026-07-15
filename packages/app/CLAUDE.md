@@ -51,6 +51,7 @@ Single-page React app with no backend. Data comes from either a user-supplied Go
 | `shared/components/`       | Cross-feature UI: `CollapsibleSection`, `DateRangePicker`, `EditableDateChip`, `ErrorBoundary`, `TypeaheadDropdown`, `Table` (+ `TableCard`/`TableHeadRow`/`TableRow`/`TableCell` — shared sortable-table primitives)                           |
 | `shared/hooks/`            | `useCsvResource`, `useLocalStorageState`, `useSortableRows`                                                                                                                                                                                     |
 | `shared/dateUtils.ts`      | Pure date-formatting helpers — no React dependency                                                                                                                                                                                              |
+| `shared/liftTypeLabels.ts` | Lift type labels and canonical ordering (`LIFT_TYPE_LABELS`, `LIFT_TYPE_ORDER`) — no React dependency                                                                                                                                           |
 
 Each `features/*/` and `shared/*/` directory has an `index.ts` barrel and a `CLAUDE.md` with per-file descriptions.
 

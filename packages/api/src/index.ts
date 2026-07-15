@@ -36,7 +36,9 @@ export {
   CONJUGATE_ADDL_WTS,
   facetsFromTags,
   facetFamilyKey,
+  canonicalsMatchingFacets,
 } from './conjugate/facets';
+export type { FacetSelection } from './conjugate/facets';
 export type {
   ConjugateBar,
   ConjugateStance,
@@ -128,4 +130,8 @@ export {
   type EffectSummary,
 } from './diagnostics/diagnosticsSelectors';
 export { formatEffect, formatAddlWtOffset } from './diagnostics/diagnosticsUtils';
-export { formatExerciseDisplayName, buildExerciseDisplayNameIndex } from './exerciseUtils';
+export {
+  formatExerciseDisplayName,
+  buildExerciseDisplayNameIndex,
+  canonicalLiftType,
+} from './exerciseUtils';
