@@ -118,6 +118,15 @@ export function buildTagsAndEffects(
     };
   };
 
+  // Hoist resolvedStance computation for deadlifts (needed for stance-qualified equipment lookup)
+  let resolvedStance: 'sumo' | 'conventional' | null = null;
+  const isDeadliftExplicitStance =
+    ex.type === 'deadlift' &&
+    (ex.stance === 'sumo' || ex.stance === 'conventional' || ex.stance === 'opposite');
+  if (isDeadliftExplicitStance) {
+    resolvedStance = resolveDeadliftStance(ex.stance, deadliftStance);
+  }
+
   if (ex.equipment) {
     tags.add(`equip:${ex.equipment}`);
     if (ex.equipmentMagnitude && ex.equipmentMagnitude !== '1') {
@@ -128,16 +137,32 @@ export function buildTagsAndEffects(
         ? `equip:${ex.equipment}-${ex.equipmentMagnitude}:${ex.type}`
         : null;
     const baseKey = `equip:${ex.equipment}:${ex.type}`;
-    const targetKey = magKey && effectsMap[magKey] ? magKey : baseKey;
+
+    let targetKey = baseKey;
+
+    // Try stance-qualified key first if deadlift with explicit stance
+    if (ex.type === 'deadlift' && resolvedStance) {
+      const stanceQualifiedMagKey =
+        ex.equipmentMagnitude && ex.equipmentMagnitude !== '1'
+          ? `equip:${ex.equipment}-${ex.equipmentMagnitude}:${resolvedStance}:deadlift`
+          : `equip:${ex.equipment}:${resolvedStance}:deadlift`;
+      if (effectsMap[stanceQualifiedMagKey]) {
+        targetKey = stanceQualifiedMagKey;
+      } else if (magKey && effectsMap[magKey]) {
+        // Fall back to magnitude key
+        targetKey = magKey;
+      }
+      // If neither stance-qualified nor magnitude key exists, use baseKey
+    } else {
+      // Non-deadlift or no explicit stance: use existing logic
+      targetKey = magKey && effectsMap[magKey] ? magKey : baseKey;
+    }
+
     add(targetKey);
     applyRange(targetKey);
   }
 
-  const isDeadliftExplicitStance =
-    ex.type === 'deadlift' &&
-    (ex.stance === 'sumo' || ex.stance === 'conventional' || ex.stance === 'opposite');
   if (isDeadliftExplicitStance) {
-    const resolvedStance = resolveDeadliftStance(ex.stance, deadliftStance);
     add(`stance:${resolvedStance}:deadlift`);
     applyRange(`stance:${resolvedStance}:deadlift`);
     if (hasStance) {

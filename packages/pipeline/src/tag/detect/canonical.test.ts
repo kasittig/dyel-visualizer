@@ -14,7 +14,8 @@ describe('buildCanonical with magnitude-qualified modifiers', () => {
     ['double board bench', 'Bench (double board)', 'bench-board-2'],
     ['1 block deadlift', 'Deadlift (1 block)', 'deadlift-blocks'],
     ['2 block deadlift', 'Deadlift (2 blocks)', 'deadlift-blocks-2'],
-    ['2" block deadlift', 'Deadlift (2" blocks)', 'deadlift-blocks-2'],
+    ['2" block deadlift (converts to 1 block)', 'Deadlift (2" blocks)', 'deadlift-blocks'],
+    ['4" block deadlift (converts to 2 blocks)', 'Deadlift (4" blocks)', 'deadlift-blocks-2'],
     ['1 deficit deadlift', 'Deadlift (1 deficit)', 'deadlift-deficit'],
     ['2 deficit deadlift', 'Deadlift (2 deficit)', 'deadlift-deficit-2'],
     ['2" deficit deadlift', 'Deadlift (2" deficit)', 'deadlift-deficit-2'],
@@ -92,6 +93,31 @@ describe('buildTagsAndEffects baseline % range', () => {
       'compound pct-bearing modifiers multiply (equipment then stance)',
       'Sumo Box Squat',
       { min: 81, max: 100 },
+    ],
+    [
+      'block deadlift no stance (fallback to base equipment range)',
+      'Deadlift (1 block)',
+      { min: 105, max: 115 },
+    ],
+    [
+      'sumo block deadlift with stance-qualified range and composition',
+      'Sumo Deadlift (1 block)',
+      { min: 88, max: 105 },
+    ],
+    [
+      'sumo 4" block deadlift (converts to magnitude 2) with stance composition',
+      'Sumo Deadlift (4" blocks)',
+      { min: 81, max: 95 },
+    ],
+    [
+      'conventional block deadlift with stance-qualified range and composition',
+      'Conventional Deadlift (1 block)',
+      { min: 93, max: 108 },
+    ],
+    [
+      'conventional 4" block deadlift (converts to magnitude 2) with stance composition',
+      'Conventional Deadlift (4" blocks)',
+      { min: 97, max: 115 },
     ],
   ])('%s', (_, ex: string, expected: { min: number; max: number } | null) => {
     expect(buildTagsAndEffects(ex).range).toEqual(expected);

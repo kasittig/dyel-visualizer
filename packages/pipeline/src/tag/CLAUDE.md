@@ -38,15 +38,19 @@ raw name, preserving per-exercise distinctness without a dictionary.
 
 **Magnitude conventions:** When equipment or addlWts are present, they may include a magnitude
 suffix. For chains/bands (`addlWts`), magnitude is parsed as a digit or the word `"double"`
-from the raw exercise label; it defaults to `'1'` when not specified. For board/block/deficit
+from the raw exercise label; it defaults to `'1'` when not specified. For board/deficit
 equipment, magnitude is parsed as a digit (optionally followed by a `"` inch mark) from the raw
-label; it also defaults to `'1'`. The magnitude suffix is appended to the canonical as `-${magnitude}`
+label; it also defaults to `'1'`. For blocks specifically, if the digit is followed by a `"`
+inch mark, it is converted to a physical block count via `Math.round(inches / 2)` (blocks are
+~2" each) before being used as the magnitude; plain `N blocks` without an inch mark passes through
+as a literal count unchanged. The magnitude suffix is appended to the canonical as `-${magnitude}`
 only when the magnitude is **not** the default `'1'` — the default is always omitted. Examples:
 
 - `Bench (1 board)` → `bench-board` (default magnitude omitted)
 - `Bench (2 board)` → `bench-board-2` (non-default magnitude appended)
 - `Deadlift (1 block)` → `deadlift-blocks` (default magnitude omitted)
-- `Deadlift (2" blocks)` → `deadlift-blocks-2` (non-default magnitude appended)
+- `Deadlift (2" blocks)` → `deadlift-blocks` (2" = 1 block = default magnitude omitted)
+- `Deadlift (4" blocks)` → `deadlift-blocks-2` (4" = 2 blocks = non-default magnitude appended)
 
 ## Tag/effects derivation
 
@@ -57,7 +61,11 @@ bare canonicals themselves, never a variant. Otherwise it gets `bar:`/`stance:`/
 `addl:` tags for each present non-default component (no `comp-lift`, no other bare tag).
 Effects are looked up per present component as `${namespace}:${value}:${type}` in
 `detect/modifier-effects.json` and unioned (deduped via `Set`) onto
-`TaggedSetRecord.effects`.
+`TaggedSetRecord.effects`. For deadlifts with an explicit stance keyword (e.g., "sumo",
+"conventional") in the exercise name, equipment-effects lookup first attempts a stance-qualified
+key (`equip:${equipment}[-${magnitude}]:${resolvedStance}:deadlift`) before falling back to the
+stance-agnostic magnitude/base key; this lookup refinement affects only which value is retrieved,
+not the composition order (equipment range still applies first, then stance range).
 
 For accessory records, effects are additionally populated via `classifyAccessoryEffects`
 (in `detect/detectors.ts`), a keyword classifier mapping the raw exercise name to zero or
