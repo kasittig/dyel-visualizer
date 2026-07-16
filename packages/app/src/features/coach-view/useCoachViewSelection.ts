@@ -322,6 +322,7 @@ export function useCoachViewSelection(results: LifterPipelineResult[]) {
     overridesByLifter,
     displayNameToCanonical,
     exerciseOptions,
+    liftTypeByDisplayName,
   ]);
 
   return {
