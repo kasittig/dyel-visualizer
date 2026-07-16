@@ -20,7 +20,7 @@ const rec = (tags: string[] = [], opts?: { sets?: number; rpe?: number }): Tagge
   sets: opts?.sets,
   rpe: opts?.rpe,
 });
-const athlete: AthleteContext = { sex: 'M', bodyweight: 90, deadliftStance: 'sumo' };
+const athlete: AthleteContext = { sex: 'M', bodyweight: 90 };
 
 describe('liftTypeOf', () => {
   it.each([

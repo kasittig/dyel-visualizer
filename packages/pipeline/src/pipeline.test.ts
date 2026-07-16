@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { runPipelineModel } from './pipeline';
 import type { PipelineModel } from './pipeline';
 
-const ath = () => ({ sex: 'M' as const, bodyweight: 90, deadliftStance: 'conventional' as const });
+const ath = () => ({ sex: 'M' as const, bodyweight: 90 });
 
 describe('pipeline orchestration', () => {
   it('fits normalization model on full tagged set including speed-work records', () => {

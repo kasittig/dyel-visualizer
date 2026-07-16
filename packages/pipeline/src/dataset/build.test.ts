@@ -18,7 +18,7 @@ const mockModel = (ov?: Partial<NormalizationModel>) => ({
   addlWtOffset: {},
   ...ov,
 });
-const athlete = { sex: 'M' as const, bodyweight: 83, deadliftStance: 'conventional' as const };
+const athlete = { sex: 'M' as const, bodyweight: 83 };
 const noUi: RenderParams = {};
 
 describe('buildDataset Series & Composite Specs', () => {
