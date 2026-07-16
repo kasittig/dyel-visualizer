@@ -102,29 +102,29 @@ describe('buildTagsAndEffects baseline % range', () => {
       { min: 81, max: 100 },
     ],
     [
-      'bare block deadlift defaults to conventional stance with composition',
+      'bare block deadlift: stance value already covered by compound equipment key, not re-applied',
       'Deadlift (1 block)',
-      { min: 93, max: 108 },
+      { min: 103, max: 108 },
     ],
     [
-      'sumo block deadlift with stance-qualified range and composition',
+      'sumo block deadlift: stance value already covered by compound equipment key, not re-applied',
       'Sumo Deadlift (1 block)',
-      { min: 88, max: 105 },
+      { min: 98, max: 105 },
     ],
     [
-      'sumo 4" block deadlift (converts to magnitude 2) with stance composition',
+      'sumo 4" block deadlift (converts to magnitude 2): stance value already covered, not re-applied',
       'Sumo Deadlift (4" blocks)',
-      { min: 81, max: 95 },
+      { min: 90, max: 95 },
     ],
     [
-      'conventional block deadlift with stance-qualified range and composition',
+      'conventional block deadlift: stance value already covered by compound equipment key, not re-applied',
       'Conventional Deadlift (1 block)',
-      { min: 93, max: 108 },
+      { min: 103, max: 108 },
     ],
     [
-      'conventional 4" block deadlift (converts to magnitude 2) with stance composition',
+      'conventional 4" block deadlift (converts to magnitude 2): stance value already covered, not re-applied',
       'Conventional Deadlift (4" blocks)',
-      { min: 97, max: 115 },
+      { min: 108, max: 115 },
     ],
   ])('%s', (_, ex: string, expected: { min: number; max: number } | null) => {
     expect(buildTagsAndEffects(ex).range).toEqual(expected);
@@ -204,9 +204,11 @@ describe('buildTagsAndEffects deadlift stance parsing', () => {
     expect(explSquatStance.range).toEqual({ min: 90, max: 100 });
     expect(new Set(explSquatStance.effects)).toEqual(new Set(['HIP_DOMINANT', 'POSTERIOR_CHAIN']));
 
-    // Block/deficit deadlifts with explicit sumo still resolve with sumo effects
+    // Block/deficit deadlifts with explicit sumo still resolve with sumo effects. The
+    // stance value is already covered by the compound equip:deficit:sumo:deadlift key, so
+    // the generic stance:sumo:deadlift range is not re-applied on top of it.
     const deficit = buildTagsAndEffects('Sumo Deadlift (2" deficit)');
-    expect(deficit.range).toEqual({ min: 81, max: 95 });
+    expect(deficit.range).toEqual({ min: 90, max: 95 });
     expect(new Set(deficit.effects)).toEqual(
       new Set(['EXTENDED_ROM', 'BOTTOM_RANGE', 'HIP_DOMINANT', 'POSTERIOR_CHAIN'])
     );
@@ -252,21 +254,22 @@ describe('equipment magnitude produces distinct tags, effects, and ranges', () =
     // Bare (no explicit stance) block/deficit pulls now resolve via conventional stance,
     // the new default for bare Deadlifts. Unmapped magnitudes (e.g., magnitude 3 or
     // magnitude-2 deficit) still resolve null due to missing equipment entries.
-    expect(buildTagsAndEffects('Deadlift (1 block)').range).toEqual({ min: 93, max: 108 });
-    expect(buildTagsAndEffects('Deadlift (2 blocks)').range).toEqual({ min: 97, max: 115 });
+    expect(buildTagsAndEffects('Deadlift (1 block)').range).toEqual({ min: 103, max: 108 });
+    expect(buildTagsAndEffects('Deadlift (2 blocks)').range).toEqual({ min: 108, max: 115 });
     expect(buildTagsAndEffects('Deadlift (3 blocks)').range).toBeNull();
-    expect(buildTagsAndEffects('Deadlift (1 deficit)').range).toEqual({ min: 83, max: 97 });
+    expect(buildTagsAndEffects('Deadlift (1 deficit)').range).toEqual({ min: 92, max: 97 });
     expect(buildTagsAndEffects('Deadlift (2 deficit)').range).toBeNull();
 
     // With an explicit stance keyword, magnitude-tiered composition resolves via the
-    // stance-qualified equipment keys.
+    // stance-qualified equipment keys. The stance value is already covered by these
+    // compound keys, so the generic stance range is not re-applied on top of them.
     (
       [
-        ['Sumo Deadlift (1 block)', { min: 88, max: 105 }],
-        ['Sumo Deadlift (4" blocks)', { min: 81, max: 95 }],
-        ['Conventional Deadlift (1 block)', { min: 93, max: 108 }],
-        ['Conventional Deadlift (4" blocks)', { min: 97, max: 115 }],
-        ['Sumo Deadlift (2" deficit)', { min: 81, max: 95 }],
+        ['Sumo Deadlift (1 block)', { min: 98, max: 105 }],
+        ['Sumo Deadlift (4" blocks)', { min: 90, max: 95 }],
+        ['Conventional Deadlift (1 block)', { min: 103, max: 108 }],
+        ['Conventional Deadlift (4" blocks)', { min: 108, max: 115 }],
+        ['Sumo Deadlift (2" deficit)', { min: 90, max: 95 }],
       ] as const
     ).forEach(([ex, range]) => {
       expect(buildTagsAndEffects(ex).range).toEqual(range);

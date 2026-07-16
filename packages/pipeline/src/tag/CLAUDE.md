@@ -68,8 +68,19 @@ Effects are looked up per present component as `${namespace}:${value}:${type}` i
 `TaggedSetRecord.effects`. For deadlifts with an explicit stance keyword (e.g., "sumo",
 "conventional") in the exercise name, equipment-effects lookup first attempts a stance-qualified
 key (`equip:${equipment}[-${magnitude}]:${resolvedStance}:deadlift`) before falling back to the
-stance-agnostic magnitude/base key; this lookup refinement affects only which value is retrieved,
-not the composition order (equipment range still applies first, then stance range).
+stance-agnostic magnitude/base key. Range composition tracks which facet-qualified modifier
+values (e.g. `stance:sumo`) have already contributed to the running range; a facet's own
+dedicated range key is skipped if its value was already covered by an earlier compound key —
+e.g. the stance-qualified equipment key above already bakes in the stance adjustment, so the
+generic `stance:${resolvedStance}:deadlift` range is not separately composed on top of it. This
+also applies to a bare deadlift with no explicit stance keyword, since it resolves the same
+concrete `conventional` default stance and goes through the same stance-qualified equipment
+lookup. Effects unions (`add(...)`) are unaffected by this and always apply regardless. This is
+a general rule (tracked via a `consumedFacetValues` set in `canonical.ts`), not special-cased to
+deadlifts/blocks — any future compound key gets the same protection automatically. Note that
+today's parser (`detect/parseExercise.ts`) only ever yields a single bar/stance/equipment value
+per exercise, so same-facet double-application (e.g. two stance values on one lift) isn't
+otherwise reachable — this rule exists specifically for cross-facet compound keys.
 
 The `'competition'` tag (no namespace prefix, unlike `bar:`/`stance:`) marks records logged in a
 competition setting. For squat and bench, this tag is applied automatically whenever their
