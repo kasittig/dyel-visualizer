@@ -103,25 +103,16 @@ export function usePipelineRepCalculator(
     });
   }, [effectiveCanonical, pStatus, pModel, baselineNames, liftType]);
 
-  const displayE1rm = useMemo(
-    () => (estimate ? convertE1RMToDisplayUnit(estimate.e1rm, unit) : null),
-    [estimate, unit]
-  );
-
-  const actualE1rm = useMemo(() => {
+  const actualE1rmDisplay = useMemo(() => {
     if (pStatus !== 'success' || !pModel || !effectiveCanonical) {
       return null;
     }
     const points = (pModel.pointsByDeriver.get('e1rm-max-effort') ?? []).filter(
       (p) => p.series === effectiveCanonical
     );
-    return selectBestE1RMPoint(points);
-  }, [effectiveCanonical, pStatus, pModel]);
-
-  const actualE1rmDisplay = useMemo(
-    () => (actualE1rm ? formatWeight(actualE1rm.e1rm, unit) : null),
-    [actualE1rm, unit]
-  );
+    const actualE1rm = selectBestE1RMPoint(points);
+    return actualE1rm ? formatWeight(actualE1rm.e1rm, unit) : null;
+  }, [effectiveCanonical, pStatus, pModel, unit]);
 
   const projectedE1rmDisplay = useMemo(
     () => (estimate ? formatWeight(estimate.e1rm, unit) : null),
@@ -178,7 +169,6 @@ export function usePipelineRepCalculator(
     weight,
     unit,
     estimate,
-    displayE1rm,
     actualE1rmDisplay,
     projectedE1rmDisplay,
     e1rmSourceLabel,

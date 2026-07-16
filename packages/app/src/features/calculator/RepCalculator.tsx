@@ -43,7 +43,6 @@ export function RepCalculator({
     handleSelectedCanonicalChange,
     unit,
     estimate,
-    displayE1rm,
     actualE1rmDisplay,
     projectedE1rmDisplay,
     e1rmSourceLabel,
@@ -193,7 +192,7 @@ export function RepCalculator({
               <div className={styles.e1rmDisplay}>
                 e1RM:{' '}
                 <E1RMCell
-                  actualDisplay={actualE1rmDisplay ?? `${Math.round(displayE1rm!)} ${unit}`}
+                  actualDisplay={actualE1rmDisplay ?? projectedE1rmDisplay ?? ''}
                   projectedDisplay={projectedE1rmDisplay}
                   sourceLabel={e1rmSourceLabel}
                 />
