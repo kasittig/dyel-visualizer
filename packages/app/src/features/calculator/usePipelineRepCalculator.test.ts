@@ -114,4 +114,38 @@ describe('usePipelineRepCalculator', () => {
     expect(result.current.weight).not.toBe(originalWeight);
     expect(Number(result.current.weight)).toBeGreaterThan(0);
   });
+
+  it('computes and displays actual, projected, and source-label e1RM values when model is populated', () => {
+    mockUsePipelineModel.mockReturnValue({ status: 'success', model: mockModel(200) });
+    const rows = emptyRows();
+    rows.squat = splitRows([rec('squat')]);
+    const { result } = renderHook(() => usePipelineRepCalculator(rows, { squat: 'Squat' }));
+
+    // All three E1RM display fields should be non-null strings
+    expect(result.current.actualE1rmDisplay).toBeDefined();
+    expect(typeof result.current.actualE1rmDisplay).toBe('string');
+    expect(result.current.actualE1rmDisplay).toContain('kg');
+
+    expect(result.current.projectedE1rmDisplay).toBeDefined();
+    expect(typeof result.current.projectedE1rmDisplay).toBe('string');
+    expect(result.current.projectedE1rmDisplay).toContain('kg');
+
+    expect(result.current.e1rmSourceLabel).toBeDefined();
+    expect(typeof result.current.e1rmSourceLabel).toBe('string');
+    expect(
+      result.current.e1rmSourceLabel.startsWith('Based on') ||
+        result.current.e1rmSourceLabel.startsWith('Projected from')
+    ).toBe(true);
+  });
+
+  it('returns null for e1RM display fields when model is not in success state', () => {
+    mockUsePipelineModel.mockReturnValue({ status: 'loading', model: null });
+    const rows = emptyRows();
+    rows.squat = splitRows([rec('squat')]);
+    const { result } = renderHook(() => usePipelineRepCalculator(rows, { squat: 'Squat' }));
+
+    expect(result.current.actualE1rmDisplay).toBeNull();
+    expect(result.current.projectedE1rmDisplay).toBeNull();
+    expect(result.current.e1rmSourceLabel).toBeNull();
+  });
 });
