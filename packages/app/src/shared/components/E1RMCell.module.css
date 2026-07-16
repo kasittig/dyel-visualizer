@@ -1,0 +1,32 @@
+.cell {
+  font-family: var(--mono);
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-h);
+  line-height: 1.2;
+  display: inline;
+  white-space: nowrap;
+}
+
+.toggleable {
+  cursor: pointer;
+  transition:
+    color 0.15s,
+    opacity 0.15s;
+}
+
+.toggleable:hover {
+  opacity: 0.85;
+}
+
+.toggleable:focus {
+  outline: none;
+  color: var(--accent);
+}
+
+.projectedIcon {
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin-left: 0.25rem;
+  display: inline;
+}
