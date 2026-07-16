@@ -143,28 +143,14 @@ export function fitNormalizationModel(
       family === 'lift:deadlift'
         ? entries.filter((e) => e.r.some((r: TaggedSetRecord) => r.tags.has('competition')))
         : [];
-    const pausedPool =
-      family === 'lift:bench'
-        ? entries.filter((e) =>
-            e.r.some(
-              (r: TaggedSetRecord) =>
-                r.tags.has('equip:pause') &&
-                !getTag(r.tags, 'bar:') &&
-                !getTag(r.tags, 'stance:') &&
-                !getTag(r.tags, 'addl:')
-            )
-          )
-        : [];
 
     const pool = compNamed.length
       ? compNamed
       : stancePool.length
         ? stancePool
-        : pausedPool.length
-          ? pausedPool
-          : comp.length
-            ? comp
-            : entries;
+        : comp.length
+          ? comp
+          : entries;
     const [baseCan] = pool.sort((a, b) => b.r.length - a.r.length || a.c.localeCompare(b.c));
     baseline[family] = baseCan.c;
     const grid = buildSessionGrid(byCanFitted[baseCan.c]!);

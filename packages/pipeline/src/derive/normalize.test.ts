@@ -94,7 +94,7 @@ describe('fitNormalizationModel core & preferences', () => {
       r(d(1), 'b', 100, ['lift:bench', 'comp-lift']),
       r(d(1), 'bp', 95, ['lift:bench', 'equip:pause']),
     ];
-    expect(fitNormalizationModel(p, { minSamples: 1 }).baseline['lift:bench']).toBe('bp');
+    expect(fitNormalizationModel(p, { minSamples: 1 }).baseline['lift:bench']).toBe('b');
 
     const np = [
       r(d(1), 'b', 100, ['lift:bench', 'comp-lift']),
