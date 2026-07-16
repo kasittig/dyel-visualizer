@@ -4,6 +4,7 @@ import {
   buildLastSessionDetail,
   buildLastSessionDetailForCanonical,
   buildSessionCountForCanonical,
+  formatLastSessionParts,
   formatLastSessionSummary,
 } from './lastSessionDetail';
 
@@ -160,6 +161,31 @@ describe('buildSessionCountForCanonical', () => {
   });
 });
 
+describe('formatLastSessionParts', () => {
+  it.each([
+    [
+      'standard format with lbs',
+      { date: '2026-05-03', sets: 1, reps: 3, weight: 111, rpe: 8 },
+      'lbs',
+      { date: '5/3', setLine: '1x3 @ 245 lbs' },
+    ],
+    [
+      'single-digit month and day',
+      { date: '2026-01-05', sets: 2, reps: 5, weight: 100, rpe: null },
+      'lbs',
+      { date: '1/5', setLine: '2x5 @ 220 lbs' },
+    ],
+    [
+      'kg unit',
+      { date: '2026-05-03', sets: 1, reps: 3, weight: 111, rpe: 8 },
+      'kg',
+      { date: '5/3', setLine: '1x3 @ 111 kg' },
+    ],
+  ])('%s', (_, detail, unit, expected) => {
+    expect(formatLastSessionParts(detail, unit)).toEqual(expected);
+  });
+});
+
 describe('formatLastSessionSummary', () => {
   it.each([
     [
@@ -188,5 +214,10 @@ describe('formatLastSessionSummary', () => {
     ],
   ])('%s', (_, detail, unit, expected) => {
     expect(formatLastSessionSummary(detail, unit)).toBe(expected);
+  });
+
+  it('formats as two lines when multiline is requested', () => {
+    const detail = { date: '2026-05-03', sets: 1, reps: 3, weight: 111, rpe: 8 };
+    expect(formatLastSessionSummary(detail, 'lbs', { multiline: true })).toBe('5/3\n1x3 @ 245 lbs');
   });
 });
