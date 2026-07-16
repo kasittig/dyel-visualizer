@@ -93,8 +93,9 @@ export function buildTagsAndEffects(rawName: string): {
   };
   let range: BaselineRange | null = null;
   let equipmentRangeMissing = false;
+  const consumedFacetValues = new Set<string>();
 
-  const applyRange = (k: string) => {
+  const applyRange = (k: string, covers: string[] = []) => {
     const entry = effectsMap[k];
     if (entry?.min === undefined || entry.max === undefined) {
       return;
@@ -104,6 +105,7 @@ export function buildTagsAndEffects(rawName: string): {
       min: Math.round((cur.min * entry.min) / 100),
       max: Math.round((cur.max * entry.max) / 100),
     };
+    covers.forEach((c) => consumedFacetValues.add(c));
   };
 
   // Hoist resolvedStance computation for deadlifts (needed for stance-qualified equipment lookup).
@@ -128,6 +130,7 @@ export function buildTagsAndEffects(rawName: string): {
     const baseKey = `equip:${ex.equipment}:${ex.type}`;
 
     let targetKey = baseKey;
+    let targetKeyCoversStance = false;
 
     // Try stance-qualified key first if deadlift with explicit stance
     if (ex.type === 'deadlift' && resolvedStance) {
@@ -137,6 +140,7 @@ export function buildTagsAndEffects(rawName: string): {
           : `equip:${ex.equipment}:${resolvedStance}:deadlift`;
       if (effectsMap[stanceQualifiedMagKey]) {
         targetKey = stanceQualifiedMagKey;
+        targetKeyCoversStance = true;
       } else if (magKey && effectsMap[magKey]) {
         // Fall back to magnitude key
         targetKey = magKey;
@@ -153,13 +157,23 @@ export function buildTagsAndEffects(rawName: string): {
       targetKey = magKey && effectsMap[magKey] ? magKey : baseKey;
     }
 
+    const equipFacetValue = `equip:${ex.equipment}${
+      ex.equipmentMagnitude && ex.equipmentMagnitude !== '1' ? `-${ex.equipmentMagnitude}` : ''
+    }`;
+    const covers = [equipFacetValue];
+    if (targetKeyCoversStance && resolvedStance) {
+      covers.push(`stance:${resolvedStance}`);
+    }
+
     add(targetKey);
-    applyRange(targetKey);
+    applyRange(targetKey, covers);
   }
 
   if (isDeadliftSumoOrConventional) {
     add(`stance:${resolvedStance}:deadlift`);
-    applyRange(`stance:${resolvedStance}:deadlift`);
+    if (!consumedFacetValues.has(`stance:${resolvedStance}`)) {
+      applyRange(`stance:${resolvedStance}:deadlift`, [`stance:${resolvedStance}`]);
+    }
     if (hasExplicitStance) {
       tags.add(`stance:${ex.stance}`);
     }
@@ -168,7 +182,9 @@ export function buildTagsAndEffects(rawName: string): {
       tags.add(`stance:${ex.stance}`);
     }
     add(`stance:${ex.stance}:${ex.type}`);
-    applyRange(`stance:${ex.stance}:${ex.type}`);
+    if (!consumedFacetValues.has(`stance:${ex.stance}`)) {
+      applyRange(`stance:${ex.stance}:${ex.type}`, [`stance:${ex.stance}`]);
+    }
   }
 
   if (ex.type === 'squat' && ex.stance === 'lowbar') {
@@ -180,7 +196,9 @@ export function buildTagsAndEffects(rawName: string): {
   if (hasBar) {
     tags.add(`bar:${ex.bar}`);
     add(`bar:${ex.bar}:${ex.type}`);
-    applyRange(`bar:${ex.bar}:${ex.type}`);
+    if (!consumedFacetValues.has(`bar:${ex.bar}`)) {
+      applyRange(`bar:${ex.bar}:${ex.type}`, [`bar:${ex.bar}`]);
+    }
   }
 
   for (const w of ex.addlWts) {
