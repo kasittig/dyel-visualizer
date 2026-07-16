@@ -11,6 +11,7 @@ import {
   TableHeadRow,
   TableRow,
   TableCell,
+  E1RMCell,
 } from '../../shared/components';
 import styles from './CoachViewPage.module.css';
 
@@ -114,7 +115,13 @@ export function CoachViewPage() {
     {
       header: 'e1RM',
       cellClassName: (row) => clsx(styles.cellTint, !row.hasData && styles.placeholderCell),
-      render: (row) => row.e1rmDisplay,
+      render: (row) => (
+        <E1RMCell
+          actualDisplay={row.e1rmDisplay}
+          projectedDisplay={row.e1rmProjectedDisplay}
+          sourceLabel={row.e1rmSourceLabel}
+        />
+      ),
     },
   ];
 

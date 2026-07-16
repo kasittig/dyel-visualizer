@@ -48,6 +48,8 @@ const mockLifterResult = (
 const mockRow = (overrides?: Partial<CoachViewRow>): CoachViewRow => ({
   lifterName: 'John Doe',
   e1rmDisplay: '225 lbs',
+  e1rmProjectedDisplay: null,
+  e1rmSourceLabel: null,
   lastPerformedDateDisplay: '1/1',
   lastPerformedSetDisplay: 'Today',
   targetWeightDisplay: '185 lbs',
@@ -411,5 +413,31 @@ describe('CoachViewPage', () => {
 
     expect(screen.getByRole('button', { name: 'All' }).className).toMatch(/chipActive/);
     expect(screen.getByRole('button', { name: 'Squat' }).className).not.toMatch(/chipActive/);
+  });
+
+  it('renders a toggleable e1RM cell when a projected value differs from actual', () => {
+    vi.mocked(useCoachViewData).mockReturnValue({
+      status: 'success',
+      data: [mockLifterResult('Lifter 1')],
+    });
+    vi.mocked(useCoachViewSelection).mockReturnValue(
+      mockSelection({
+        selectedCanonical: 'bench-classic',
+        selectedDisplayName: 'Bench Press',
+        rows: [
+          mockRow({
+            lifterName: 'Alice',
+            e1rmDisplay: '225 lbs',
+            e1rmProjectedDisplay: '230 lbs',
+            e1rmSourceLabel: 'Based on Bench Press · 1/1/2024',
+          }),
+        ],
+      })
+    );
+    render(<CoachViewPage />);
+
+    expect(screen.getByText('225 lbs')).toBeDefined();
+    fireEvent.click(screen.getByRole('button', { name: /225 lbs/ }));
+    expect(screen.getByText('230 lbs')).toBeDefined();
   });
 });

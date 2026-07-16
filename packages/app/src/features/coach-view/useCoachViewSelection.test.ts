@@ -39,16 +39,21 @@ const taggedRecord = (
 
 const minimalPipelineModel = (
   tagged: TaggedSetRecord[] = [],
-  e1rmPoints: Point[] = []
+  e1rmPoints: Point[] = [],
+  e1rmMaxEffortPoints: Point[] = [],
+  baseline: Record<string, string> = {}
 ): PipelineModel =>
   ({
-    model: { baseline: {}, variantFactor: {}, addlWtOffset: {} },
+    model: { baseline, variantFactor: {}, addlWtOffset: {} },
     diagnostics: { byCanonical: new Map(), allFindings: [] },
     unknownExercises: [],
     unnormalized: [],
     parseErrors: [],
     tagged,
-    pointsByDeriver: new Map([['e1rm', e1rmPoints]]),
+    pointsByDeriver: new Map([
+      ['e1rm', e1rmPoints],
+      ['e1rm-max-effort', e1rmMaxEffortPoints],
+    ]),
     pointsByLabelByDeriver: new Map(),
     pointsByDeriverAdjusted: new Map(),
     pointsByLabelByDeriverAdjusted: new Map(),
@@ -125,6 +130,8 @@ describe('useCoachViewSelection', () => {
       expect(bRow?.lastPerformedDateDisplay).toBe('—');
       expect(bRow?.lastPerformedSetDisplay).toBe('No data logged');
       expect(bRow?.e1rmDisplay).toBe('—');
+      expect(bRow?.e1rmProjectedDisplay).toBe(null);
+      expect(bRow?.e1rmSourceLabel).toBe(null);
       expect(bRow?.sessionCount).toBe(0);
 
       act(() => result.current.setSelectedDisplayName('Bench Press'));
@@ -145,6 +152,8 @@ describe('useCoachViewSelection', () => {
       expect(brokenRow?.hasData).toBe(false);
       expect(brokenRow?.lastPerformedDateDisplay).toBe('—');
       expect(brokenRow?.lastPerformedSetDisplay).toBe('Failed to load');
+      expect(brokenRow?.e1rmProjectedDisplay).toBe(null);
+      expect(brokenRow?.e1rmSourceLabel).toBe(null);
       expect(brokenRow?.sessionCount).toBe(0);
     });
 
@@ -454,6 +463,40 @@ describe('useCoachViewSelection', () => {
 
       act(() => result.current.rows[0].onExerciseChange('Bench Press'));
       expect(result.current.rows[0].sessionCount).toBe(2);
+    });
+  });
+
+  describe('e1RM projection', () => {
+    it.each([
+      ['no baseline configured', [], {}, null, null],
+      [
+        'baseline configured with exact e1rm-max-effort match',
+        [point(1, 150, 'squat')],
+        { 'lift:squat': 'squat' },
+        'squat',
+        'Based on',
+      ],
+    ])('%s', (_, e1rmMaxEffortPoints, baseline, expectedCanonical, expectedLabelPrefix) => {
+      const model = minimalPipelineModel(
+        [taggedRecord('squat', 'Squat', { weight: 150 })],
+        [point(1, 100, 'squat')],
+        e1rmMaxEffortPoints,
+        baseline
+      );
+      const { result } = renderHook(() => useCoachViewSelection([successResult('Lifter', model)]));
+
+      act(() => result.current.setSelectedDisplayName('Squat'));
+      const row = result.current.rows[0];
+
+      if (expectedCanonical === null) {
+        expect(row.e1rmProjectedDisplay).toBe(null);
+        expect(row.e1rmSourceLabel).toBe(null);
+      } else {
+        expect(row.e1rmProjectedDisplay).not.toBeNull();
+        expect(typeof row.e1rmProjectedDisplay).toBe('string');
+        expect(row.e1rmSourceLabel).toBeDefined();
+        expect(row.e1rmSourceLabel?.startsWith(expectedLabelPrefix)).toBe(true);
+      }
     });
   });
 

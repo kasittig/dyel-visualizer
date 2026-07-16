@@ -23,6 +23,7 @@ import {
   formatWeight,
   groupByLiftType,
   predictWeightForReps,
+  resolveE1RMEstimate,
   roundTo5,
 } from '@dyel/api';
 import { LIFT_TYPE_ORDER } from '../../shared/liftTypeLabels';
@@ -35,6 +36,8 @@ interface LifterOverride {
 export interface CoachViewRow {
   lifterName: string;
   e1rmDisplay: string;
+  e1rmProjectedDisplay: string | null;
+  e1rmSourceLabel: string | null;
   lastPerformedDateDisplay: string;
   lastPerformedSetDisplay: string;
   targetWeightDisplay: string;
@@ -202,6 +205,8 @@ export function useCoachViewSelection(results: LifterPipelineResult[]) {
     ): CoachViewRow => ({
       lifterName: name,
       e1rmDisplay: '—',
+      e1rmProjectedDisplay: null,
+      e1rmSourceLabel: null,
       lastPerformedDateDisplay: '—',
       lastPerformedSetDisplay: msg,
       targetWeightDisplay: '—',
@@ -275,9 +280,27 @@ export function useCoachViewSelection(results: LifterPipelineResult[]) {
       const detail = buildLastSessionDetailForCanonical(res.model.tagged, effectiveCanonical!);
       const sessionCount = buildSessionCountForCanonical(res.model.tagged, effectiveCanonical!);
 
+      const estimate = resolveE1RMEstimate({
+        liftType: liftTypeByDisplayName.get(effectiveDisplayName)!,
+        targetCanonical: effectiveCanonical!,
+        baselineName: undefined,
+        today: new Date(),
+        model: res.model.model,
+        e1rmPoints: res.model.pointsByDeriver.get('e1rm-max-effort') ?? [],
+      });
+
+      const e1rmProjectedDisplay = estimate ? formatWeight(estimate.e1rm, unit) : null;
+      const e1rmSourceLabel = estimate
+        ? estimate.method === 'exact'
+          ? `Based on ${estimate.sourceName} · ${estimate.date.toLocaleDateString()}`
+          : `Projected from ${estimate.sourceName} (${estimate.date.toLocaleDateString()})`
+        : null;
+
       return {
         lifterName: res.name,
         e1rmDisplay: formatWeight(latestPoint.v, unit),
+        e1rmProjectedDisplay,
+        e1rmSourceLabel,
         lastPerformedDateDisplay: detail ? formatLastSessionParts(detail, unit).date : '',
         lastPerformedSetDisplay: detail ? formatLastSessionParts(detail, unit).setLine : '',
         targetWeightDisplay: `${roundTo5(predictWeightForReps(convertE1RMToDisplayUnit(latestPoint.v, unit), effectiveReps))} ${unit}`,
