@@ -30,7 +30,7 @@ const baseModel = (variants: VariantAssessment[]): PipelineModel => ({
   pointsByDeriverAdjusted: new Map([['e1rm', []]]),
   pointsByLabelByDeriverAdjusted: new Map([['e1rm', []]]),
   tagged: [],
-  athlete: { sex: 'M', bodyweight: 90, deadliftStance: 'sumo' },
+  athlete: { sex: 'M', bodyweight: 90 },
 });
 
 describe('selectDiagnosticVariants', () => {

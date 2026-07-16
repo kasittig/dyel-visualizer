@@ -3,7 +3,7 @@ import type { AthleteContext } from '@dyel/pipeline';
 import { buildPipelineModel } from './buildPipelineModel';
 import { validatePipelineRun } from './validatePipelineRun';
 
-const athlete: AthleteContext = { sex: 'M', bodyweight: 90, deadliftStance: 'sumo' };
+const athlete: AthleteContext = { sex: 'M', bodyweight: 90 };
 const csv =
   'Date,Exercise,Reps,Weight (lbs),Sets,RPE\n2026-01-01,Squat,5,225,3,\n2026-01-01,Squat,3,275,1,9\n2026-01-02,Bench,8,185,4,\n2026-01-02,Bench Press,1,225,,8';
 const inputs = [{ name: 't.csv', content: csv }];
@@ -14,7 +14,6 @@ describe('buildPipelineModel', () => {
     const m2 = buildPipelineModel(inputs, {
       sex: 'F',
       bodyweight: 65,
-      deadliftStance: 'conventional',
     });
 
     expect(m1.tagged.length).toBeGreaterThan(0);

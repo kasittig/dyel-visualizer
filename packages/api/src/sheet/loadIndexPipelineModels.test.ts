@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { loadIndexPipelineModels } from './loadIndexPipelineModels';
 import type { AthleteContext } from '@dyel/pipeline';
 
-const athlete: AthleteContext = { sex: 'M', bodyweight: 90, deadliftStance: 'sumo' };
+const athlete: AthleteContext = { sex: 'M', bodyweight: 90 };
 const aliceCsv = 'Date,Exercise,Reps,Weight (lbs),Sets,RPE\n2026-01-01,Squat,5,225,3,';
 const bobCsv = 'Date,Exercise,Reps,Weight (lbs),Sets,RPE\n2026-01-02,Bench,8,185,4,';
 const indexCsv = 'name,url\nAlice,https://example.com/alice\nBob,https://example.com/bob';
