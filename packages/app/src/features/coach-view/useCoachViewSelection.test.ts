@@ -122,7 +122,8 @@ describe('useCoachViewSelection', () => {
       expect(result.current.rows.find((r) => r.lifterName === 'SquatOnly')?.hasData).toBe(true);
       const bRow = result.current.rows.find((r) => r.lifterName === 'BenchOnly');
       expect(bRow?.hasData).toBe(false);
-      expect(bRow?.lastPerformedDisplay).toBe('No data logged');
+      expect(bRow?.lastPerformedDateDisplay).toBe('—');
+      expect(bRow?.lastPerformedSetDisplay).toBe('No data logged');
       expect(bRow?.e1rmDisplay).toBe('—');
       expect(bRow?.sessionCount).toBe(0);
 
@@ -142,7 +143,8 @@ describe('useCoachViewSelection', () => {
       act(() => result.current.setSelectedDisplayName('Squat'));
       const brokenRow = result.current.rows.find((r) => r.lifterName === 'Broken');
       expect(brokenRow?.hasData).toBe(false);
-      expect(brokenRow?.lastPerformedDisplay).toBe('Failed to load');
+      expect(brokenRow?.lastPerformedDateDisplay).toBe('—');
+      expect(brokenRow?.lastPerformedSetDisplay).toBe('Failed to load');
       expect(brokenRow?.sessionCount).toBe(0);
     });
 
@@ -403,7 +405,8 @@ describe('useCoachViewSelection', () => {
       act(() => aliceRow().onExerciseChange('Bench Press'));
 
       expect(aliceRow().hasData).toBe(false);
-      expect(aliceRow().lastPerformedDisplay).toBe('No data logged');
+      expect(aliceRow().lastPerformedDateDisplay).toBe('—');
+      expect(aliceRow().lastPerformedSetDisplay).toBe('No data logged');
       expect(bobRow().hasData).toBe(true);
     });
   });

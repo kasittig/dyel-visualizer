@@ -19,7 +19,7 @@ import {
   CONJUGATE_STANCES,
   convertE1RMToDisplayUnit,
   detectDataUnit,
-  formatLastSessionSummary,
+  formatLastSessionParts,
   formatWeight,
   groupByLiftType,
   predictWeightForReps,
@@ -35,7 +35,8 @@ interface LifterOverride {
 export interface CoachViewRow {
   lifterName: string;
   e1rmDisplay: string;
-  lastPerformedDisplay: string;
+  lastPerformedDateDisplay: string;
+  lastPerformedSetDisplay: string;
   targetWeightDisplay: string;
   sessionCount: number;
   hasData: boolean;
@@ -201,7 +202,8 @@ export function useCoachViewSelection(results: LifterPipelineResult[]) {
     ): CoachViewRow => ({
       lifterName: name,
       e1rmDisplay: '—',
-      lastPerformedDisplay: msg,
+      lastPerformedDateDisplay: '—',
+      lastPerformedSetDisplay: msg,
       targetWeightDisplay: '—',
       sessionCount: 0,
       hasData: false,
@@ -276,7 +278,8 @@ export function useCoachViewSelection(results: LifterPipelineResult[]) {
       return {
         lifterName: res.name,
         e1rmDisplay: formatWeight(latestPoint.v, unit),
-        lastPerformedDisplay: detail ? formatLastSessionSummary(detail, unit) : '',
+        lastPerformedDateDisplay: detail ? formatLastSessionParts(detail, unit).date : '',
+        lastPerformedSetDisplay: detail ? formatLastSessionParts(detail, unit).setLine : '',
         targetWeightDisplay: `${roundTo5(predictWeightForReps(convertE1RMToDisplayUnit(latestPoint.v, unit), effectiveReps))} ${unit}`,
         sessionCount,
         hasData: true,

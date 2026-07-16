@@ -1,6 +1,8 @@
 import clsx from 'clsx';
+import type { ReactNode } from 'react';
 import { useCoachViewData } from './useCoachViewData';
 import { useCoachViewSelection } from './useCoachViewSelection';
+import type { CoachViewRow } from './useCoachViewSelection';
 import { LIFT_TYPE_LABELS } from '../../shared/liftTypeLabels';
 import {
   TypeaheadDropdown,
@@ -11,6 +13,14 @@ import {
   TableCell,
 } from '../../shared/components';
 import styles from './CoachViewPage.module.css';
+
+interface CoachViewColumn {
+  header: string;
+  headerClassName?: string;
+  cellClassName?: string | ((row: CoachViewRow) => string | boolean | undefined);
+  variant?: 'left' | 'mono';
+  render: (row: CoachViewRow) => ReactNode;
+}
 
 export function CoachViewPage() {
   const dataState = useCoachViewData();
@@ -41,6 +51,72 @@ export function CoachViewPage() {
     setSelectedLiftType,
     liftTypeOptions,
   } = useCoachViewSelection(dataState.status === 'success' ? dataState.data : []);
+
+  const columns: CoachViewColumn[] = [
+    {
+      header: 'Lifter',
+      variant: 'left',
+      headerClassName: styles.lifterHeaderCell,
+      cellClassName: () => clsx(styles.cellTint, styles.lifterCell),
+      render: (row) => <span title={row.lifterName}>{row.lifterName}</span>,
+    },
+    {
+      header: 'Exercise',
+      variant: 'left',
+      cellClassName: () => clsx(styles.cellTint, styles.controlCell),
+      render: (row) => (
+        <TypeaheadDropdown
+          options={row.availableExerciseOptions}
+          value={row.effectiveDisplayName || null}
+          onChange={row.onExerciseChange}
+          placeholder="Search exercise..."
+        />
+      ),
+    },
+    {
+      header: 'Target weight',
+      cellClassName: (row) => clsx(styles.cellTint, !row.hasData && styles.placeholderCell),
+      render: (row) => row.targetWeightDisplay,
+    },
+    {
+      header: 'Reps',
+      variant: 'left',
+      cellClassName: () => clsx(styles.cellTint, styles.repsCell),
+      render: (row) => (
+        <input
+          type="number"
+          min={1}
+          max={20}
+          value={row.effectiveReps}
+          className={styles.repsInput}
+          onChange={(e) => {
+            const val = parseInt(e.target.value, 10);
+            row.onRepsChange(Number.isNaN(val) || val < 1 ? 1 : val);
+          }}
+        />
+      ),
+    },
+    {
+      header: 'Sessions',
+      cellClassName: (row) => clsx(styles.cellTint, !row.hasData && styles.placeholderCell),
+      render: (row) => row.sessionCount,
+    },
+    {
+      header: 'Date',
+      cellClassName: (row) => clsx(styles.cellTint, !row.hasData && styles.placeholderCell),
+      render: (row) => row.lastPerformedDateDisplay,
+    },
+    {
+      header: 'Last set',
+      cellClassName: (row) => clsx(styles.cellTint, !row.hasData && styles.placeholderCell),
+      render: (row) => row.lastPerformedSetDisplay,
+    },
+    {
+      header: 'e1RM',
+      cellClassName: (row) => clsx(styles.cellTint, !row.hasData && styles.placeholderCell),
+      render: (row) => row.e1rmDisplay,
+    },
+  ];
 
   if (dataState.status === 'loading') {
     return (
@@ -180,80 +256,33 @@ export function CoachViewPage() {
               <TableCard>
                 <Table>
                   <TableHeadRow>
-                    <TableCell as="th" variant="mono">
-                      Lifter
-                    </TableCell>
-                    <TableCell as="th" variant="mono">
-                      Exercise
-                    </TableCell>
-                    <TableCell as="th" variant="mono">
-                      Reps
-                    </TableCell>
-                    <TableCell as="th" variant="mono">
-                      # Sessions
-                    </TableCell>
-                    <TableCell as="th" variant="mono" className={styles.columnDivider}>
-                      Target weight
-                    </TableCell>
-                    <TableCell as="th" variant="mono">
-                      Last performed
-                    </TableCell>
-                    <TableCell as="th" variant="mono">
-                      e1RM
-                    </TableCell>
+                    {columns.map((col) => (
+                      <TableCell
+                        key={col.header}
+                        as="th"
+                        variant={col.variant ?? 'mono'}
+                        className={col.headerClassName}
+                      >
+                        {col.header}
+                      </TableCell>
+                    ))}
                   </TableHeadRow>
                   <tbody>
                     {rows.map((row) => (
                       <TableRow key={row.lifterName}>
-                        <TableCell variant="mono">{row.lifterName}</TableCell>
-                        <TableCell variant="mono">
-                          <TypeaheadDropdown
-                            options={row.availableExerciseOptions}
-                            value={row.effectiveDisplayName || null}
-                            onChange={row.onExerciseChange}
-                            placeholder="Search exercise..."
-                          />
-                        </TableCell>
-                        <TableCell variant="mono">
-                          <input
-                            type="number"
-                            min={1}
-                            max={20}
-                            value={row.effectiveReps}
-                            className={styles.repsInput}
-                            onChange={(e) => {
-                              const val = parseInt(e.target.value, 10);
-                              row.onRepsChange(Number.isNaN(val) || val < 1 ? 1 : val);
-                            }}
-                          />
-                        </TableCell>
-                        <TableCell
-                          variant="mono"
-                          className={clsx(!row.hasData && styles.placeholderCell)}
-                        >
-                          {row.sessionCount}
-                        </TableCell>
-                        <TableCell
-                          variant="mono"
-                          className={clsx(
-                            styles.columnDivider,
-                            !row.hasData && styles.placeholderCell
-                          )}
-                        >
-                          {row.targetWeightDisplay}
-                        </TableCell>
-                        <TableCell
-                          variant="mono"
-                          className={clsx(!row.hasData && styles.placeholderCell)}
-                        >
-                          {row.lastPerformedDisplay}
-                        </TableCell>
-                        <TableCell
-                          variant="mono"
-                          className={clsx(!row.hasData && styles.placeholderCell)}
-                        >
-                          {row.e1rmDisplay}
-                        </TableCell>
+                        {columns.map((col) => (
+                          <TableCell
+                            key={col.header}
+                            variant={col.variant ?? 'mono'}
+                            className={clsx(
+                              typeof col.cellClassName === 'function'
+                                ? col.cellClassName(row)
+                                : col.cellClassName
+                            )}
+                          >
+                            {col.render(row)}
+                          </TableCell>
+                        ))}
                       </TableRow>
                     ))}
                   </tbody>
