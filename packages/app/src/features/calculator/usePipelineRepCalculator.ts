@@ -11,6 +11,7 @@ import {
   roundTo5,
   selectBestE1RMPoint,
   formatWeight,
+  formatE1RMSourceLabel,
 } from '@dyel/api';
 import type {
   LiftType,
@@ -127,18 +128,7 @@ export function usePipelineRepCalculator(
     [estimate, unit]
   );
 
-  const e1rmSourceLabel = useMemo(() => {
-    if (!estimate) {
-      return null;
-    }
-    const base =
-      estimate.method === 'exact'
-        ? `Based on ${estimate.sourceName} · ${estimate.date.toLocaleDateString()}`
-        : `Projected from ${estimate.sourceName} (${estimate.date.toLocaleDateString()})`;
-    return estimate.daysForward > 0
-      ? `${base} · projected ${estimate.daysForward} day${estimate.daysForward === 1 ? '' : 's'} forward`
-      : base;
-  }, [estimate]);
+  const e1rmSourceLabel = useMemo(() => formatE1RMSourceLabel(estimate), [estimate]);
 
   const syncWeightFromReps = (rVal: string) => {
     const r = parseFloat(rVal);

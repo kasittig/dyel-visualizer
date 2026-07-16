@@ -7,6 +7,8 @@ import {
   roundTo5,
   predictRepsForWeight,
   predictWeightForReps,
+  formatE1RMSourceLabel,
+  type E1RMEstimate,
 } from './repCalculatorUtils';
 
 const pt = (series: string, v: number, t: number): Point => ({ series, v, t, tags: new Set() });
@@ -231,5 +233,44 @@ describe('predictWeightForReps', () => {
     ['typical case (e1rm=300, reps=5)', 300, 5, expect.any(Number)],
   ])('%s', (_, e1rm, reps, expected) => {
     expect(predictWeightForReps(e1rm, reps)).toEqual(expected);
+  });
+});
+
+describe('formatE1RMSourceLabel', () => {
+  const date = new Date('2024-01-15');
+  const dateStr = date.toLocaleDateString();
+  const e1rmEst = (overrides?: Partial<E1RMEstimate>): E1RMEstimate => ({
+    e1rm: 250,
+    date,
+    sourceName: 'Comp Squat',
+    method: 'exact' as const,
+    daysForward: 0,
+    ...overrides,
+  });
+
+  it.each([
+    ['null estimate', null, null],
+    [
+      'exact method, no days forward',
+      e1rmEst({ method: 'exact', daysForward: 0 }),
+      `Based on Comp Squat · ${dateStr}`,
+    ],
+    [
+      'exact method with 1 day forward (singular)',
+      e1rmEst({ method: 'exact', daysForward: 1 }),
+      `Based on Comp Squat · ${dateStr} (1 day ago)`,
+    ],
+    [
+      'exact method with 5 days forward (plural)',
+      e1rmEst({ method: 'exact', daysForward: 5 }),
+      `Based on Comp Squat · ${dateStr} (5 days ago)`,
+    ],
+    [
+      'variantFactor method with days forward',
+      e1rmEst({ method: 'variantFactor', daysForward: 3 }),
+      `Projected from Comp Squat - ${dateStr} (3 days ago)`,
+    ],
+  ])('%s', (_, estimate, expected) => {
+    expect(formatE1RMSourceLabel(estimate)).toBe(expected);
   });
 });

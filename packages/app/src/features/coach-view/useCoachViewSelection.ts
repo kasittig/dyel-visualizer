@@ -19,6 +19,7 @@ import {
   CONJUGATE_STANCES,
   convertE1RMToDisplayUnit,
   detectDataUnit,
+  formatE1RMSourceLabel,
   formatLastSessionParts,
   formatWeight,
   groupByLiftType,
@@ -290,15 +291,7 @@ export function useCoachViewSelection(results: LifterPipelineResult[]) {
       });
 
       const e1rmProjectedDisplay = estimate ? formatWeight(estimate.e1rm, unit) : null;
-      const e1rmSourceLabelBase = estimate
-        ? estimate.method === 'exact'
-          ? `Based on ${estimate.sourceName} · ${estimate.date.toLocaleDateString()}`
-          : `Projected from ${estimate.sourceName} (${estimate.date.toLocaleDateString()})`
-        : null;
-      const e1rmSourceLabel =
-        estimate && estimate.daysForward > 0
-          ? `${e1rmSourceLabelBase} · projected ${estimate.daysForward} day${estimate.daysForward === 1 ? '' : 's'} forward`
-          : e1rmSourceLabelBase;
+      const e1rmSourceLabel = formatE1RMSourceLabel(estimate);
 
       return {
         lifterName: res.name,

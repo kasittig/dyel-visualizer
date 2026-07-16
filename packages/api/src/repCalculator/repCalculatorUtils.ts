@@ -112,3 +112,16 @@ export function resolveE1RMEstimate(params: {
     params.baselineName ?? baselineCanonical
   );
 }
+
+export function formatE1RMSourceLabel(estimate: E1RMEstimate | null): string | null {
+  if (!estimate) {
+    return null;
+  }
+  const base =
+    estimate.method === 'exact'
+      ? `Based on ${estimate.sourceName} · ${estimate.date.toLocaleDateString()}`
+      : `Projected from ${estimate.sourceName} - ${estimate.date.toLocaleDateString()}`;
+  return estimate.daysForward > 0
+    ? `${base} (${estimate.daysForward} day${estimate.daysForward === 1 ? '' : 's'} ago)`
+    : base;
+}
