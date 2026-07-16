@@ -2,6 +2,10 @@
   composes: chartCard from '../charts/charts.module.css';
 }
 
+.scrollArea {
+  overflow-x: auto;
+}
+
 .table {
   width: 100%;
   border-collapse: collapse;
@@ -15,19 +19,31 @@
   letter-spacing: 0.05em;
   color: var(--text);
 }
+/* Center every header label regardless of its column's cell variant (left/mono/etc.) — headers
+   read better centered even when the body cells they label are left- or right-aligned. Higher
+   specificity than the single-class variant selectors (.cellLeft/.cellMono/etc.) below, so no
+   per-variant override is needed. */
+.thead th {
+  text-align: center;
+}
 .bodyRow {
   border-bottom: 1px solid var(--border);
 }
 .bodyRowSelected {
   background-color: color-mix(in srgb, var(--accent, #8839ef) 12%, transparent);
 }
+.bodyRow:hover {
+  background-color: color-mix(in srgb, var(--accent, #8839ef) 6%, transparent);
+}
 
 .cell {
   padding: 0.5rem 0.75rem;
+  overflow-wrap: anywhere;
 }
 .cellLeft {
   padding: 0.5rem 0.75rem;
   text-align: left;
+  overflow-wrap: anywhere;
 }
 .cellMono {
   padding: 0.5rem 0.75rem;
@@ -37,6 +53,7 @@
 .cellText {
   padding: 0.5rem 0.75rem;
   color: var(--text);
+  overflow-wrap: anywhere;
 }
 .cellDiagnostic {
   padding: 0.5rem 0.75rem;

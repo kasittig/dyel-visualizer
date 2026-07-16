@@ -17,6 +17,7 @@
   align-items: center;
   gap: 1rem;
   margin-bottom: 1rem;
+  flex-wrap: wrap;
 }
 
 .headerRow {
@@ -24,11 +25,12 @@
   align-items: center;
   gap: 1rem;
   margin-bottom: 1rem;
+  flex-wrap: wrap;
 }
 
-/* Reps input field */
+/* Reps input field — reps are capped at 20 (2 digits), so a narrow fixed width is plenty */
 .repsInput {
-  width: 60px;
+  width: 40px;
   padding: 0.3rem 0.5rem;
   font-size: 0.9rem;
   border: 1px solid var(--border);
@@ -37,6 +39,7 @@
   color: var(--text-h);
   font-family: var(--mono);
   outline: none;
+  text-align: center;
 }
 
 .repsInput:focus {
@@ -86,9 +89,57 @@
 }
 
 /* Thick divider between the Lifter/Target weight column pair and the
-   Last performed/e1RM column pair */
+   Date/Last set/e1RM column pair */
 .columnDivider {
   border-right: 2px solid var(--border);
+}
+
+/* Min-width guard for wider interactive control cells (typeahead/effort inputs) so they don't
+   shrink to unreadable widths once the table can scroll horizontally */
+.controlCell {
+  min-width: 140px;
+}
+
+/* Min-width guard for the narrower Reps cell — reps are capped at 20 (2 digits), so it only
+   needs enough room for the 40px .repsInput plus cell padding, not the wider .controlCell
+   floor used by the Exercise/RPE-% controls */
+.repsCell {
+  min-width: 64px;
+}
+
+/* Min-width guard for the Lifter column so long names don't get squeezed to unreadable
+   widths before the table's horizontal scroll kicks in; max-width and ellipsis truncation
+   prevent wrapping so long names display on a single line with a tooltip on hover. Sticky
+   positioning pins this column to the left edge during horizontal scroll with an opaque
+   background so scrolled-under cells don't show through */
+.lifterCell {
+  min-width: 100px;
+  max-width: 200px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: color-mix(in srgb, var(--text) 4%, var(--code-bg));
+}
+
+/* Pins the "Lifter" header cell to match the sticky body column (see .lifterCell) during
+   horizontal scroll; plain --code-bg since the header row isn't tinted like body cells */
+.lifterHeaderCell {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--code-bg);
+}
+
+/* Uniform subtle tint applied to every body cell in the lifter-comparison table (both
+   computed-display cells and the Exercise/Reps/RPE-% editable cells), so the table body reads as
+   one consistent surface rather than singling out a subset of cells. Uses a neutral text-based
+   tint rather than var(--accent-bg), since the accent color (and thus accent-bg) swings green in
+   dark mode ("Matrix Emerald" theme) and would read as an unintended highlight. */
+.cellTint {
+  background: color-mix(in srgb, var(--text) 4%, transparent);
 }
 
 .backLink {

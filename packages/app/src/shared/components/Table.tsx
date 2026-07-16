@@ -14,7 +14,11 @@ const CELL_CLASS: Record<CellVariant, string> = {
 
 /** Bordered/rounded card surface (background: var(--code-bg)) wrapping a table and any related content. */
 export function TableCard({ children }: { children: ReactNode }) {
-  return <div className={styles.card}>{children}</div>;
+  return (
+    <div className={styles.card}>
+      <div className={styles.scrollArea}>{children}</div>
+    </div>
+  );
 }
 
 export function Table({ children }: { children: ReactNode }) {

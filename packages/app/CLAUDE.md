@@ -118,6 +118,19 @@ See the **Directory layout** table above for complete per-directory file listing
 
 **Boundary:** `@dyel/api` is the sole business-logic boundary — the app never imports `@dyel/pipeline` directly (only `features/lift/usePipelineVariationRadarData.test.ts` does for real-fixture test coverage, allowlisted in `eslint.config.js`). This directory layout resulted from Phase 4 of the App Refactor migration (see `HANDOFF.md`), which reorganized `src/components/`, `src/hooks/`, `src/context/`, `src/utils/` into feature-based directories. Earlier, Phase 2 deleted `src/pipeline/` (non-hook derivation helpers) and moved that logic into `@dyel/api`.
 
+## Decimal formatting
+
+There is no shared number-formatting utility (no `Intl.NumberFormat` wrapper, no `formatNumber`/`formatDecimal` helper). The convention is inline `.toFixed(n)` at the render site, with a `??`/ternary fallback to a placeholder (`'—'` or `'-'`) when the value may be null/undefined:
+
+```typescript
+{score !== null ? score.toFixed(2) : '—'}
+{r.averageIndex?.toFixed(1) ?? '-'}%
+```
+
+Current examples: `features/calculator/usePipelineRepCalculator.ts` (1dp reps), `features/calculator/StrengthScoreCalculator.tsx` (2dp score), `features/lift/DiagnosticsPanel.tsx` (1dp index), `features/lift/VariationRadarChart.tsx` (2dp e1RM).
+
+Follow this pattern for new decimal displays rather than introducing a shared formatter — per this repo's "inline micro-expressions" style guideline, single-line calcs shouldn't be extracted into top-level utilities. Only extract to `shared/` if the exact same formatting logic (precision + fallback) is duplicated in 3+ places.
+
 ## Constraints
 
 **Published sheets only.** Only support features that work with published Google Sheets (`/pub?output=csv`). Do not add features that require the `/export?format=csv` endpoint — it only works for sheets that are publicly accessible without publishing, which is a rare configuration.

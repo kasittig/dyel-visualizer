@@ -70,6 +70,7 @@ export {
   buildLastSessionDetail,
   buildLastSessionDetailForCanonical,
   buildSessionCountForCanonical,
+  formatLastSessionParts,
   formatLastSessionSummary,
 } from './session/lastSessionDetail';
 export type { LastSessionDetail } from './session/lastSessionDetail';

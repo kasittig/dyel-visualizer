@@ -84,7 +84,21 @@ export function buildSessionCountForCanonical(
   return sessionDates.size;
 }
 
-export function formatLastSessionSummary(detail: LastSessionDetail, unit: DisplayUnit): string {
+export function formatLastSessionParts(
+  detail: LastSessionDetail,
+  unit: DisplayUnit
+): { date: string; setLine: string } {
   const d = new Date(`${detail.date}T00:00:00`);
-  return `${d.getMonth() + 1}/${d.getDate()} (${detail.sets}x${detail.reps} @ ${formatWeight(detail.weight, unit)})`;
+  const date = `${d.getMonth() + 1}/${d.getDate()}`;
+  const setLine = `${detail.sets}x${detail.reps} @ ${formatWeight(detail.weight, unit)}`;
+  return { date, setLine };
+}
+
+export function formatLastSessionSummary(
+  detail: LastSessionDetail,
+  unit: DisplayUnit,
+  opts?: { multiline?: boolean }
+): string {
+  const { date, setLine } = formatLastSessionParts(detail, unit);
+  return opts?.multiline ? `${date}\n${setLine}` : `${date} (${setLine})`;
 }

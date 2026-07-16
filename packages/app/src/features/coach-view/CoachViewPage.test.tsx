@@ -48,7 +48,8 @@ const mockLifterResult = (
 const mockRow = (overrides?: Partial<CoachViewRow>): CoachViewRow => ({
   lifterName: 'John Doe',
   e1rmDisplay: '225 lbs',
-  lastPerformedDisplay: 'Today',
+  lastPerformedDateDisplay: '1/1',
+  lastPerformedSetDisplay: 'Today',
   targetWeightDisplay: '185 lbs',
   sessionCount: 4,
   hasData: true,
@@ -162,7 +163,7 @@ describe('CoachViewPage', () => {
         );
         expect(screen.getByRole('table')).toBeDefined();
         expect(screen.getAllByRole('row')).toHaveLength(selectionState.rows.length + 1);
-        expect(screen.getByText('# Sessions')).toBeDefined();
+        expect(screen.getByText('Sessions')).toBeDefined();
         selectionState.rows.forEach((r) => expect(screen.getByText(r.lifterName)).toBeDefined());
         expect(screen.getAllByText('4').length).toBeGreaterThan(0);
       }
@@ -225,7 +226,8 @@ describe('CoachViewPage', () => {
           mockRow({
             lifterName: 'Dana',
             e1rmDisplay: '—',
-            lastPerformedDisplay: 'No data logged',
+            lastPerformedDateDisplay: '—',
+            lastPerformedSetDisplay: 'No data logged',
             targetWeightDisplay: '—',
             hasData: false,
           }),
@@ -236,9 +238,9 @@ describe('CoachViewPage', () => {
     expect(screen.getByText('Alice')).toBeDefined();
     expect(screen.getByText('Dana')).toBeDefined();
     expect(screen.getByText('No data logged')).toBeDefined();
-    // 2 em-dashes from Dana's placeholder cells (e1rmDisplay, targetWeightDisplay)
-    // + 4 em-dashes from the 4 facet select empty options
-    expect(screen.getAllByText('—')).toHaveLength(6);
+    // 3 em-dashes from Dana's placeholder cells (e1rmDisplay, targetWeightDisplay,
+    // lastPerformedDateDisplay) + 4 em-dashes from the 4 facet select empty options
+    expect(screen.getAllByText('—')).toHaveLength(7);
   });
 
   it('renders a per-row exercise dropdown and reps input for each lifter', () => {
