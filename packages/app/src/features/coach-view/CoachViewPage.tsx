@@ -75,11 +75,6 @@ export function CoachViewPage() {
       ),
     },
     {
-      header: 'Target weight',
-      cellClassName: (row) => clsx(styles.cellTint, !row.hasData && styles.placeholderCell),
-      render: (row) => row.targetWeightDisplay,
-    },
-    {
       header: 'Reps',
       variant: 'left',
       cellClassName: () => clsx(styles.cellTint, styles.repsCell),
@@ -98,23 +93,14 @@ export function CoachViewPage() {
       ),
     },
     {
-      header: 'Sessions',
+      header: 'Target weight',
       cellClassName: (row) => clsx(styles.cellTint, !row.hasData && styles.placeholderCell),
-      render: (row) => row.sessionCount,
-    },
-    {
-      header: 'Date',
-      cellClassName: (row) => clsx(styles.cellTint, !row.hasData && styles.placeholderCell),
-      render: (row) => row.lastPerformedDateDisplay,
-    },
-    {
-      header: 'Last set',
-      cellClassName: (row) => clsx(styles.cellTint, !row.hasData && styles.placeholderCell),
-      render: (row) => row.lastPerformedSetDisplay,
+      render: (row) => row.targetWeightDisplay,
     },
     {
       header: 'e1RM',
-      cellClassName: (row) => clsx(styles.cellTint, !row.hasData && styles.placeholderCell),
+      cellClassName: (row) =>
+        clsx(styles.cellTint, styles.columnDivider, !row.hasData && styles.placeholderCell),
       render: (row) => (
         <E1RMCell
           actualDisplay={row.e1rmDisplay}
@@ -122,6 +108,21 @@ export function CoachViewPage() {
           sourceLabel={row.e1rmSourceLabel}
         />
       ),
+    },
+    {
+      header: 'Sessions',
+      cellClassName: (row) => clsx(styles.cellTint, !row.hasData && styles.placeholderCell),
+      render: (row) => row.sessionCount,
+    },
+    {
+      header: 'Last set',
+      cellClassName: (row) => clsx(styles.cellTint, !row.hasData && styles.placeholderCell),
+      render: (row) => row.lastPerformedSetDisplay,
+    },
+    {
+      header: 'Date',
+      cellClassName: (row) => clsx(styles.cellTint, !row.hasData && styles.placeholderCell),
+      render: (row) => row.lastPerformedDateDisplay,
     },
   ];
 

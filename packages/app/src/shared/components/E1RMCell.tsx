@@ -27,6 +27,7 @@ export function E1RMCell({
       className={clsx(styles.cell, styles.toggleable, className)}
       role="button"
       tabIndex={0}
+      title={showProjected ? (sourceLabel ?? undefined) : undefined}
       onClick={() => setShowProjected((v) => !v)}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
@@ -36,11 +37,14 @@ export function E1RMCell({
       }}
     >
       {displayValue}
-      {showProjected && (
-        <span className={styles.projectedIcon} title={sourceLabel ?? undefined}>
-          ~
-        </span>
-      )}
+      <span
+        className={styles.projectedIcon}
+        title={showProjected ? (sourceLabel ?? undefined) : undefined}
+        aria-hidden={!showProjected}
+        style={{ visibility: showProjected ? 'visible' : 'hidden' }}
+      >
+        *
+      </span>
     </span>
   );
 }

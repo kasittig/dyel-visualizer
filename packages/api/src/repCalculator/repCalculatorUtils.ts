@@ -7,6 +7,7 @@ export interface E1RMEstimate {
   date: Date;
   sourceName: string;
   method: 'exact' | 'variantFactor';
+  daysForward: number;
 }
 
 export function selectBestE1RMPoint(canonicalPoints: Point[]): { e1rm: number; t: number } | null {
@@ -35,9 +36,19 @@ export function findBestE1RMFromPipeline(
 
   const lastPoint = baselineE1RMPoints.reduce((acc, p) => (p.t > acc.t ? p : acc));
   const sourceDate = new Date(lastPoint.t);
+  const daysForward = Math.max(
+    0,
+    Math.round((today.getTime() - sourceDate.getTime()) / 86_400_000)
+  );
 
   if (targetCanonical === baselineCanonical) {
-    return { e1rm: compE1RM, date: sourceDate, sourceName: baselineSourceName, method: 'exact' };
+    return {
+      e1rm: compE1RM,
+      date: sourceDate,
+      sourceName: baselineSourceName,
+      method: 'exact',
+      daysForward,
+    };
   }
 
   const vf = model.variantFactor[targetCanonical];
@@ -51,7 +62,13 @@ export function findBestE1RMFromPipeline(
     e1rm = Math.max(0, e1rm - offsetData.offsetKg);
   }
 
-  return { e1rm, date: sourceDate, sourceName: baselineSourceName, method: 'variantFactor' };
+  return {
+    e1rm,
+    date: sourceDate,
+    sourceName: baselineSourceName,
+    method: 'variantFactor',
+    daysForward,
+  };
 }
 
 export function predictWeightForReps(e1rm: number, reps: number): number {

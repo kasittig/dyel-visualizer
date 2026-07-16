@@ -57,7 +57,7 @@ projection logic). The projected fields read from the `'e1rm-max-effort'` derive
 canonicals with no max-effort points — in that case `CoachViewPage.tsx`'s `E1RMCell` just renders
 `e1rmDisplay` as a plain, non-toggleable value (same fallback behavior described in
 `shared/components/CLAUDE.md`). `e1rmSourceLabel` follows the same "Based on X · date" (exact
-method) / "Projected from X (date)" (variant-factor method) format as `RepCalculator`'s caption.
+method) / "Projected from X (date)" (variant-factor method) format as `RepCalculator`'s caption, with " · projected N day(s) forward" appended when the data point is not current.
 
 **Lift type filtering:** `useCoachViewSelection` also owns a fifth, independent filter — Lift
 Type (`selectedLiftType`, one of `squat`/`bench`/`deadlift`/`accessory`, via `canonicalLiftType`

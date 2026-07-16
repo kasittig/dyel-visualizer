@@ -13,7 +13,7 @@ describe('E1RMCell', () => {
 
     expect(screen.getByText('300')).toBeDefined();
     expect(screen.queryByRole('button')).toBeNull();
-    expect(screen.queryByText('~')).toBeNull();
+    expect(screen.queryByText('*')).toBeNull();
   });
 
   it('toggles between actualDisplay and projectedDisplay when clicked', () => {
@@ -38,21 +38,24 @@ describe('E1RMCell', () => {
       <E1RMCell actualDisplay="300" projectedDisplay="320" sourceLabel="calculated from profile" />
     );
 
-    // Icon should not be present initially
-    expect(screen.queryByText('~')).toBeNull();
+    // Icon is always rendered (to avoid layout shift) but hidden initially
+    const icon = screen.getByText('*');
+    expect(icon.getAttribute('title')).toBeNull();
+    expect(icon.style.visibility).toBe('hidden');
 
     // Click to toggle to projected
     const button = screen.getByRole('button');
     fireEvent.click(button);
 
-    // Icon should now be present with correct title
-    const icon = screen.getByText('~');
+    // Icon should now be visible with correct title
     expect(icon.getAttribute('title')).toBe('calculated from profile');
+    expect(icon.style.visibility).toBe('visible');
 
     // Click to toggle back to actual
     fireEvent.click(button);
 
-    // Icon should be gone
-    expect(screen.queryByText('~')).toBeNull();
+    // Icon should be hidden again
+    expect(icon.getAttribute('title')).toBeNull();
+    expect(icon.style.visibility).toBe('hidden');
   });
 });

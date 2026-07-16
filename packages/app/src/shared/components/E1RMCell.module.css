@@ -16,17 +16,18 @@
 }
 
 .toggleable:hover {
+  color: var(--accent);
   opacity: 0.85;
 }
 
-.toggleable:focus {
+.toggleable:focus-visible {
   outline: none;
   color: var(--accent);
 }
 
 .projectedIcon {
   font-size: 0.75rem;
-  color: var(--muted);
+  color: var(--accent);
   margin-left: 0.25rem;
   display: inline;
 }

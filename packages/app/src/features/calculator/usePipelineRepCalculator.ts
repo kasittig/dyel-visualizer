@@ -131,10 +131,13 @@ export function usePipelineRepCalculator(
     if (!estimate) {
       return null;
     }
-    if (estimate.method === 'exact') {
-      return `Based on ${estimate.sourceName} · ${estimate.date.toLocaleDateString()}`;
-    }
-    return `Projected from ${estimate.sourceName} (${estimate.date.toLocaleDateString()})`;
+    const base =
+      estimate.method === 'exact'
+        ? `Based on ${estimate.sourceName} · ${estimate.date.toLocaleDateString()}`
+        : `Projected from ${estimate.sourceName} (${estimate.date.toLocaleDateString()})`;
+    return estimate.daysForward > 0
+      ? `${base} · projected ${estimate.daysForward} day${estimate.daysForward === 1 ? '' : 's'} forward`
+      : base;
   }, [estimate]);
 
   const syncWeightFromReps = (rVal: string) => {

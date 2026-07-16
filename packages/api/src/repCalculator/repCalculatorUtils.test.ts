@@ -141,6 +141,34 @@ describe('findBestE1RMFromPipeline & resolveE1RMEstimate', () => {
         }),
       expect.objectContaining({ method: 'variantFactor' }),
     ],
+    [
+      'daysForward: several days prior',
+      () => {
+        const fiveDaysAgo = new Date(today.getTime() - 5 * 86_400_000);
+        return findBestE1RMFromPipeline(
+          'squat',
+          'squat',
+          [pt('squat', 250, fiveDaysAgo.getTime())],
+          today,
+          mockModel(),
+          'Comp Squat'
+        );
+      },
+      expect.objectContaining({ daysForward: 5, method: 'exact' }),
+    ],
+    [
+      'daysForward: same day as data point',
+      () =>
+        findBestE1RMFromPipeline(
+          'squat',
+          'squat',
+          [pt('squat', 250, today.getTime())],
+          today,
+          mockModel(),
+          'Comp Squat'
+        ),
+      expect.objectContaining({ daysForward: 0, method: 'exact' }),
+    ],
   ])('%s', (_, runner, expected) => {
     const res = runner();
     if (expected === null) {
