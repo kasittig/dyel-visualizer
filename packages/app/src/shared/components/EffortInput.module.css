@@ -1,0 +1,52 @@
+/* Per-row effort control: RPE chip, input, % chip laid out inline */
+.effortInputRow {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+/* Effort value input — values are capped at 3 characters (RPE: 1-10 in 0.5 steps, e.g. "9.5";
+   % : 1-100 in whole steps, e.g. "100"), so a narrow fixed width comfortably fits the max case */
+.effortValueInput {
+  width: 44px;
+  padding: 0.35rem 0.5rem;
+  font-size: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--code-bg);
+  color: var(--text-h);
+  font-family: var(--mono);
+  outline: none;
+  text-align: center;
+}
+
+.effortValueInput:focus {
+  border-color: var(--accent-border);
+  box-shadow: 0 0 0 3px var(--accent-bg);
+}
+
+/* Mode toggle chip: RPE / % button styling */
+.chip {
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text);
+  font-family: var(--heading);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 3px 7px;
+  border-radius: 4px;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    border-color 0.15s,
+    color 0.15s;
+}
+
+.chipActive {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+}

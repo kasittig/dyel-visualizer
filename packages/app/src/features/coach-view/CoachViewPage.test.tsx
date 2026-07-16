@@ -55,9 +55,13 @@ const mockRow = (overrides?: Partial<CoachViewRow>): CoachViewRow => ({
   hasData: true,
   effectiveDisplayName: 'Bench Press',
   effectiveReps: 1,
+  effectiveEffortMode: 'rpe',
+  effectiveEffortValue: 10,
   availableExerciseOptions: ['Bench Press', 'Squat', 'Deadlift'],
   onExerciseChange: vi.fn(),
   onRepsChange: vi.fn(),
+  onEffortModeChange: vi.fn(),
+  onEffortValueChange: vi.fn(),
   ...overrides,
 });
 
@@ -93,6 +97,10 @@ const mockSelection = (overrides?: Partial<SelectionState>): SelectionState => (
   selectedLiftType: null,
   setSelectedLiftType: vi.fn(),
   liftTypeOptions: ['squat', 'bench', 'deadlift', 'accessory'],
+  effortMode: 'rpe',
+  setEffortMode: vi.fn(),
+  effortValue: 10,
+  setEffortValue: vi.fn(),
   ...overrides,
 });
 
@@ -259,7 +267,94 @@ describe('CoachViewPage', () => {
 
     // one exercise input for the top-level control + one per row
     expect(screen.getAllByPlaceholderText('Search exercise...')).toHaveLength(3);
-    expect(screen.getAllByRole('spinbutton')).toHaveLength(3);
+    // top-level reps + effort inputs (2) + one reps input per row (2) + one effort input per row (2) = 6
+    expect(screen.getAllByRole('spinbutton')).toHaveLength(6);
+  });
+
+  it('renders per-row effort controls with correct values', () => {
+    vi.mocked(useCoachViewData).mockReturnValue({
+      status: 'success',
+      data: [mockLifterResult('Lifter 1'), mockLifterResult('Lifter 2')],
+    });
+    vi.mocked(useCoachViewSelection).mockReturnValue(
+      mockSelection({
+        selectedCanonical: 'bench-classic',
+        selectedDisplayName: 'Bench Press',
+        rows: [mockRow({ lifterName: 'Alice' }), mockRow({ lifterName: 'Bob' })],
+      })
+    );
+    render(<CoachViewPage />);
+
+    const spinbuttons = screen.getAllByRole('spinbutton') as HTMLInputElement[];
+    // index 0: top-level reps, 1: top-level effort, 2: Alice's reps, 3: Alice's effort, 4: Bob's reps, 5: Bob's effort
+    expect(spinbuttons[1].value).toBe('10'); // top-level effort
+    expect(spinbuttons[3].value).toBe('10'); // Alice's effort
+    expect(spinbuttons[5].value).toBe('10'); // Bob's effort
+  });
+
+  it('calls row-specific onEffortValueChange/onEffortModeChange when that row changes', () => {
+    const aliceEffortValueChange = vi.fn();
+    const aliceEffortModeChange = vi.fn();
+    vi.mocked(useCoachViewData).mockReturnValue({
+      status: 'success',
+      data: [mockLifterResult('Lifter 1'), mockLifterResult('Lifter 2')],
+    });
+    vi.mocked(useCoachViewSelection).mockReturnValue(
+      mockSelection({
+        selectedCanonical: 'bench-classic',
+        selectedDisplayName: 'Bench Press',
+        rows: [
+          mockRow({
+            lifterName: 'Alice',
+            onEffortValueChange: aliceEffortValueChange,
+            onEffortModeChange: aliceEffortModeChange,
+          }),
+          mockRow({ lifterName: 'Bob' }),
+        ],
+      })
+    );
+    render(<CoachViewPage />);
+
+    const spinbuttons = screen.getAllByRole('spinbutton') as HTMLInputElement[];
+    // index 0: top-level reps, 1: top-level effort, 2: Alice's reps, 3: Alice's effort
+    fireEvent.change(spinbuttons[3], { target: { value: '8' } });
+    expect(aliceEffortValueChange).toHaveBeenCalledWith(8);
+
+    // Click the RPE chip for Alice's row (second RPE button - first is in header, second is Alice's row)
+    const rpeButtons = screen.getAllByRole('button', { name: 'RPE' });
+    fireEvent.click(rpeButtons[1]); // second RPE button
+    expect(aliceEffortModeChange).toHaveBeenCalledWith('rpe');
+  });
+
+  it('renders top-level effort input and RPE/% mode toggle in header', () => {
+    const setEffortValue = vi.fn();
+    const setEffortMode = vi.fn();
+    vi.mocked(useCoachViewData).mockReturnValue({
+      status: 'success',
+      data: [mockLifterResult('Lifter 1')],
+    });
+    vi.mocked(useCoachViewSelection).mockReturnValue(
+      mockSelection({
+        selectedCanonical: 'bench-classic',
+        selectedDisplayName: 'Bench Press',
+        rows: [mockRow()],
+        setEffortValue,
+        setEffortMode,
+      })
+    );
+    render(<CoachViewPage />);
+
+    const spinbuttons = screen.getAllByRole('spinbutton') as HTMLInputElement[];
+    // index 0 is the top-level reps input; index 1 is the top-level effort input
+    expect(spinbuttons[1].value).toBe('10');
+
+    fireEvent.change(spinbuttons[1], { target: { value: '9' } });
+    expect(setEffortValue).toHaveBeenCalledWith(9);
+
+    // Click the top-level RPE button
+    const rpeButtons = screen.getAllByRole('button', { name: 'RPE' });
+    fireEvent.click(rpeButtons[0]); // first RPE button is in header
+    expect(setEffortMode).toHaveBeenCalledWith('rpe');
   });
 
   it('calls the row-specific onExerciseChange/onRepsChange when that row changes', () => {
@@ -281,8 +376,8 @@ describe('CoachViewPage', () => {
     render(<CoachViewPage />);
 
     const spinbuttons = screen.getAllByRole('spinbutton') as HTMLInputElement[];
-    // index 0 is the top-level reps input; index 1 is Alice's row
-    fireEvent.change(spinbuttons[1], { target: { value: '4' } });
+    // index 0: top-level reps, 1: top-level effort, 2: Alice's reps
+    fireEvent.change(spinbuttons[2], { target: { value: '4' } });
     expect(aliceRepsChange).toHaveBeenCalledWith(4);
   });
 
@@ -301,7 +396,8 @@ describe('CoachViewPage', () => {
     render(<CoachViewPage />);
 
     expect(screen.getAllByPlaceholderText('Search exercise...')).toHaveLength(2);
-    expect(screen.getAllByRole('spinbutton')).toHaveLength(2);
+    // top-level reps + effort inputs (2) + one row's reps + effort inputs (2) = 4
+    expect(screen.getAllByRole('spinbutton')).toHaveLength(4);
   });
 
   it('renders facet filter selects and wires their onChange handlers', () => {

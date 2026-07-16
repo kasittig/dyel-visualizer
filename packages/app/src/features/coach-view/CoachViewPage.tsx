@@ -5,6 +5,7 @@ import { useCoachViewSelection } from './useCoachViewSelection';
 import type { CoachViewRow } from './useCoachViewSelection';
 import { LIFT_TYPE_LABELS } from '../../shared/liftTypeLabels';
 import {
+  EffortInput,
   TypeaheadDropdown,
   TableCard,
   Table,
@@ -50,6 +51,10 @@ export function CoachViewPage() {
     selectedLiftType,
     setSelectedLiftType,
     liftTypeOptions,
+    effortMode,
+    setEffortMode,
+    effortValue,
+    setEffortValue,
   } = useCoachViewSelection(dataState.status === 'success' ? dataState.data : []);
 
   const columns: CoachViewColumn[] = [
@@ -93,6 +98,20 @@ export function CoachViewPage() {
             const val = parseInt(e.target.value, 10);
             row.onRepsChange(Number.isNaN(val) || val < 1 ? 1 : val);
           }}
+        />
+      ),
+    },
+    {
+      header: 'RPE / %',
+      variant: 'left',
+      headerClassName: styles.columnDivider,
+      cellClassName: () => clsx(styles.columnDivider, styles.cellTint, styles.controlCell),
+      render: (row) => (
+        <EffortInput
+          mode={row.effectiveEffortMode}
+          value={row.effectiveEffortValue}
+          onModeChange={row.onEffortModeChange}
+          onValueChange={row.onEffortValueChange}
         />
       ),
     },
@@ -161,7 +180,14 @@ export function CoachViewPage() {
             setReps(Number.isNaN(val) || val < 1 ? 1 : val);
           }}
         />
-        rep{reps > 1 ? 's' : ''} (in
+        rep{reps > 1 ? 's' : ''} @
+        <EffortInput
+          mode={effortMode}
+          value={effortValue}
+          onModeChange={setEffortMode}
+          onValueChange={setEffortValue}
+        />
+        (in
         <div className={styles.chipGroup}>
           {(['lbs', 'kg'] as const).map((u) => (
             <button

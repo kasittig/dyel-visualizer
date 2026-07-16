@@ -4,7 +4,7 @@ Coach view for comparing a single exercise across multiple lifters. This feature
 
 | File                       | Purpose                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `CoachViewPage.tsx`        | Page component (typeahead exercise selector + reps input + unit toggle + lifter comparison table); lazy-loaded via `?page=coach` query param in `main.tsx`; renders per-row exercise/reps override controls in table; renders the facet filter select row; renders the Lift Type chip row                                                                                                                                       |
+| `CoachViewPage.tsx`        | Page component (typeahead exercise selector + reps input + effort input + unit toggle + lifter comparison table); lazy-loaded via `?page=coach` query param in `main.tsx`; renders per-row exercise/reps/effort override controls in table; renders the facet filter select row; renders the Lift Type chip row                                                                                                                 |
 | `useCoachViewData.ts`      | Fetches the published index CSV and uses `loadIndexPipelineModels` from `@dyel/api` to concurrently load and parse each lifter's `PipelineModel`; returns status/data                                                                                                                                                                                                                                                           |
 | `useCoachViewSelection.ts` | Derives exercise typeahead options, selected-exercise/reps/unit UI state, and per-lifter `CoachViewRow` display rows across all loaded lifters' models; also derives per-lifter exercise/reps overrides (`overridesByLifter`); also derives global facet-filter state (Bar/Stance/Equipment/Additional Weight) narrowing `exerciseOptions`; also derives a fifth, independent Lift Type chip filter narrowing `exerciseOptions` |
 | `CoachViewPage.module.css` | Page-local styling (header layout, reps input, page-local table modifier classes like `columnDivider`/`placeholderCell`/`controlCell`/`cellTint`); base table chrome comes from `shared/components/Table.module.css`; removed `.lastPerformedCell` after splitting "Last performed" into "Date" and "Last set" columns                                                                                                          |
@@ -36,6 +36,21 @@ stay interactive for every row regardless of `hasData`/load status, since overri
 exactly how a coach finds data for a lifter with none under the current global selection;
 placeholder styling (`placeholderCell`) still applies only to the derived display `<td>`s,
 never to the input cells.
+
+**Effort (RPE / %):** `useCoachViewSelection` owns top-level `effortMode` (`'rpe'` or `'pct'`) and
+`effortValue` (number), which default to RPE 10 — an identity case matching prior behavior (all
+calculations were implicitly RPE 10). The mode and value are reflected in `targetWeightDisplay`,
+which incorporates effort via `predictWeightForRepsAndEffort` from `@dyel/api`. Per-lifter `effort`
+overrides (stored in `overridesByLifter`) mirror the `reps` override pattern: each `CoachViewRow`
+carries `effectiveEffortMode`/`effectiveEffortValue` (resolved as `override ?? top-level value`),
+`onEffortModeChange`/`onEffortValueChange` closures bound to that lifter's name, and a numeric
+input + RPE/% chip toggle in the table row, wired directly to those callbacks. Switching mode
+converts the value losslessly via `convertEffort` (already imported in the hook). Changing a
+top-level selector (`setEffortMode`/`setEffortValue`) resets only the `effort` field's per-lifter
+overrides across all lifters — changing mode doesn't clear reps/exercise overrides and vice versa
+— so a lifter's override on a different field survives a global effort change. Per-row effort
+inputs render and stay interactive for every row regardless of `hasData`, consistent with how
+exercise/reps inputs already behave.
 
 **Facet filtering:** `useCoachViewSelection` also owns four optional conjugate-facet filters
 (Bar, Stance, Equipment, Additional Weight — the same vocabulary and `CONJUGATE_*` constants
