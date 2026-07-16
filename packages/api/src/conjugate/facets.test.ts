@@ -52,7 +52,7 @@ const rec = (canonical: string, tags: string[]): TaggedSetRecord => ({
 describe('canonicalsMatchingFacets', () => {
   const records = [
     rec('bench-ssb-close', ['bar:ssb', 'stance:close']),
-    rec('bench-standard-comp', ['bar:standard', 'stance:competition']),
+    rec('bench-standard-wide', ['bar:standard', 'stance:wide']),
     rec('bench-board-2', ['equip:board-2']),
     rec('bench-chains', ['addl:chains']),
     rec('bench-no-tags', []),
@@ -62,14 +62,14 @@ describe('canonicalsMatchingFacets', () => {
     [
       'no selection matches every canonical',
       {},
-      ['bench-ssb-close', 'bench-standard-comp', 'bench-board-2', 'bench-chains', 'bench-no-tags'],
+      ['bench-ssb-close', 'bench-standard-wide', 'bench-board-2', 'bench-chains', 'bench-no-tags'],
     ],
     ['single facet: bar', { bar: 'ssb' }, ['bench-ssb-close']],
-    ['single facet: stance', { stance: 'competition' }, ['bench-standard-comp']],
+    ['single facet: stance', { stance: 'wide' }, ['bench-standard-wide']],
     ['single facet: equipment', { equipment: 'board' }, ['bench-board-2']],
     ['single facet: addlWt', { addlWt: 'chains' }, ['bench-chains']],
-    ['combined facets: no match', { bar: 'ssb', stance: 'competition' }, []],
-    ['combined facets: match', { bar: 'standard', stance: 'competition' }, ['bench-standard-comp']],
+    ['combined facets: no match', { bar: 'ssb', stance: 'wide' }, []],
+    ['combined facets: match', { bar: 'standard', stance: 'wide' }, ['bench-standard-wide']],
     ['facet with no matching records', { bar: 'trap' }, []],
   ] as Array<[string, Parameters<typeof canonicalsMatchingFacets>[1], string[]]>)(
     '%s',
@@ -90,22 +90,17 @@ describe('canonicalsMatchingFacets', () => {
 
   it.each([
     ['comp-lift with bar:standard', { bar: 'standard' }, ['bench-comp-standard']],
-    ['comp-lift with stance:competition', { stance: 'competition' }, ['bench-comp-standard']],
+    ['comp-lift with stance:wide', { stance: 'wide' }, ['bench-comp-standard']],
     [
-      'comp-lift with both bar:standard and stance:competition',
-      { bar: 'standard', stance: 'competition' },
+      'comp-lift with both bar:standard and stance:wide',
+      { bar: 'standard', stance: 'wide' },
       ['bench-comp-standard'],
     ],
   ] as Array<[string, Parameters<typeof canonicalsMatchingFacets>[1], string[]]>)(
     'matches comp-lift records with realistic new tag shape: %s',
     (_, selection, expected) => {
       const compLiftRecords = [
-        rec('bench-comp-standard', [
-          'lift:bench',
-          'comp-lift',
-          'bar:standard',
-          'stance:competition',
-        ]),
+        rec('bench-comp-standard', ['lift:bench', 'comp-lift', 'bar:standard', 'stance:wide']),
       ];
       expect(canonicalsMatchingFacets(compLiftRecords, selection)).toEqual(new Set(expected));
     }

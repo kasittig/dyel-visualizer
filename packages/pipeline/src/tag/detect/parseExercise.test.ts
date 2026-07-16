@@ -89,3 +89,21 @@ describe('parseExercise deficit magnitude parsing', () => {
     }
   );
 });
+
+describe('parseExercise default stances for bare comp lifts', () => {
+  it.each([
+    ['bare Squat defaults to lowbar', 'Squat', 'lowbar'],
+    ['bare Bench defaults to wide', 'Bench', 'wide'],
+    ['bare Deadlift defaults to conventional', 'Deadlift', 'conventional'],
+  ])('%s', (_, input: string, expectedStance: string) => {
+    const result = parseExercise(input);
+    expect(result.stance).toBe(expectedStance);
+  });
+
+  it('removes competition/opposite as stance keywords (now plain tags)', () => {
+    // 'competition' and 'opposite' are no longer recognized as stance values;
+    // 'Competition Deadlift' parses with the default conventional stance
+    expect(parseExercise('Competition Deadlift').stance).toBe('conventional');
+    expect(parseExercise('Opposite Deadlift').stance).toBe('conventional');
+  });
+});

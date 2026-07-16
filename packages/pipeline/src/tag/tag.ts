@@ -57,7 +57,7 @@ export function resolveCanonicalNames(records: SetRecord[]) {
   return { resolved, unknown: [...unknown] };
 }
 
-export function tagRecords(records: SetRecord[], deadliftStance: 'sumo' | 'conventional' = 'sumo') {
+export function tagRecords(records: SetRecord[]) {
   const unknown = new Set<string>();
   const tagged = records.flatMap((r) => {
     // Re-parse the ORIGINAL raw name (preserved by resolveCanonicalNames), never the
@@ -70,7 +70,7 @@ export function tagRecords(records: SetRecord[], deadliftStance: 'sumo' | 'conve
       unknown.add(rawExercise);
       return [];
     }
-    const { tags, effects, range } = buildTagsAndEffects(rawExercise, deadliftStance);
+    const { tags, effects, range } = buildTagsAndEffects(rawExercise);
     return [{ ...r, canonical: r.exercise, tags, effects, baselineRange: range }];
   });
 
@@ -88,15 +88,14 @@ export function tagRecords(records: SetRecord[], deadliftStance: 'sumo' | 'conve
  */
 export function buildAccessoryTaggedRecords(
   records: SetRecord[],
-  unknownNames: string[],
-  deadliftStance: 'sumo' | 'conventional' = 'sumo'
+  unknownNames: string[]
 ): TaggedSetRecord[] {
   const unknownSet = new Set(unknownNames);
   return records
     .filter((r) => unknownSet.has(r.exercise))
     .map((r) => {
       const ex = parseExercise(r.exercise);
-      const { tags, effects, range } = buildTagsAndEffects(r.exercise, deadliftStance);
+      const { tags, effects, range } = buildTagsAndEffects(r.exercise);
       return {
         ...r,
         canonical: buildCanonical(ex, r.exercise),

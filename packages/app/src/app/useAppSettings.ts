@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import type { DateRange } from 'react-day-picker';
 import { useLocalStorageState } from '../shared/hooks/useLocalStorageState';
-import type { InputMode, PageTab, DeadliftStancePreference } from './appTabs';
+import type { InputMode, PageTab } from './appTabs';
 
 export function useAppSettings() {
   useState(() => {
@@ -32,10 +32,6 @@ export function useAppSettings() {
   const [refreshToken, setRefreshToken] = useState(0);
   const [activeTab, setActiveTab] = useLocalStorageState<PageTab>('dyel:activeTab', 'sigma');
   const [shownResetToken, setShownResetToken] = useState(0);
-  const [deadliftStance, setDeadliftStance] = useLocalStorageState<DeadliftStancePreference | null>(
-    'dyel:deadliftStance',
-    null
-  );
   const [dateRange, setDateRange] = useState<DateRange>({ from: undefined, to: undefined });
   const athleteBase = useMemo(() => ({ sex: 'M' as const, bodyweight: 80 }), []);
 
@@ -83,8 +79,6 @@ export function useAppSettings() {
     setActiveTab,
     shownResetToken,
     setShownResetToken,
-    deadliftStance,
-    setDeadliftStance,
     athleteBase,
     dateRange,
     setDateRange,

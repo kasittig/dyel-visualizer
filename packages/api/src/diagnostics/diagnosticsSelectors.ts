@@ -12,6 +12,7 @@ export interface DiagnosticVariant {
   staleDays: number;
   averageIndex: number;
   expectedBaseline: string | null;
+  isCompLift: boolean;
   addlWtOffset?: { offsetKg: number; n: number };
 }
 
@@ -37,6 +38,7 @@ export function selectDiagnosticVariants(
     staleDays: v.staleDays,
     averageIndex: v.averageIndex,
     expectedBaseline: v.expectedBaseline,
+    isCompLift: v.isCompLift,
     addlWtOffset: v.addlWtOffset,
   }));
 

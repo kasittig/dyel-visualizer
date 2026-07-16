@@ -62,20 +62,36 @@ describe('defaultCompExerciseCanonical', () => {
   ])('%s', (_, records, expected) => expect(defaultCompExerciseCanonical(records)).toBe(expected));
 
   it.each([
-    ['matches sumo target stance', 'sumo', 'deadlift-sumo'],
-    ['matches conventional target stance', 'conventional', 'deadlift-conventional'],
-    ['falls back when target stance is absent', 'conventional', 'deadlift-sumo'],
-  ])('deadlift stance routing: %s', (_, stance, expected) => {
-    const r = [
-      rec('deadlift-sumo', ['lift:deadlift', 'stance:sumo']),
-      rec('deadlift-conventional', ['lift:deadlift', 'stance:conventional']),
-      rec('deadlift-box', ['lift:deadlift', 'equip:box']),
-    ];
-    expect(
-      defaultCompExerciseCanonical(
-        expected === 'deadlift-sumo' && stance === 'conventional' ? [r[0], r[2]] : r,
-        stance
-      )
-    ).toBe(expected);
-  });
+    [
+      'selects sumo with competition tag',
+      [
+        rec('deadlift-sumo', ['lift:deadlift', 'stance:sumo', 'competition', 'equip:rack']),
+        rec('deadlift-conventional', ['lift:deadlift', 'stance:conventional', 'equip:rack']),
+      ],
+      'deadlift-sumo',
+    ],
+    [
+      'selects conventional with competition tag',
+      [
+        rec('deadlift-sumo', ['lift:deadlift', 'stance:sumo', 'equip:rack']),
+        rec('deadlift-conventional', [
+          'lift:deadlift',
+          'stance:conventional',
+          'competition',
+          'equip:rack',
+        ]),
+      ],
+      'deadlift-conventional',
+    ],
+    [
+      'falls back to first when no competition tag',
+      [
+        rec('deadlift-sumo', ['lift:deadlift', 'stance:sumo', 'equip:rack']),
+        rec('deadlift-box', ['lift:deadlift', 'equip:box', 'equip:rack']),
+      ],
+      'deadlift-sumo',
+    ],
+  ])('deadlift stance routing: %s', (_, records, expected) =>
+    expect(defaultCompExerciseCanonical(records)).toBe(expected)
+  );
 });

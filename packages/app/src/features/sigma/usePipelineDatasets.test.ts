@@ -86,7 +86,7 @@ describe('usePipelineDatasets', () => {
     mockUsePipelineModel.mockReturnValue({
       status: 'success',
       model: pipelineModelMock({
-        athlete: { sex: 'F', bodyweight: 65, deadliftStance: 'conventional' },
+        athlete: { sex: 'F', bodyweight: 65 },
         pointsByDeriver: new Map([['e1rm', [p(1609459200000, 100), p(1612137600000, 110)]]]),
         pointsByDeriverAdjusted: new Map([
           ['e1rm', [p(1609459200000, 100), p(1612137600000, 110)]],

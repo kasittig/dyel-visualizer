@@ -4,11 +4,11 @@ import type { NormalizationModel } from '../derive/normalize';
 import type { Point } from '../types';
 
 const day = (n: number) => Date.now() - (30 - n) * 86400000;
-const pt = (s: string, v: number, t: number): Point => ({
+const pt = (s: string, v: number, t: number, tags: string[] = []): Point => ({
   t,
   v,
   series: s,
-  tags: new Set(['lift:bench']),
+  tags: new Set(['lift:bench', ...tags]),
 });
 
 const map = new Map([
@@ -165,5 +165,38 @@ describe('diagnose evaluations', () => {
     expect(
       unmapped.variants.find((v) => v.canonical === 'bench-board-4')?.expectedBaseline
     ).toBeNull();
+  });
+
+  it('tracks isCompLift tag correctly', () => {
+    const compReport = diagnose(
+      [pt('bench', 100, day(20), ['comp-lift'])],
+      model,
+      map,
+      opts,
+      undefined
+    );
+    expect(compReport.variants[0]).toMatchObject({ canonical: 'bench', isCompLift: true });
+
+    const variantReport = diagnose(
+      [basePt, pt('bench-chains', 82, day(20))],
+      model,
+      map,
+      opts,
+      undefined
+    );
+    const variant = variantReport.variants.find((v) => v.canonical === 'bench-chains')!;
+    expect(variant.isCompLift).toBe(false);
+
+    const compVariantReport = diagnose(
+      [pt('bench', 100, day(20), ['comp-lift']), pt('bench-chains', 82, day(20), ['comp-lift'])],
+      model,
+      map,
+      opts,
+      undefined
+    );
+    const compBase = compVariantReport.variants.find((v) => v.canonical === 'bench')!;
+    const compVariant = compVariantReport.variants.find((v) => v.canonical === 'bench-chains')!;
+    expect(compBase.isCompLift).toBe(true);
+    expect(compVariant.isCompLift).toBe(true);
   });
 });

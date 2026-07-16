@@ -18,7 +18,7 @@ function TestConsumerThrows() {
   return null;
 }
 
-const mockAthlete: AthleteContext = { sex: 'M', bodyweight: 90, deadliftStance: 'sumo' };
+const mockAthlete: AthleteContext = { sex: 'M', bodyweight: 90 };
 const mockModel = pipelineModelMock({ athlete: mockAthlete });
 
 describe('PipelineContext', () => {

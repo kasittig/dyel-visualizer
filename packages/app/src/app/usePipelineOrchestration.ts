@@ -1,7 +1,7 @@
 import { useMemo, useEffect } from 'react';
-import type { AthleteContext, PipelineModel, RawInput } from '@dyel/api';
-import { buildPipelineModel, parseTextData, resolveAutoDeadliftStance } from '@dyel/api';
-import type { InputMode, DeadliftStancePreference } from './appTabs';
+import type { AthleteContext, PipelineModel } from '@dyel/api';
+import { buildPipelineModel, parseTextData } from '@dyel/api';
+import type { InputMode } from './appTabs';
 import { extractSheetRef } from '../features/data-source/sheetRef';
 import {
   serializeSheetCache,
@@ -18,26 +18,12 @@ export interface PipelineOrchestrationReturn {
   textValidation: { hasText: boolean; isValid: boolean };
 }
 
-function buildResolvedModel(
-  raw: RawInput[],
-  base: Pick<AthleteContext, 'sex' | 'bodyweight'>,
-  stance: DeadliftStancePreference | null
-): PipelineModel {
-  const model = buildPipelineModel(raw, { ...base, deadliftStance: stance ?? 'sumo' });
-  if (stance !== null) {
-    return model;
-  }
-  const res = resolveAutoDeadliftStance(model);
-  return res === 'sumo' ? model : buildPipelineModel(raw, { ...base, deadliftStance: res });
-}
-
 export function usePipelineOrchestration(
   inputMode: InputMode,
   url: string,
   pastedText: string,
   refreshToken: number,
-  athleteBase: Pick<AthleteContext, 'sex' | 'bodyweight'>,
-  deadliftStance: DeadliftStancePreference | null
+  athleteBase: Pick<AthleteContext, 'sex' | 'bodyweight'>
 ): PipelineOrchestrationReturn {
   const ref = useMemo(() => extractSheetRef(url), [url]);
   const { status: rawStatus, raw } = useResolvedRawInput(inputMode, url, pastedText, refreshToken);
@@ -57,12 +43,12 @@ export function usePipelineOrchestration(
     try {
       return {
         status: 'success' as const,
-        model: buildResolvedModel(raw, athleteBase, deadliftStance),
+        model: buildPipelineModel(raw, athleteBase),
       };
     } catch {
       return { status: 'error' as const, model: null };
     }
-  }, [raw, athleteBase, deadliftStance, rawStatus]);
+  }, [raw, athleteBase, rawStatus]);
 
   useEffect(() => {
     if (pStatus === 'success' && raw.length && ref && inputMode === 'url') {
@@ -86,13 +72,13 @@ export function usePipelineOrchestration(
     }
     if (['idle', 'loading'].includes(rawStatus) && effRaw !== raw && effRaw.length) {
       try {
-        return buildResolvedModel(effRaw, athleteBase, deadliftStance);
+        return buildPipelineModel(effRaw, athleteBase);
       } catch {
         return null;
       }
     }
     return null;
-  }, [pStatus, model, rawStatus, effRaw, raw, athleteBase, deadliftStance]);
+  }, [pStatus, model, rawStatus, effRaw, raw, athleteBase]);
 
   return {
     status: pStatus === 'success' || effModel !== null ? 'success' : pStatus,

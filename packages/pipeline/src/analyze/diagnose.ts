@@ -15,6 +15,7 @@ export interface VariantAssessment {
   expectedBaseline: string | null;
   staleDays: number;
   effects: Quality[];
+  isCompLift: boolean;
   addlWtOffset?: { offsetKg: number; n: number };
 }
 export interface DiagnosticsReport {
@@ -92,6 +93,7 @@ export function diagnose(
       actualE1rmKg: latest.v,
       staleDays: (timestamp - latest.t) / DAY_MS,
       effects: effectsByCanonical.get(canonical) ?? [],
+      isCompLift: latest.tags.has('comp-lift'),
       ...(addlWt && addlWt.n > 0
         ? { addlWtOffset: { offsetKg: addlWt.offsetKg, n: addlWt.n } }
         : {}),

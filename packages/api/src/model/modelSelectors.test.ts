@@ -140,11 +140,10 @@ describe('modelSelectors', () => {
 
   describe('defaultCanonicalsByLift', () => {
     it.each([
-      ['no records', emptyTabRows(), 'sumo', {}],
+      ['no records', emptyTabRows(), {}],
       [
         'single lift with canonical',
         tabRowsWithSquat({ squatAll: [rec(1, 'squat-comp', null, ['comp-lift'])] }),
-        'sumo',
         { squat: 'squat-comp' },
       ],
       [
@@ -159,11 +158,10 @@ describe('modelSelectors', () => {
             volume: [],
           },
         },
-        'sumo',
         { squat: 'squat-comp', bench: 'bench-comp', deadlift: 'deadlift-sumo' },
       ],
-    ])('%s', (_, tabRows, stance, expected) => {
-      expect(defaultCanonicalsByLift(tabRows, stance as any)).toEqual(expected);
+    ])('%s', (_, tabRows, expected) => {
+      expect(defaultCanonicalsByLift(tabRows)).toEqual(expected);
     });
   });
 

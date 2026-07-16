@@ -10,9 +10,15 @@ import {
   classifyAccessorySubtypes,
   buildAccessoryTaggedRecords,
 } from './tag/tag';
+import { parseExercise } from './tag/detect/parseExercise';
 import { derivers } from './derive/derivers';
 import type { NormalizationModel } from './derive/normalize';
-import { fitNormalizationModel, normalizeE1rm, offsetAdjustRecords } from './derive/normalize';
+import {
+  fitNormalizationModel,
+  normalizeE1rm,
+  offsetAdjustRecords,
+  projectE1RMToDate,
+} from './derive/normalize';
 import type { AthleteContext } from './derive/athlete';
 import type { DiagnosticsReport } from './analyze/diagnose';
 import { diagnose } from './analyze/diagnose';
@@ -82,6 +88,49 @@ function buildPointsByLabelFromGroups(
   });
 }
 
+// Projects a canonical's day-level max-effort e1RM trend forward to `now`, rather than
+// returning the raw all-time best, so a stale PR in one stance can't outrank current
+// strength in the other when comparing stances (see tagCompetitionDeadliftStance). Uses
+// `e1rm-max-effort` (drops any day classified as all-speed-work via `isSpeedWork` — 2+ sets
+// with no RPE), matching how the rest of the app treats comp-lift day-level data for legacy
+// parity (see derive/CLAUDE.md) — note this means a lifter who never logs RPE at all will have
+// most of their multi-set training days excluded from this specific comparison, leaving only
+// their single-set max-attempt days to determine the trend.
+function projectedE1RMForCanonical(
+  compTagged: TaggedSetRecord[],
+  canonical: string,
+  now: number
+): number | null {
+  const dayGroups = Map.groupBy(
+    compTagged.filter((r) => r.canonical === canonical),
+    (r) => r.date
+  );
+  const points = Array.from(dayGroups.values())
+    .map((daySets) => ({ t: daySets[0].date, v: derivers['e1rm-max-effort'].derive(daySets) }))
+    .filter((p): p is { t: number; v: number } => p.v !== null);
+  return points.length ? projectE1RMToDate(points, now) : null;
+}
+
+function tagCompetitionDeadliftStance(
+  compTagged: TaggedSetRecord[],
+  now: number
+): TaggedSetRecord[] {
+  const sumo = projectedE1RMForCanonical(compTagged, 'deadlift-sumo', now);
+  const conv = projectedE1RMForCanonical(compTagged, 'deadlift', now);
+  const stronger = sumo !== null && conv !== null && sumo > conv ? 'sumo' : 'conventional';
+
+  return compTagged.map((r) => {
+    if (!r.canonical.startsWith('deadlift')) {
+      return r;
+    }
+    const ex = parseExercise(r.meta?.rawExercise ?? r.canonical);
+    if (ex.stance !== stronger) {
+      return r;
+    }
+    return { ...r, tags: new Set([...r.tags, 'competition']) };
+  });
+}
+
 export function runPipelineModel(
   raw: RawInput[],
   athlete: AthleteContext,
@@ -107,24 +156,24 @@ export function runPipelineModel(
   }
 
   const { resolved, unknown: unkAliases } = resolveCanonicalNames(records);
-  const { tagged: compTagged, unknown: unkCanonicals } = tagRecords(
-    resolved,
-    athlete.deadliftStance
-  );
+  const { tagged: rawCompTagged, unknown: unkCanonicals } = tagRecords(resolved);
+  // The athlete's stronger deadlift stance (sumo vs. conventional) is derived automatically
+  // from their own e1RM data, projected forward to `now` so a stale PR in one stance can't
+  // outrank current strength in the other, never supplied externally — see
+  // tagCompetitionDeadliftStance. Every downstream consumer of deadlift records' tags
+  // (fitNormalizationModel, tagged, pointsByDeriver, etc.) must see the patched tags, so this
+  // runs before any of them.
+  const compTagged = tagCompetitionDeadliftStance(rawCompTagged, timestamp);
   const unknownExercises = [...new Set([...unkAliases, ...unkCanonicals])];
   // Accessory exercises are always filtered into `unknownExercises` above (see tag/CLAUDE.md's
   // "Unknown heuristic") — resolveCanonicalNames/tagRecords never tag them. Build real tagged
   // records for them separately so they still show up in PipelineModel.tagged (and can be
   // subtype-classified below), without affecting normalization/points/diagnostics, which stay
   // scoped to comp-lift records only (compTagged).
-  const accessoryTagged = buildAccessoryTaggedRecords(
-    records,
-    unknownExercises,
-    athlete.deadliftStance
-  );
+  const accessoryTagged = buildAccessoryTaggedRecords(records, unknownExercises);
   const tagged = classifyAccessorySubtypes([...compTagged, ...accessoryTagged]);
 
-  const model = fitNormalizationModel(compTagged, { minSamples: 1 }, athlete);
+  const model = fitNormalizationModel(compTagged, { minSamples: 1 });
   const allDeriverIds = Object.keys(derivers);
 
   // Points/diagnostics are built from the FULL tagged set (compTagged + accessoryTagged), not

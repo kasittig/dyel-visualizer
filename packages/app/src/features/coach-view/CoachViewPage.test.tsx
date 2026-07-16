@@ -14,7 +14,7 @@ const { useCoachViewSelection } = await import('./useCoachViewSelection');
 
 afterEach(cleanup);
 
-const mockAthlete: AthleteContext = { sex: 'M', bodyweight: 90, deadliftStance: 'sumo' };
+const mockAthlete: AthleteContext = { sex: 'M', bodyweight: 90 };
 const mockPipelineModel = (overrides?: Partial<PipelineModel>): PipelineModel => ({
   model: { baseline: {}, variantFactor: {}, addlWtOffset: {} },
   diagnostics: { byCanonical: new Map(), allFindings: [] },

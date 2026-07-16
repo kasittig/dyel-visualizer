@@ -24,14 +24,10 @@ export interface VisualizerData {
 
 export function useVisualizerData(
   model: PipelineModel | null,
-  dateRange: DateRange,
-  deadliftStance: string
+  dateRange: DateRange
 ): VisualizerData {
   const tabRows = useMemo(() => groupByLiftType(model?.tagged ?? []), [model]);
-  const canonicals = useMemo(
-    () => defaultCanonicalsByLift(tabRows, deadliftStance),
-    [tabRows, deadliftStance]
-  );
+  const canonicals = useMemo(() => defaultCanonicalsByLift(tabRows), [tabRows]);
   const visibleLiftIds = useMemo(
     () => new Set(visibleLiftTypes(tabRows, dateRange?.from, dateRange?.to)),
     [tabRows, dateRange?.from, dateRange?.to]

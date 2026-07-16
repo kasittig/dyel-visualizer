@@ -1,4 +1,5 @@
-import type { ConjugateAddlWt, ConjugateStance, ParsedExercise } from './conjugate-types';
+import type { ConjugateAddlWt, ParsedExercise } from './conjugate-types';
+import { DEFAULT_STANCE } from './conjugate-types';
 import { classifyAccessoryEffects } from './detectors';
 import modifierEffects from './modifier-effects.json';
 import { parseExercise } from './parseExercise';
@@ -8,19 +9,6 @@ const ADDL_WT_SLUGS: Record<ConjugateAddlWt, string> = {
   bands: 'bands',
   'rev. bands': 'rev-bands',
 };
-
-export function resolveDeadliftStance(
-  stance: ConjugateStance | null,
-  preference: 'sumo' | 'conventional'
-): 'sumo' | 'conventional' {
-  if (stance === 'sumo' || stance === 'conventional') {
-    return stance;
-  }
-  if (stance === 'opposite') {
-    return preference === 'sumo' ? 'conventional' : 'sumo';
-  }
-  return preference;
-}
 
 const effectsMap = modifierEffects as Record<
   string,
@@ -53,7 +41,7 @@ export function buildCanonical(ex: ParsedExercise, rawName: string): string {
   if (ex.bar && ex.bar !== 'standard') {
     parts.push(ex.bar);
   }
-  if (ex.stance && ex.stance !== 'competition') {
+  if (ex.stance && ex.stance !== DEFAULT_STANCE[ex.type]) {
     parts.push(ex.stance);
   }
   if (ex.equipment) {
@@ -76,10 +64,11 @@ export interface BaselineRange {
   max: number;
 }
 
-export function buildTagsAndEffects(
-  rawName: string,
-  deadliftStance: 'sumo' | 'conventional' = 'sumo'
-): { tags: Set<string>; effects: string[]; range: BaselineRange | null } {
+export function buildTagsAndEffects(rawName: string): {
+  tags: Set<string>;
+  effects: string[];
+  range: BaselineRange | null;
+} {
   const ex = parseExercise(rawName);
   const tags = new Set<string>([`lift:${ex.type}`]),
     effects = new Set<string>();
@@ -87,16 +76,14 @@ export function buildTagsAndEffects(
     return { tags, effects: classifyAccessoryEffects(rawName), range: null };
   }
 
+  const defaultStance = DEFAULT_STANCE[ex.type];
   const hasBar = ex.bar && ex.bar !== 'standard',
-    hasStance = ex.stance && ex.stance !== 'competition';
-  const isBareVariant = !hasBar && !hasStance && !ex.equipment && !ex.addlWts.length;
+    hasExplicitStance = ex.stance && ex.stance !== defaultStance;
+  const isBareVariant = !hasBar && !hasExplicitStance && !ex.equipment && !ex.addlWts.length;
   if (isBareVariant) {
     tags.add('comp-lift');
     tags.add('bar:standard');
-    tags.add('stance:competition');
-  }
-  if (isBareVariant && ex.type !== 'deadlift') {
-    return { tags, effects: [], range: null };
+    tags.add(`stance:${defaultStance}`);
   }
 
   const add = (k: string) => {
@@ -119,13 +106,14 @@ export function buildTagsAndEffects(
     };
   };
 
-  // Hoist resolvedStance computation for deadlifts (needed for stance-qualified equipment lookup)
+  // Hoist resolvedStance computation for deadlifts (needed for stance-qualified equipment lookup).
+  // Bare deadlift now defaults to 'conventional' via DEFAULT_STANCE, so this matches every
+  // deadlift record, not just explicitly-typed sumo/conventional ones.
   let resolvedStance: 'sumo' | 'conventional' | null = null;
-  const isDeadliftExplicitStance =
-    ex.type === 'deadlift' &&
-    (ex.stance === 'sumo' || ex.stance === 'conventional' || ex.stance === 'opposite');
-  if (isDeadliftExplicitStance) {
-    resolvedStance = resolveDeadliftStance(ex.stance, deadliftStance);
+  const isDeadliftSumoOrConventional =
+    ex.type === 'deadlift' && (ex.stance === 'sumo' || ex.stance === 'conventional');
+  if (isDeadliftSumoOrConventional) {
+    resolvedStance = ex.stance as 'sumo' | 'conventional';
   }
 
   if (ex.equipment) {
@@ -169,16 +157,24 @@ export function buildTagsAndEffects(
     applyRange(targetKey);
   }
 
-  if (isDeadliftExplicitStance) {
+  if (isDeadliftSumoOrConventional) {
     add(`stance:${resolvedStance}:deadlift`);
     applyRange(`stance:${resolvedStance}:deadlift`);
-    if (hasStance) {
+    if (hasExplicitStance) {
       tags.add(`stance:${ex.stance}`);
     }
-  } else if (hasStance) {
-    tags.add(`stance:${ex.stance}`);
+  } else if (ex.stance) {
+    if (hasExplicitStance) {
+      tags.add(`stance:${ex.stance}`);
+    }
     add(`stance:${ex.stance}:${ex.type}`);
     applyRange(`stance:${ex.stance}:${ex.type}`);
+  }
+
+  if (ex.type === 'squat' && ex.stance === 'lowbar') {
+    tags.add('competition');
+  } else if (ex.type === 'bench' && ex.stance === 'wide') {
+    tags.add('competition');
   }
 
   if (hasBar) {

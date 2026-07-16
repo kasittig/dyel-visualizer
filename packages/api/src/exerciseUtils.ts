@@ -23,6 +23,9 @@ const LIFT_DISPLAY: Record<string, string> = {
   bench: 'Bench Press',
   deadlift: 'Deadlift',
 };
+const STANCE_DISPLAY: Record<string, string> = {
+  lowbar: 'Low Bar',
+};
 const BAND_MAGS = new Set(['light', 'mini', 'micro', 'heavy', 'medium']);
 const LIFTS = new Set(['squat', 'bench', 'deadlift']);
 const ADDL_SETS = new Set(['chains', 'bands', 'rev-bands']);
@@ -30,14 +33,15 @@ const BAND_UNSPEC = new Set([...BAND_MAGS, 'unspecified'] as string[]);
 
 function formatEquipmentToken(equipment: string, magnitude: string | null): string {
   const m = magnitude ?? '1';
+  const m_int = parseInt(m);
   if (equipment === 'board') {
     return `${m}-Board`;
   }
   if (equipment === 'blocks') {
-    return `${m}" Blocks`;
+    return `${m_int * 2}" Block`;
   }
   if (equipment === 'deficit') {
-    return `${m}" Deficit`;
+    return `${m_int * 2}" Deficit`;
   }
   return cap(equipment);
 }
@@ -120,8 +124,8 @@ export function formatExerciseDisplayName(canonical: string): string {
     if (bar && BAR_DISPLAY[bar]) {
       pre.push(BAR_DISPLAY[bar]);
     }
-    if (stance && stance !== 'competition') {
-      pre.push(cap(stance));
+    if (stance) {
+      pre.push(STANCE_DISPLAY[stance] ?? cap(stance));
     }
     if (equipment) {
       pre.push(formatEquipmentToken(equipment, equipMag));

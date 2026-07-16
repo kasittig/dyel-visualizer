@@ -40,7 +40,7 @@ const mockPipelineResult = (overrides?: Partial<PipelineResult>): PipelineResult
     unnormalized: [],
     model: { baseline: {}, variantFactor: {}, addlWtOffset: {} },
     diagnostics: { byCanonical: new Map(), allFindings: [] },
-    athlete: { sex: 'M', bodyweight: 90, deadliftStance: 'sumo' },
+    athlete: { sex: 'M', bodyweight: 90 },
     pointsByDeriver: new Map(),
     pointsByLabelByDeriver: new Map(),
     pointsByDeriverAdjusted: new Map(),

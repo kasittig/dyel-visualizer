@@ -6,21 +6,16 @@ import { AccessoryTable } from './AccessoryTable';
 import { CollapsibleSection } from '../../shared/components/CollapsibleSection';
 import { EditableDateChip } from '../../shared/components/EditableDateChip';
 import type { DateRange } from 'react-day-picker';
-import type { DeadliftStancePreference } from '../../app/appTabs';
 
 export function LiftTabPanel({
   liftType,
   targetName,
-  deadliftStance,
-  onDeadliftStanceChange,
   dateRange,
   onDateRangeChange,
   unit,
 }: {
   liftType: string;
   targetName: string;
-  deadliftStance: DeadliftStancePreference;
-  onDeadliftStanceChange: (s: DeadliftStancePreference) => void;
   dateRange: DateRange;
   onDateRangeChange: (range: DateRange) => void;
   unit: 'lbs' | 'kg';
@@ -53,8 +48,6 @@ export function LiftTabPanel({
       />
       <DiagnosticsPanel
         liftType={liftType}
-        deadliftStance={deadliftStance}
-        onDeadliftStanceChange={onDeadliftStanceChange}
         onVariationClick={handleVariationClick}
         highlightedVariation={selectedVariation}
         unit={unit}

@@ -6,4 +6,4 @@ export {
   type PipelineOrchestrationReturn,
 } from './usePipelineOrchestration';
 export { useVisualizerData, type VisualizerData } from './useVisualizerData';
-export { type PageTab, type InputMode, type DeadliftStancePreference, MAIN_TABS } from './appTabs';
+export { type PageTab, type InputMode, MAIN_TABS } from './appTabs';

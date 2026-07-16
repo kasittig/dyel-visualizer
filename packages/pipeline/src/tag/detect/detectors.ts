@@ -21,7 +21,7 @@ export const BAR_DETECTORS: Detector<ConjugateBar> = [
   ['goblet', (l) => l.includes('goblet')],
 ];
 export const STANCE_DETECTORS: Detector<ConjugateStance> = [
-  ['slingshot', (l) => l.includes('slingshot')],
+  ['slingshot', (l) => l.includes('slingshot') || l.includes('sling shot')],
   ['builder', (l) => l.includes('builder')],
   ['close', (l, t) => l.includes('close grip') || t.has('close') || t.has('cg')],
   ['narrow', (l) => l.includes('narrow')],
@@ -31,8 +31,7 @@ export const STANCE_DETECTORS: Detector<ConjugateStance> = [
   ['sumo', (l) => l.includes('sumo')],
   ['conventional', (l) => l.includes('conventional')],
   ['front', (l) => l.includes('front')],
-  ['opposite', (l) => l.includes('opposite')],
-  ['competition', (l) => l.includes('competition')],
+  ['lowbar', (l) => l.includes('low bar') || l.includes('low-bar') || l.includes('lowbar')],
 ];
 export const EQUIPMENT_DETECTORS: Detector<ConjugateEquipment> = [
   ['incline', (l) => l.includes('incline')],
@@ -55,7 +54,8 @@ export const TYPE_DETECTORS: Detector<LiftType> = [
       l.includes('incline') ||
       l.includes('decline') ||
       l.includes('board') ||
-      l.includes('slingshot'),
+      l.includes('slingshot') ||
+      l.includes('sling shot'),
   ],
   ['deadlift', (l) => l.includes('deadlift') || l.includes('rack') || l.includes('rdl')],
 ];
