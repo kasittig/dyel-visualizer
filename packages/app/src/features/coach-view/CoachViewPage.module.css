@@ -151,6 +151,13 @@
   text-decoration: none;
 }
 
+/* Link icon opening a lifter's sheet in the main DYEL Visualizer, shown inline next to their
+   name in the Lifter column */
+.lifterLink {
+  composes: accentLink;
+  margin-left: 0.4rem;
+}
+
 .coachViewPage {
   text-align: left;
   padding: 1rem;

@@ -74,3 +74,13 @@ lifters' data, mirroring `RepCalculator`'s existing hide-the-accessory-chip-when
 Changing the lift type resets only the top-level `explicitDisplayName` (not
 `overridesByLifter`), consistent with how the four conjugate facets and a global exercise/reps
 change already behave.
+
+**Per-lifter sheet link:** Each `CoachViewRow` carries `url` (the lifter's Google Sheet URL,
+threaded straight through from `LifterPipelineResult.url` — present on both the `'success'` and
+`'error'` variants, so it's set for placeholder rows too). `CoachViewPage.tsx` renders a small
+"↗" link icon next to the lifter's name in the Lifter column, pointing to
+`/?sheet=<encodeURIComponent(row.url)>` with `target="_blank"` — this deep-links into the main
+DYEL Visualizer (`useAppSettings.ts`'s `sheet` query-param handling) pre-loaded with that
+lifter's data, opened in a new tab so the coach doesn't lose their place in the comparison table.
+The link is absolute-pathed (`/?sheet=...`, not `?sheet=...`) since Coach View itself lives at
+`/coach`, and a relative href would otherwise resolve against that path instead of the app root.

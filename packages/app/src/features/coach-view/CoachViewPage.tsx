@@ -59,7 +59,22 @@ export function CoachViewPage() {
       variant: 'left',
       headerClassName: styles.lifterHeaderCell,
       cellClassName: () => clsx(styles.cellTint, styles.lifterCell),
-      render: (row) => <span title={row.lifterName}>{row.lifterName}</span>,
+      render: (row) => (
+        <span title={row.lifterName}>
+          {row.lifterName}
+          {row.url && (
+            <a
+              href={`/?sheet=${encodeURIComponent(row.url)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={styles.lifterLink}
+              title={`Open ${row.lifterName} in DYEL Visualizer`}
+            >
+              ↗
+            </a>
+          )}
+        </span>
+      ),
     },
     {
       header: 'Exercise',

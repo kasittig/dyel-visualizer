@@ -36,6 +36,7 @@ interface LifterOverride {
 
 export interface CoachViewRow {
   lifterName: string;
+  url: string;
   e1rmDisplay: string;
   e1rmProjectedDisplay: string | null;
   e1rmSourceLabel: string | null;
@@ -204,6 +205,7 @@ export function useCoachViewSelection(results: LifterPipelineResult[]) {
 
     const placeholder = (
       name: string,
+      url: string,
       msg: string,
       shared: Pick<
         CoachViewRow,
@@ -217,6 +219,7 @@ export function useCoachViewSelection(results: LifterPipelineResult[]) {
       >
     ): CoachViewRow => ({
       lifterName: name,
+      url,
       e1rmDisplay: '—',
       e1rmProjectedDisplay: null,
       e1rmSourceLabel: null,
@@ -278,14 +281,14 @@ export function useCoachViewSelection(results: LifterPipelineResult[]) {
       };
 
       if (res.status !== 'success') {
-        return placeholder(res.name, 'Failed to load', shared);
+        return placeholder(res.name, res.url, 'Failed to load', shared);
       }
 
       const points = (res.model.pointsByDeriver.get('e1rm') ?? []).filter(
         (p) => p.series === effectiveCanonical
       );
       if (!points.length) {
-        return placeholder(res.name, 'No data logged', shared);
+        return placeholder(res.name, res.url, 'No data logged', shared);
       }
 
       const latestPoint = points.reduce((max, curr) => (curr.t > max.t ? curr : max));
@@ -304,6 +307,7 @@ export function useCoachViewSelection(results: LifterPipelineResult[]) {
 
       return {
         lifterName: res.name,
+        url: res.url,
         e1rmDisplay: formatWeight(latestPoint.v, unit),
         e1rmProjectedDisplay: estimate ? formatWeight(estimate.e1rm, unit) : null,
         e1rmSourceLabel: formatE1RMSourceLabel(estimate),
