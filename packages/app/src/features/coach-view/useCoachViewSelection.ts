@@ -205,13 +205,16 @@ export function useCoachViewSelection(results: LifterPipelineResult[]) {
     const placeholder = (
       name: string,
       msg: string,
-      effectiveDisplayName: string,
-      effectiveReps: number,
-      onExerciseChange: (displayName: string) => void,
-      onRepsChange: (reps: number) => void,
-      availableExerciseOptions: string[],
-      showProjected: boolean,
-      onToggleProjected: () => void
+      shared: Pick<
+        CoachViewRow,
+        | 'effectiveDisplayName'
+        | 'effectiveReps'
+        | 'onExerciseChange'
+        | 'onRepsChange'
+        | 'availableExerciseOptions'
+        | 'showProjected'
+        | 'onToggleProjected'
+      >
     ): CoachViewRow => ({
       lifterName: name,
       e1rmDisplay: '—',
@@ -223,13 +226,7 @@ export function useCoachViewSelection(results: LifterPipelineResult[]) {
       targetWeightProjectedDisplay: null,
       sessionCount: 0,
       hasData: false,
-      effectiveDisplayName,
-      effectiveReps,
-      availableExerciseOptions,
-      onExerciseChange,
-      onRepsChange,
-      showProjected,
-      onToggleProjected,
+      ...shared,
     });
 
     return results.map((res): CoachViewRow => {
@@ -270,40 +267,31 @@ export function useCoachViewSelection(results: LifterPipelineResult[]) {
           return next;
         });
 
+      const shared = {
+        effectiveDisplayName,
+        effectiveReps,
+        onExerciseChange,
+        onRepsChange,
+        availableExerciseOptions,
+        showProjected,
+        onToggleProjected,
+      };
+
       if (res.status !== 'success') {
-        return placeholder(
-          res.name,
-          'Failed to load',
-          effectiveDisplayName,
-          effectiveReps,
-          onExerciseChange,
-          onRepsChange,
-          availableExerciseOptions,
-          showProjected,
-          onToggleProjected
-        );
+        return placeholder(res.name, 'Failed to load', shared);
       }
 
       const points = (res.model.pointsByDeriver.get('e1rm') ?? []).filter(
         (p) => p.series === effectiveCanonical
       );
       if (!points.length) {
-        return placeholder(
-          res.name,
-          'No data logged',
-          effectiveDisplayName,
-          effectiveReps,
-          onExerciseChange,
-          onRepsChange,
-          availableExerciseOptions,
-          showProjected,
-          onToggleProjected
-        );
+        return placeholder(res.name, 'No data logged', shared);
       }
 
       const latestPoint = points.reduce((max, curr) => (curr.t > max.t ? curr : max));
       const detail = buildLastSessionDetailForCanonical(res.model.tagged, effectiveCanonical!);
       const sessionCount = buildSessionCountForCanonical(res.model.tagged, effectiveCanonical!);
+      const lastSessionParts = detail ? formatLastSessionParts(detail, unit) : null;
 
       const estimate = resolveE1RMEstimate({
         liftType: liftTypeByDisplayName.get(effectiveDisplayName)!,
@@ -314,31 +302,20 @@ export function useCoachViewSelection(results: LifterPipelineResult[]) {
         e1rmPoints: res.model.pointsByDeriver.get('e1rm-max-effort') ?? [],
       });
 
-      const e1rmProjectedDisplay = estimate ? formatWeight(estimate.e1rm, unit) : null;
-      const e1rmSourceLabel = formatE1RMSourceLabel(estimate);
-
-      const targetWeightProjectedDisplay = estimate
-        ? `${roundTo5(predictWeightForReps(convertE1RMToDisplayUnit(estimate.e1rm, unit), effectiveReps))} ${unit}`
-        : null;
-
       return {
         lifterName: res.name,
         e1rmDisplay: formatWeight(latestPoint.v, unit),
-        e1rmProjectedDisplay,
-        e1rmSourceLabel,
-        lastPerformedDateDisplay: detail ? formatLastSessionParts(detail, unit).date : '',
-        lastPerformedSetDisplay: detail ? formatLastSessionParts(detail, unit).setLine : '',
+        e1rmProjectedDisplay: estimate ? formatWeight(estimate.e1rm, unit) : null,
+        e1rmSourceLabel: formatE1RMSourceLabel(estimate),
+        lastPerformedDateDisplay: lastSessionParts?.date ?? '',
+        lastPerformedSetDisplay: lastSessionParts?.setLine ?? '',
         targetWeightDisplay: `${roundTo5(predictWeightForReps(convertE1RMToDisplayUnit(latestPoint.v, unit), effectiveReps))} ${unit}`,
-        targetWeightProjectedDisplay,
+        targetWeightProjectedDisplay: estimate
+          ? `${roundTo5(predictWeightForReps(convertE1RMToDisplayUnit(estimate.e1rm, unit), effectiveReps))} ${unit}`
+          : null,
         sessionCount,
         hasData: true,
-        effectiveDisplayName,
-        effectiveReps,
-        availableExerciseOptions,
-        onExerciseChange,
-        onRepsChange,
-        showProjected,
-        onToggleProjected,
+        ...shared,
       };
     });
   }, [
