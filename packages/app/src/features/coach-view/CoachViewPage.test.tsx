@@ -48,6 +48,7 @@ const mockLifterResult = (
 const mockRow = (overrides?: Partial<CoachViewRow>): CoachViewRow =>
   ({
     lifterName: 'John Doe',
+    url: 'https://example.com/john-doe',
     e1rmDisplay: '225 lbs',
     e1rmProjectedDisplay: null,
     e1rmSourceLabel: null,
@@ -201,6 +202,27 @@ describe('CoachViewPage', () => {
       expect(screen.getByText(text)).toBeDefined();
     }
   );
+
+  it('renders a link icon next to the lifter name linking to their sheet', () => {
+    vi.mocked(useCoachViewData).mockReturnValue({
+      status: 'success',
+      data: [mockLifterResult('Lifter 1')],
+    });
+    vi.mocked(useCoachViewSelection).mockReturnValue(
+      mockSelection({
+        selectedCanonical: 'bench-classic',
+        selectedDisplayName: 'Bench Press',
+        rows: [mockRow({ lifterName: 'Alice', url: 'https://example.com/alice-sheet' })],
+      })
+    );
+    render(<CoachViewPage />);
+
+    const link = screen.getByTitle('Open Alice in DYEL Visualizer');
+    expect(link.getAttribute('href')).toBe(
+      `/?sheet=${encodeURIComponent('https://example.com/alice-sheet')}`
+    );
+    expect(link.getAttribute('target')).toBe('_blank');
+  });
 
   it('shows empty state when exercise selected but no rows', () => {
     vi.mocked(useCoachViewData).mockReturnValue({
