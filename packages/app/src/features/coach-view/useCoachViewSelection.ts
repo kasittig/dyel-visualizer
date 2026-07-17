@@ -42,6 +42,7 @@ export interface CoachViewRow {
   lastPerformedDateDisplay: string;
   lastPerformedSetDisplay: string;
   targetWeightDisplay: string;
+  targetWeightProjectedDisplay: string | null;
   sessionCount: number;
   hasData: boolean;
   effectiveDisplayName: string;
@@ -49,6 +50,8 @@ export interface CoachViewRow {
   availableExerciseOptions: string[];
   onExerciseChange: (displayName: string) => void;
   onRepsChange: (reps: number) => void;
+  showProjected: boolean;
+  onToggleProjected: () => void;
 }
 
 export function useCoachViewSelection(results: LifterPipelineResult[]) {
@@ -77,6 +80,10 @@ export function useCoachViewSelection(results: LifterPipelineResult[]) {
   });
 
   const [overridesByLifter, setOverridesByLifter] = useState<Map<string, LifterOverride>>(
+    new Map()
+  );
+
+  const [showProjectedByLifter, setShowProjectedByLifter] = useState<Map<string, boolean>>(
     new Map()
   );
 
@@ -202,7 +209,9 @@ export function useCoachViewSelection(results: LifterPipelineResult[]) {
       effectiveReps: number,
       onExerciseChange: (displayName: string) => void,
       onRepsChange: (reps: number) => void,
-      availableExerciseOptions: string[]
+      availableExerciseOptions: string[],
+      showProjected: boolean,
+      onToggleProjected: () => void
     ): CoachViewRow => ({
       lifterName: name,
       e1rmDisplay: '—',
@@ -211,6 +220,7 @@ export function useCoachViewSelection(results: LifterPipelineResult[]) {
       lastPerformedDateDisplay: '—',
       lastPerformedSetDisplay: msg,
       targetWeightDisplay: '—',
+      targetWeightProjectedDisplay: null,
       sessionCount: 0,
       hasData: false,
       effectiveDisplayName,
@@ -218,6 +228,8 @@ export function useCoachViewSelection(results: LifterPipelineResult[]) {
       availableExerciseOptions,
       onExerciseChange,
       onRepsChange,
+      showProjected,
+      onToggleProjected,
     });
 
     return results.map((res): CoachViewRow => {
@@ -250,6 +262,14 @@ export function useCoachViewSelection(results: LifterPipelineResult[]) {
           return next;
         });
 
+      const showProjected = showProjectedByLifter.get(res.name) ?? false;
+      const onToggleProjected = () =>
+        setShowProjectedByLifter((prev) => {
+          const next = new Map(prev);
+          next.set(res.name, !(prev.get(res.name) ?? false));
+          return next;
+        });
+
       if (res.status !== 'success') {
         return placeholder(
           res.name,
@@ -258,7 +278,9 @@ export function useCoachViewSelection(results: LifterPipelineResult[]) {
           effectiveReps,
           onExerciseChange,
           onRepsChange,
-          availableExerciseOptions
+          availableExerciseOptions,
+          showProjected,
+          onToggleProjected
         );
       }
 
@@ -273,7 +295,9 @@ export function useCoachViewSelection(results: LifterPipelineResult[]) {
           effectiveReps,
           onExerciseChange,
           onRepsChange,
-          availableExerciseOptions
+          availableExerciseOptions,
+          showProjected,
+          onToggleProjected
         );
       }
 
@@ -293,6 +317,10 @@ export function useCoachViewSelection(results: LifterPipelineResult[]) {
       const e1rmProjectedDisplay = estimate ? formatWeight(estimate.e1rm, unit) : null;
       const e1rmSourceLabel = formatE1RMSourceLabel(estimate);
 
+      const targetWeightProjectedDisplay = estimate
+        ? `${roundTo5(predictWeightForReps(convertE1RMToDisplayUnit(estimate.e1rm, unit), effectiveReps))} ${unit}`
+        : null;
+
       return {
         lifterName: res.name,
         e1rmDisplay: formatWeight(latestPoint.v, unit),
@@ -301,6 +329,7 @@ export function useCoachViewSelection(results: LifterPipelineResult[]) {
         lastPerformedDateDisplay: detail ? formatLastSessionParts(detail, unit).date : '',
         lastPerformedSetDisplay: detail ? formatLastSessionParts(detail, unit).setLine : '',
         targetWeightDisplay: `${roundTo5(predictWeightForReps(convertE1RMToDisplayUnit(latestPoint.v, unit), effectiveReps))} ${unit}`,
+        targetWeightProjectedDisplay,
         sessionCount,
         hasData: true,
         effectiveDisplayName,
@@ -308,6 +337,8 @@ export function useCoachViewSelection(results: LifterPipelineResult[]) {
         availableExerciseOptions,
         onExerciseChange,
         onRepsChange,
+        showProjected,
+        onToggleProjected,
       };
     });
   }, [
@@ -317,6 +348,7 @@ export function useCoachViewSelection(results: LifterPipelineResult[]) {
     results,
     selectedDisplayName,
     overridesByLifter,
+    showProjectedByLifter,
     displayNameToCanonical,
     exerciseOptions,
     liftTypeByDisplayName,

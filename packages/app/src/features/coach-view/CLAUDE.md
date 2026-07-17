@@ -57,7 +57,7 @@ projection logic). The projected fields read from the `'e1rm-max-effort'` derive
 canonicals with no max-effort points — in that case `CoachViewPage.tsx`'s `E1RMCell` just renders
 `e1rmDisplay` as a plain, non-toggleable value (same fallback behavior described in
 `shared/components/CLAUDE.md`). `e1rmSourceLabel` is built via the shared `formatE1RMSourceLabel`
-function from `@dyel/api` (the same function `RepCalculator` now uses), providing the single source of truth for the format.
+function from `@dyel/api` (the same function `RepCalculator` now uses), providing the single source of truth for the format. Each row also carries `showProjected` (whether to display the projected e1RM) and `onToggleProjected` (callback to flip it), backed by a new per-lifter `showProjectedByLifter: Map<string, boolean>` in `useCoachViewSelection`, mirroring the existing `overridesByLifter` pattern. Additionally, each row carries `targetWeightProjectedDisplay` (the target weight computed from the projected e1RM via inverse Epley + `roundTo5`, or null if unavailable), allowing `CoachViewPage.tsx`'s Target weight column to render the projected weight when `showProjected` is true, keeping the column in sync with the e1RM column's toggle state.
 
 **Lift type filtering:** `useCoachViewSelection` also owns a fifth, independent filter — Lift
 Type (`selectedLiftType`, one of `squat`/`bench`/`deadlift`/`accessory`, via `canonicalLiftType`

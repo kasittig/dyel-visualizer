@@ -95,7 +95,10 @@ export function CoachViewPage() {
     {
       header: 'Target weight',
       cellClassName: (row) => clsx(styles.cellTint, !row.hasData && styles.placeholderCell),
-      render: (row) => row.targetWeightDisplay,
+      render: (row) =>
+        row.showProjected && row.targetWeightProjectedDisplay
+          ? row.targetWeightProjectedDisplay
+          : row.targetWeightDisplay,
     },
     {
       header: 'e1RM',
@@ -106,6 +109,8 @@ export function CoachViewPage() {
           actualDisplay={row.e1rmDisplay}
           projectedDisplay={row.e1rmProjectedDisplay}
           sourceLabel={row.e1rmSourceLabel}
+          showProjected={row.showProjected}
+          onToggle={row.onToggleProjected}
         />
       ),
     },

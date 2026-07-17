@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach } from 'vitest';
+import { describe, it, expect, afterEach, vi } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { E1RMCell } from './E1RMCell';
 
@@ -57,5 +57,45 @@ describe('E1RMCell', () => {
     // Icon should be hidden again
     expect(icon.getAttribute('title')).toBeNull();
     expect(icon.style.visibility).toBe('hidden');
+  });
+
+  it('uses controlled mode when both showProjected and onToggle are provided', () => {
+    const onToggle = vi.fn();
+    const { rerender } = render(
+      <E1RMCell
+        actualDisplay="300"
+        projectedDisplay="320"
+        sourceLabel="controlled source"
+        showProjected={false}
+        onToggle={onToggle}
+      />
+    );
+
+    // Initially shows actualDisplay because showProjected=false
+    expect(screen.getByText('300')).toBeDefined();
+
+    // Click calls onToggle instead of internal state update
+    const button = screen.getByRole('button');
+    fireEvent.click(button);
+    expect(onToggle).toHaveBeenCalledTimes(1);
+
+    // Rerender with showProjected=true
+    rerender(
+      <E1RMCell
+        actualDisplay="300"
+        projectedDisplay="320"
+        sourceLabel="controlled source"
+        showProjected={true}
+        onToggle={onToggle}
+      />
+    );
+
+    // Now shows projectedDisplay
+    expect(screen.getByText('320')).toBeDefined();
+
+    // Icon should be visible and titled
+    const icon = screen.getByText('*');
+    expect(icon.getAttribute('title')).toBe('controlled source');
+    expect(icon.style.visibility).toBe('visible');
   });
 });

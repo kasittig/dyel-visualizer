@@ -500,6 +500,118 @@ describe('useCoachViewSelection', () => {
     });
   });
 
+  describe('projected e1RM toggle and targetWeightProjectedDisplay', () => {
+    it('computes targetWeightProjectedDisplay from estimate.e1rm when available', () => {
+      const model = minimalPipelineModel(
+        [taggedRecord('squat', 'Squat', { weight: 150 })],
+        [point(1, 100, 'squat')],
+        [point(1, 150, 'squat')],
+        { 'lift:squat': 'squat' }
+      );
+      const { result } = renderHook(() => useCoachViewSelection([successResult('Lifter', model)]));
+
+      act(() => result.current.setSelectedDisplayName('Squat'));
+      const row = result.current.rows[0];
+
+      expect(row.targetWeightProjectedDisplay).not.toBeNull();
+      expect(typeof row.targetWeightProjectedDisplay).toBe('string');
+      expect(row.targetWeightProjectedDisplay).toContain('lbs');
+    });
+
+    it('sets targetWeightProjectedDisplay to null when estimate is null', () => {
+      const model = minimalPipelineModel([], [point(1, 100, 'squat')], [], {});
+      const { result } = renderHook(() => useCoachViewSelection([successResult('Lifter', model)]));
+
+      act(() => result.current.setSelectedDisplayName('Squat'));
+      const row = result.current.rows[0];
+
+      expect(row.targetWeightProjectedDisplay).toBeNull();
+    });
+
+    it('showProjected defaults to false', () => {
+      const model = minimalPipelineModel([], [point(1, 100, 'squat')]);
+      const { result } = renderHook(() => useCoachViewSelection([successResult('Lifter', model)]));
+
+      act(() => result.current.setSelectedDisplayName('Squat'));
+      const row = result.current.rows[0];
+
+      expect(row.showProjected).toBe(false);
+    });
+
+    it('onToggleProjected toggles showProjected state per lifter', () => {
+      const model = minimalPipelineModel([], [point(1, 100, 'squat')]);
+      const { result } = renderHook(() => useCoachViewSelection([successResult('Lifter', model)]));
+
+      act(() => result.current.setSelectedDisplayName('Squat'));
+      const row = () => result.current.rows[0];
+
+      expect(row().showProjected).toBe(false);
+
+      act(() => row().onToggleProjected());
+      expect(row().showProjected).toBe(true);
+
+      act(() => row().onToggleProjected());
+      expect(row().showProjected).toBe(false);
+    });
+
+    it('per-lifter toggle state is independent across lifters', () => {
+      const l1 = minimalPipelineModel([], [point(1, 100, 'squat')]);
+      const l2 = minimalPipelineModel([], [point(1, 150, 'squat')]);
+      const { result } = renderHook(() =>
+        useCoachViewSelection([successResult('Alice', l1), successResult('Bob', l2)])
+      );
+
+      act(() => result.current.setSelectedDisplayName('Squat'));
+      const aliceRow = () => result.current.rows.find((r) => r.lifterName === 'Alice')!;
+      const bobRow = () => result.current.rows.find((r) => r.lifterName === 'Bob')!;
+
+      expect(aliceRow().showProjected).toBe(false);
+      expect(bobRow().showProjected).toBe(false);
+
+      act(() => aliceRow().onToggleProjected());
+
+      expect(aliceRow().showProjected).toBe(true);
+      expect(bobRow().showProjected).toBe(false);
+
+      act(() => bobRow().onToggleProjected());
+
+      expect(aliceRow().showProjected).toBe(true);
+      expect(bobRow().showProjected).toBe(true);
+    });
+
+    it('placeholder rows have showProjected/onToggleProjected and targetWeightProjectedDisplay null', () => {
+      const { result } = renderHook(() =>
+        useCoachViewSelection([
+          successResult('SquatOnly', minimalPipelineModel([], [point(1, 100, 'squat')])),
+          successResult('BenchOnly', minimalPipelineModel([], [point(1, 90, 'bench')])),
+        ])
+      );
+
+      act(() => result.current.setSelectedDisplayName('Squat'));
+      const benchRow = result.current.rows.find((r) => r.lifterName === 'BenchOnly')!;
+
+      expect(benchRow.targetWeightProjectedDisplay).toBeNull();
+      expect(benchRow.showProjected).toBe(false);
+      expect(typeof benchRow.onToggleProjected).toBe('function');
+    });
+
+    it('errored rows have showProjected/onToggleProjected and targetWeightProjectedDisplay null', () => {
+      const { result } = renderHook(() =>
+        useCoachViewSelection([
+          successResult('Lifter', minimalPipelineModel([], [point(1, 100, 'squat')])),
+          errorResult('Broken'),
+        ])
+      );
+
+      act(() => result.current.setSelectedDisplayName('Squat'));
+      const errorRow = result.current.rows.find((r) => r.lifterName === 'Broken')!;
+
+      expect(errorRow.targetWeightProjectedDisplay).toBeNull();
+      expect(errorRow.showProjected).toBe(false);
+      expect(typeof errorRow.onToggleProjected).toBe('function');
+    });
+  });
+
   describe('availableExerciseOptions filtering', () => {
     it.each([
       [
