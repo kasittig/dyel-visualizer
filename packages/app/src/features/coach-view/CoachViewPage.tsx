@@ -11,6 +11,7 @@ import {
   TableHeadRow,
   TableRow,
   TableCell,
+  E1RMCell,
 } from '../../shared/components';
 import styles from './CoachViewPage.module.css';
 
@@ -74,11 +75,6 @@ export function CoachViewPage() {
       ),
     },
     {
-      header: 'Target weight',
-      cellClassName: (row) => clsx(styles.cellTint, !row.hasData && styles.placeholderCell),
-      render: (row) => row.targetWeightDisplay,
-    },
-    {
       header: 'Reps',
       variant: 'left',
       cellClassName: () => clsx(styles.cellTint, styles.repsCell),
@@ -97,14 +93,31 @@ export function CoachViewPage() {
       ),
     },
     {
+      header: 'Target weight',
+      cellClassName: (row) => clsx(styles.cellTint, !row.hasData && styles.placeholderCell),
+      render: (row) =>
+        row.showProjected && row.targetWeightProjectedDisplay
+          ? row.targetWeightProjectedDisplay
+          : row.targetWeightDisplay,
+    },
+    {
+      header: 'e1RM',
+      cellClassName: (row) =>
+        clsx(styles.cellTint, styles.columnDivider, !row.hasData && styles.placeholderCell),
+      render: (row) => (
+        <E1RMCell
+          actualDisplay={row.e1rmDisplay}
+          projectedDisplay={row.e1rmProjectedDisplay}
+          sourceLabel={row.e1rmSourceLabel}
+          showProjected={row.showProjected}
+          onToggle={row.onToggleProjected}
+        />
+      ),
+    },
+    {
       header: 'Sessions',
       cellClassName: (row) => clsx(styles.cellTint, !row.hasData && styles.placeholderCell),
       render: (row) => row.sessionCount,
-    },
-    {
-      header: 'Date',
-      cellClassName: (row) => clsx(styles.cellTint, !row.hasData && styles.placeholderCell),
-      render: (row) => row.lastPerformedDateDisplay,
     },
     {
       header: 'Last set',
@@ -112,9 +125,9 @@ export function CoachViewPage() {
       render: (row) => row.lastPerformedSetDisplay,
     },
     {
-      header: 'e1RM',
+      header: 'Date',
       cellClassName: (row) => clsx(styles.cellTint, !row.hasData && styles.placeholderCell),
-      render: (row) => row.e1rmDisplay,
+      render: (row) => row.lastPerformedDateDisplay,
     },
   ];
 

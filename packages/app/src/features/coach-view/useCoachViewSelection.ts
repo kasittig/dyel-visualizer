@@ -19,10 +19,12 @@ import {
   CONJUGATE_STANCES,
   convertE1RMToDisplayUnit,
   detectDataUnit,
+  formatE1RMSourceLabel,
   formatLastSessionParts,
   formatWeight,
   groupByLiftType,
   predictWeightForReps,
+  resolveE1RMEstimate,
   roundTo5,
 } from '@dyel/api';
 import { LIFT_TYPE_ORDER } from '../../shared/liftTypeLabels';
@@ -35,9 +37,12 @@ interface LifterOverride {
 export interface CoachViewRow {
   lifterName: string;
   e1rmDisplay: string;
+  e1rmProjectedDisplay: string | null;
+  e1rmSourceLabel: string | null;
   lastPerformedDateDisplay: string;
   lastPerformedSetDisplay: string;
   targetWeightDisplay: string;
+  targetWeightProjectedDisplay: string | null;
   sessionCount: number;
   hasData: boolean;
   effectiveDisplayName: string;
@@ -45,6 +50,8 @@ export interface CoachViewRow {
   availableExerciseOptions: string[];
   onExerciseChange: (displayName: string) => void;
   onRepsChange: (reps: number) => void;
+  showProjected: boolean;
+  onToggleProjected: () => void;
 }
 
 export function useCoachViewSelection(results: LifterPipelineResult[]) {
@@ -73,6 +80,10 @@ export function useCoachViewSelection(results: LifterPipelineResult[]) {
   });
 
   const [overridesByLifter, setOverridesByLifter] = useState<Map<string, LifterOverride>>(
+    new Map()
+  );
+
+  const [showProjectedByLifter, setShowProjectedByLifter] = useState<Map<string, boolean>>(
     new Map()
   );
 
@@ -194,24 +205,28 @@ export function useCoachViewSelection(results: LifterPipelineResult[]) {
     const placeholder = (
       name: string,
       msg: string,
-      effectiveDisplayName: string,
-      effectiveReps: number,
-      onExerciseChange: (displayName: string) => void,
-      onRepsChange: (reps: number) => void,
-      availableExerciseOptions: string[]
+      shared: Pick<
+        CoachViewRow,
+        | 'effectiveDisplayName'
+        | 'effectiveReps'
+        | 'onExerciseChange'
+        | 'onRepsChange'
+        | 'availableExerciseOptions'
+        | 'showProjected'
+        | 'onToggleProjected'
+      >
     ): CoachViewRow => ({
       lifterName: name,
       e1rmDisplay: '—',
+      e1rmProjectedDisplay: null,
+      e1rmSourceLabel: null,
       lastPerformedDateDisplay: '—',
       lastPerformedSetDisplay: msg,
       targetWeightDisplay: '—',
+      targetWeightProjectedDisplay: null,
       sessionCount: 0,
       hasData: false,
-      effectiveDisplayName,
-      effectiveReps,
-      availableExerciseOptions,
-      onExerciseChange,
-      onRepsChange,
+      ...shared,
     });
 
     return results.map((res): CoachViewRow => {
@@ -244,50 +259,63 @@ export function useCoachViewSelection(results: LifterPipelineResult[]) {
           return next;
         });
 
+      const showProjected = showProjectedByLifter.get(res.name) ?? false;
+      const onToggleProjected = () =>
+        setShowProjectedByLifter((prev) => {
+          const next = new Map(prev);
+          next.set(res.name, !(prev.get(res.name) ?? false));
+          return next;
+        });
+
+      const shared = {
+        effectiveDisplayName,
+        effectiveReps,
+        onExerciseChange,
+        onRepsChange,
+        availableExerciseOptions,
+        showProjected,
+        onToggleProjected,
+      };
+
       if (res.status !== 'success') {
-        return placeholder(
-          res.name,
-          'Failed to load',
-          effectiveDisplayName,
-          effectiveReps,
-          onExerciseChange,
-          onRepsChange,
-          availableExerciseOptions
-        );
+        return placeholder(res.name, 'Failed to load', shared);
       }
 
       const points = (res.model.pointsByDeriver.get('e1rm') ?? []).filter(
         (p) => p.series === effectiveCanonical
       );
       if (!points.length) {
-        return placeholder(
-          res.name,
-          'No data logged',
-          effectiveDisplayName,
-          effectiveReps,
-          onExerciseChange,
-          onRepsChange,
-          availableExerciseOptions
-        );
+        return placeholder(res.name, 'No data logged', shared);
       }
 
       const latestPoint = points.reduce((max, curr) => (curr.t > max.t ? curr : max));
       const detail = buildLastSessionDetailForCanonical(res.model.tagged, effectiveCanonical!);
       const sessionCount = buildSessionCountForCanonical(res.model.tagged, effectiveCanonical!);
+      const lastSessionParts = detail ? formatLastSessionParts(detail, unit) : null;
+
+      const estimate = resolveE1RMEstimate({
+        liftType: liftTypeByDisplayName.get(effectiveDisplayName)!,
+        targetCanonical: effectiveCanonical!,
+        baselineName: undefined,
+        today: new Date(),
+        model: res.model.model,
+        e1rmPoints: res.model.pointsByDeriver.get('e1rm-max-effort') ?? [],
+      });
 
       return {
         lifterName: res.name,
         e1rmDisplay: formatWeight(latestPoint.v, unit),
-        lastPerformedDateDisplay: detail ? formatLastSessionParts(detail, unit).date : '',
-        lastPerformedSetDisplay: detail ? formatLastSessionParts(detail, unit).setLine : '',
+        e1rmProjectedDisplay: estimate ? formatWeight(estimate.e1rm, unit) : null,
+        e1rmSourceLabel: formatE1RMSourceLabel(estimate),
+        lastPerformedDateDisplay: lastSessionParts?.date ?? '',
+        lastPerformedSetDisplay: lastSessionParts?.setLine ?? '',
         targetWeightDisplay: `${roundTo5(predictWeightForReps(convertE1RMToDisplayUnit(latestPoint.v, unit), effectiveReps))} ${unit}`,
+        targetWeightProjectedDisplay: estimate
+          ? `${roundTo5(predictWeightForReps(convertE1RMToDisplayUnit(estimate.e1rm, unit), effectiveReps))} ${unit}`
+          : null,
         sessionCount,
         hasData: true,
-        effectiveDisplayName,
-        effectiveReps,
-        availableExerciseOptions,
-        onExerciseChange,
-        onRepsChange,
+        ...shared,
       };
     });
   }, [
@@ -297,8 +325,10 @@ export function useCoachViewSelection(results: LifterPipelineResult[]) {
     results,
     selectedDisplayName,
     overridesByLifter,
+    showProjectedByLifter,
     displayNameToCanonical,
     exerciseOptions,
+    liftTypeByDisplayName,
   ]);
 
   return {

@@ -9,6 +9,9 @@ import {
   resolveE1RMEstimate,
   convertE1RMToDisplayUnit,
   roundTo5,
+  selectBestE1RMPoint,
+  formatWeight,
+  formatE1RMSourceLabel,
 } from '@dyel/api';
 import type {
   LiftType,
@@ -100,10 +103,23 @@ export function usePipelineRepCalculator(
     });
   }, [effectiveCanonical, pStatus, pModel, baselineNames, liftType]);
 
-  const displayE1rm = useMemo(
-    () => (estimate ? convertE1RMToDisplayUnit(estimate.e1rm, unit) : null),
+  const actualE1rmDisplay = useMemo(() => {
+    if (pStatus !== 'success' || !pModel || !effectiveCanonical) {
+      return null;
+    }
+    const points = (pModel.pointsByDeriver.get('e1rm-max-effort') ?? []).filter(
+      (p) => p.series === effectiveCanonical
+    );
+    const actualE1rm = selectBestE1RMPoint(points);
+    return actualE1rm ? formatWeight(actualE1rm.e1rm, unit) : null;
+  }, [effectiveCanonical, pStatus, pModel, unit]);
+
+  const projectedE1rmDisplay = useMemo(
+    () => (estimate ? formatWeight(estimate.e1rm, unit) : null),
     [estimate, unit]
   );
+
+  const e1rmSourceLabel = useMemo(() => formatE1RMSourceLabel(estimate), [estimate]);
 
   const syncWeightFromReps = (rVal: string) => {
     const r = parseFloat(rVal);
@@ -153,7 +169,9 @@ export function usePipelineRepCalculator(
     weight,
     unit,
     estimate,
-    displayE1rm,
+    actualE1rmDisplay,
+    projectedE1rmDisplay,
+    e1rmSourceLabel,
     handleSelectedCanonicalChange: (label: string) => {
       const canonical = canonicalByLabel.get(label);
       if (!canonical) {

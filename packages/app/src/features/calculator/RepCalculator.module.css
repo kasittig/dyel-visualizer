@@ -130,13 +130,6 @@
   line-height: 1;
 }
 
-.sourceNote {
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--text);
-  margin: 0;
-}
-
 .emptyNote {
   font-family: var(--mono);
   font-size: 11px;

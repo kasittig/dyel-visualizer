@@ -9,7 +9,7 @@ import type { LiftType, SplitRows } from '@dyel/api';
 import { usePipelineRepCalculator } from './usePipelineRepCalculator';
 import styles from './RepCalculator.module.css';
 import { CollapsibleSection } from '../../shared/components/CollapsibleSection';
-import { TypeaheadDropdown } from '../../shared/components';
+import { E1RMCell, TypeaheadDropdown } from '../../shared/components';
 import { LIFT_TYPE_LABELS, LIFT_TYPE_ORDER } from '../../shared/liftTypeLabels';
 
 export function RepCalculator({
@@ -43,7 +43,9 @@ export function RepCalculator({
     handleSelectedCanonicalChange,
     unit,
     estimate,
-    displayE1rm,
+    actualE1rmDisplay,
+    projectedE1rmDisplay,
+    e1rmSourceLabel,
   } = usePipelineRepCalculator(tabRows, baselineNames);
 
   return (
@@ -188,15 +190,13 @@ export function RepCalculator({
                 </div>
               ))}
               <div className={styles.e1rmDisplay}>
-                e1RM: {Math.round(displayE1rm!)} {unit}
+                e1RM:{' '}
+                <E1RMCell
+                  actualDisplay={actualE1rmDisplay ?? projectedE1rmDisplay ?? ''}
+                  projectedDisplay={projectedE1rmDisplay}
+                  sourceLabel={e1rmSourceLabel}
+                />
               </div>
-              <p className={styles.sourceNote}>
-                {estimate.method === 'exact'
-                  ? `Based on ${estimate.sourceName} · `
-                  : `Projected from ${estimate.sourceName} (`}
-                {estimate.date.toLocaleDateString()}
-                {estimate.method === 'variantFactor' && ')'}
-              </p>
             </>
           )}
         </div>

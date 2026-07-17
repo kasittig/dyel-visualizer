@@ -45,21 +45,27 @@ const mockLifterResult = (
     ? { status: 'error', name, url: `https://example.com{name}`, message: 'Failed to load' }
     : { status: 'success', name, url: `https://example.com{name}`, model: mockPipelineModel() };
 
-const mockRow = (overrides?: Partial<CoachViewRow>): CoachViewRow => ({
-  lifterName: 'John Doe',
-  e1rmDisplay: '225 lbs',
-  lastPerformedDateDisplay: '1/1',
-  lastPerformedSetDisplay: 'Today',
-  targetWeightDisplay: '185 lbs',
-  sessionCount: 4,
-  hasData: true,
-  effectiveDisplayName: 'Bench Press',
-  effectiveReps: 1,
-  availableExerciseOptions: ['Bench Press', 'Squat', 'Deadlift'],
-  onExerciseChange: vi.fn(),
-  onRepsChange: vi.fn(),
-  ...overrides,
-});
+const mockRow = (overrides?: Partial<CoachViewRow>): CoachViewRow =>
+  ({
+    lifterName: 'John Doe',
+    e1rmDisplay: '225 lbs',
+    e1rmProjectedDisplay: null,
+    e1rmSourceLabel: null,
+    lastPerformedDateDisplay: '1/1',
+    lastPerformedSetDisplay: 'Today',
+    targetWeightDisplay: '185 lbs',
+    targetWeightProjectedDisplay: null,
+    showProjected: false,
+    onToggleProjected: vi.fn(),
+    sessionCount: 4,
+    hasData: true,
+    effectiveDisplayName: 'Bench Press',
+    effectiveReps: 1,
+    availableExerciseOptions: ['Bench Press', 'Squat', 'Deadlift'],
+    onExerciseChange: vi.fn(),
+    onRepsChange: vi.fn(),
+    ...overrides,
+  }) as CoachViewRow;
 
 const mockSelection = (overrides?: Partial<SelectionState>): SelectionState => ({
   exerciseOptions: ['Bench Press', 'Squat', 'Deadlift'],
@@ -411,5 +417,68 @@ describe('CoachViewPage', () => {
 
     expect(screen.getByRole('button', { name: 'All' }).className).toMatch(/chipActive/);
     expect(screen.getByRole('button', { name: 'Squat' }).className).not.toMatch(/chipActive/);
+  });
+
+  it('renders a toggleable e1RM cell when a projected value differs from actual', () => {
+    const onToggleProjected = vi.fn();
+    vi.mocked(useCoachViewData).mockReturnValue({
+      status: 'success',
+      data: [mockLifterResult('Lifter 1')],
+    });
+    vi.mocked(useCoachViewSelection).mockReturnValue(
+      mockSelection({
+        selectedCanonical: 'bench-classic',
+        selectedDisplayName: 'Bench Press',
+        rows: [
+          mockRow({
+            lifterName: 'Alice',
+            e1rmDisplay: '225 lbs',
+            e1rmProjectedDisplay: '230 lbs',
+            e1rmSourceLabel: 'Based on Bench Press · 1/1/2024',
+            onToggleProjected,
+          }),
+        ],
+      })
+    );
+    render(<CoachViewPage />);
+
+    expect(screen.getByText('225 lbs')).toBeDefined();
+    fireEvent.click(screen.getByRole('button', { name: /225 lbs/ }));
+    expect(onToggleProjected).toHaveBeenCalled();
+  });
+
+  it('toggling e1RM projection also changes the Target weight display for that row', () => {
+    const onToggleProjected = vi.fn();
+    vi.mocked(useCoachViewData).mockReturnValue({
+      status: 'success',
+      data: [mockLifterResult('Lifter 1')],
+    });
+    vi.mocked(useCoachViewSelection).mockReturnValue(
+      mockSelection({
+        selectedCanonical: 'bench-classic',
+        selectedDisplayName: 'Bench Press',
+        rows: [
+          mockRow({
+            lifterName: 'Alice',
+            e1rmDisplay: '225 lbs',
+            e1rmProjectedDisplay: '230 lbs',
+            e1rmSourceLabel: 'Based on Bench Press · 1/1/2024',
+            targetWeightDisplay: '185 lbs',
+            targetWeightProjectedDisplay: '188 lbs',
+            showProjected: false,
+            onToggleProjected,
+          }),
+        ],
+      })
+    );
+    render(<CoachViewPage />);
+
+    // Initially shows actual values
+    expect(screen.getByText('225 lbs')).toBeDefined();
+    expect(screen.getByText('185 lbs')).toBeDefined();
+
+    // Toggle the e1RM projection
+    fireEvent.click(screen.getByRole('button', { name: /225 lbs/ }));
+    expect(onToggleProjected).toHaveBeenCalled();
   });
 });

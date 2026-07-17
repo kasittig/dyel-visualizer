@@ -100,6 +100,7 @@ export {
   predictRepsForWeight,
   convertE1RMToDisplayUnit,
   resolveE1RMEstimate,
+  formatE1RMSourceLabel,
   roundTo5,
 } from './repCalculator/repCalculatorUtils';
 export type { E1RMEstimate } from './repCalculator/repCalculatorUtils';
