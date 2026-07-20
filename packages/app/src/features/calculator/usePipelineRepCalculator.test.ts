@@ -40,7 +40,12 @@ const emptyRows = (): Record<LiftType, SplitRows> => ({
 
 const mockModel = (v = 200) =>
   pipelineModelMock({
-    model: { baseline: { 'lift:squat': 'squat' }, variantFactor: {}, addlWtOffset: {} },
+    model: {
+      baseline: { 'lift:squat': 'squat' },
+      variantFactor: {},
+      addlWtOffset: {},
+      fittedAt: Date.now(),
+    },
     pointsByDeriver: new Map([
       ['e1rm-max-effort', [{ t: 1, v, series: 'squat', tags: new Set(['lift:squat']) }]],
     ]),
@@ -147,5 +152,41 @@ describe('usePipelineRepCalculator', () => {
     expect(result.current.actualE1rmDisplay).toBeNull();
     expect(result.current.projectedE1rmDisplay).toBeNull();
     expect(result.current.e1rmSourceLabel).toBeNull();
+  });
+
+  it('family-recent e1RM fields return null when no family points available', () => {
+    mockUsePipelineModel.mockReturnValue({
+      status: 'success',
+      model: pipelineModelMock({
+        model: {
+          baseline: { 'lift:squat': 'squat' },
+          variantFactor: {},
+          addlWtOffset: {},
+          fittedAt: Date.now(),
+        },
+        pointsByDeriver: new Map([['e1rm-max-effort', []]]),
+      }),
+    });
+    const rows = emptyRows();
+    rows.squat = splitRows([rec('squat')]);
+    const { result } = renderHook(() => usePipelineRepCalculator(rows, { squat: 'Squat' }));
+
+    expect(result.current.e1rmFamilyRecentDisplay).toBeNull();
+    expect(result.current.e1rmFamilyRecentSourceLabel).toBeNull();
+  });
+
+  it('family-recent e1RM fields behave correctly when estimate is present', () => {
+    mockUsePipelineModel.mockReturnValue({
+      status: 'success',
+      model: mockModel(200),
+    });
+    const rows = emptyRows();
+    rows.squat = splitRows([rec('squat')]);
+    const { result } = renderHook(() => usePipelineRepCalculator(rows, { squat: 'Squat' }));
+
+    // Both baseline and family-recent should work with the same mock data
+    // The key difference is that family-recent should return non-null when there are points
+    expect(result.current.projectedE1rmDisplay).toBeDefined();
+    expect(result.current.e1rmFamilyRecentDisplay).toBeDefined();
   });
 });

@@ -124,6 +124,8 @@ export function CoachViewPage() {
           actualDisplay={row.e1rmDisplay}
           projectedDisplay={row.e1rmProjectedDisplay}
           sourceLabel={row.e1rmSourceLabel}
+          projectedFamilyRecentDisplay={row.e1rmFamilyRecentDisplay}
+          familyRecentSourceLabel={row.e1rmFamilyRecentSourceLabel}
           showProjected={row.showProjected}
           onToggle={row.onToggleProjected}
         />

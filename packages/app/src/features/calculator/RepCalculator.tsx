@@ -46,6 +46,8 @@ export function RepCalculator({
     actualE1rmDisplay,
     projectedE1rmDisplay,
     e1rmSourceLabel,
+    e1rmFamilyRecentDisplay,
+    e1rmFamilyRecentSourceLabel,
   } = usePipelineRepCalculator(tabRows, baselineNames);
 
   return (
@@ -195,6 +197,8 @@ export function RepCalculator({
                   actualDisplay={actualE1rmDisplay ?? projectedE1rmDisplay ?? ''}
                   projectedDisplay={projectedE1rmDisplay}
                   sourceLabel={e1rmSourceLabel}
+                  projectedFamilyRecentDisplay={e1rmFamilyRecentDisplay}
+                  familyRecentSourceLabel={e1rmFamilyRecentSourceLabel}
                 />
               </div>
             </>

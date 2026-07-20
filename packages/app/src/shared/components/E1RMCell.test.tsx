@@ -8,6 +8,14 @@ describe('E1RMCell', () => {
   it.each([
     ['projectedDisplay is null', { actualDisplay: '300', projectedDisplay: null }],
     ['projectedDisplay equals actualDisplay', { actualDisplay: '300', projectedDisplay: '300' }],
+    [
+      'projectedDisplay and familyRecentDisplay both equal actualDisplay',
+      {
+        actualDisplay: '300',
+        projectedDisplay: '300',
+        projectedFamilyRecentDisplay: '300',
+      },
+    ],
   ])('has no toggle affordance when %s', (_, props) => {
     render(<E1RMCell {...props} />);
 
@@ -97,5 +105,139 @@ describe('E1RMCell', () => {
     const icon = screen.getByText('*');
     expect(icon.getAttribute('title')).toBe('controlled source');
     expect(icon.style.visibility).toBe('visible');
+  });
+
+  it('renders both projections side-by-side when both present and differing', () => {
+    render(
+      <E1RMCell
+        actualDisplay="300"
+        projectedDisplay="312"
+        projectedFamilyRecentDisplay="318"
+        sourceLabel="baseline source"
+        familyRecentSourceLabel="family-recent source"
+      />
+    );
+
+    // Initially shows actual
+    expect(screen.getByText('300')).toBeDefined();
+
+    // Toggle to projected
+    fireEvent.click(screen.getByRole('button'));
+
+    // Should show both values with labels in separate titled spans
+    expect(
+      screen.getByText(
+        (content, element) =>
+          element?.getAttribute('title') === 'baseline source' && content.includes('312')
+      )
+    ).toBeDefined();
+    expect(
+      screen.getByText(
+        (content, element) =>
+          element?.getAttribute('title') === 'family-recent source' && content.includes('318')
+      )
+    ).toBeDefined();
+
+    // Icon should be visible without redundant title (info is in the spans)
+    const icon = screen.getByText('*');
+    expect(icon.getAttribute('title')).toBeNull();
+    expect(icon.style.visibility).toBe('visible');
+
+    // Toggle back to actual
+    fireEvent.click(screen.getByRole('button'));
+    expect(screen.getByText('300')).toBeDefined();
+  });
+
+  it('collapses to single projection when both present but equal', () => {
+    render(
+      <E1RMCell
+        actualDisplay="300"
+        projectedDisplay="315"
+        projectedFamilyRecentDisplay="315"
+        sourceLabel="baseline source"
+        familyRecentSourceLabel="family-recent source"
+      />
+    );
+
+    // Initially shows actual
+    expect(screen.getByText('300')).toBeDefined();
+
+    // Toggle to projected
+    fireEvent.click(screen.getByRole('button'));
+
+    // Should show single value (not combined), and button shows baseline projection
+    const buttonText = screen.getByRole('button').textContent;
+    expect(buttonText).toContain('315');
+    expect(buttonText).not.toContain('comp');
+    expect(buttonText).not.toContain('recent');
+
+    // Icon should be visible with baseline tooltip
+    const icon = screen.getByText('*');
+    expect(icon.getAttribute('title')).toBe('baseline source');
+    expect(icon.style.visibility).toBe('visible');
+  });
+
+  it('renders single projection when only family-recent present', () => {
+    render(
+      <E1RMCell
+        actualDisplay="300"
+        projectedDisplay={null}
+        projectedFamilyRecentDisplay="318"
+        familyRecentSourceLabel="family-recent source"
+      />
+    );
+
+    // Initially shows actual
+    expect(screen.getByText('300')).toBeDefined();
+
+    // Toggle to projected
+    fireEvent.click(screen.getByRole('button'));
+
+    // Should show family-recent value
+    const buttonText = screen.getByRole('button').textContent;
+    expect(buttonText).toContain('318');
+
+    // Icon should be visible with family-recent tooltip
+    const icon = screen.getByText('*');
+    expect(icon.getAttribute('title')).toBe('family-recent source');
+    expect(icon.style.visibility).toBe('visible');
+  });
+
+  it.each([
+    [
+      'only baseline differs from actual',
+      {
+        actualDisplay: '300',
+        projectedDisplay: '312',
+        projectedFamilyRecentDisplay: null,
+        sourceLabel: 'baseline source',
+      },
+    ],
+    [
+      'only family-recent differs from actual',
+      {
+        actualDisplay: '300',
+        projectedDisplay: null,
+        projectedFamilyRecentDisplay: '318',
+        familyRecentSourceLabel: 'family-recent source',
+      },
+    ],
+  ])('maintains single-projection behavior when %s', (_, props) => {
+    render(<E1RMCell {...props} />);
+
+    // Should have toggle affordance
+    expect(screen.getByRole('button')).toBeDefined();
+
+    // Toggle to show projected
+    fireEvent.click(screen.getByRole('button'));
+
+    // Should show single projected value without combined labels
+    const button = screen.getByRole('button');
+    expect(button.textContent).not.toContain('comp');
+    expect(button.textContent).not.toContain('recent');
+
+    // Toggle back
+    fireEvent.click(screen.getByRole('button'));
+    expect(screen.getByText('300')).toBeDefined();
   });
 });
