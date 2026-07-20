@@ -31,8 +31,9 @@ other API modules (never by external consumers). `buildDatasetsFromModel` (used 
 `session/lastSessionDetail.ts`, `variation/variationRadarSelectors.ts`) fall into this
 category. Additional engine-internal normalization math is imported the same way:
 `isSpeedWork`/`calcE1RM` (in `conjugate/conjugateBestSet.ts`), `normalizeE1rm` (in
-`variation/variationSnapshot.ts`), and `invertE1RM`/`projectE1RMToDate` (in
-`repCalculator/repCalculatorUtils.ts`).
+`variation/variationSnapshot.ts`), `invertE1RM`/`projectE1RMToDate` (in
+`repCalculator/repCalculatorUtils.ts`), and `derivers`/`fitNormalizationModel` (in
+`repCalculator/e1rmProjectionBacktest.ts` for backtesting e1RM projections against historical ground truth).
 
 **Pass-through re-export exception:** `classifyExerciseName` is re-exported from
 `@dyel/pipeline` as a documented exception (see `validation/classifyExerciseName.ts`). It

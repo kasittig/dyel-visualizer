@@ -96,6 +96,7 @@ export {
 export {
   selectBestE1RMPoint,
   findBestE1RMFromPipeline,
+  findMostRecentFamilyE1RM,
   predictWeightForReps,
   predictRepsForWeight,
   convertE1RMToDisplayUnit,
