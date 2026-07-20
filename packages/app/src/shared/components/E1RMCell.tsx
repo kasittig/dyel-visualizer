@@ -26,29 +26,21 @@ export function E1RMCell({
   const showProjected = isControlled ? controlledShowProjected : internalShowProjected;
   const toggle = isControlled ? onToggle : () => setInternalShowProjected((v) => !v);
 
-  const hasBaseline = projectedDisplay !== null && projectedDisplay !== actualDisplay;
-  const hasFamilyRecent =
-    projectedFamilyRecentDisplay != null && projectedFamilyRecentDisplay !== actualDisplay;
-  const canToggle = hasBaseline || hasFamilyRecent;
+  const canToggle =
+    (projectedDisplay !== null && projectedDisplay !== actualDisplay) ||
+    (projectedFamilyRecentDisplay != null && projectedFamilyRecentDisplay !== actualDisplay);
 
-  const bothProjectionsPresent = projectedDisplay !== null && projectedFamilyRecentDisplay != null;
-  const bothProjectionsDiffer = projectedDisplay !== projectedFamilyRecentDisplay;
-  const showBothProjections = showProjected && bothProjectionsPresent && bothProjectionsDiffer;
+  const showBoth =
+    showProjected &&
+    projectedDisplay !== null &&
+    projectedFamilyRecentDisplay != null &&
+    projectedDisplay !== projectedFamilyRecentDisplay;
 
-  const singleProjectedValue =
-    showProjected && canToggle && !showBothProjections
-      ? (projectedDisplay ?? projectedFamilyRecentDisplay)
-      : null;
-
-  const displayValue = singleProjectedValue ?? actualDisplay;
-
-  // Determine which source label to use for the icon when showing single projection
-  const activeSourceLabel =
-    showProjected && canToggle && !showBothProjections
-      ? projectedDisplay !== null
-        ? sourceLabel
-        : familyRecentSourceLabel
-      : sourceLabel;
+  const displayValue =
+    showProjected && canToggle ? (projectedDisplay ?? projectedFamilyRecentDisplay) : actualDisplay;
+  const activeSourceLabel = projectedDisplay !== null ? sourceLabel : familyRecentSourceLabel;
+  const title =
+    showProjected && canToggle && !showBoth ? (activeSourceLabel ?? undefined) : undefined;
 
   if (!canToggle) {
     return <span className={clsx(styles.cell, className)}>{displayValue}</span>;
@@ -59,7 +51,7 @@ export function E1RMCell({
       className={clsx(styles.cell, styles.toggleable, className)}
       role="button"
       tabIndex={0}
-      title={showProjected && !showBothProjections ? (activeSourceLabel ?? undefined) : undefined}
+      title={title}
       onClick={toggle}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
@@ -68,7 +60,7 @@ export function E1RMCell({
         }
       }}
     >
-      {showBothProjections ? (
+      {showBoth ? (
         <span className={styles.stack}>
           <span className={styles.compBadge} title="Projected from competition lift">
             🏆
@@ -89,7 +81,7 @@ export function E1RMCell({
       )}
       <span
         className={styles.projectedIcon}
-        title={showProjected && !showBothProjections ? (activeSourceLabel ?? undefined) : undefined}
+        title={title}
         aria-hidden={!showProjected}
         style={{ visibility: showProjected ? 'visible' : 'hidden' }}
       >

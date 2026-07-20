@@ -12,7 +12,6 @@ import {
   buildExerciseDisplayNameIndex,
   buildLastSessionDetailForCanonical,
   buildSessionCountForCanonical,
-  canonicalLiftType,
   canonicalsMatchingFacets,
   CONJUGATE_ADDL_WTS,
   CONJUGATE_BARS,
@@ -20,7 +19,7 @@ import {
   CONJUGATE_STANCES,
   convertE1RMToDisplayUnit,
   detectDataUnit,
-  findMostRecentFamilyE1RM,
+  resolveFamilyRecentE1RMEstimate,
   formatE1RMSourceLabel,
   formatLastSessionParts,
   formatWeight,
@@ -312,19 +311,13 @@ export function useCoachViewSelection(results: LifterPipelineResult[]) {
         e1rmPoints: res.model.pointsByDeriver.get('e1rm-max-effort') ?? [],
       });
 
-      const baselineCanonical = res.model.model.baseline[`lift:${liftType}`];
-      const familyE1RMPoints = (res.model.pointsByDeriver.get('e1rm') ?? []).filter(
-        (p) => canonicalLiftType(p.series) === liftType
+      const familyEstimate = resolveFamilyRecentE1RMEstimate(
+        liftType,
+        effectiveCanonical!,
+        res.model.pointsByDeriver.get('e1rm') ?? [],
+        new Date(),
+        res.model.model
       );
-      const familyEstimate = baselineCanonical
-        ? findMostRecentFamilyE1RM(
-            effectiveCanonical!,
-            baselineCanonical,
-            familyE1RMPoints,
-            new Date(),
-            res.model.model
-          )
-        : null;
 
       return {
         lifterName: res.name,

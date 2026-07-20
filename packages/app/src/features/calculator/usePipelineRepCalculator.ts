@@ -7,13 +7,12 @@ import {
   predictWeightForReps,
   predictRepsForWeight,
   resolveE1RMEstimate,
-  findMostRecentFamilyE1RM,
+  resolveFamilyRecentE1RMEstimate,
   convertE1RMToDisplayUnit,
   roundTo5,
   selectBestE1RMPoint,
   formatWeight,
   formatE1RMSourceLabel,
-  canonicalLiftType,
 } from '@dyel/api';
 import type {
   LiftType,
@@ -110,18 +109,10 @@ export function usePipelineRepCalculator(
     if (!effectiveCanonical || pStatus !== 'success' || !pModel) {
       return null;
     }
-    const baselineCanonical = pModel.model.baseline[`lift:${liftType}`];
-    if (!baselineCanonical) {
-      return null;
-    }
-    const e1rmPoints = pModel.pointsByDeriver.get('e1rm-max-effort') ?? [];
-    const familyE1RMPoints = e1rmPoints.filter(
-      (p: Point) => canonicalLiftType(p.series) === liftType
-    );
-    return findMostRecentFamilyE1RM(
+    return resolveFamilyRecentE1RMEstimate(
+      liftType,
       effectiveCanonical,
-      baselineCanonical,
-      familyE1RMPoints,
+      pModel.pointsByDeriver.get('e1rm-max-effort') ?? [],
       new Date(),
       pModel.model
     );

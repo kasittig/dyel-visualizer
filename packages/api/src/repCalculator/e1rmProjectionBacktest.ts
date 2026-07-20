@@ -1,6 +1,6 @@
 import type { Point, TaggedSetRecord } from '@dyel/pipeline';
 import { derivers, fitNormalizationModel } from '@dyel/pipeline';
-import { resolveE1RMEstimate, findMostRecentFamilyE1RM } from './repCalculatorUtils';
+import { resolveE1RMEstimate, resolveFamilyRecentE1RMEstimate } from './repCalculatorUtils';
 import { canonicalLiftType } from '../exerciseUtils';
 
 export interface BacktestEvent {
@@ -67,70 +67,44 @@ export function runE1RMProjectionBacktest(
     // Derive the target canonical's own lift-type family directly from its name, rather than
     // sampling an arbitrary record's tags (which may belong to an unrelated lift entirely).
     const liftTypeValue = canonicalLiftType(canonical);
-    const liftTag = `lift:${liftTypeValue}`;
+    const canProject = truncatedE1RMPoints.length > 0 && liftTypeValue !== 'accessory';
+    const today = new Date(date);
 
-    // Compute baseline prediction
-    let predictedBaseline: number | null = null;
-    if (truncatedE1RMPoints.length > 0 && liftTypeValue !== 'accessory') {
-      const estimate = resolveE1RMEstimate({
-        liftType: liftTypeValue,
-        targetCanonical: canonical,
-        baselineName: canonical,
-        today: new Date(date),
-        model: truncatedModel,
-        e1rmPoints: truncatedE1RMPoints,
-      });
-      if (estimate) {
-        predictedBaseline = estimate.e1rm;
-      }
-    }
+    const predictedBaseline = canProject
+      ? (resolveE1RMEstimate({
+          liftType: liftTypeValue,
+          targetCanonical: canonical,
+          baselineName: canonical,
+          today,
+          model: truncatedModel,
+          e1rmPoints: truncatedE1RMPoints,
+        })?.e1rm ?? null)
+      : null;
 
-    // Compute family-recent prediction
-    let predictedFamilyRecent: number | null = null;
-    if (truncatedE1RMPoints.length > 0 && liftTypeValue !== 'accessory') {
-      const baselineCanonical = truncatedModel.baseline[liftTag];
-      if (baselineCanonical) {
-        const familyPoints = truncatedE1RMPoints.filter(
-          (p) => canonicalLiftType(p.series) === liftTypeValue
-        );
-        const estimate = findMostRecentFamilyE1RM(
+    const predictedFamilyRecent = canProject
+      ? (resolveFamilyRecentE1RMEstimate(
+          liftTypeValue,
           canonical,
-          baselineCanonical,
-          familyPoints,
-          new Date(date),
+          truncatedE1RMPoints,
+          today,
           truncatedModel
-        );
-        if (estimate) {
-          predictedFamilyRecent = estimate.e1rm;
-        }
-      }
-    }
+        )?.e1rm ?? null)
+      : null;
 
-    // Record the event
-    events.push({
-      canonical,
-      date,
-      actualE1RM,
-      predictedBaseline,
-      predictedFamilyRecent,
-    });
+    events.push({ canonical, date, actualE1RM, predictedBaseline, predictedFamilyRecent });
 
-    // Accumulate errors and wins
+    // Accumulate errors and, when both predictions are available, tally which one won.
     if (predictedBaseline !== null) {
       baselineErrorSum += Math.abs(predictedBaseline - actualE1RM);
       baselineErrorCount += 1;
     }
-
     if (predictedFamilyRecent !== null) {
       familyErrorSum += Math.abs(predictedFamilyRecent - actualE1RM);
       familyErrorCount += 1;
     }
-
-    // Count wins only when both predictions are non-null
     if (predictedBaseline !== null && predictedFamilyRecent !== null) {
       const baselineError = Math.abs(predictedBaseline - actualE1RM);
       const familyError = Math.abs(predictedFamilyRecent - actualE1RM);
-
       if (baselineError < familyError) {
         winsBaseline += 1;
       } else if (familyError < baselineError) {

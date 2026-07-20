@@ -1,6 +1,7 @@
 import type { Point, NormalizationModel } from '@dyel/pipeline';
 import { invertE1RM, projectE1RMToDate } from '@dyel/pipeline';
 import { convertWeight } from '../weightUnit';
+import { canonicalLiftType } from '../exerciseUtils';
 
 export interface E1RMEstimate {
   e1rm: number;
@@ -82,20 +83,21 @@ export function findMostRecentFamilyE1RM(
     return null;
   }
 
-  // Group by series (canonical) and find the one with the most recent point
+  // Group by series (canonical) and find the one with the most recent point, tracking each
+  // group's latest point in the same pass instead of re-reducing it later.
   const byCanonical = Map.groupBy(familyE1RMPoints, (p) => p.series);
   let mostRecentCanonical: string | null = null;
-  let maxT = -Infinity;
+  let mostRecentPoint: Point | null = null;
 
   for (const [canonical, points] of byCanonical) {
     const latest = points.reduce((acc, p) => (p.t > acc.t ? p : acc));
-    if (latest.t > maxT) {
-      maxT = latest.t;
+    if (mostRecentPoint === null || latest.t > mostRecentPoint.t) {
+      mostRecentPoint = latest;
       mostRecentCanonical = canonical;
     }
   }
 
-  if (!mostRecentCanonical) {
+  if (!mostRecentCanonical || !mostRecentPoint) {
     return null;
   }
 
@@ -105,8 +107,7 @@ export function findMostRecentFamilyE1RM(
     return null;
   }
 
-  const lastPoint = sourcePoints.reduce((acc, p) => (p.t > acc.t ? p : acc));
-  const sourceDate = new Date(lastPoint.t);
+  const sourceDate = new Date(mostRecentPoint.t);
   const daysForward = Math.max(
     0,
     Math.round((today.getTime() - sourceDate.getTime()) / 86_400_000)
@@ -158,6 +159,26 @@ export function findMostRecentFamilyE1RM(
     method: 'familyMostRecent',
     daysForward,
   };
+}
+
+/**
+ * Convenience wrapper over `findMostRecentFamilyE1RM` that resolves the baseline canonical and
+ * filters `e1rmPoints` down to the target's lift-type family, so callers don't duplicate that
+ * boilerplate (shared by the rep calculator and coach view hooks, and the offline backtest).
+ */
+export function resolveFamilyRecentE1RMEstimate(
+  liftType: string,
+  targetCanonical: string,
+  e1rmPoints: Point[],
+  today: Date,
+  model: NormalizationModel
+): E1RMEstimate | null {
+  const baselineCanonical = model.baseline[`lift:${liftType}`];
+  if (!baselineCanonical) {
+    return null;
+  }
+  const familyPoints = e1rmPoints.filter((p) => canonicalLiftType(p.series) === liftType);
+  return findMostRecentFamilyE1RM(targetCanonical, baselineCanonical, familyPoints, today, model);
 }
 
 export function predictWeightForReps(e1rm: number, reps: number): number {
