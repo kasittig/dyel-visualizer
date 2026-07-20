@@ -3,6 +3,7 @@ import type { Point, NormalizationModel } from '@dyel/pipeline';
 import {
   selectBestE1RMPoint,
   findBestE1RMFromPipeline,
+  findMostRecentFamilyE1RM,
   resolveE1RMEstimate,
   roundTo5,
   predictRepsForWeight,
@@ -173,6 +174,82 @@ describe('findBestE1RMFromPipeline & resolveE1RMEstimate', () => {
     ],
   ])('%s', (_, runner, expected) => {
     const res = runner();
+    if (expected === null) {
+      expect(res).toBeNull();
+    } else {
+      expect(res).toEqual(expected);
+    }
+  });
+});
+
+describe('findMostRecentFamilyE1RM', () => {
+  const today = new Date('2024-01-15');
+
+  it.each([
+    [
+      'source is target (exact match)',
+      'squat',
+      'bench',
+      [pt('squat', 300, 1e9), pt('bench', 250, 9e8)],
+      today,
+      mockModel(),
+      expect.objectContaining({ method: 'exact', sourceName: 'squat' }),
+    ],
+    [
+      'source is baseline, converts to target via variant factor',
+      'squat-pause',
+      'squat',
+      [pt('squat', 300, 1e9), pt('bench', 250, 8e8)],
+      today,
+      mockModel({ variantFactor: { 'squat-pause': { factor: 0.85, n: 10 } } }),
+      expect.objectContaining({ method: 'familyMostRecent', sourceName: 'squat' }),
+    ],
+    [
+      'source is other variant, two-hop conversion via baseline',
+      'squat-pause',
+      'squat',
+      [pt('squat-box', 280, 1e9), pt('squat', 250, 8e8)],
+      today,
+      mockModel({
+        variantFactor: {
+          'squat-box': { factor: 1.1, n: 10 },
+          'squat-pause': { factor: 0.85, n: 10 },
+        },
+      }),
+      expect.objectContaining({ method: 'familyMostRecent', sourceName: 'squat-box' }),
+    ],
+    [
+      'missing variantFactor on source-to-baseline hop',
+      'squat-pause',
+      'squat',
+      [pt('squat-unknown', 280, 1e9), pt('squat', 250, 8e8)],
+      today,
+      mockModel({ variantFactor: { 'squat-pause': { factor: 0.85, n: 10 } } }),
+      null,
+    ],
+    [
+      'missing variantFactor on baseline-to-target hop',
+      'squat-unknown',
+      'squat',
+      [pt('squat', 300, 1e9), pt('bench', 250, 8e8)],
+      today,
+      mockModel(),
+      null,
+    ],
+    [
+      'addlWtOffset clamps result to 0',
+      'squat-pause',
+      'squat',
+      [pt('squat', 100, 1e9), pt('bench', 250, 8e8)],
+      today,
+      mockModel({
+        variantFactor: { 'squat-pause': { factor: 0.85, n: 10 } },
+        addlWtOffset: { 'squat-pause': { offsetKg: 150, n: 10 } },
+      }),
+      expect.objectContaining({ method: 'familyMostRecent', e1rm: 0 }),
+    ],
+  ])('%s', (_, targetCanonical, baselineCanonical, points, date, model, expected) => {
+    const res = findMostRecentFamilyE1RM(targetCanonical, baselineCanonical, points, date, model);
     if (expected === null) {
       expect(res).toBeNull();
     } else {

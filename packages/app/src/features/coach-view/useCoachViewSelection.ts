@@ -19,6 +19,7 @@ import {
   CONJUGATE_STANCES,
   convertE1RMToDisplayUnit,
   detectDataUnit,
+  resolveFamilyRecentE1RMEstimate,
   formatE1RMSourceLabel,
   formatLastSessionParts,
   formatWeight,
@@ -40,6 +41,8 @@ export interface CoachViewRow {
   e1rmDisplay: string;
   e1rmProjectedDisplay: string | null;
   e1rmSourceLabel: string | null;
+  e1rmFamilyRecentDisplay: string | null;
+  e1rmFamilyRecentSourceLabel: string | null;
   lastPerformedDateDisplay: string;
   lastPerformedSetDisplay: string;
   targetWeightDisplay: string;
@@ -223,6 +226,8 @@ export function useCoachViewSelection(results: LifterPipelineResult[]) {
       e1rmDisplay: '—',
       e1rmProjectedDisplay: null,
       e1rmSourceLabel: null,
+      e1rmFamilyRecentDisplay: null,
+      e1rmFamilyRecentSourceLabel: null,
       lastPerformedDateDisplay: '—',
       lastPerformedSetDisplay: msg,
       targetWeightDisplay: '—',
@@ -296,8 +301,9 @@ export function useCoachViewSelection(results: LifterPipelineResult[]) {
       const sessionCount = buildSessionCountForCanonical(res.model.tagged, effectiveCanonical!);
       const lastSessionParts = detail ? formatLastSessionParts(detail, unit) : null;
 
+      const liftType = liftTypeByDisplayName.get(effectiveDisplayName)!;
       const estimate = resolveE1RMEstimate({
-        liftType: liftTypeByDisplayName.get(effectiveDisplayName)!,
+        liftType,
         targetCanonical: effectiveCanonical!,
         baselineName: undefined,
         today: new Date(),
@@ -305,12 +311,22 @@ export function useCoachViewSelection(results: LifterPipelineResult[]) {
         e1rmPoints: res.model.pointsByDeriver.get('e1rm-max-effort') ?? [],
       });
 
+      const familyEstimate = resolveFamilyRecentE1RMEstimate(
+        liftType,
+        effectiveCanonical!,
+        res.model.pointsByDeriver.get('e1rm') ?? [],
+        new Date(),
+        res.model.model
+      );
+
       return {
         lifterName: res.name,
         url: res.url,
         e1rmDisplay: formatWeight(latestPoint.v, unit),
         e1rmProjectedDisplay: estimate ? formatWeight(estimate.e1rm, unit) : null,
         e1rmSourceLabel: formatE1RMSourceLabel(estimate),
+        e1rmFamilyRecentDisplay: familyEstimate ? formatWeight(familyEstimate.e1rm, unit) : null,
+        e1rmFamilyRecentSourceLabel: formatE1RMSourceLabel(familyEstimate),
         lastPerformedDateDisplay: lastSessionParts?.date ?? '',
         lastPerformedSetDisplay: lastSessionParts?.setLine ?? '',
         targetWeightDisplay: `${roundTo5(predictWeightForReps(convertE1RMToDisplayUnit(latestPoint.v, unit), effectiveReps))} ${unit}`,

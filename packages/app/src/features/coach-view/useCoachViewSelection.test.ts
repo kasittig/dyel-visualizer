@@ -500,6 +500,59 @@ describe('useCoachViewSelection', () => {
     });
   });
 
+  describe('family-recent e1RM projection', () => {
+    it.each([
+      [
+        'family-recent estimate present from family member',
+        {
+          e1rmPoints: [point(1, 100, 'squat'), point(1, 105, 'squat-bar')],
+          e1rmMaxEffortPoints: [],
+          baseline: { 'lift:squat': 'squat' },
+          variantFactor: { 'squat-bar': { factor: 0.95, n: 1 } },
+          shouldHaveEstimate: true,
+        },
+      ],
+      [
+        'family-recent estimate unavailable (no baseline)',
+        {
+          e1rmPoints: [point(1, 100, 'squat')],
+          e1rmMaxEffortPoints: [],
+          baseline: {},
+          variantFactor: {},
+          shouldHaveEstimate: false,
+        },
+      ],
+    ])('%s', (_, testCase) => {
+      const model = {
+        ...minimalPipelineModel(
+          [taggedRecord('squat', 'Squat', { weight: 150 })],
+          testCase.e1rmPoints,
+          testCase.e1rmMaxEffortPoints,
+          testCase.baseline
+        ),
+        model: {
+          baseline: testCase.baseline,
+          variantFactor: testCase.variantFactor,
+          addlWtOffset: {},
+        },
+      } as unknown as PipelineModel;
+
+      const { result } = renderHook(() => useCoachViewSelection([successResult('Lifter', model)]));
+
+      act(() => result.current.setSelectedDisplayName('Squat'));
+      const row = result.current.rows[0];
+
+      if (testCase.shouldHaveEstimate) {
+        expect(row.e1rmFamilyRecentDisplay).not.toBeNull();
+        expect(typeof row.e1rmFamilyRecentDisplay).toBe('string');
+        expect(row.e1rmFamilyRecentSourceLabel).toBeDefined();
+      } else {
+        expect(row.e1rmFamilyRecentDisplay).toBeNull();
+        expect(row.e1rmFamilyRecentSourceLabel).toBeNull();
+      }
+    });
+  });
+
   describe('projected e1RM toggle and targetWeightProjectedDisplay', () => {
     it('computes targetWeightProjectedDisplay from estimate.e1rm when available', () => {
       const model = minimalPipelineModel(

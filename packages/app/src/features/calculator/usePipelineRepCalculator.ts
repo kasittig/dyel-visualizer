@@ -7,6 +7,7 @@ import {
   predictWeightForReps,
   predictRepsForWeight,
   resolveE1RMEstimate,
+  resolveFamilyRecentE1RMEstimate,
   convertE1RMToDisplayUnit,
   roundTo5,
   selectBestE1RMPoint,
@@ -20,6 +21,7 @@ import type {
   ConjugateBar,
   ConjugateEquipment,
   ConjugateStance,
+  Point,
 } from '@dyel/api';
 import { usePipelineModel } from '../../app/PipelineContext';
 
@@ -103,12 +105,25 @@ export function usePipelineRepCalculator(
     });
   }, [effectiveCanonical, pStatus, pModel, baselineNames, liftType]);
 
+  const familyE1RMEstimate = useMemo(() => {
+    if (!effectiveCanonical || pStatus !== 'success' || !pModel) {
+      return null;
+    }
+    return resolveFamilyRecentE1RMEstimate(
+      liftType,
+      effectiveCanonical,
+      pModel.pointsByDeriver.get('e1rm-max-effort') ?? [],
+      new Date(),
+      pModel.model
+    );
+  }, [effectiveCanonical, pStatus, pModel, liftType]);
+
   const actualE1rmDisplay = useMemo(() => {
     if (pStatus !== 'success' || !pModel || !effectiveCanonical) {
       return null;
     }
     const points = (pModel.pointsByDeriver.get('e1rm-max-effort') ?? []).filter(
-      (p) => p.series === effectiveCanonical
+      (p: Point) => p.series === effectiveCanonical
     );
     const actualE1rm = selectBestE1RMPoint(points);
     return actualE1rm ? formatWeight(actualE1rm.e1rm, unit) : null;
@@ -120,6 +135,16 @@ export function usePipelineRepCalculator(
   );
 
   const e1rmSourceLabel = useMemo(() => formatE1RMSourceLabel(estimate), [estimate]);
+
+  const e1rmFamilyRecentDisplay = useMemo(
+    () => (familyE1RMEstimate ? formatWeight(familyE1RMEstimate.e1rm, unit) : null),
+    [familyE1RMEstimate, unit]
+  );
+
+  const e1rmFamilyRecentSourceLabel = useMemo(
+    () => formatE1RMSourceLabel(familyE1RMEstimate),
+    [familyE1RMEstimate]
+  );
 
   const syncWeightFromReps = (rVal: string) => {
     const r = parseFloat(rVal);
@@ -172,6 +197,8 @@ export function usePipelineRepCalculator(
     actualE1rmDisplay,
     projectedE1rmDisplay,
     e1rmSourceLabel,
+    e1rmFamilyRecentDisplay,
+    e1rmFamilyRecentSourceLabel,
     handleSelectedCanonicalChange: (label: string) => {
       const canonical = canonicalByLabel.get(label);
       if (!canonical) {

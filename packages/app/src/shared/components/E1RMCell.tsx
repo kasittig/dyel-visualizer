@@ -6,6 +6,8 @@ export function E1RMCell({
   actualDisplay,
   projectedDisplay,
   sourceLabel,
+  projectedFamilyRecentDisplay,
+  familyRecentSourceLabel,
   className,
   showProjected: controlledShowProjected,
   onToggle,
@@ -13,6 +15,8 @@ export function E1RMCell({
   actualDisplay: string;
   projectedDisplay: string | null;
   sourceLabel?: string | null;
+  projectedFamilyRecentDisplay?: string | null;
+  familyRecentSourceLabel?: string | null;
   className?: string;
   showProjected?: boolean;
   onToggle?: () => void;
@@ -22,8 +26,21 @@ export function E1RMCell({
   const showProjected = isControlled ? controlledShowProjected : internalShowProjected;
   const toggle = isControlled ? onToggle : () => setInternalShowProjected((v) => !v);
 
-  const canToggle = projectedDisplay !== null && projectedDisplay !== actualDisplay;
-  const displayValue = showProjected && canToggle ? projectedDisplay : actualDisplay;
+  const canToggle =
+    (projectedDisplay !== null && projectedDisplay !== actualDisplay) ||
+    (projectedFamilyRecentDisplay != null && projectedFamilyRecentDisplay !== actualDisplay);
+
+  const showBoth =
+    showProjected &&
+    projectedDisplay !== null &&
+    projectedFamilyRecentDisplay != null &&
+    projectedDisplay !== projectedFamilyRecentDisplay;
+
+  const displayValue =
+    showProjected && canToggle ? (projectedDisplay ?? projectedFamilyRecentDisplay) : actualDisplay;
+  const activeSourceLabel = projectedDisplay !== null ? sourceLabel : familyRecentSourceLabel;
+  const title =
+    showProjected && canToggle && !showBoth ? (activeSourceLabel ?? undefined) : undefined;
 
   if (!canToggle) {
     return <span className={clsx(styles.cell, className)}>{displayValue}</span>;
@@ -34,7 +51,7 @@ export function E1RMCell({
       className={clsx(styles.cell, styles.toggleable, className)}
       role="button"
       tabIndex={0}
-      title={showProjected ? (sourceLabel ?? undefined) : undefined}
+      title={title}
       onClick={toggle}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
@@ -43,10 +60,28 @@ export function E1RMCell({
         }
       }}
     >
-      {displayValue}
+      {showBoth ? (
+        <span className={styles.stack}>
+          <span className={styles.compBadge} title="Projected from competition lift">
+            🏆
+          </span>
+          <span className={styles.stackValue} title={sourceLabel ?? undefined}>
+            {projectedDisplay}
+          </span>
+          <span className={clsx(styles.badgeSpacer, styles.divided)} aria-hidden="true" />
+          <span
+            className={clsx(styles.stackValue, styles.divided)}
+            title={familyRecentSourceLabel ?? undefined}
+          >
+            {projectedFamilyRecentDisplay}
+          </span>
+        </span>
+      ) : (
+        displayValue
+      )}
       <span
         className={styles.projectedIcon}
-        title={showProjected ? (sourceLabel ?? undefined) : undefined}
+        title={title}
         aria-hidden={!showProjected}
         style={{ visibility: showProjected ? 'visible' : 'hidden' }}
       >
