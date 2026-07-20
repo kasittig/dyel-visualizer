@@ -69,13 +69,21 @@ export function E1RMCell({
       }}
     >
       {showBothProjections ? (
-        <>
-          <span title={sourceLabel ?? undefined}>{projectedDisplay} (comp)</span>
-          {' · '}
-          <span title={familyRecentSourceLabel ?? undefined}>
-            {projectedFamilyRecentDisplay} (recent)
+        <span className={styles.stack}>
+          <span className={styles.compBadge} title="Projected from competition lift">
+            🏆
           </span>
-        </>
+          <span className={styles.stackValue} title={sourceLabel ?? undefined}>
+            {projectedDisplay}
+          </span>
+          <span className={clsx(styles.badgeSpacer, styles.divided)} aria-hidden="true" />
+          <span
+            className={clsx(styles.stackValue, styles.divided)}
+            title={familyRecentSourceLabel ?? undefined}
+          >
+            {projectedFamilyRecentDisplay}
+          </span>
+        </span>
       ) : (
         displayValue
       )}

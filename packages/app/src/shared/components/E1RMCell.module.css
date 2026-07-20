@@ -25,6 +25,32 @@
   color: var(--accent);
 }
 
+.stack {
+  display: inline-grid;
+  grid-template-columns: auto auto;
+  align-items: center;
+  column-gap: 0.25rem;
+  line-height: 1.15;
+  vertical-align: middle;
+}
+
+.stackValue {
+  text-align: left;
+}
+
+.compBadge,
+.badgeSpacer {
+  font-size: 0.75rem;
+  width: 1em;
+  text-align: center;
+}
+
+.divided {
+  border-top: 1px solid var(--border);
+  margin-top: 0.15rem;
+  padding-top: 0.15rem;
+}
+
 .projectedIcon {
   font-size: 0.75rem;
   color: var(--accent);
