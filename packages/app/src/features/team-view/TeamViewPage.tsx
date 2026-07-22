@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { useTeamViewData } from './useTeamViewData';
 import { useTeamViewSelection } from './useTeamViewSelection';
 import type { TeamViewRow } from './useTeamViewSelection';
+import { useSortableRows } from '../../shared/hooks';
 import { LIFT_TYPE_LABELS } from '../../shared/liftTypeLabels';
 import {
   TypeaheadDropdown,
@@ -21,8 +22,11 @@ interface TeamViewColumn {
   headerClassName?: string;
   cellClassName?: string | ((row: TeamViewRow) => string | boolean | undefined);
   variant?: 'left' | 'mono';
+  sortValue?: (row: TeamViewRow) => string | number;
   render: (row: TeamViewRow) => ReactNode;
 }
+
+type SortCol = 'Lifter' | 'Target weight' | 'e1RM' | 'Sessions' | 'Last set' | 'Date';
 
 export function TeamViewPage() {
   const dataState = useTeamViewData();
@@ -64,12 +68,13 @@ export function TeamViewPage() {
       variant: 'left',
       headerClassName: styles.lifterHeaderCell,
       cellClassName: () => clsx(styles.cellTint, styles.lifterCell),
+      sortValue: (row) => row.lifterName,
       render: (row) => (
         <span title={row.lifterName}>
           {row.lifterName}
           {row.url && (
             <a
-              href={`/?sheet=${encodeURIComponent(row.url)}`}
+              href={`./?sheet=${encodeURIComponent(row.url)}`}
               target="_blank"
               rel="noopener noreferrer"
               className={styles.lifterLink}
@@ -113,6 +118,13 @@ export function TeamViewPage() {
       header: 'Target weight',
       headerClassName: styles.headerNowrap,
       cellClassName: (row) => clsx(styles.cellTint, !row.hasData && styles.placeholderCell),
+      sortValue: (row) => {
+        const display =
+          row.showProjected && row.targetWeightProjectedDisplay
+            ? row.targetWeightProjectedDisplay
+            : row.targetWeightDisplay;
+        return parseFloat(display) || 0;
+      },
       render: (row) =>
         row.showProjected && row.targetWeightProjectedDisplay
           ? row.targetWeightProjectedDisplay
@@ -122,6 +134,10 @@ export function TeamViewPage() {
       header: 'e1RM',
       cellClassName: (row) =>
         clsx(styles.cellTint, styles.columnDivider, !row.hasData && styles.placeholderCell),
+      sortValue: (row) => {
+        const display = row.showProjected ? row.e1rmProjectedDisplay : row.e1rmDisplay;
+        return (display && parseFloat(display)) || 0;
+      },
       render: (row) => (
         <E1RMCell
           actualDisplay={row.e1rmDisplay}
@@ -137,20 +153,45 @@ export function TeamViewPage() {
     {
       header: 'Sessions',
       cellClassName: (row) => clsx(styles.cellTint, !row.hasData && styles.placeholderCell),
+      sortValue: (row) => row.sessionCount,
       render: (row) => row.sessionCount,
     },
     {
       header: 'Last set',
       headerClassName: styles.headerNowrap,
       cellClassName: (row) => clsx(styles.cellTint, !row.hasData && styles.placeholderCell),
+      sortValue: (row) => row.lastPerformedSetDisplay,
       render: (row) => row.lastPerformedSetDisplay,
     },
     {
       header: 'Date',
       cellClassName: (row) => clsx(styles.cellTint, !row.hasData && styles.placeholderCell),
+      sortValue: (row) => row.lastPerformedDateDisplay,
       render: (row) => row.lastPerformedDateDisplay,
     },
   ];
+
+  const sortableColumns = columns.filter(
+    (c): c is TeamViewColumn & { sortValue: NonNullable<TeamViewColumn['sortValue']> } =>
+      !!c.sortValue
+  );
+  const accessors = Object.fromEntries(
+    sortableColumns.map((c) => [c.header, c.sortValue])
+  ) as Record<SortCol, (row: TeamViewRow) => string | number>;
+  const { sortedRows, sortKey, direction, toggleSort } = useSortableRows<TeamViewRow, SortCol>(
+    rows,
+    accessors
+  );
+
+  const sortProps = (col: TeamViewColumn) => {
+    if (!col.sortValue) {
+      return {};
+    }
+    return {
+      onSort: () => toggleSort(col.header as SortCol),
+      sortDirection: sortKey === col.header ? direction : null,
+    };
+  };
 
   if (dataState.status === 'loading') {
     return (
@@ -293,13 +334,14 @@ export function TeamViewPage() {
                         as="th"
                         variant={col.variant ?? 'mono'}
                         className={col.headerClassName}
+                        {...sortProps(col)}
                       >
                         {col.header}
                       </TableCell>
                     ))}
                   </TableHeadRow>
                   <tbody>
-                    {rows.map((row) => (
+                    {sortedRows.map((row) => (
                       <TableRow key={row.lifterName}>
                         {columns.map((col) => (
                           <TableCell

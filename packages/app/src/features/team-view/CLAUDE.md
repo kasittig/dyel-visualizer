@@ -1,6 +1,6 @@
 # features/team-view
 
-Team view for comparing a single exercise across multiple lifters. This feature is architecturally different from every other feature in the app: it does NOT use `PipelineContext`/`usePipelineModel()` at all, because it needs to fan out over MANY lifters' `PipelineModel`s simultaneously (one per row in the table) rather than the single model the rest of the app operates on via `PipelineContext`. The table is built from the shared `Table`/`TableCard`/`TableHeadRow`/`TableRow`/`TableCell` primitives in `shared/components/Table.tsx` (the same primitives `DiagnosticsPanel`/`AccessoryTable` use), with page-local modifier classes (`columnDivider`, `placeholderCell`, `controlCell`, `cellTint`) layered on via `TableCell`'s `className` prop.
+Team view for comparing a single exercise across multiple lifters. This feature is architecturally different from every other feature in the app: it does NOT use `PipelineContext`/`usePipelineModel()` at all, because it needs to fan out over MANY lifters' `PipelineModel`s simultaneously (one per row in the table) rather than the single model the rest of the app operates on via `PipelineContext`. The table is built from the shared `Table`/`TableCard`/`TableHeadRow`/`TableRow`/`TableCell` primitives in `shared/components/Table.tsx` (the same primitives `DiagnosticsPanel`/`AccessoryTable` use), with page-local modifier classes (`columnDivider`, `placeholderCell`, `controlCell`, `cellTint`) layered on via `TableCell`'s `className` prop; column sorting is supported via `useSortableRows`, mirroring the sorting UI pattern in `AccessoryTable` and `DiagnosticsPanel`.
 
 | File                      | Purpose                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -81,8 +81,12 @@ change already behave.
 threaded straight through from `LifterPipelineResult.url` — present on both the `'success'` and
 `'error'` variants, so it's set for placeholder rows too). `TeamViewPage.tsx` renders a small
 "↗" link icon next to the lifter's name in the Lifter column, pointing to
-`/?sheet=<encodeURIComponent(row.url)>` with `target="_blank"` — this deep-links into the main
+`./?sheet=<encodeURIComponent(row.url)>` with `target="_blank"` — this deep-links into the main
 DYEL Visualizer (`useAppSettings.ts`'s `sheet` query-param handling) pre-loaded with that
 lifter's data, opened in a new tab so the viewer doesn't lose their place in the comparison table.
-The link is absolute-pathed (`/?sheet=...`, not `?sheet=...`) since Team View itself lives at
-`/team`, and a relative href would otherwise resolve against that path instead of the app root.
+The link is dot-relative (`./?sheet=...`), matching the "← Back to DYEL Visualizer" link's `href="."`
+convention just above it in the same component, rather than root-absolute (`/?sheet=...`). A
+root-absolute href resolves against the domain root and breaks in production, where the app is
+served under the `/dyel-visualizer/` GitHub Pages subpath instead of `/`; `./` resolves correctly
+against whatever base path the page is currently served from, whether that's `/`, `/dyel-visualizer/`,
+or a `/team`-suffixed path (see `main.tsx`'s `resolvePage`).

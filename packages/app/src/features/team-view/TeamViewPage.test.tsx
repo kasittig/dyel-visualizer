@@ -236,7 +236,7 @@ describe('TeamViewPage', () => {
 
     const link = screen.getByTitle('Open Alice in DYEL Visualizer');
     expect(link.getAttribute('href')).toBe(
-      `/?sheet=${encodeURIComponent('https://example.com/alice-sheet')}`
+      `./?sheet=${encodeURIComponent('https://example.com/alice-sheet')}`
     );
     expect(link.getAttribute('target')).toBe('_blank');
   });
