@@ -25,8 +25,8 @@ const PipelineValidationPage = lazy(() =>
   }))
 );
 
-const CoachViewPage = lazy(() =>
-  import('./features/coach-view/CoachViewPage.tsx').then((m) => ({ default: m.CoachViewPage }))
+const TeamViewPage = lazy(() =>
+  import('./features/team-view/TeamViewPage.tsx').then((m) => ({ default: m.TeamViewPage }))
 );
 
 function resolvePageComponent(page: string | null) {
@@ -58,10 +58,10 @@ function resolvePageComponent(page: string | null) {
       </Suspense>
     );
   }
-  if (page === 'coach') {
+  if (page === 'team' || page === 'coach') {
     return (
       <Suspense>
-        <CoachViewPage />
+        <TeamViewPage />
       </Suspense>
     );
   }
@@ -71,7 +71,14 @@ function resolvePageComponent(page: string | null) {
   return <p>Page not found.</p>;
 }
 
-const KNOWN_PAGES = new Set(['conjugate', 'index', 'validator', 'pipeline-validation', 'coach']);
+const KNOWN_PAGES = new Set([
+  'conjugate',
+  'index',
+  'validator',
+  'pipeline-validation',
+  'team',
+  'coach',
+]);
 
 function resolvePage(): string | null {
   const queryPage = new URLSearchParams(window.location.search).get('page');

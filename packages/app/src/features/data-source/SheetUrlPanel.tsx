@@ -64,6 +64,10 @@ export function SheetUrlPanel({
           ·{' '}
           <a href="?page=conjugate" className={styles.accentLink}>
             What is the conjugate method?
+          </a>{' '}
+          ·{' '}
+          <a href="?page=team" className={styles.accentLink}>
+            View team
           </a>
         </p>
       ) : (
@@ -81,6 +85,10 @@ export function SheetUrlPanel({
             ·{' '}
             <a href={valUrl} className={styles.accentLink}>
               See if your training log is compatible
+            </a>{' '}
+            ·{' '}
+            <a href="?page=team" className={styles.accentLink}>
+              View team
             </a>
           </p>
           <InputModeToggle mode={mode} onModeChange={onModeChange} />

@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import type { LifterPipelineResult } from '@dyel/api';
 import type { PipelineModel } from '@dyel/pipeline';
-import { useCoachViewData } from './useCoachViewData';
+import { useTeamViewData } from './useTeamViewData';
 
 vi.mock('../data-source');
 vi.mock('@dyel/api', async () => ({
@@ -26,7 +26,7 @@ const fixtureModel = {
   athlete: { sex: 'M', bodyweight: 90 },
 };
 
-describe('useCoachViewData', () => {
+describe('useTeamViewData', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -48,7 +48,7 @@ describe('useCoachViewData', () => {
     mockFetchSheetCsv.mockResolvedValue(indexCsv);
     mockLoadIndexPipelineModels.mockResolvedValue(fixtureResults);
 
-    const { result } = renderHook(() => useCoachViewData());
+    const { result } = renderHook(() => useTeamViewData());
     expect(result.current.status).toBe('loading');
 
     await waitFor(() => {
@@ -59,7 +59,7 @@ describe('useCoachViewData', () => {
 
   it('loading → error', async () => {
     mockFetchSheetCsv.mockRejectedValue(new Error('Network error'));
-    const { result } = renderHook(() => useCoachViewData());
+    const { result } = renderHook(() => useTeamViewData());
     expect(result.current.status).toBe('loading');
 
     await waitFor(() => {

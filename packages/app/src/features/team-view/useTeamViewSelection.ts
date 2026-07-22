@@ -35,7 +35,7 @@ interface LifterOverride {
   reps?: number;
 }
 
-export interface CoachViewRow {
+export interface TeamViewRow {
   lifterName: string;
   url: string;
   e1rmDisplay: string;
@@ -58,7 +58,7 @@ export interface CoachViewRow {
   onToggleProjected: () => void;
 }
 
-export function useCoachViewSelection(results: LifterPipelineResult[]) {
+export function useTeamViewSelection(results: LifterPipelineResult[]) {
   const erroredLifterCount = results.filter((r) => r.status === 'error').length;
 
   const { allExerciseOptions, displayNameToCanonical, liftTypeByDisplayName } = useMemo(() => {
@@ -120,7 +120,7 @@ export function useCoachViewSelection(results: LifterPipelineResult[]) {
     return LIFT_TYPE_ORDER.filter((t) => present.has(t));
   }, [liftTypeByDisplayName]);
 
-  // IMPORTANT: only apply the facet filter once a coach actively picks a facet. Skipping
+  // IMPORTANT: only apply the facet filter once someone actively picks a facet. Skipping
   // filtering entirely when nothing is selected (rather than relying on
   // `canonicalsMatchingFacets` to "match everything") guarantees the dropdown's default state
   // is always identical to today's unfiltered behavior, even in edge cases where a lifter's
@@ -201,7 +201,7 @@ export function useCoachViewSelection(results: LifterPipelineResult[]) {
 
   const toggleUnit = () => setUnit((prev) => (prev === 'lbs' ? 'kg' : 'lbs'));
 
-  const rows = useMemo<CoachViewRow[]>(() => {
+  const rows = useMemo<TeamViewRow[]>(() => {
     if (!selectedCanonical) {
       return [];
     }
@@ -211,7 +211,7 @@ export function useCoachViewSelection(results: LifterPipelineResult[]) {
       url: string,
       msg: string,
       shared: Pick<
-        CoachViewRow,
+        TeamViewRow,
         | 'effectiveDisplayName'
         | 'effectiveReps'
         | 'onExerciseChange'
@@ -220,7 +220,7 @@ export function useCoachViewSelection(results: LifterPipelineResult[]) {
         | 'showProjected'
         | 'onToggleProjected'
       >
-    ): CoachViewRow => ({
+    ): TeamViewRow => ({
       lifterName: name,
       url,
       e1rmDisplay: '—',
@@ -237,7 +237,7 @@ export function useCoachViewSelection(results: LifterPipelineResult[]) {
       ...shared,
     });
 
-    return results.map((res): CoachViewRow => {
+    return results.map((res): TeamViewRow => {
       const override = overridesByLifter.get(res.name);
       const effectiveDisplayName = override?.displayName ?? selectedDisplayName;
       const effectiveCanonical = displayNameToCanonical.get(effectiveDisplayName) ?? null;

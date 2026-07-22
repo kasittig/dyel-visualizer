@@ -1,16 +1,16 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import type { PipelineModel, AthleteContext, LifterPipelineResult } from '@dyel/api';
-import { CoachViewPage } from './CoachViewPage';
-import type { CoachViewRow } from './useCoachViewSelection';
+import { TeamViewPage } from './TeamViewPage';
+import type { TeamViewRow } from './useTeamViewSelection';
 
-type SelectionState = ReturnType<typeof useCoachViewSelection>;
+type SelectionState = ReturnType<typeof useTeamViewSelection>;
 
-vi.mock('./useCoachViewData', () => ({ useCoachViewData: vi.fn() }));
-vi.mock('./useCoachViewSelection', () => ({ useCoachViewSelection: vi.fn() }));
+vi.mock('./useTeamViewData', () => ({ useTeamViewData: vi.fn() }));
+vi.mock('./useTeamViewSelection', () => ({ useTeamViewSelection: vi.fn() }));
 
-const { useCoachViewData } = await import('./useCoachViewData');
-const { useCoachViewSelection } = await import('./useCoachViewSelection');
+const { useTeamViewData } = await import('./useTeamViewData');
+const { useTeamViewSelection } = await import('./useTeamViewSelection');
 
 afterEach(cleanup);
 
@@ -45,7 +45,7 @@ const mockLifterResult = (
     ? { status: 'error', name, url: `https://example.com{name}`, message: 'Failed to load' }
     : { status: 'success', name, url: `https://example.com{name}`, model: mockPipelineModel() };
 
-const mockRow = (overrides?: Partial<CoachViewRow>): CoachViewRow =>
+const mockRow = (overrides?: Partial<TeamViewRow>): TeamViewRow =>
   ({
     lifterName: 'John Doe',
     url: 'https://example.com/john-doe',
@@ -66,7 +66,7 @@ const mockRow = (overrides?: Partial<CoachViewRow>): CoachViewRow =>
     onExerciseChange: vi.fn(),
     onRepsChange: vi.fn(),
     ...overrides,
-  }) as CoachViewRow;
+  }) as TeamViewRow;
 
 const mockSelection = (overrides?: Partial<SelectionState>): SelectionState => ({
   exerciseOptions: ['Bench Press', 'Squat', 'Deadlift'],
@@ -103,23 +103,23 @@ const mockSelection = (overrides?: Partial<SelectionState>): SelectionState => (
   ...overrides,
 });
 
-describe('CoachViewPage', () => {
+describe('TeamViewPage', () => {
   beforeEach(() => {
-    vi.mocked(useCoachViewSelection).mockReturnValue(mockSelection());
+    vi.mocked(useTeamViewSelection).mockReturnValue(mockSelection());
   });
 
   it('renders loading state', () => {
-    vi.mocked(useCoachViewData).mockReturnValue({ status: 'loading' });
-    render(<CoachViewPage />);
+    vi.mocked(useTeamViewData).mockReturnValue({ status: 'loading' });
+    render(<TeamViewPage />);
     expect(screen.getByText(/loading lifters/i)).toBeDefined();
   });
 
   it('renders error state with message', () => {
-    vi.mocked(useCoachViewData).mockReturnValue({
+    vi.mocked(useTeamViewData).mockReturnValue({
       status: 'error',
       message: 'Failed to fetch sheets',
     });
-    render(<CoachViewPage />);
+    render(<TeamViewPage />);
     expect(screen.getByText('Failed to fetch sheets')).toBeDefined();
   });
 
@@ -152,12 +152,12 @@ describe('CoachViewPage', () => {
   ] as Array<[string, LifterPipelineResult[], SelectionState, boolean]>)(
     'renders success state %s',
     (_, lifterResults, selectionState, shouldShowErrorNote) => {
-      vi.mocked(useCoachViewData).mockReturnValue({
+      vi.mocked(useTeamViewData).mockReturnValue({
         status: 'success',
         data: lifterResults.length ? lifterResults : [mockLifterResult('Lifter 1')],
       });
-      vi.mocked(useCoachViewSelection).mockReturnValue(selectionState);
-      render(<CoachViewPage />);
+      vi.mocked(useTeamViewSelection).mockReturnValue(selectionState);
+      render(<TeamViewPage />);
 
       const exerciseInputs = screen.getAllByPlaceholderText('Search exercise...');
       expect(exerciseInputs.length).toBeGreaterThan(0);
@@ -186,11 +186,11 @@ describe('CoachViewPage', () => {
   ] as Array<[number, string, string, string]>)(
     'displays correct wording when erroredLifterCount is %i',
     (count, text, canonical, display) => {
-      vi.mocked(useCoachViewData).mockReturnValue({
+      vi.mocked(useTeamViewData).mockReturnValue({
         status: 'success',
         data: [mockLifterResult('Lifter 1')],
       });
-      vi.mocked(useCoachViewSelection).mockReturnValue(
+      vi.mocked(useTeamViewSelection).mockReturnValue(
         mockSelection({
           selectedCanonical: canonical,
           selectedDisplayName: display,
@@ -198,24 +198,24 @@ describe('CoachViewPage', () => {
           erroredLifterCount: count,
         })
       );
-      render(<CoachViewPage />);
+      render(<TeamViewPage />);
       expect(screen.getByText(text)).toBeDefined();
     }
   );
 
   it('renders a link icon next to the lifter name linking to their sheet', () => {
-    vi.mocked(useCoachViewData).mockReturnValue({
+    vi.mocked(useTeamViewData).mockReturnValue({
       status: 'success',
       data: [mockLifterResult('Lifter 1')],
     });
-    vi.mocked(useCoachViewSelection).mockReturnValue(
+    vi.mocked(useTeamViewSelection).mockReturnValue(
       mockSelection({
         selectedCanonical: 'bench-classic',
         selectedDisplayName: 'Bench Press',
         rows: [mockRow({ lifterName: 'Alice', url: 'https://example.com/alice-sheet' })],
       })
     );
-    render(<CoachViewPage />);
+    render(<TeamViewPage />);
 
     const link = screen.getByTitle('Open Alice in DYEL Visualizer');
     expect(link.getAttribute('href')).toBe(
@@ -225,27 +225,27 @@ describe('CoachViewPage', () => {
   });
 
   it('shows empty state when exercise selected but no rows', () => {
-    vi.mocked(useCoachViewData).mockReturnValue({
+    vi.mocked(useTeamViewData).mockReturnValue({
       status: 'success',
       data: [mockLifterResult('Lifter 1')],
     });
-    vi.mocked(useCoachViewSelection).mockReturnValue(
+    vi.mocked(useTeamViewSelection).mockReturnValue(
       mockSelection({
         selectedCanonical: 'bench-classic',
         selectedDisplayName: 'Bench Press',
         rows: [],
       })
     );
-    render(<CoachViewPage />);
+    render(<TeamViewPage />);
     expect(screen.getByText('No data for this exercise yet')).toBeDefined();
   });
 
   it('renders placeholder rows for lifters with no data', () => {
-    vi.mocked(useCoachViewData).mockReturnValue({
+    vi.mocked(useTeamViewData).mockReturnValue({
       status: 'success',
       data: [mockLifterResult('Lifter 1')],
     });
-    vi.mocked(useCoachViewSelection).mockReturnValue(
+    vi.mocked(useTeamViewSelection).mockReturnValue(
       mockSelection({
         selectedCanonical: 'bench-classic',
         selectedDisplayName: 'Bench Press',
@@ -262,7 +262,7 @@ describe('CoachViewPage', () => {
         ],
       })
     );
-    render(<CoachViewPage />);
+    render(<TeamViewPage />);
     expect(screen.getByText('Alice')).toBeDefined();
     expect(screen.getByText('Dana')).toBeDefined();
     expect(screen.getByText('No data logged')).toBeDefined();
@@ -272,18 +272,18 @@ describe('CoachViewPage', () => {
   });
 
   it('renders a per-row exercise dropdown and reps input for each lifter', () => {
-    vi.mocked(useCoachViewData).mockReturnValue({
+    vi.mocked(useTeamViewData).mockReturnValue({
       status: 'success',
       data: [mockLifterResult('Lifter 1'), mockLifterResult('Lifter 2')],
     });
-    vi.mocked(useCoachViewSelection).mockReturnValue(
+    vi.mocked(useTeamViewSelection).mockReturnValue(
       mockSelection({
         selectedCanonical: 'bench-classic',
         selectedDisplayName: 'Bench Press',
         rows: [mockRow({ lifterName: 'Alice' }), mockRow({ lifterName: 'Bob' })],
       })
     );
-    render(<CoachViewPage />);
+    render(<TeamViewPage />);
 
     // one exercise input for the top-level control + one per row
     expect(screen.getAllByPlaceholderText('Search exercise...')).toHaveLength(3);
@@ -292,11 +292,11 @@ describe('CoachViewPage', () => {
 
   it('calls the row-specific onExerciseChange/onRepsChange when that row changes', () => {
     const aliceRepsChange = vi.fn();
-    vi.mocked(useCoachViewData).mockReturnValue({
+    vi.mocked(useTeamViewData).mockReturnValue({
       status: 'success',
       data: [mockLifterResult('Lifter 1'), mockLifterResult('Lifter 2')],
     });
-    vi.mocked(useCoachViewSelection).mockReturnValue(
+    vi.mocked(useTeamViewSelection).mockReturnValue(
       mockSelection({
         selectedCanonical: 'bench-classic',
         selectedDisplayName: 'Bench Press',
@@ -306,7 +306,7 @@ describe('CoachViewPage', () => {
         ],
       })
     );
-    render(<CoachViewPage />);
+    render(<TeamViewPage />);
 
     const spinbuttons = screen.getAllByRole('spinbutton') as HTMLInputElement[];
     // index 0 is the top-level reps input; index 1 is Alice's row
@@ -315,18 +315,18 @@ describe('CoachViewPage', () => {
   });
 
   it('renders per-row inputs even for placeholder rows with no data', () => {
-    vi.mocked(useCoachViewData).mockReturnValue({
+    vi.mocked(useTeamViewData).mockReturnValue({
       status: 'success',
       data: [mockLifterResult('Lifter 1')],
     });
-    vi.mocked(useCoachViewSelection).mockReturnValue(
+    vi.mocked(useTeamViewSelection).mockReturnValue(
       mockSelection({
         selectedCanonical: 'bench-classic',
         selectedDisplayName: 'Bench Press',
         rows: [mockRow({ lifterName: 'Dana', hasData: false })],
       })
     );
-    render(<CoachViewPage />);
+    render(<TeamViewPage />);
 
     expect(screen.getAllByPlaceholderText('Search exercise...')).toHaveLength(2);
     expect(screen.getAllByRole('spinbutton')).toHaveLength(2);
@@ -334,11 +334,11 @@ describe('CoachViewPage', () => {
 
   it('renders facet filter selects and wires their onChange handlers', () => {
     const setSelectedBar = vi.fn();
-    vi.mocked(useCoachViewData).mockReturnValue({
+    vi.mocked(useTeamViewData).mockReturnValue({
       status: 'success',
       data: [mockLifterResult('Lifter 1')],
     });
-    vi.mocked(useCoachViewSelection).mockReturnValue(
+    vi.mocked(useTeamViewSelection).mockReturnValue(
       mockSelection({
         selectedCanonical: 'bench-classic',
         selectedDisplayName: 'Bench Press',
@@ -346,7 +346,7 @@ describe('CoachViewPage', () => {
         setSelectedBar,
       })
     );
-    render(<CoachViewPage />);
+    render(<TeamViewPage />);
 
     expect(screen.getByRole('combobox', { name: 'Bar' })).toBeDefined();
     expect(screen.getByRole('combobox', { name: 'Stance' })).toBeDefined();
@@ -360,18 +360,18 @@ describe('CoachViewPage', () => {
   });
 
   it('defaults facet selects to the unfiltered "—" option', () => {
-    vi.mocked(useCoachViewData).mockReturnValue({
+    vi.mocked(useTeamViewData).mockReturnValue({
       status: 'success',
       data: [mockLifterResult('Lifter 1')],
     });
-    vi.mocked(useCoachViewSelection).mockReturnValue(
+    vi.mocked(useTeamViewSelection).mockReturnValue(
       mockSelection({
         selectedCanonical: 'bench-classic',
         selectedDisplayName: 'Bench Press',
         rows: [mockRow()],
       })
     );
-    render(<CoachViewPage />);
+    render(<TeamViewPage />);
 
     expect((screen.getByRole('combobox', { name: 'Bar' }) as HTMLSelectElement).value).toBe('');
     expect(
@@ -380,18 +380,18 @@ describe('CoachViewPage', () => {
   });
 
   it('renders an All chip plus one chip per liftTypeOptions entry', () => {
-    vi.mocked(useCoachViewData).mockReturnValue({
+    vi.mocked(useTeamViewData).mockReturnValue({
       status: 'success',
       data: [mockLifterResult('Lifter 1')],
     });
-    vi.mocked(useCoachViewSelection).mockReturnValue(
+    vi.mocked(useTeamViewSelection).mockReturnValue(
       mockSelection({
         selectedCanonical: 'bench-classic',
         selectedDisplayName: 'Bench Press',
         rows: [mockRow()],
       })
     );
-    render(<CoachViewPage />);
+    render(<TeamViewPage />);
 
     expect(screen.getByRole('button', { name: 'All' })).toBeDefined();
     expect(screen.getByRole('button', { name: 'Squat' })).toBeDefined();
@@ -402,11 +402,11 @@ describe('CoachViewPage', () => {
 
   it('clicking a lift type chip calls setSelectedLiftType with that type', () => {
     const setSelectedLiftType = vi.fn();
-    vi.mocked(useCoachViewData).mockReturnValue({
+    vi.mocked(useTeamViewData).mockReturnValue({
       status: 'success',
       data: [mockLifterResult('Lifter 1')],
     });
-    vi.mocked(useCoachViewSelection).mockReturnValue(
+    vi.mocked(useTeamViewSelection).mockReturnValue(
       mockSelection({
         selectedCanonical: 'bench-classic',
         selectedDisplayName: 'Bench Press',
@@ -414,7 +414,7 @@ describe('CoachViewPage', () => {
         setSelectedLiftType,
       })
     );
-    render(<CoachViewPage />);
+    render(<TeamViewPage />);
 
     fireEvent.click(screen.getByRole('button', { name: 'Squat' }));
     expect(setSelectedLiftType).toHaveBeenCalledWith('squat');
@@ -424,18 +424,18 @@ describe('CoachViewPage', () => {
   });
 
   it('the All chip is active by default (no lift type selected)', () => {
-    vi.mocked(useCoachViewData).mockReturnValue({
+    vi.mocked(useTeamViewData).mockReturnValue({
       status: 'success',
       data: [mockLifterResult('Lifter 1')],
     });
-    vi.mocked(useCoachViewSelection).mockReturnValue(
+    vi.mocked(useTeamViewSelection).mockReturnValue(
       mockSelection({
         selectedCanonical: 'bench-classic',
         selectedDisplayName: 'Bench Press',
         rows: [mockRow()],
       })
     );
-    render(<CoachViewPage />);
+    render(<TeamViewPage />);
 
     expect(screen.getByRole('button', { name: 'All' }).className).toMatch(/chipActive/);
     expect(screen.getByRole('button', { name: 'Squat' }).className).not.toMatch(/chipActive/);
@@ -443,11 +443,11 @@ describe('CoachViewPage', () => {
 
   it('renders a toggleable e1RM cell when a projected value differs from actual', () => {
     const onToggleProjected = vi.fn();
-    vi.mocked(useCoachViewData).mockReturnValue({
+    vi.mocked(useTeamViewData).mockReturnValue({
       status: 'success',
       data: [mockLifterResult('Lifter 1')],
     });
-    vi.mocked(useCoachViewSelection).mockReturnValue(
+    vi.mocked(useTeamViewSelection).mockReturnValue(
       mockSelection({
         selectedCanonical: 'bench-classic',
         selectedDisplayName: 'Bench Press',
@@ -462,7 +462,7 @@ describe('CoachViewPage', () => {
         ],
       })
     );
-    render(<CoachViewPage />);
+    render(<TeamViewPage />);
 
     expect(screen.getByText('225 lbs')).toBeDefined();
     fireEvent.click(screen.getByRole('button', { name: /225 lbs/ }));
@@ -471,11 +471,11 @@ describe('CoachViewPage', () => {
 
   it('toggling e1RM projection also changes the Target weight display for that row', () => {
     const onToggleProjected = vi.fn();
-    vi.mocked(useCoachViewData).mockReturnValue({
+    vi.mocked(useTeamViewData).mockReturnValue({
       status: 'success',
       data: [mockLifterResult('Lifter 1')],
     });
-    vi.mocked(useCoachViewSelection).mockReturnValue(
+    vi.mocked(useTeamViewSelection).mockReturnValue(
       mockSelection({
         selectedCanonical: 'bench-classic',
         selectedDisplayName: 'Bench Press',
@@ -493,7 +493,7 @@ describe('CoachViewPage', () => {
         ],
       })
     );
-    render(<CoachViewPage />);
+    render(<TeamViewPage />);
 
     // Initially shows actual values
     expect(screen.getByText('225 lbs')).toBeDefined();

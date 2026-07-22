@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { act, renderHook } from '@testing-library/react';
 import type { LifterPipelineResult, Point } from '@dyel/api';
 import type { PipelineModel, TaggedSetRecord } from '@dyel/pipeline';
-import { useCoachViewSelection } from './useCoachViewSelection';
+import { useTeamViewSelection } from './useTeamViewSelection';
 
 // Fixture factories
 
@@ -82,7 +82,7 @@ const errorResult = (
   message,
 });
 
-describe('useCoachViewSelection', () => {
+describe('useTeamViewSelection', () => {
   describe('option dedup/sort', () => {
     it('deduplicates and sorts exercise options by display name, builds displayNameToCanonical map', () => {
       const model = minimalPipelineModel(
@@ -94,7 +94,7 @@ describe('useCoachViewSelection', () => {
           point(1, 75, 'deadlift'),
         ]
       );
-      const { result } = renderHook(() => useCoachViewSelection([successResult('Lifter1', model)]));
+      const { result } = renderHook(() => useTeamViewSelection([successResult('Lifter1', model)]));
 
       expect(result.current.exerciseOptions).toEqual(['Bench Press', 'Deadlift', 'Squat']);
       expect(result.current.displayNameToCanonical.get('Bench Press')).toBe('bench');
@@ -106,7 +106,7 @@ describe('useCoachViewSelection', () => {
       const m1 = minimalPipelineModel([], [point(1, 100, 'squat'), point(1, 90, 'bench')]);
       const m2 = minimalPipelineModel([], [point(1, 85, 'bench'), point(1, 75, 'deadlift')]);
       const { result } = renderHook(() =>
-        useCoachViewSelection([successResult('Lifter1', m1), successResult('Lifter2', m2)])
+        useTeamViewSelection([successResult('Lifter1', m1), successResult('Lifter2', m2)])
       );
 
       expect(result.current.exerciseOptions).toEqual(['Bench Press', 'Deadlift', 'Squat']);
@@ -116,7 +116,7 @@ describe('useCoachViewSelection', () => {
   describe('placeholder rows by canonical', () => {
     it('shows a placeholder row for lifters with no e1rm points for selected canonical', () => {
       const { result } = renderHook(() =>
-        useCoachViewSelection([
+        useTeamViewSelection([
           successResult('SquatOnly', minimalPipelineModel([], [point(1, 100, 'squat')])),
           successResult('BenchOnly', minimalPipelineModel([], [point(1, 90, 'bench')])),
         ])
@@ -142,7 +142,7 @@ describe('useCoachViewSelection', () => {
 
     it('shows a placeholder row for errored lifters', () => {
       const { result } = renderHook(() =>
-        useCoachViewSelection([
+        useTeamViewSelection([
           successResult('Lifter', minimalPipelineModel([], [point(1, 100, 'squat')])),
           errorResult('Broken'),
         ])
@@ -158,7 +158,7 @@ describe('useCoachViewSelection', () => {
     });
 
     it('returns empty rows when no canonical is selected', () => {
-      const { result } = renderHook(() => useCoachViewSelection([]));
+      const { result } = renderHook(() => useTeamViewSelection([]));
       expect(result.current.rows).toEqual([]);
     });
   });
@@ -166,7 +166,7 @@ describe('useCoachViewSelection', () => {
   describe('default exercise selection', () => {
     it('auto-selects the first exercise option once options load', () => {
       const { result } = renderHook(() =>
-        useCoachViewSelection([
+        useTeamViewSelection([
           successResult(
             'Lifter',
             minimalPipelineModel([], [point(1, 100, 'squat'), point(1, 90, 'bench')])
@@ -185,7 +185,7 @@ describe('useCoachViewSelection', () => {
           minimalPipelineModel([], [point(1, 100, 'squat'), point(1, 90, 'bench')])
         ),
       ];
-      const { result, rerender } = renderHook((l) => useCoachViewSelection(l), {
+      const { result, rerender } = renderHook((l) => useTeamViewSelection(l), {
         initialProps: lifters,
       });
       act(() => result.current.setSelectedDisplayName('Squat'));
@@ -194,7 +194,7 @@ describe('useCoachViewSelection', () => {
     });
 
     it('stays unselected when there are no exercise options', () => {
-      const { result } = renderHook(() => useCoachViewSelection([]));
+      const { result } = renderHook(() => useTeamViewSelection([]));
       expect(result.current.selectedDisplayName).toBe('');
       expect(result.current.selectedCanonical).toBeNull();
     });
@@ -203,7 +203,7 @@ describe('useCoachViewSelection', () => {
   describe('reps-change recompute', () => {
     it('recomputes targetWeightDisplay when reps change', () => {
       const { result } = renderHook(() =>
-        useCoachViewSelection([
+        useTeamViewSelection([
           successResult('Lifter', minimalPipelineModel([], [point(1, 100, 'squat')])),
         ])
       );
@@ -223,13 +223,13 @@ describe('useCoachViewSelection', () => {
         [taggedRecord('squat', 'Squat', { meta: { rawUnit: 'kg' } })],
         [point(1, 100, 'squat')]
       );
-      const { result } = renderHook(() => useCoachViewSelection([successResult('Lifter', model)]));
+      const { result } = renderHook(() => useTeamViewSelection([successResult('Lifter', model)]));
       expect(result.current.unit).toBe('kg');
     });
 
     it('falls back to lbs when all results are errors', () => {
       const { result } = renderHook(() =>
-        useCoachViewSelection([errorResult('Error1'), errorResult('Error2')])
+        useTeamViewSelection([errorResult('Error1'), errorResult('Error2')])
       );
       expect(result.current.unit).toBe('lbs');
     });
@@ -244,7 +244,7 @@ describe('useCoachViewSelection', () => {
         [point(1, 100, 'bench')]
       );
       const { result } = renderHook(() =>
-        useCoachViewSelection([successResult('First', m1), successResult('Second', m2)])
+        useTeamViewSelection([successResult('First', m1), successResult('Second', m2)])
       );
       expect(result.current.unit).toBe('lbs');
     });
@@ -256,7 +256,7 @@ describe('useCoachViewSelection', () => {
         [taggedRecord('squat', 'Squat', { meta: { rawUnit: 'kg' } })],
         [point(1, 100, 'squat')]
       );
-      const { result } = renderHook(() => useCoachViewSelection([successResult('Lifter', model)]));
+      const { result } = renderHook(() => useTeamViewSelection([successResult('Lifter', model)]));
       act(() => result.current.setSelectedDisplayName('Squat'));
       return result;
     };
@@ -311,7 +311,7 @@ describe('useCoachViewSelection', () => {
         2,
       ],
     ])('%s', (_, results, expectedCount) => {
-      const { result } = renderHook(() => useCoachViewSelection(results));
+      const { result } = renderHook(() => useTeamViewSelection(results));
       expect(result.current.erroredLifterCount).toBe(expectedCount);
     });
   });
@@ -322,7 +322,7 @@ describe('useCoachViewSelection', () => {
         [],
         [point(1, 100, 'squat'), point(1, 90, 'bench'), point(1, 85, 'deadlift')]
       );
-      const { result } = renderHook(() => useCoachViewSelection([successResult('Lifter', model)]));
+      const { result } = renderHook(() => useTeamViewSelection([successResult('Lifter', model)]));
 
       expect(result.current.selectedDisplayName).toBe('Bench Press');
       expect(result.current.selectedCanonical).toBe('bench');
@@ -341,7 +341,7 @@ describe('useCoachViewSelection', () => {
       const l1 = minimalPipelineModel([], [point(1, 100, 'squat'), point(1, 90, 'bench')]);
       const l2 = minimalPipelineModel([], [point(1, 150, 'squat'), point(1, 140, 'bench')]);
       const { result } = renderHook(() =>
-        useCoachViewSelection([successResult('Alice', l1), successResult('Bob', l2)])
+        useTeamViewSelection([successResult('Alice', l1), successResult('Bob', l2)])
       );
       act(() => result.current.setSelectedDisplayName('Squat'));
       const aliceRow = () => result.current.rows.find((r) => r.lifterName === 'Alice')!;
@@ -357,7 +357,7 @@ describe('useCoachViewSelection', () => {
       const l1 = minimalPipelineModel([], [point(1, 100, 'squat')]);
       const l2 = minimalPipelineModel([], [point(1, 150, 'squat')]);
       const { result } = renderHook(() =>
-        useCoachViewSelection([successResult('Alice', l1), successResult('Bob', l2)])
+        useTeamViewSelection([successResult('Alice', l1), successResult('Bob', l2)])
       );
       act(() => result.current.setSelectedDisplayName('Squat'));
       const aliceRow = () => result.current.rows.find((r) => r.lifterName === 'Alice')!;
@@ -376,7 +376,7 @@ describe('useCoachViewSelection', () => {
         [],
         [point(1, 100, 'squat'), point(1, 90, 'bench'), point(1, 80, 'deadlift')]
       );
-      const { result } = renderHook(() => useCoachViewSelection([successResult('Alice', model)]));
+      const { result } = renderHook(() => useTeamViewSelection([successResult('Alice', model)]));
       act(() => result.current.setSelectedDisplayName('Squat'));
       act(() => result.current.rows[0].onExerciseChange('Bench Press'));
       act(() => result.current.rows[0].onRepsChange(7));
@@ -391,7 +391,7 @@ describe('useCoachViewSelection', () => {
         [],
         [point(1, 100, 'squat'), point(1, 90, 'bench'), point(1, 80, 'deadlift')]
       );
-      const { result } = renderHook(() => useCoachViewSelection([successResult('Alice', model)]));
+      const { result } = renderHook(() => useTeamViewSelection([successResult('Alice', model)]));
       act(() => result.current.setSelectedDisplayName('Squat'));
       act(() => result.current.rows[0].onExerciseChange('Bench Press'));
       act(() => result.current.rows[0].onRepsChange(7));
@@ -405,7 +405,7 @@ describe('useCoachViewSelection', () => {
       const l1 = minimalPipelineModel([], [point(1, 100, 'squat')]);
       const l2 = minimalPipelineModel([], [point(1, 150, 'squat')]);
       const { result } = renderHook(() =>
-        useCoachViewSelection([successResult('Alice', l1), successResult('Bob', l2)])
+        useTeamViewSelection([successResult('Alice', l1), successResult('Bob', l2)])
       );
       act(() => result.current.setSelectedDisplayName('Squat'));
       const aliceRow = () => result.current.rows.find((r) => r.lifterName === 'Alice')!;
@@ -434,7 +434,7 @@ describe('useCoachViewSelection', () => {
         ],
         [point(1, 100, 'squat')]
       );
-      const { result } = renderHook(() => useCoachViewSelection([successResult('Lifter', model)]));
+      const { result } = renderHook(() => useTeamViewSelection([successResult('Lifter', model)]));
 
       act(() => result.current.setSelectedDisplayName('Squat'));
       expect(result.current.rows[0].sessionCount).toBe(3);
@@ -456,7 +456,7 @@ describe('useCoachViewSelection', () => {
         [...squat3Dates, ...bench2Dates],
         [point(1, 100, 'squat'), point(1, 90, 'bench')]
       );
-      const { result } = renderHook(() => useCoachViewSelection([successResult('Lifter', model)]));
+      const { result } = renderHook(() => useTeamViewSelection([successResult('Lifter', model)]));
 
       act(() => result.current.setSelectedDisplayName('Squat'));
       expect(result.current.rows[0].sessionCount).toBe(3);
@@ -483,7 +483,7 @@ describe('useCoachViewSelection', () => {
         e1rmMaxEffortPoints,
         baseline
       );
-      const { result } = renderHook(() => useCoachViewSelection([successResult('Lifter', model)]));
+      const { result } = renderHook(() => useTeamViewSelection([successResult('Lifter', model)]));
 
       act(() => result.current.setSelectedDisplayName('Squat'));
       const row = result.current.rows[0];
@@ -537,7 +537,7 @@ describe('useCoachViewSelection', () => {
         },
       } as unknown as PipelineModel;
 
-      const { result } = renderHook(() => useCoachViewSelection([successResult('Lifter', model)]));
+      const { result } = renderHook(() => useTeamViewSelection([successResult('Lifter', model)]));
 
       act(() => result.current.setSelectedDisplayName('Squat'));
       const row = result.current.rows[0];
@@ -561,7 +561,7 @@ describe('useCoachViewSelection', () => {
         [point(1, 150, 'squat')],
         { 'lift:squat': 'squat' }
       );
-      const { result } = renderHook(() => useCoachViewSelection([successResult('Lifter', model)]));
+      const { result } = renderHook(() => useTeamViewSelection([successResult('Lifter', model)]));
 
       act(() => result.current.setSelectedDisplayName('Squat'));
       const row = result.current.rows[0];
@@ -573,7 +573,7 @@ describe('useCoachViewSelection', () => {
 
     it('sets targetWeightProjectedDisplay to null when estimate is null', () => {
       const model = minimalPipelineModel([], [point(1, 100, 'squat')], [], {});
-      const { result } = renderHook(() => useCoachViewSelection([successResult('Lifter', model)]));
+      const { result } = renderHook(() => useTeamViewSelection([successResult('Lifter', model)]));
 
       act(() => result.current.setSelectedDisplayName('Squat'));
       const row = result.current.rows[0];
@@ -583,7 +583,7 @@ describe('useCoachViewSelection', () => {
 
     it('showProjected defaults to false', () => {
       const model = minimalPipelineModel([], [point(1, 100, 'squat')]);
-      const { result } = renderHook(() => useCoachViewSelection([successResult('Lifter', model)]));
+      const { result } = renderHook(() => useTeamViewSelection([successResult('Lifter', model)]));
 
       act(() => result.current.setSelectedDisplayName('Squat'));
       const row = result.current.rows[0];
@@ -593,7 +593,7 @@ describe('useCoachViewSelection', () => {
 
     it('onToggleProjected toggles showProjected state per lifter', () => {
       const model = minimalPipelineModel([], [point(1, 100, 'squat')]);
-      const { result } = renderHook(() => useCoachViewSelection([successResult('Lifter', model)]));
+      const { result } = renderHook(() => useTeamViewSelection([successResult('Lifter', model)]));
 
       act(() => result.current.setSelectedDisplayName('Squat'));
       const row = () => result.current.rows[0];
@@ -611,7 +611,7 @@ describe('useCoachViewSelection', () => {
       const l1 = minimalPipelineModel([], [point(1, 100, 'squat')]);
       const l2 = minimalPipelineModel([], [point(1, 150, 'squat')]);
       const { result } = renderHook(() =>
-        useCoachViewSelection([successResult('Alice', l1), successResult('Bob', l2)])
+        useTeamViewSelection([successResult('Alice', l1), successResult('Bob', l2)])
       );
 
       act(() => result.current.setSelectedDisplayName('Squat'));
@@ -634,7 +634,7 @@ describe('useCoachViewSelection', () => {
 
     it('placeholder rows have showProjected/onToggleProjected and targetWeightProjectedDisplay null', () => {
       const { result } = renderHook(() =>
-        useCoachViewSelection([
+        useTeamViewSelection([
           successResult('SquatOnly', minimalPipelineModel([], [point(1, 100, 'squat')])),
           successResult('BenchOnly', minimalPipelineModel([], [point(1, 90, 'bench')])),
         ])
@@ -650,7 +650,7 @@ describe('useCoachViewSelection', () => {
 
     it('errored rows have showProjected/onToggleProjected and targetWeightProjectedDisplay null', () => {
       const { result } = renderHook(() =>
-        useCoachViewSelection([
+        useTeamViewSelection([
           successResult('Lifter', minimalPipelineModel([], [point(1, 100, 'squat')])),
           errorResult('Broken'),
         ])
@@ -701,7 +701,7 @@ describe('useCoachViewSelection', () => {
         { L1: ['Bench Press', 'Squat'], L2: ['Bench Press', 'Squat'] },
       ],
     ])('%s', (_, results, expectedByLifter) => {
-      const { result } = renderHook(() => useCoachViewSelection(results));
+      const { result } = renderHook(() => useTeamViewSelection(results));
 
       // Set a canonical to populate rows
       if (result.current.exerciseOptions.length > 0) {
@@ -724,7 +724,7 @@ describe('useCoachViewSelection', () => {
         ],
         [point(1, 100, 'squat-ssb'), point(1, 90, 'bench')]
       );
-      const { result } = renderHook(() => useCoachViewSelection([successResult('Lifter', model)]));
+      const { result } = renderHook(() => useTeamViewSelection([successResult('Lifter', model)]));
 
       expect(result.current.exerciseOptions).toEqual(['Bench Press', 'SSB Squat']);
     });
@@ -737,7 +737,7 @@ describe('useCoachViewSelection', () => {
         ],
         [point(1, 100, 'squat-ssb'), point(1, 90, 'bench')]
       );
-      const { result } = renderHook(() => useCoachViewSelection([successResult('Lifter', model)]));
+      const { result } = renderHook(() => useTeamViewSelection([successResult('Lifter', model)]));
 
       act(() => result.current.setSelectedBar('ssb'));
 
@@ -752,7 +752,7 @@ describe('useCoachViewSelection', () => {
         ],
         [point(1, 100, 'squat-ssb'), point(1, 90, 'bench')]
       );
-      const { result } = renderHook(() => useCoachViewSelection([successResult('Lifter', model)]));
+      const { result } = renderHook(() => useTeamViewSelection([successResult('Lifter', model)]));
 
       act(() => result.current.setSelectedBar('ssb'));
       expect(result.current.exerciseOptions).toEqual(['SSB Squat']);
@@ -769,7 +769,7 @@ describe('useCoachViewSelection', () => {
         ],
         [point(1, 100, 'squat-ssb'), point(1, 90, 'bench')]
       );
-      const { result } = renderHook(() => useCoachViewSelection([successResult('Lifter', model)]));
+      const { result } = renderHook(() => useTeamViewSelection([successResult('Lifter', model)]));
       act(() => result.current.setSelectedDisplayName('SSB Squat'));
 
       act(() => result.current.setSelectedBar('ssb'));
@@ -785,7 +785,7 @@ describe('useCoachViewSelection', () => {
         ],
         [point(1, 100, 'squat-ssb'), point(1, 90, 'bench')]
       );
-      const { result } = renderHook(() => useCoachViewSelection([successResult('Lifter', model)]));
+      const { result } = renderHook(() => useTeamViewSelection([successResult('Lifter', model)]));
       act(() => result.current.setSelectedDisplayName('Bench Press'));
       expect(result.current.selectedDisplayName).toBe('Bench Press');
 
@@ -804,7 +804,7 @@ describe('useCoachViewSelection', () => {
         ],
         [point(1, 100, 'squat-ssb'), point(1, 90, 'bench')]
       );
-      const { result } = renderHook(() => useCoachViewSelection([successResult('Lifter', model)]));
+      const { result } = renderHook(() => useTeamViewSelection([successResult('Lifter', model)]));
       act(() => result.current.setSelectedDisplayName('Bench Press'));
       act(() => result.current.rows[0].onExerciseChange('SSB Squat'));
       expect(result.current.rows[0].effectiveDisplayName).toBe('SSB Squat');
@@ -821,7 +821,7 @@ describe('useCoachViewSelection', () => {
         [taggedRecord('squat-ssb', 'Squat'), taggedRecord('bench', 'Bench')],
         [point(1, 100, 'squat-ssb'), point(1, 90, 'bench')]
       );
-      const { result } = renderHook(() => useCoachViewSelection([successResult('Lifter', model)]));
+      const { result } = renderHook(() => useTeamViewSelection([successResult('Lifter', model)]));
 
       expect(result.current.exerciseOptions).toEqual(['Bench Press', 'SSB Squat']);
     });
@@ -831,7 +831,7 @@ describe('useCoachViewSelection', () => {
         [taggedRecord('squat-ssb', 'Squat'), taggedRecord('bench', 'Bench')],
         [point(1, 100, 'squat-ssb'), point(1, 90, 'bench')]
       );
-      const { result } = renderHook(() => useCoachViewSelection([successResult('Lifter', model)]));
+      const { result } = renderHook(() => useTeamViewSelection([successResult('Lifter', model)]));
 
       act(() => result.current.setSelectedLiftType('squat'));
 
@@ -843,7 +843,7 @@ describe('useCoachViewSelection', () => {
         [taggedRecord('squat-ssb', 'Squat'), taggedRecord('bench', 'Bench')],
         [point(1, 100, 'squat-ssb'), point(1, 90, 'bench')]
       );
-      const { result } = renderHook(() => useCoachViewSelection([successResult('Lifter', model)]));
+      const { result } = renderHook(() => useTeamViewSelection([successResult('Lifter', model)]));
 
       act(() => result.current.setSelectedLiftType('squat'));
       expect(result.current.exerciseOptions).toEqual(['SSB Squat']);
@@ -857,7 +857,7 @@ describe('useCoachViewSelection', () => {
         [taggedRecord('squat-ssb', 'Squat'), taggedRecord('bench', 'Bench')],
         [point(1, 100, 'squat-ssb'), point(1, 90, 'bench')]
       );
-      const { result } = renderHook(() => useCoachViewSelection([successResult('Lifter', model)]));
+      const { result } = renderHook(() => useTeamViewSelection([successResult('Lifter', model)]));
       act(() => result.current.setSelectedDisplayName('SSB Squat'));
 
       act(() => result.current.setSelectedLiftType('squat'));
@@ -870,7 +870,7 @@ describe('useCoachViewSelection', () => {
         [taggedRecord('squat-ssb', 'Squat'), taggedRecord('bench', 'Bench')],
         [point(1, 100, 'squat-ssb'), point(1, 90, 'bench')]
       );
-      const { result } = renderHook(() => useCoachViewSelection([successResult('Lifter', model)]));
+      const { result } = renderHook(() => useTeamViewSelection([successResult('Lifter', model)]));
       act(() => result.current.setSelectedDisplayName('Bench Press'));
       expect(result.current.selectedDisplayName).toBe('Bench Press');
 
@@ -886,7 +886,7 @@ describe('useCoachViewSelection', () => {
         [taggedRecord('squat-ssb', 'Squat'), taggedRecord('bench', 'Bench')],
         [point(1, 100, 'squat-ssb'), point(1, 90, 'bench')]
       );
-      const { result } = renderHook(() => useCoachViewSelection([successResult('Lifter', model)]));
+      const { result } = renderHook(() => useTeamViewSelection([successResult('Lifter', model)]));
       act(() => result.current.setSelectedDisplayName('Bench Press'));
       act(() => result.current.rows[0].onExerciseChange('SSB Squat'));
       expect(result.current.rows[0].effectiveDisplayName).toBe('SSB Squat');
@@ -901,7 +901,7 @@ describe('useCoachViewSelection', () => {
         [taggedRecord('squat-ssb', 'Squat'), taggedRecord('bench', 'Bench')],
         [point(1, 100, 'squat-ssb'), point(1, 90, 'bench')]
       );
-      const { result } = renderHook(() => useCoachViewSelection([successResult('Lifter', model)]));
+      const { result } = renderHook(() => useTeamViewSelection([successResult('Lifter', model)]));
 
       expect(result.current.liftTypeOptions).toEqual(['squat', 'bench']);
     });
@@ -919,7 +919,7 @@ describe('useCoachViewSelection', () => {
       );
 
       const { result } = renderHook(() =>
-        useCoachViewSelection([successResult('Alice', l1Model), successResult('Bob', l2Model)])
+        useTeamViewSelection([successResult('Alice', l1Model), successResult('Bob', l2Model)])
       );
 
       expect(result.current.unit).toBe('kg');
