@@ -34,6 +34,15 @@
   box-shadow: 0 0 0 3px var(--accent-bg);
 }
 
+/* Highlight the reps input itself while its popover is open, so it's obvious which
+   cell's effort control is active even after the double-click focus has moved into
+   the popover. */
+.repsInputActive {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-bg);
+  background: var(--accent-bg);
+}
+
 /* Hide spinner arrows on number inputs */
 .repsInput::-webkit-inner-spin-button,
 .repsInput::-webkit-outer-spin-button {
@@ -59,12 +68,61 @@
   text-align: center;
 }
 
-/* Radix Popover content styling */
+/* Radix Popover content styling — an accent-colored top border, stronger accent-tinted
+   shadow, and an entrance animation (keyed off Radix's `data-state` attribute) make the
+   open popover read as a distinct, elevated surface rather than a plain tooltip. */
 .popover {
-  background: var(--surface);
-  border: 1px solid var(--border);
+  background: var(--code-bg);
+  border: 1px solid var(--accent-border);
+  border-top: 3px solid var(--accent);
   border-radius: 6px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  padding: 1rem;
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.18),
+    0 0 0 3px var(--accent-bg);
+  padding: 0.85rem 1rem 1rem;
   z-index: 1000;
+  animation: effortPopoverIn 0.12s ease-out;
+  transform-origin: var(--radix-popover-content-transform-origin);
+}
+
+.popover[data-state='closed'] {
+  animation: effortPopoverOut 0.1s ease-in;
+}
+
+@keyframes effortPopoverIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(-2px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes effortPopoverOut {
+  from {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.96) translateY(-2px);
+  }
+}
+
+.popoverHeader {
+  font-family: var(--heading);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--accent);
+  margin-bottom: 0.5rem;
+}
+
+.arrow {
+  fill: var(--code-bg);
+  stroke: var(--accent-border);
+  stroke-width: 1px;
 }

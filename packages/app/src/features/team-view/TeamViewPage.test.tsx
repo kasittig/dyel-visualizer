@@ -116,6 +116,13 @@ const mockSelection = (overrides?: Partial<SelectionState>): SelectionState => (
 describe('TeamViewPage', () => {
   beforeEach(() => {
     vi.mocked(useTeamViewSelection).mockReturnValue(mockSelection());
+    // Radix Popover's Arrow (used by EffortPopover) relies on ResizeObserver, which jsdom
+    // doesn't implement — stub it so the popover mounts cleanly in tests.
+    global.ResizeObserver = vi.fn().mockImplementation(() => ({
+      observe: vi.fn(),
+      unobserve: vi.fn(),
+      disconnect: vi.fn(),
+    }));
   });
 
   it('renders loading state', () => {

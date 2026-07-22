@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import * as Popover from '@radix-ui/react-popover';
+import clsx from 'clsx';
 import type { EffortMode } from '@dyel/api';
 import { EffortInput } from './EffortInput';
 import styles from './EffortPopover.module.css';
@@ -31,13 +32,13 @@ export function EffortPopover({
     <div className={styles.container}>
       <Popover.Root open={open} onOpenChange={setOpen}>
         <Popover.Anchor asChild>
-          <div className={styles.inputWrapper}>
+          <div className={clsx(styles.inputWrapper, open && styles.inputWrapperActive)}>
             <input
               type="number"
               min={1}
               max={20}
               value={reps}
-              className={styles.repsInput}
+              className={clsx(styles.repsInput, open && styles.repsInputActive)}
               title="Double-click to set RPE / %"
               onDoubleClick={() => setOpen(true)}
               onChange={(e) => {
@@ -55,7 +56,9 @@ export function EffortPopover({
           </div>
         </Popover.Anchor>
         <Popover.Portal>
-          <Popover.Content className={styles.popover} sideOffset={6}>
+          <Popover.Content className={styles.popover} sideOffset={8} collisionPadding={8}>
+            <Popover.Arrow className={styles.arrow} width={14} height={7} />
+            <div className={styles.popoverHeader}>Effort</div>
             <EffortInput
               mode={effortMode}
               value={effortValue}
