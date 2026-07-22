@@ -102,6 +102,15 @@ export default defineConfig([
     },
   },
   {
+    // TeamHistoryChart.tsx imports LINE_COLORS (display constant array) and NORMALIZED_KEY_SUFFIX
+    // (a plain string constant used to key/label the normalized companion line's tooltip) — same
+    // category as ConjugateCharts.tsx's LINE_COLORS exception above, not business-logic derivation.
+    files: ['packages/app/src/features/team-view/TeamHistoryChart.tsx'],
+    rules: {
+      '@typescript-eslint/no-restricted-imports': 'off',
+    },
+  },
+  {
     // DiagnosticsPanel.tsx imports formatEffect/formatAddlWtOffset (display formatters)
     files: ['packages/app/src/features/lift/DiagnosticsPanel.tsx'],
     rules: {

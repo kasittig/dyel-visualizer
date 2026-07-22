@@ -39,6 +39,32 @@
   composes: chipActive from '../calculator/StrengthScoreCalculator.module.css';
 }
 
+.graphButton {
+  border: 1px solid var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: var(--accent);
+  font-family: var(--heading);
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: 0.4rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    color 0.15s,
+    box-shadow 0.15s;
+}
+
+.graphButton:hover {
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+.graphButtonActive {
+  background: var(--accent);
+  color: var(--on-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
+}
+
 /* Exercise and reps display line */
 .headerLine {
   margin: 1rem 0;
@@ -202,4 +228,24 @@
 .facetSelect:focus {
   border-color: var(--accent-border);
   box-shadow: 0 0 0 3px var(--accent-bg);
+}
+
+/* Side-by-side layout for the lifter table and the (optional) history chart, so a viewer can
+   compare table values against the graph without scrolling. Each column shrinks/grows evenly;
+   min-width: 0 lets the table's own horizontal-scroll container (TableCard) actually engage
+   inside its half rather than forcing the flex item to overflow the row. */
+.contentSplit {
+  display: flex;
+  align-items: flex-start;
+  gap: 1.5rem;
+}
+
+.tableColumn {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.chartColumn {
+  flex: 1 1 0;
+  min-width: 0;
 }

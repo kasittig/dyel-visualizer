@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import type { DateRange } from 'react-day-picker';
 import type {
   DisplayUnit,
   LifterPipelineResult,
@@ -9,6 +10,7 @@ import type {
   LiftType,
   EffortMode,
   Effort,
+  Point,
 } from '@dyel/api';
 import {
   buildExerciseDisplayNameIndex,
@@ -26,6 +28,7 @@ import {
   formatLastSessionParts,
   formatWeight,
   groupByLiftType,
+  isRecordInDateRange,
   predictWeightForRepsAndEffort,
   resolveE1RMEstimate,
   roundTo5,
@@ -106,6 +109,8 @@ export function useTeamViewSelection(results: LifterPipelineResult[]) {
   const [selectedEquipment, setSelectedEquipment] = useState<ConjugateEquipment | null>(null);
   const [selectedAddlWt, setSelectedAddlWt] = useState<ConjugateAddlWt | null>(null);
   const [selectedLiftType, setSelectedLiftType] = useState<LiftType | null>(null);
+
+  const [dateRange, setDateRange] = useState<DateRange>({ from: undefined, to: undefined });
 
   const allTaggedRecords = useMemo(
     () => results.flatMap((r) => (r.status === 'success' ? r.model.tagged : [])),
@@ -436,6 +441,54 @@ export function useTeamViewSelection(results: LifterPipelineResult[]) {
     liftTypeByDisplayName,
   ]);
 
+  // First pass: unfiltered points (per-lifter, by effective canonical)
+  const pointsByLifterUnfiltered = useMemo(() => {
+    const raw = new Map<string, Point[]>();
+    if (selectedCanonical) {
+      for (const res of results) {
+        const override = overridesByLifter.get(res.name);
+        const effectiveDisplayName = override?.displayName ?? selectedDisplayName;
+        const effectiveCanonical = displayNameToCanonical.get(effectiveDisplayName) ?? null;
+        const points =
+          res.status === 'success'
+            ? (res.model.pointsByDeriver.get('e1rm') ?? []).filter(
+                (p) => p.series === effectiveCanonical
+              )
+            : [];
+        raw.set(res.name, points);
+      }
+    }
+    return raw;
+  }, [selectedCanonical, results, overridesByLifter, selectedDisplayName, displayNameToCanonical]);
+
+  // Derive available session dates from unfiltered points
+  const historySessionDates = useMemo<Date[]>(() => {
+    if (!selectedCanonical) {
+      return [];
+    }
+    const dateStrings = new Set<string>();
+    for (const points of pointsByLifterUnfiltered.values()) {
+      for (const p of points) {
+        dateStrings.add(new Date(p.t).toDateString());
+      }
+    }
+    return Array.from(dateStrings)
+      .map((ds) => new Date(ds))
+      .sort((a, b) => a.getTime() - b.getTime());
+  }, [pointsByLifterUnfiltered, selectedCanonical]);
+
+  // Apply date range filter to produce final pointsByLifter
+  const pointsByLifter = useMemo(
+    () =>
+      new Map(
+        [...pointsByLifterUnfiltered].map(([name, pts]) => [
+          name,
+          pts.filter((p) => isRecordInDateRange(p.t, dateRange.from, dateRange.to)),
+        ])
+      ),
+    [pointsByLifterUnfiltered, dateRange]
+  );
+
   return {
     exerciseOptions,
     displayNameToCanonical,
@@ -452,6 +505,8 @@ export function useTeamViewSelection(results: LifterPipelineResult[]) {
     setUnit,
     toggleUnit,
     rows,
+    pointsByLifter,
+    historySessionDates,
     erroredLifterCount,
     selectedBar,
     setSelectedBar: setSelectedBarAndReset,
@@ -468,5 +523,7 @@ export function useTeamViewSelection(results: LifterPipelineResult[]) {
     stanceOptions: CONJUGATE_STANCES,
     equipmentOptions: CONJUGATE_EQUIPMENT,
     addlWtOptions: CONJUGATE_ADDL_WTS,
+    dateRange,
+    setDateRange,
   };
 }

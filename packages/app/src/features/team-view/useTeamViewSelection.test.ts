@@ -42,10 +42,11 @@ const minimalPipelineModel = (
   tagged: TaggedSetRecord[] = [],
   e1rmPoints: Point[] = [],
   e1rmMaxEffortPoints: Point[] = [],
-  baseline: Record<string, string> = {}
+  baseline: Record<string, string> = {},
+  variantFactor: Record<string, { factor: number; n: number }> = {}
 ): PipelineModel =>
   ({
-    model: { baseline, variantFactor: {}, addlWtOffset: {} },
+    model: { baseline, variantFactor, addlWtOffset: {} },
     diagnostics: { byCanonical: new Map(), allFindings: [] },
     unknownExercises: [],
     unnormalized: [],
@@ -56,7 +57,14 @@ const minimalPipelineModel = (
       ['e1rm-max-effort', e1rmMaxEffortPoints],
     ]),
     pointsByLabelByDeriver: new Map(),
-    pointsByDeriverAdjusted: new Map(),
+    // Mirrors pointsByDeriver: real pipeline runs populate this per-deriver too (used by
+    // composite dataset specs like TOTAL_CHART_SPECS via buildDatasetsFromModel), so a
+    // minimal fixture that leaves this empty causes a real crash ("points is not iterable")
+    // for any test that exercises buildChartDatasets against this factory's output.
+    pointsByDeriverAdjusted: new Map([
+      ['e1rm', e1rmPoints],
+      ['e1rm-max-effort', e1rmMaxEffortPoints],
+    ]),
     pointsByLabelByDeriverAdjusted: new Map(),
     athlete: { sex: 'M', bodyweight: 90 },
   }) as unknown as PipelineModel;
@@ -1177,6 +1185,90 @@ describe('useTeamViewSelection', () => {
     });
   });
 
+  describe('pointsByLifter', () => {
+    it('returns empty Map when no canonical is selected', () => {
+      const { result } = renderHook(() => useTeamViewSelection([]));
+      expect(result.current.pointsByLifter).toEqual(new Map());
+    });
+
+    it('returns points for successful lifter matching selected canonical', () => {
+      const p1 = point(1, 100, 'squat');
+      const p2 = point(2, 105, 'squat');
+      const model = minimalPipelineModel([], [p1, p2, point(1, 90, 'bench')]);
+      const { result } = renderHook(() => useTeamViewSelection([successResult('Alice', model)]));
+
+      act(() => result.current.setSelectedDisplayName('Squat'));
+
+      const points = result.current.pointsByLifter.get('Alice');
+      expect(points).toBeDefined();
+      expect(points).toHaveLength(2);
+      expect(points).toEqual([p1, p2]);
+    });
+
+    it('returns points for overridden canonical when lifter has displayName override', () => {
+      const benchP1 = point(1, 90, 'bench');
+      const benchP2 = point(2, 95, 'bench');
+      const model = minimalPipelineModel([], [point(1, 100, 'squat'), benchP1, benchP2]);
+      const { result } = renderHook(() => useTeamViewSelection([successResult('Alice', model)]));
+
+      act(() => result.current.setSelectedDisplayName('Squat'));
+      expect(result.current.selectedCanonical).toBe('squat');
+
+      // Override to Bench Press
+      act(() => result.current.rows[0].onExerciseChange('Bench Press'));
+
+      // pointsByLifter should reflect the override, not the global selection
+      const points = result.current.pointsByLifter.get('Alice');
+      expect(points).toBeDefined();
+      expect(points).toHaveLength(2);
+      expect(points).toEqual([benchP1, benchP2]);
+    });
+
+    it('returns empty array for errored lifter', () => {
+      const { result } = renderHook(() =>
+        useTeamViewSelection([
+          successResult('Alice', minimalPipelineModel([], [point(1, 100, 'squat')])),
+          errorResult('Broken'),
+        ])
+      );
+
+      act(() => result.current.setSelectedDisplayName('Squat'));
+
+      const brokenPoints = result.current.pointsByLifter.get('Broken');
+      expect(brokenPoints).toBeDefined();
+      expect(brokenPoints).toEqual([]);
+    });
+
+    it('returns empty array for successful lifter with no points matching canonical', () => {
+      const model = minimalPipelineModel([], [point(1, 100, 'squat')]);
+      const { result } = renderHook(() => useTeamViewSelection([successResult('Alice', model)]));
+
+      act(() => result.current.setSelectedDisplayName('Squat'));
+      act(() => result.current.rows[0].onExerciseChange('Bench Press'));
+
+      // Alice has squat points but no bench points
+      const points = result.current.pointsByLifter.get('Alice');
+      expect(points).toBeDefined();
+      expect(points).toEqual([]);
+    });
+
+    it('includes all lifters in the map, even those with no data', () => {
+      const model1 = minimalPipelineModel([], [point(1, 100, 'squat'), point(2, 105, 'squat')]);
+      const model2 = minimalPipelineModel([], [point(1, 110, 'bench')]);
+      const { result } = renderHook(() =>
+        useTeamViewSelection([successResult('L1', model1), successResult('L2', model2)])
+      );
+
+      act(() => result.current.setSelectedDisplayName('Squat'));
+
+      // Both lifters should be in the map
+      expect(result.current.pointsByLifter.has('L1')).toBe(true);
+      expect(result.current.pointsByLifter.has('L2')).toBe(true);
+      expect(result.current.pointsByLifter.get('L1')).toHaveLength(2);
+      expect(result.current.pointsByLifter.get('L2')).toHaveLength(0); // L2 has no squat data
+    });
+  });
+
   describe('integration: full workflow', () => {
     it('handles multi-lifter coach selection workflow', () => {
       const l1Model = minimalPipelineModel(
@@ -1208,6 +1300,131 @@ describe('useTeamViewSelection', () => {
       act(() => result.current.toggleUnit());
       expect(result.current.unit).toBe('lbs');
       expect(result.current.rows[0].e1rmDisplay).not.toBe(initialRows[0].e1rmDisplay);
+    });
+  });
+
+  describe('date range filtering', () => {
+    it('pointsByLifter respects dateRange: points outside the range are excluded', () => {
+      const t1 = new Date('2025-01-01T00:00:00Z').getTime();
+      const t2 = new Date('2025-02-01T00:00:00Z').getTime();
+      const t3 = new Date('2025-03-01T00:00:00Z').getTime();
+      const model = minimalPipelineModel(
+        [],
+        [point(t1, 100, 'squat'), point(t2, 105, 'squat'), point(t3, 110, 'squat')]
+      );
+      const { result } = renderHook(() => useTeamViewSelection([successResult('Alice', model)]));
+
+      act(() => result.current.setSelectedDisplayName('Squat'));
+      expect(result.current.pointsByLifter.get('Alice')).toHaveLength(3);
+
+      // Set range to Feb 1 - Mar 1
+      act(() =>
+        result.current.setDateRange({
+          from: new Date('2025-02-01T00:00:00Z'),
+          to: new Date('2025-03-01T23:59:59Z'),
+        })
+      );
+
+      const filtered = result.current.pointsByLifter.get('Alice');
+      expect(filtered).toHaveLength(2);
+      expect(filtered?.map((p) => p.t)).toEqual([t2, t3]);
+    });
+
+    it('pointsByLifter includes boundary dates (inclusive)', () => {
+      const t1 = new Date('2025-02-01T00:00:00Z').getTime();
+      const t2 = new Date('2025-02-15T00:00:00Z').getTime();
+      const t3 = new Date('2025-03-01T00:00:00Z').getTime();
+      const model = minimalPipelineModel(
+        [],
+        [point(t1, 100, 'squat'), point(t2, 105, 'squat'), point(t3, 110, 'squat')]
+      );
+      const { result } = renderHook(() => useTeamViewSelection([successResult('Alice', model)]));
+
+      act(() => result.current.setSelectedDisplayName('Squat'));
+      act(() =>
+        result.current.setDateRange({
+          from: new Date('2025-02-01T00:00:00Z'),
+          to: new Date('2025-03-01T23:59:59Z'),
+        })
+      );
+
+      const filtered = result.current.pointsByLifter.get('Alice');
+      expect(filtered).toHaveLength(3);
+      expect(filtered?.map((p) => p.t)).toEqual([t1, t2, t3]);
+    });
+
+    it('pointsByLifter with undefined date range includes all points', () => {
+      const t1 = new Date('2025-01-01T00:00:00Z').getTime();
+      const t2 = new Date('2025-02-01T00:00:00Z').getTime();
+      const t3 = new Date('2025-03-01T00:00:00Z').getTime();
+      const model = minimalPipelineModel(
+        [],
+        [point(t1, 100, 'squat'), point(t2, 105, 'squat'), point(t3, 110, 'squat')]
+      );
+      const { result } = renderHook(() => useTeamViewSelection([successResult('Alice', model)]));
+
+      act(() => result.current.setSelectedDisplayName('Squat'));
+      expect(result.current.dateRange.from).toBeUndefined();
+      expect(result.current.dateRange.to).toBeUndefined();
+
+      const allPoints = result.current.pointsByLifter.get('Alice');
+      expect(allPoints).toHaveLength(3);
+    });
+  });
+
+  describe('historySessionDates', () => {
+    it('reflects ALL available dates regardless of currently-applied dateRange', () => {
+      const t1 = new Date('2025-01-01T00:00:00Z').getTime();
+      const t2 = new Date('2025-02-01T00:00:00Z').getTime();
+      const t3 = new Date('2025-03-01T00:00:00Z').getTime();
+      const model = minimalPipelineModel(
+        [],
+        [point(t1, 100, 'squat'), point(t2, 105, 'squat'), point(t3, 110, 'squat')]
+      );
+      const { result } = renderHook(() => useTeamViewSelection([successResult('Alice', model)]));
+
+      act(() => result.current.setSelectedDisplayName('Squat'));
+      expect(result.current.historySessionDates).toHaveLength(3);
+
+      // Narrow date range
+      act(() =>
+        result.current.setDateRange({
+          from: new Date('2025-02-01T00:00:00Z'),
+          to: new Date('2025-02-28T23:59:59Z'),
+        })
+      );
+
+      // historySessionDates should still reflect all 3 dates
+      expect(result.current.historySessionDates).toHaveLength(3);
+    });
+
+    it('collects dates from all lifters', () => {
+      const t1 = new Date('2025-01-01T00:00:00Z').getTime();
+      const t2 = new Date('2025-02-01T00:00:00Z').getTime();
+      const m1 = minimalPipelineModel([], [point(t1, 100, 'squat')]);
+      const m2 = minimalPipelineModel([], [point(t2, 105, 'squat')]);
+      const { result } = renderHook(() =>
+        useTeamViewSelection([successResult('Alice', m1), successResult('Bob', m2)])
+      );
+
+      act(() => result.current.setSelectedDisplayName('Squat'));
+      expect(result.current.historySessionDates).toHaveLength(2);
+    });
+
+    it('deduplicates dates by calendar day', () => {
+      // Use timestamps that are on the same calendar day (midnight and noon on Jan 1)
+      const oneDayMs = 24 * 60 * 60 * 1000;
+      const t1 = 1000000000; // arbitrary base timestamp
+      const t1_later = t1 + 12 * 60 * 60 * 1000; // same day, 12 hours later
+      const t2 = t1 + oneDayMs; // next day
+      const model = minimalPipelineModel(
+        [],
+        [point(t1, 100, 'squat'), point(t1_later, 102, 'squat'), point(t2, 105, 'squat')]
+      );
+      const { result } = renderHook(() => useTeamViewSelection([successResult('Alice', model)]));
+
+      act(() => result.current.setSelectedDisplayName('Squat'));
+      expect(result.current.historySessionDates).toHaveLength(2);
     });
   });
 });

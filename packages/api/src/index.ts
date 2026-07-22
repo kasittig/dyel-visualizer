@@ -93,6 +93,7 @@ export {
   mergeVolumeIntoChartPoints,
   formatChartDate,
 } from './chart/pipelineChartUtils';
+export { buildTeamHistoryChartData, type TeamHistoryChartData } from './chart/teamHistoryChartData';
 export {
   selectBestE1RMPoint,
   findBestE1RMFromPipeline,

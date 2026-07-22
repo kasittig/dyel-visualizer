@@ -1,7 +1,9 @@
 import clsx from 'clsx';
+import { useState } from 'react';
 import type { ReactNode } from 'react';
 import { useTeamViewData } from './useTeamViewData';
 import { useTeamViewSelection } from './useTeamViewSelection';
+import { TeamHistoryChart } from './TeamHistoryChart';
 import type { TeamViewRow } from './useTeamViewSelection';
 import { useSortableRows } from '../../shared/hooks';
 import { LIFT_TYPE_LABELS } from '../../shared/liftTypeLabels';
@@ -42,6 +44,7 @@ export function TeamViewPage() {
     setUnit,
     selectedCanonical,
     rows,
+    pointsByLifter,
     erroredLifterCount,
     selectedBar,
     setSelectedBar,
@@ -58,7 +61,12 @@ export function TeamViewPage() {
     selectedLiftType,
     setSelectedLiftType,
     liftTypeOptions,
+    dateRange,
+    setDateRange,
+    historySessionDates,
   } = useTeamViewSelection(dataState.status === 'success' ? dataState.data : []);
+
+  const [showHistoryChart, setShowHistoryChart] = useState(false);
 
   const columns: TeamViewColumn[] = [
     {
@@ -248,6 +256,15 @@ export function TeamViewPage() {
           ))}
           )
         </div>
+        {selectedCanonical && (
+          <button
+            type="button"
+            onClick={() => setShowHistoryChart((v) => !v)}
+            className={clsx(styles.graphButton, showHistoryChart && styles.graphButtonActive)}
+          >
+            Graph
+          </button>
+        )}
       </div>
 
       <div className={styles.headerRow}>
@@ -321,56 +338,70 @@ export function TeamViewPage() {
       </div>
 
       {selectedCanonical && (
-        <>
-          {!rows.length ? (
-            <div className={styles.emptyState}>No data for this exercise yet</div>
-          ) : (
-            <>
-              <TableCard>
-                <Table>
-                  <TableHeadRow>
-                    {columns.map((col) => (
-                      <TableCell
-                        key={col.header}
-                        as="th"
-                        variant={col.variant ?? 'mono'}
-                        className={col.headerClassName}
-                        {...sortProps(col)}
-                      >
-                        {col.header}
-                      </TableCell>
-                    ))}
-                  </TableHeadRow>
-                  <tbody>
-                    {sortedRows.map((row) => (
-                      <TableRow key={row.lifterName}>
-                        {columns.map((col) => (
-                          <TableCell
-                            key={col.header}
-                            variant={col.variant ?? 'mono'}
-                            className={clsx(
-                              typeof col.cellClassName === 'function'
-                                ? col.cellClassName(row)
-                                : col.cellClassName
-                            )}
-                          >
-                            {col.render(row)}
-                          </TableCell>
-                        ))}
-                      </TableRow>
-                    ))}
-                  </tbody>
-                </Table>
-              </TableCard>
-              {erroredLifterCount > 0 && (
-                <p className={styles.errorNote}>
-                  {erroredLifterCount} lifter{erroredLifterCount === 1 ? '' : 's'} could not be
-                  loaded
-                </p>
-              )}
-            </>
+        <div className={styles.contentSplit}>
+          <div className={styles.tableColumn}>
+            {!rows.length ? (
+              <div className={styles.emptyState}>No data for this exercise yet</div>
+            ) : (
+              <>
+                <TableCard>
+                  <Table>
+                    <TableHeadRow>
+                      {columns.map((col) => (
+                        <TableCell
+                          key={col.header}
+                          as="th"
+                          variant={col.variant ?? 'mono'}
+                          className={col.headerClassName}
+                          {...sortProps(col)}
+                        >
+                          {col.header}
+                        </TableCell>
+                      ))}
+                    </TableHeadRow>
+                    <tbody>
+                      {sortedRows.map((row) => (
+                        <TableRow key={row.lifterName}>
+                          {columns.map((col) => (
+                            <TableCell
+                              key={col.header}
+                              variant={col.variant ?? 'mono'}
+                              className={clsx(
+                                typeof col.cellClassName === 'function'
+                                  ? col.cellClassName(row)
+                                  : col.cellClassName
+                              )}
+                            >
+                              {col.render(row)}
+                            </TableCell>
+                          ))}
+                        </TableRow>
+                      ))}
+                    </tbody>
+                  </Table>
+                </TableCard>
+                {erroredLifterCount > 0 && (
+                  <p className={styles.errorNote}>
+                    {erroredLifterCount} lifter{erroredLifterCount === 1 ? '' : 's'} could not be
+                    loaded
+                  </p>
+                )}
+              </>
+            )}
+          </div>
+          {showHistoryChart && (
+            <div className={styles.chartColumn}>
+              <TeamHistoryChart
+                pointsByLifter={pointsByLifter}
+                unit={unit}
+                dateRange={dateRange}
+                onDateRangeChange={setDateRange}
+                sessionDates={historySessionDates}
+                onClose={() => setShowHistoryChart(false)}
+              />
+            </div>
           )}
-        </>
+        </div>
       )}
     </main>
   );
