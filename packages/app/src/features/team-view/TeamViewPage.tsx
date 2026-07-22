@@ -12,6 +12,7 @@ import {
   TableRow,
   TableCell,
   E1RMCell,
+  EffortPopover,
 } from '../../shared/components';
 import styles from './TeamViewPage.module.css';
 
@@ -31,6 +32,10 @@ export function TeamViewPage() {
     setSelectedDisplayName,
     reps,
     setReps,
+    effortMode,
+    setEffortMode,
+    effortValue,
+    setEffortValue,
     unit,
     setUnit,
     selectedCanonical,
@@ -94,16 +99,13 @@ export function TeamViewPage() {
       variant: 'left',
       cellClassName: () => clsx(styles.cellTint, styles.repsCell),
       render: (row) => (
-        <input
-          type="number"
-          min={1}
-          max={20}
-          value={row.effectiveReps}
-          className={styles.repsInput}
-          onChange={(e) => {
-            const val = parseInt(e.target.value, 10);
-            row.onRepsChange(Number.isNaN(val) || val < 1 ? 1 : val);
-          }}
+        <EffortPopover
+          reps={row.effectiveReps}
+          onRepsChange={row.onRepsChange}
+          effortMode={row.effectiveEffortMode}
+          effortValue={row.effectiveEffortValue}
+          onEffortModeChange={row.onEffortModeChange}
+          onEffortValueChange={row.onEffortValueChange}
         />
       ),
     },
@@ -180,16 +182,13 @@ export function TeamViewPage() {
           placeholder="Search exercise..."
         />
         for
-        <input
-          type="number"
-          min={1}
-          max={20}
-          value={reps}
-          className={styles.repsInput}
-          onChange={(e) => {
-            const val = parseInt(e.target.value, 10);
-            setReps(Number.isNaN(val) || val < 1 ? 1 : val);
-          }}
+        <EffortPopover
+          reps={reps}
+          onRepsChange={setReps}
+          effortMode={effortMode}
+          effortValue={effortValue}
+          onEffortModeChange={setEffortMode}
+          onEffortValueChange={setEffortValue}
         />
         rep{reps > 1 ? 's' : ''} (in
         <div className={styles.chipGroup}>

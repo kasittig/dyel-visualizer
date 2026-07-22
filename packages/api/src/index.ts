@@ -107,6 +107,12 @@ export {
 } from './repCalculator/repCalculatorUtils';
 export type { E1RMEstimate } from './repCalculator/repCalculatorUtils';
 export {
+  predictWeightForRepsAndEffort,
+  convertEffort,
+  type EffortMode,
+  type Effort,
+} from './repCalculator/effort';
+export {
   availableEquipmentMagnitudes,
   exercisesForLiftType,
   resolveEffectiveCanonical,

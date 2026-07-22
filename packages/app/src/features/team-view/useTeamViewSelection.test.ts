@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { act, renderHook } from '@testing-library/react';
 import type { LifterPipelineResult, Point } from '@dyel/api';
+import { predictWeightForRepsAndEffort, convertE1RMToDisplayUnit, roundTo5 } from '@dyel/api';
 import type { PipelineModel, TaggedSetRecord } from '@dyel/pipeline';
 import { useTeamViewSelection } from './useTeamViewSelection';
 
@@ -904,6 +905,222 @@ describe('useTeamViewSelection', () => {
       const { result } = renderHook(() => useTeamViewSelection([successResult('Lifter', model)]));
 
       expect(result.current.liftTypeOptions).toEqual(['squat', 'bench']);
+    });
+  });
+
+  describe('effort', () => {
+    it('defaults to effortMode: rpe, effortValue: 10', () => {
+      const model = minimalPipelineModel([], [point(1, 100, 'squat')]);
+      const { result } = renderHook(() => useTeamViewSelection([successResult('Lifter', model)]));
+
+      expect(result.current.effortMode).toBe('rpe');
+      expect(result.current.effortValue).toBe(10);
+    });
+
+    it('RPE10 default produces same targetWeightDisplay as predictWeightForReps', () => {
+      const e1rm = 100;
+      const reps = 3;
+      const model = minimalPipelineModel([], [point(1, e1rm, 'squat')]);
+      const { result } = renderHook(() => useTeamViewSelection([successResult('Lifter', model)]));
+
+      act(() => result.current.setSelectedDisplayName('Squat'));
+      act(() => result.current.setReps(reps));
+
+      const targetWeight = result.current.rows[0].targetWeightDisplay;
+      const e1rmDisplay = convertE1RMToDisplayUnit(e1rm, 'lbs');
+      const predictedWeight = predictWeightForRepsAndEffort(e1rmDisplay, reps, {
+        mode: 'rpe',
+        value: 10,
+      });
+      const expected = `${roundTo5(predictedWeight)} lbs`;
+
+      expect(targetWeight).toBe(expected);
+    });
+
+    it('setEffortValue updates effortValue and changes targetWeightDisplay', () => {
+      const model = minimalPipelineModel([], [point(1, 100, 'squat')]);
+      const { result } = renderHook(() => useTeamViewSelection([successResult('Lifter', model)]));
+
+      act(() => result.current.setSelectedDisplayName('Squat'));
+      const initialTarget = result.current.rows[0].targetWeightDisplay;
+
+      act(() => result.current.setEffortValue(8));
+
+      expect(result.current.effortValue).toBe(8);
+      expect(result.current.rows[0].targetWeightDisplay).not.toBe(initialTarget);
+    });
+
+    it('setEffortMode converts effortValue losslessly (round-trip rpe→pct→rpe)', () => {
+      const model = minimalPipelineModel([], [point(1, 100, 'squat')]);
+      const { result } = renderHook(() => useTeamViewSelection([successResult('Lifter', model)]));
+
+      act(() => result.current.setReps(3));
+      act(() => result.current.setEffortValue(8));
+
+      const initialRpe = result.current.effortValue;
+
+      act(() => result.current.setEffortMode('pct'));
+
+      act(() => result.current.setEffortMode('rpe'));
+      const finalRpe = result.current.effortValue;
+
+      expect(finalRpe).toBeCloseTo(initialRpe, 1);
+    });
+
+    it('setEffortMode returns early if mode is already set', () => {
+      const model = minimalPipelineModel([], [point(1, 100, 'squat')]);
+      const { result } = renderHook(() => useTeamViewSelection([successResult('Lifter', model)]));
+
+      act(() => result.current.setEffortValue(8));
+      const initialValue = result.current.effortValue;
+
+      act(() => result.current.setEffortMode('rpe'));
+
+      expect(result.current.effortValue).toBe(initialValue);
+    });
+
+    it('setEffortValue resets per-lifter effort overrides but preserves reps/displayName overrides', () => {
+      const model = minimalPipelineModel([], [point(1, 100, 'squat'), point(1, 90, 'bench')]);
+      const { result } = renderHook(() => useTeamViewSelection([successResult('Alice', model)]));
+
+      act(() => result.current.setSelectedDisplayName('Squat'));
+      act(() => result.current.rows[0].onExerciseChange('Bench Press'));
+      act(() => result.current.rows[0].onRepsChange(5));
+      act(() => result.current.rows[0].onEffortValueChange(8));
+
+      expect(result.current.rows[0].effectiveDisplayName).toBe('Bench Press');
+      expect(result.current.rows[0].effectiveReps).toBe(5);
+      expect(result.current.rows[0].effectiveEffortValue).toBe(8);
+
+      act(() => result.current.setEffortValue(6));
+
+      expect(result.current.rows[0].effectiveDisplayName).toBe('Bench Press');
+      expect(result.current.rows[0].effectiveReps).toBe(5);
+      expect(result.current.rows[0].effectiveEffortValue).toBe(6);
+    });
+
+    it('setEffortMode resets per-lifter effort overrides but preserves reps/displayName overrides', () => {
+      const model = minimalPipelineModel([], [point(1, 100, 'squat'), point(1, 90, 'bench')]);
+      const { result } = renderHook(() => useTeamViewSelection([successResult('Alice', model)]));
+
+      act(() => result.current.setSelectedDisplayName('Squat'));
+      act(() => result.current.rows[0].onExerciseChange('Bench Press'));
+      act(() => result.current.rows[0].onRepsChange(5));
+      act(() => result.current.rows[0].onEffortValueChange(8));
+
+      expect(result.current.rows[0].effectiveDisplayName).toBe('Bench Press');
+      expect(result.current.rows[0].effectiveReps).toBe(5);
+      expect(result.current.rows[0].effectiveEffortValue).toBe(8);
+
+      act(() => result.current.setEffortMode('pct'));
+
+      expect(result.current.rows[0].effectiveDisplayName).toBe('Bench Press');
+      expect(result.current.rows[0].effectiveReps).toBe(5);
+      expect(result.current.effortMode).toBe('pct');
+    });
+
+    it('setSelectedDisplayName does not clear effort overrides', () => {
+      const model = minimalPipelineModel(
+        [],
+        [point(1, 100, 'squat'), point(1, 90, 'bench'), point(1, 80, 'deadlift')]
+      );
+      const { result } = renderHook(() => useTeamViewSelection([successResult('Alice', model)]));
+
+      act(() => result.current.setSelectedDisplayName('Squat'));
+      act(() => result.current.rows[0].onEffortValueChange(8));
+
+      act(() => result.current.setSelectedDisplayName('Deadlift'));
+
+      expect(result.current.rows[0].effectiveEffortValue).toBe(8);
+    });
+
+    it('setReps does not clear effort overrides', () => {
+      const model = minimalPipelineModel([], [point(1, 100, 'squat')]);
+      const { result } = renderHook(() => useTeamViewSelection([successResult('Alice', model)]));
+
+      act(() => result.current.setSelectedDisplayName('Squat'));
+      act(() => result.current.rows[0].onEffortValueChange(8));
+
+      act(() => result.current.setReps(5));
+
+      expect(result.current.rows[0].effectiveEffortValue).toBe(8);
+    });
+
+    it("per-lifter onEffortValueChange sets that lifter's override independently", () => {
+      const l1 = minimalPipelineModel([], [point(1, 100, 'squat')]);
+      const l2 = minimalPipelineModel([], [point(1, 150, 'squat')]);
+      const { result } = renderHook(() =>
+        useTeamViewSelection([successResult('Alice', l1), successResult('Bob', l2)])
+      );
+
+      act(() => result.current.setSelectedDisplayName('Squat'));
+      const aliceRow = () => result.current.rows.find((r) => r.lifterName === 'Alice')!;
+      const bobRow = () => result.current.rows.find((r) => r.lifterName === 'Bob')!;
+
+      expect(aliceRow().effectiveEffortValue).toBe(10);
+      expect(bobRow().effectiveEffortValue).toBe(10);
+
+      act(() => aliceRow().onEffortValueChange(8));
+
+      expect(aliceRow().effectiveEffortValue).toBe(8);
+      expect(bobRow().effectiveEffortValue).toBe(10);
+    });
+
+    it("per-lifter onEffortModeChange converts that lifter's value and sets override independently", () => {
+      const l1 = minimalPipelineModel([], [point(1, 100, 'squat')]);
+      const l2 = minimalPipelineModel([], [point(1, 150, 'squat')]);
+      const { result } = renderHook(() =>
+        useTeamViewSelection([successResult('Alice', l1), successResult('Bob', l2)])
+      );
+
+      act(() => result.current.setSelectedDisplayName('Squat'));
+      act(() => result.current.setReps(3));
+      const aliceRow = () => result.current.rows.find((r) => r.lifterName === 'Alice')!;
+      const bobRow = () => result.current.rows.find((r) => r.lifterName === 'Bob')!;
+
+      expect(aliceRow().effectiveEffortMode).toBe('rpe');
+      expect(bobRow().effectiveEffortMode).toBe('rpe');
+
+      act(() => aliceRow().onEffortModeChange('pct'));
+
+      expect(aliceRow().effectiveEffortMode).toBe('pct');
+      expect(bobRow().effectiveEffortMode).toBe('rpe');
+      expect(typeof aliceRow().effectiveEffortValue).toBe('number');
+      expect(aliceRow().effectiveEffortValue).toBeGreaterThan(0);
+    });
+
+    it('targetWeightProjectedDisplay also reflects effort changes', () => {
+      const model = minimalPipelineModel(
+        [taggedRecord('squat', 'Squat', { weight: 150 })],
+        [point(1, 100, 'squat')],
+        [point(1, 150, 'squat')],
+        { 'lift:squat': 'squat' }
+      );
+      const { result } = renderHook(() => useTeamViewSelection([successResult('Lifter', model)]));
+
+      act(() => result.current.setSelectedDisplayName('Squat'));
+      const initialProjectedTarget = result.current.rows[0].targetWeightProjectedDisplay;
+
+      act(() => result.current.setEffortValue(8));
+
+      expect(result.current.rows[0].targetWeightProjectedDisplay).not.toBe(initialProjectedTarget);
+    });
+
+    it('placeholder rows include effort fields with defaults', () => {
+      const { result } = renderHook(() =>
+        useTeamViewSelection([
+          successResult('SquatOnly', minimalPipelineModel([], [point(1, 100, 'squat')])),
+          successResult('BenchOnly', minimalPipelineModel([], [point(1, 90, 'bench')])),
+        ])
+      );
+
+      act(() => result.current.setSelectedDisplayName('Squat'));
+      const placeholderRow = result.current.rows.find((r) => r.lifterName === 'BenchOnly')!;
+
+      expect(placeholderRow.effectiveEffortMode).toBe('rpe');
+      expect(placeholderRow.effectiveEffortValue).toBe(10);
+      expect(typeof placeholderRow.onEffortModeChange).toBe('function');
+      expect(typeof placeholderRow.onEffortValueChange).toBe('function');
     });
   });
 
