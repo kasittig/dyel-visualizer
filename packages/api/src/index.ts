@@ -94,6 +94,12 @@ export {
   formatChartDate,
 } from './chart/pipelineChartUtils';
 export {
+  buildTeamHistoryChartData,
+  normalizeTeamHistoryPoints,
+  NORMALIZED_KEY_SUFFIX,
+  type TeamHistoryChartData,
+} from './chart/teamHistoryChartData';
+export {
   selectBestE1RMPoint,
   findBestE1RMFromPipeline,
   findMostRecentFamilyE1RM,

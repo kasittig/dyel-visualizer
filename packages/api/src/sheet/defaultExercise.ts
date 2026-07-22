@@ -14,12 +14,6 @@ export function defaultCompExerciseCanonical(records: TaggedSetRecord[]): string
   );
 
   if (allComp.length) {
-    const cmdBench = allComp.find(
-      (r) => facetsFromTags(r.tags).equipment === 'pause' && liftTypeOf(r) === 'bench'
-    );
-    if (cmdBench) {
-      return cmdBench.canonical;
-    }
     const comp = allComp.find((r) => facetsFromTags(r.tags).equipment === null);
     if (comp) {
       return comp.canonical;

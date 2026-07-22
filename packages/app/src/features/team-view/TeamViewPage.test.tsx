@@ -94,6 +94,8 @@ const mockSelection = (overrides?: Partial<SelectionState>): SelectionState => (
   toggleUnit: vi.fn(),
   selectedCanonical: null,
   rows: [],
+  pointsByLifter: new Map(),
+  normalizedPointsByLifter: new Map(),
   erroredLifterCount: 0,
   selectedBar: null,
   setSelectedBar: vi.fn(),
@@ -110,6 +112,9 @@ const mockSelection = (overrides?: Partial<SelectionState>): SelectionState => (
   selectedLiftType: null,
   setSelectedLiftType: vi.fn(),
   liftTypeOptions: ['squat', 'bench', 'deadlift', 'accessory'],
+  dateRange: { from: undefined, to: undefined },
+  setDateRange: vi.fn(),
+  historySessionDates: [],
   ...overrides,
 });
 
@@ -601,5 +606,120 @@ describe('TeamViewPage', () => {
     fireEvent.change(effortValueInput, { target: { value: '7' } });
 
     expect(setEffortValue).toHaveBeenCalledWith(7);
+  });
+
+  it('does not render Graph button when no exercise is selected', () => {
+    vi.mocked(useTeamViewData).mockReturnValue({
+      status: 'success',
+      data: [mockLifterResult('Lifter 1')],
+    });
+    vi.mocked(useTeamViewSelection).mockReturnValue(
+      mockSelection({
+        selectedCanonical: null,
+        rows: [],
+      })
+    );
+    render(<TeamViewPage />);
+
+    expect(screen.queryByRole('button', { name: 'Graph' })).toBeNull();
+  });
+
+  it('renders Graph button when exercise is selected', () => {
+    vi.mocked(useTeamViewData).mockReturnValue({
+      status: 'success',
+      data: [mockLifterResult('Lifter 1')],
+    });
+    vi.mocked(useTeamViewSelection).mockReturnValue(
+      mockSelection({
+        selectedCanonical: 'bench-classic',
+        selectedDisplayName: 'Bench Press',
+        rows: [mockRow()],
+      })
+    );
+    render(<TeamViewPage />);
+
+    expect(screen.getByRole('button', { name: 'Graph' })).toBeDefined();
+  });
+
+  it('clicking Graph button renders the history chart section and highlights the button', () => {
+    vi.mocked(useTeamViewData).mockReturnValue({
+      status: 'success',
+      data: [mockLifterResult('Lifter 1')],
+    });
+    vi.mocked(useTeamViewSelection).mockReturnValue(
+      mockSelection({
+        selectedCanonical: 'bench-classic',
+        selectedDisplayName: 'Bench Press',
+        rows: [mockRow()],
+        pointsByLifter: new Map([
+          ['Alice', [{ t: Date.now(), v: 225, series: 'bench-classic', tags: new Set() }]],
+        ]),
+      })
+    );
+    render(<TeamViewPage />);
+
+    const button = screen.getByRole('button', { name: 'Graph' });
+    expect(button.className).not.toMatch(/graphButtonActive/);
+    fireEvent.click(button);
+
+    expect(screen.getByText('History Across Lifters')).toBeDefined();
+  });
+
+  it('clicking Graph button again hides the history chart section and removes highlight', () => {
+    vi.mocked(useTeamViewData).mockReturnValue({
+      status: 'success',
+      data: [mockLifterResult('Lifter 1')],
+    });
+    vi.mocked(useTeamViewSelection).mockReturnValue(
+      mockSelection({
+        selectedCanonical: 'bench-classic',
+        selectedDisplayName: 'Bench Press',
+        rows: [mockRow()],
+        pointsByLifter: new Map([
+          ['Alice', [{ t: Date.now(), v: 225, series: 'bench-classic', tags: new Set() }]],
+        ]),
+      })
+    );
+    render(<TeamViewPage />);
+
+    const button = screen.getByRole('button', { name: 'Graph' });
+    fireEvent.click(button);
+
+    expect(screen.getByText('History Across Lifters')).toBeDefined();
+    expect(button.className).toMatch(/graphButtonActive/);
+
+    fireEvent.click(button);
+
+    expect(screen.queryByText('History Across Lifters')).toBeNull();
+    expect(button.className).not.toMatch(/graphButtonActive/);
+  });
+
+  it('the close button (✕) inside the chart closes it', () => {
+    vi.mocked(useTeamViewData).mockReturnValue({
+      status: 'success',
+      data: [mockLifterResult('Lifter 1')],
+    });
+    vi.mocked(useTeamViewSelection).mockReturnValue(
+      mockSelection({
+        selectedCanonical: 'bench-classic',
+        selectedDisplayName: 'Bench Press',
+        rows: [mockRow()],
+        pointsByLifter: new Map([
+          ['Alice', [{ t: Date.now(), v: 225, series: 'bench-classic', tags: new Set() }]],
+        ]),
+      })
+    );
+    render(<TeamViewPage />);
+
+    // Click Graph button to open the chart
+    fireEvent.click(screen.getByRole('button', { name: 'Graph' }));
+    expect(screen.getByText('History Across Lifters')).toBeDefined();
+
+    // Click the close button
+    const closeButton = screen.getByRole('button', { name: 'Close chart' });
+    fireEvent.click(closeButton);
+
+    // Chart should be hidden
+    expect(screen.queryByText('History Across Lifters')).toBeNull();
   });
 });

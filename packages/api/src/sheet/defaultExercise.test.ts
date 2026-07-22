@@ -42,12 +42,12 @@ describe('defaultCompExerciseCanonical', () => {
       'squat',
     ],
     [
-      'prefers pause commands on bench',
+      'prefers bare bench over pause commands',
       [
         rec('bench', ['lift:bench', 'comp-lift']),
         rec('bench-pause', ['lift:bench', 'equip:pause']),
       ],
-      'bench-pause',
+      'bench',
     ],
     [
       'keeps raw bench over alternative bars',
