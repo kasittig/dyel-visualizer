@@ -1,55 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import type { Point, NormalizationModel } from '@dyel/pipeline';
-import {
-  buildTeamHistoryChartData,
-  normalizeTeamHistoryPoints,
-  NORMALIZED_KEY_SUFFIX,
-} from './teamHistoryChartData';
+import type { Point } from '@dyel/pipeline';
+import { buildTeamHistoryChartData } from './teamHistoryChartData';
 
 const point = (t: number, v: number): Point => ({
   t,
   v,
   series: 'test',
   tags: new Set(),
-});
-
-const normModel = (
-  variantFactor: Record<string, { factor: number; n: number }> = {},
-  baseline: Record<string, string> = {}
-): NormalizationModel => ({
-  fittedAt: 0,
-  baseline,
-  variantFactor,
-  addlWtOffset: {},
-});
-
-describe('normalizeTeamHistoryPoints', () => {
-  it.each([
-    [
-      'canonical with fitted variantFactor divides v by factor',
-      [point(1000, 100)],
-      'pause-bench',
-      normModel({ 'pause-bench': { factor: 0.9, n: 5 } }),
-      [{ t: 1000, v: expect.closeTo(111.11, 1), series: 'test', tags: new Set() }],
-    ],
-    [
-      'canonical that IS the baseline (present in model.baseline values) has factor of 1',
-      [point(1000, 100)],
-      'bench',
-      normModel({}, { 'lift:bench': 'bench' }),
-      [{ t: 1000, v: 100, series: 'test', tags: new Set() }],
-    ],
-    [
-      'canonical with no fitted factor is dropped (not falling back to raw)',
-      [point(1000, 100)],
-      'bench-with-chains',
-      normModel({}),
-      [],
-    ],
-    ['empty input Point[] produces empty result', [], 'bench', normModel(), []],
-  ])('%s', (_, input, canonical, model, expected) => {
-    expect(normalizeTeamHistoryPoints(input, canonical, model)).toEqual(expected);
-  });
 });
 
 describe('buildTeamHistoryChartData', () => {
@@ -142,54 +99,5 @@ describe('buildTeamHistoryChartData', () => {
     ],
   ])('%s', (_, pointsByLifter, unit, expected) => {
     expect(buildTeamHistoryChartData(pointsByLifter, unit)).toEqual(expected);
-  });
-
-  describe('3-arg form with normalizedPointsByLifter', () => {
-    it.each([
-      [
-        'lifter with both raw and normalized points produces both keys in data, only plain name in lifters',
-        new Map([['alice', [point(1000, 100)]]]),
-        new Map([['alice', [point(1000, 111)]]]),
-        'kg',
-        {
-          lifters: ['alice'],
-          data: [
-            {
-              date: new Date(1000).toISOString(),
-              alice: 100,
-              [`alice${NORMALIZED_KEY_SUFFIX}`]: 111,
-            },
-          ],
-        },
-      ],
-      [
-        'lifter with raw points but empty normalized Point[] produces no suffixed key',
-        new Map([['alice', [point(1000, 100)]]]),
-        new Map([['alice', []]]),
-        'kg',
-        {
-          lifters: ['alice'],
-          data: [{ date: new Date(1000).toISOString(), alice: 100 }],
-        },
-      ],
-      [
-        '2-arg call (omitting third argument) behaves identically to before',
-        new Map([['alice', [point(1000, 100)]]]),
-        undefined,
-        'kg',
-        {
-          lifters: ['alice'],
-          data: [{ date: new Date(1000).toISOString(), alice: 100 }],
-        },
-      ],
-    ])('%s', (_, pointsByLifter, normalizedPointsByLifter, unit, expected) => {
-      if (normalizedPointsByLifter === undefined) {
-        expect(buildTeamHistoryChartData(pointsByLifter, unit)).toEqual(expected);
-      } else {
-        expect(buildTeamHistoryChartData(pointsByLifter, unit, normalizedPointsByLifter)).toEqual(
-          expected
-        );
-      }
-    });
   });
 });

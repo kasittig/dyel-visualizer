@@ -29,7 +29,6 @@ import {
   formatWeight,
   groupByLiftType,
   isRecordInDateRange,
-  normalizeTeamHistoryPoints,
   predictWeightForRepsAndEffort,
   resolveE1RMEstimate,
   roundTo5,
@@ -443,9 +442,8 @@ export function useTeamViewSelection(results: LifterPipelineResult[]) {
   ]);
 
   // First pass: unfiltered points (per-lifter, by effective canonical)
-  const { pointsByLifterUnfiltered, normalizedPointsByLifterUnfiltered } = useMemo(() => {
+  const pointsByLifterUnfiltered = useMemo(() => {
     const raw = new Map<string, Point[]>();
-    const normalized = new Map<string, Point[]>();
     if (selectedCanonical) {
       for (const res of results) {
         const override = overridesByLifter.get(res.name);
@@ -458,15 +456,9 @@ export function useTeamViewSelection(results: LifterPipelineResult[]) {
               )
             : [];
         raw.set(res.name, points);
-        normalized.set(
-          res.name,
-          res.status === 'success' && effectiveCanonical
-            ? normalizeTeamHistoryPoints(points, effectiveCanonical, res.model.model)
-            : []
-        );
       }
     }
-    return { pointsByLifterUnfiltered: raw, normalizedPointsByLifterUnfiltered: normalized };
+    return raw;
   }, [selectedCanonical, results, overridesByLifter, selectedDisplayName, displayNameToCanonical]);
 
   // Derive available session dates from unfiltered points
@@ -485,20 +477,17 @@ export function useTeamViewSelection(results: LifterPipelineResult[]) {
       .sort((a, b) => a.getTime() - b.getTime());
   }, [pointsByLifterUnfiltered, selectedCanonical]);
 
-  // Apply date range filter to produce final pointsByLifter and normalizedPointsByLifter
-  const { pointsByLifter, normalizedPointsByLifter } = useMemo(() => {
-    const filterMap = (m: Map<string, Point[]>) =>
+  // Apply date range filter to produce final pointsByLifter
+  const pointsByLifter = useMemo(
+    () =>
       new Map(
-        [...m].map(([name, pts]) => [
+        [...pointsByLifterUnfiltered].map(([name, pts]) => [
           name,
           pts.filter((p) => isRecordInDateRange(p.t, dateRange.from, dateRange.to)),
         ])
-      );
-    return {
-      pointsByLifter: filterMap(pointsByLifterUnfiltered),
-      normalizedPointsByLifter: filterMap(normalizedPointsByLifterUnfiltered),
-    };
-  }, [pointsByLifterUnfiltered, normalizedPointsByLifterUnfiltered, dateRange]);
+      ),
+    [pointsByLifterUnfiltered, dateRange]
+  );
 
   return {
     exerciseOptions,
@@ -517,7 +506,6 @@ export function useTeamViewSelection(results: LifterPipelineResult[]) {
     toggleUnit,
     rows,
     pointsByLifter,
-    normalizedPointsByLifter,
     historySessionDates,
     erroredLifterCount,
     selectedBar,

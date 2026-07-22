@@ -95,7 +95,6 @@ const mockSelection = (overrides?: Partial<SelectionState>): SelectionState => (
   selectedCanonical: null,
   rows: [],
   pointsByLifter: new Map(),
-  normalizedPointsByLifter: new Map(),
   erroredLifterCount: 0,
   selectedBar: null,
   setSelectedBar: vi.fn(),

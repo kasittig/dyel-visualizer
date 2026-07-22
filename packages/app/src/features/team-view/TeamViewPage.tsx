@@ -45,7 +45,6 @@ export function TeamViewPage() {
     selectedCanonical,
     rows,
     pointsByLifter,
-    normalizedPointsByLifter,
     erroredLifterCount,
     selectedBar,
     setSelectedBar,
@@ -394,7 +393,6 @@ export function TeamViewPage() {
             <div className={styles.chartColumn}>
               <TeamHistoryChart
                 pointsByLifter={pointsByLifter}
-                normalizedPointsByLifter={normalizedPointsByLifter}
                 unit={unit}
                 dateRange={dateRange}
                 onDateRangeChange={setDateRange}
