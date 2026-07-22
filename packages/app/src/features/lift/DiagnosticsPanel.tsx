@@ -42,19 +42,23 @@ export function DiagnosticsPanel({
   const { sortedRows, sortKey, direction, toggleSort } = useSortableRows<
     DiagnosticVariant,
     SortColumn
-  >(variants, {
-    variation: (r) => r.displayName,
-    effects: (r) =>
-      [
-        ...r.effects.map(formatEffect),
-        ...(r.addlWtOffset !== undefined
-          ? [formatAddlWtOffset(r.addlWtOffset.offsetKg, unit)]
-          : []),
-      ].join(', '),
-    averageIndex: (r) => r.averageIndex ?? -Infinity,
-    expectedBaseline: (r) => r.expectedBaseline ?? '',
-    diagnostic: (r) => (LABELS[r.status as keyof typeof LABELS] ?? ['Stale'])[0] as string,
-  });
+  >(
+    variants,
+    {
+      variation: (r) => r.displayName,
+      effects: (r) =>
+        [
+          ...r.effects.map(formatEffect),
+          ...(r.addlWtOffset !== undefined
+            ? [formatAddlWtOffset(r.addlWtOffset.offsetKg, unit)]
+            : []),
+        ].join(', '),
+      averageIndex: (r) => r.averageIndex ?? -Infinity,
+      expectedBaseline: (r) => r.expectedBaseline ?? '',
+      diagnostic: (r) => (LABELS[r.status as keyof typeof LABELS] ?? ['Stale'])[0] as string,
+    },
+    (r) => r.displayName
+  );
 
   if (variants.length === 0) {
     return null;
