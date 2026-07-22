@@ -128,6 +128,97 @@ describe('EffortPopover', () => {
       // Popover should be closed (EffortInput not rendered)
       expect(screen.queryByText('RPE')).toBeNull();
     });
+
+    it('reopens on double-click after being closed via Escape, and again after that', () => {
+      render(
+        <EffortPopover
+          reps={8}
+          onRepsChange={vi.fn()}
+          effortMode="rpe"
+          effortValue={10}
+          onEffortModeChange={vi.fn()}
+          onEffortValueChange={vi.fn()}
+        />
+      );
+
+      const input = screen.getByDisplayValue('8');
+
+      // Open, close, reopen, close, reopen — regression test for a bug where the
+      // popover would only ever open the very first time it was double-clicked.
+      for (let i = 0; i < 3; i++) {
+        fireEvent.doubleClick(input);
+        expect(screen.getByText('RPE')).toBeDefined();
+        fireEvent.keyDown(document, { key: 'Escape' });
+        expect(screen.queryByText('RPE')).toBeNull();
+      }
+    });
+
+    it('closes on an outside click and reopens on a subsequent double-click, repeatedly', () => {
+      render(
+        <EffortPopover
+          reps={8}
+          onRepsChange={vi.fn()}
+          effortMode="rpe"
+          effortValue={10}
+          onEffortModeChange={vi.fn()}
+          onEffortValueChange={vi.fn()}
+        />
+      );
+
+      const input = screen.getByDisplayValue('8');
+
+      // Regression test for a bug where the popover would only ever open the first time:
+      // closing via a genuine outside click (not Escape) must not leave it unable to reopen.
+      for (let i = 0; i < 3; i++) {
+        fireEvent.doubleClick(input);
+        expect(screen.getByText('RPE')).toBeDefined();
+        fireEvent.mouseDown(document.body);
+        expect(screen.queryByText('RPE')).toBeNull();
+      }
+    });
+
+    it('does not close when the reps input (the popover anchor) receives a mousedown while already open', () => {
+      render(
+        <EffortPopover
+          reps={8}
+          onRepsChange={vi.fn()}
+          effortMode="rpe"
+          effortValue={10}
+          onEffortModeChange={vi.fn()}
+          onEffortValueChange={vi.fn()}
+        />
+      );
+
+      const input = screen.getByDisplayValue('8');
+      fireEvent.doubleClick(input);
+      expect(screen.getByText('RPE')).toBeDefined();
+
+      // Simulate the first mousedown of a subsequent double-click landing back on the
+      // anchor input while the popover is already open — this must not be treated as an
+      // "outside click" that closes the popover out from under the user.
+      fireEvent.mouseDown(input);
+      expect(screen.getByText('RPE')).toBeDefined();
+    });
+
+    it('does not close when clicking inside the open popover content', () => {
+      render(
+        <EffortPopover
+          reps={8}
+          onRepsChange={vi.fn()}
+          effortMode="rpe"
+          effortValue={10}
+          onEffortModeChange={vi.fn()}
+          onEffortValueChange={vi.fn()}
+        />
+      );
+
+      const input = screen.getByDisplayValue('8');
+      fireEvent.doubleClick(input);
+      const rpeButton = screen.getByText('RPE');
+
+      fireEvent.mouseDown(rpeButton);
+      expect(screen.getByText('RPE')).toBeDefined();
+    });
   });
 
   describe('effort indicator badge', () => {
