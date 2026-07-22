@@ -111,6 +111,7 @@ export function TeamViewPage() {
     },
     {
       header: 'Target weight',
+      headerClassName: styles.headerNowrap,
       cellClassName: (row) => clsx(styles.cellTint, !row.hasData && styles.placeholderCell),
       render: (row) =>
         row.showProjected && row.targetWeightProjectedDisplay
@@ -140,6 +141,7 @@ export function TeamViewPage() {
     },
     {
       header: 'Last set',
+      headerClassName: styles.headerNowrap,
       cellClassName: (row) => clsx(styles.cellTint, !row.hasData && styles.placeholderCell),
       render: (row) => row.lastPerformedSetDisplay,
     },

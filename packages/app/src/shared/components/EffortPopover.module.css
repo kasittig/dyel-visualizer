@@ -11,6 +11,11 @@
   position: relative;
 }
 
+.inputWrapperActive {
+  background: var(--accent-bg);
+  border-radius: 4px;
+}
+
 /* Reps input field — reps are capped at 20 (2 digits), so a narrow fixed width is plenty */
 .repsInput {
   width: 40px;

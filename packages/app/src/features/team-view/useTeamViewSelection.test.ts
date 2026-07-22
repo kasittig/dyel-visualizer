@@ -950,6 +950,30 @@ describe('useTeamViewSelection', () => {
       expect(result.current.rows[0].targetWeightDisplay).not.toBe(initialTarget);
     });
 
+    it.each([
+      ['RPE10→pct with reps=5', 5, 'rpe', 10, 'pct', 100],
+      ['pct 100→rpe with reps=5', 5, 'pct', 100, 'rpe', 10],
+      ['RPE10→pct with reps=1', 1, 'rpe', 10, 'pct', 100],
+      ['pct 100→rpe with reps=1', 1, 'pct', 100, 'rpe', 10],
+    ])(
+      'setEffortMode preserves identity conversion for default values (%s)',
+      (_, repsVal, fromMode, fromValue, toMode, expectedValue) => {
+        const model = minimalPipelineModel([], [point(1, 100, 'squat')]);
+        const { result } = renderHook(() => useTeamViewSelection([successResult('Lifter', model)]));
+
+        act(() => result.current.setReps(repsVal));
+        if (fromMode === 'pct') {
+          act(() => result.current.setEffortMode('pct'));
+          act(() => result.current.setEffortValue(fromValue));
+        }
+
+        act(() => result.current.setEffortMode(toMode));
+
+        expect(result.current.effortMode).toBe(toMode);
+        expect(result.current.effortValue).toBe(expectedValue);
+      }
+    );
+
     it('setEffortMode converts effortValue losslessly (round-trip rpe→pct→rpe)', () => {
       const model = minimalPipelineModel([], [point(1, 100, 'squat')]);
       const { result } = renderHook(() => useTeamViewSelection([successResult('Lifter', model)]));
@@ -1065,6 +1089,35 @@ describe('useTeamViewSelection', () => {
       expect(aliceRow().effectiveEffortValue).toBe(8);
       expect(bobRow().effectiveEffortValue).toBe(10);
     });
+
+    it.each([
+      ['per-lifter RPE10→pct with reps=5', 5, 'pct', 100],
+      ['per-lifter pct 100→rpe with reps=5', 5, 'rpe', 10],
+    ])(
+      'per-lifter onEffortModeChange preserves identity for default values (%s)',
+      (_, repsVal, expectedMode, expectedValue) => {
+        const l1 = minimalPipelineModel([], [point(1, 100, 'squat')]);
+        const l2 = minimalPipelineModel([], [point(1, 150, 'squat')]);
+        const { result } = renderHook(() =>
+          useTeamViewSelection([successResult('Alice', l1), successResult('Bob', l2)])
+        );
+
+        act(() => result.current.setSelectedDisplayName('Squat'));
+        act(() => result.current.setReps(repsVal));
+        const aliceRow = () => result.current.rows.find((r) => r.lifterName === 'Alice')!;
+        const bobRow = () => result.current.rows.find((r) => r.lifterName === 'Bob')!;
+
+        expect(aliceRow().effectiveEffortMode).toBe('rpe');
+        expect(aliceRow().effectiveEffortValue).toBe(10);
+
+        act(() => aliceRow().onEffortModeChange(expectedMode));
+
+        expect(aliceRow().effectiveEffortMode).toBe(expectedMode);
+        expect(aliceRow().effectiveEffortValue).toBe(expectedValue);
+        expect(bobRow().effectiveEffortMode).toBe('rpe');
+        expect(bobRow().effectiveEffortValue).toBe(10);
+      }
+    );
 
     it("per-lifter onEffortModeChange converts that lifter's value and sets override independently", () => {
       const l1 = minimalPipelineModel([], [point(1, 100, 'squat')]);

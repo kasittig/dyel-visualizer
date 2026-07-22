@@ -94,52 +94,16 @@ describe('EffortInput', () => {
       ['pct mode, valid in-range', 'pct', '50', 50],
       ['pct mode, min boundary', 'pct', '1', 1],
       ['pct mode, max boundary', 'pct', '100', 100],
-    ])('snaps and clamps to valid range for %s', (_, mode, inputValue, expectedValue) => {
-      const onValueChange = vi.fn();
-      render(
-        <EffortInput
-          mode={mode as 'rpe' | 'pct'}
-          value={5}
-          onModeChange={vi.fn()}
-          onValueChange={onValueChange}
-        />
-      );
-
-      const input = screen.getByDisplayValue('5') as HTMLInputElement;
-      fireEvent.change(input, { target: { value: inputValue } });
-
-      expect(onValueChange).toHaveBeenCalledWith(expectedValue);
-    });
-
-    it.each([
       ['rpe mode, above max', 'rpe', '15', 10],
       ['rpe mode, below min', 'rpe', '0', 1],
       ['pct mode, above max', 'pct', '150', 100],
       ['pct mode, below min', 'pct', '0', 1],
-    ])('clamps values outside range for %s', (_, mode, inputValue, expectedValue) => {
-      const onValueChange = vi.fn();
-      render(
-        <EffortInput
-          mode={mode as 'rpe' | 'pct'}
-          value={5}
-          onModeChange={vi.fn()}
-          onValueChange={onValueChange}
-        />
-      );
-
-      const input = screen.getByDisplayValue('5') as HTMLInputElement;
-      fireEvent.change(input, { target: { value: inputValue } });
-
-      expect(onValueChange).toHaveBeenCalledWith(expectedValue);
-    });
-
-    it.each([
       ['rpe mode, 5.25 snaps to 5.5', 'rpe', '5.25', 5.5],
       ['rpe mode, 5.1 snaps to 5', 'rpe', '5.1', 5],
       ['rpe mode, 5.7 snaps to 5.5', 'rpe', '5.7', 5.5],
       ['pct mode, 49.6 snaps to 50', 'pct', '49.6', 50],
       ['pct mode, 49.4 snaps to 49', 'pct', '49.4', 49],
-    ])('snaps to nearest step for %s', (_, mode, inputValue, expectedValue) => {
+    ])('%s', (_, mode, inputValue, expectedValue) => {
       const onValueChange = vi.fn();
       render(
         <EffortInput

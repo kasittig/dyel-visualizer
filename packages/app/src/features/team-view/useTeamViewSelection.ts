@@ -191,7 +191,14 @@ export function useTeamViewSelection(results: LifterPipelineResult[]) {
     if (mode === effortMode) {
       return;
     }
-    const converted = convertEffort(reps, { mode: effortMode, value: effortValue }, mode);
+    const isDefaultRpe10 = effortMode === 'rpe' && effortValue === 10;
+    const isDefaultPct100 = effortMode === 'pct' && effortValue === 100;
+    const converted =
+      (isDefaultRpe10 && mode === 'pct') || (isDefaultPct100 && mode === 'rpe')
+        ? mode === 'pct'
+          ? 100
+          : 10
+        : convertEffort(reps, { mode: effortMode, value: effortValue }, mode);
     setEffortMode(mode);
     setEffortValue(converted);
     setOverridesByLifter((prev) => {
@@ -312,11 +319,18 @@ export function useTeamViewSelection(results: LifterPipelineResult[]) {
 
       const onEffortModeChange = (mode: EffortMode) =>
         setOverridesByLifter((prev) => {
-          const converted = convertEffort(
-            effectiveReps,
-            { mode: effectiveEffortMode, value: effectiveEffortValue },
-            mode
-          );
+          const isDefaultRpe10 = effectiveEffortMode === 'rpe' && effectiveEffortValue === 10;
+          const isDefaultPct100 = effectiveEffortMode === 'pct' && effectiveEffortValue === 100;
+          const converted =
+            (isDefaultRpe10 && mode === 'pct') || (isDefaultPct100 && mode === 'rpe')
+              ? mode === 'pct'
+                ? 100
+                : 10
+              : convertEffort(
+                  effectiveReps,
+                  { mode: effectiveEffortMode, value: effectiveEffortValue },
+                  mode
+                );
           const next = new Map(prev);
           next.set(res.name, { ...next.get(res.name), effort: { mode, value: converted } });
           return next;
