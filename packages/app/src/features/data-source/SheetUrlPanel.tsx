@@ -67,7 +67,7 @@ export function SheetUrlPanel({
           </a>{' '}
           ·{' '}
           <a href="?page=team" className={styles.accentLink}>
-            Compare your team
+            View team
           </a>
         </p>
       ) : (
@@ -88,7 +88,7 @@ export function SheetUrlPanel({
             </a>{' '}
             ·{' '}
             <a href="?page=team" className={styles.accentLink}>
-              Compare your team
+              View team
             </a>
           </p>
           <InputModeToggle mode={mode} onModeChange={onModeChange} />
