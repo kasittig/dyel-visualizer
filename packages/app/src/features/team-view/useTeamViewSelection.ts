@@ -7,6 +7,8 @@ import type {
   ConjugateEquipment,
   ConjugateAddlWt,
   LiftType,
+  EffortMode,
+  Effort,
 } from '@dyel/api';
 import {
   buildExerciseDisplayNameIndex,
@@ -24,15 +26,17 @@ import {
   formatLastSessionParts,
   formatWeight,
   groupByLiftType,
-  predictWeightForReps,
+  predictWeightForRepsAndEffort,
   resolveE1RMEstimate,
   roundTo5,
+  convertEffort,
 } from '@dyel/api';
 import { LIFT_TYPE_ORDER } from '../../shared/liftTypeLabels';
 
 interface LifterOverride {
   displayName?: string;
   reps?: number;
+  effort?: Effort;
 }
 
 export interface TeamViewRow {
@@ -51,9 +55,13 @@ export interface TeamViewRow {
   hasData: boolean;
   effectiveDisplayName: string;
   effectiveReps: number;
+  effectiveEffortMode: EffortMode;
+  effectiveEffortValue: number;
   availableExerciseOptions: string[];
   onExerciseChange: (displayName: string) => void;
   onRepsChange: (reps: number) => void;
+  onEffortModeChange: (mode: EffortMode) => void;
+  onEffortValueChange: (value: number) => void;
   showProjected: boolean;
   onToggleProjected: () => void;
 }
@@ -78,6 +86,8 @@ export function useTeamViewSelection(results: LifterPipelineResult[]) {
 
   const [explicitDisplayName, setSelectedDisplayName] = useState('');
   const [reps, setReps] = useState(1);
+  const [effortMode, setEffortMode] = useState<EffortMode>('rpe');
+  const [effortValue, setEffortValue] = useState(10);
   const [unit, setUnit] = useState<DisplayUnit>(() => {
     const firstActive = results.find((r) => r.status === 'success');
     return firstActive ? detectDataUnit(groupByLiftType(firstActive.model.tagged)) : 'lbs';
@@ -177,6 +187,40 @@ export function useTeamViewSelection(results: LifterPipelineResult[]) {
     });
   };
 
+  const setEffortModeAndReset = (mode: EffortMode) => {
+    if (mode === effortMode) {
+      return;
+    }
+    const isDefaultRpe10 = effortMode === 'rpe' && effortValue === 10;
+    const isDefaultPct100 = effortMode === 'pct' && effortValue === 100;
+    const converted =
+      (isDefaultRpe10 && mode === 'pct') || (isDefaultPct100 && mode === 'rpe')
+        ? mode === 'pct'
+          ? 100
+          : 10
+        : convertEffort(reps, { mode: effortMode, value: effortValue }, mode);
+    setEffortMode(mode);
+    setEffortValue(converted);
+    setOverridesByLifter((prev) => {
+      const next = new Map<string, LifterOverride>();
+      for (const [k, v] of prev) {
+        next.set(k, { ...v, effort: undefined });
+      }
+      return next;
+    });
+  };
+
+  const setEffortValueAndReset = (value: number) => {
+    setEffortValue(value);
+    setOverridesByLifter((prev) => {
+      const next = new Map<string, LifterOverride>();
+      for (const [k, v] of prev) {
+        next.set(k, { ...v, effort: undefined });
+      }
+      return next;
+    });
+  };
+
   const setSelectedBarAndReset = (v: ConjugateBar | null) => {
     setSelectedBar(v);
     setSelectedDisplayName('');
@@ -214,8 +258,12 @@ export function useTeamViewSelection(results: LifterPipelineResult[]) {
         TeamViewRow,
         | 'effectiveDisplayName'
         | 'effectiveReps'
+        | 'effectiveEffortMode'
+        | 'effectiveEffortValue'
         | 'onExerciseChange'
         | 'onRepsChange'
+        | 'onEffortModeChange'
+        | 'onEffortValueChange'
         | 'availableExerciseOptions'
         | 'showProjected'
         | 'onToggleProjected'
@@ -242,6 +290,8 @@ export function useTeamViewSelection(results: LifterPipelineResult[]) {
       const effectiveDisplayName = override?.displayName ?? selectedDisplayName;
       const effectiveCanonical = displayNameToCanonical.get(effectiveDisplayName) ?? null;
       const effectiveReps = override?.reps ?? reps;
+      const effectiveEffortMode = override?.effort?.mode ?? effortMode;
+      const effectiveEffortValue = override?.effort?.value ?? effortValue;
 
       const availableExerciseOptions =
         res.status === 'success'
@@ -267,6 +317,35 @@ export function useTeamViewSelection(results: LifterPipelineResult[]) {
           return next;
         });
 
+      const onEffortModeChange = (mode: EffortMode) =>
+        setOverridesByLifter((prev) => {
+          const isDefaultRpe10 = effectiveEffortMode === 'rpe' && effectiveEffortValue === 10;
+          const isDefaultPct100 = effectiveEffortMode === 'pct' && effectiveEffortValue === 100;
+          const converted =
+            (isDefaultRpe10 && mode === 'pct') || (isDefaultPct100 && mode === 'rpe')
+              ? mode === 'pct'
+                ? 100
+                : 10
+              : convertEffort(
+                  effectiveReps,
+                  { mode: effectiveEffortMode, value: effectiveEffortValue },
+                  mode
+                );
+          const next = new Map(prev);
+          next.set(res.name, { ...next.get(res.name), effort: { mode, value: converted } });
+          return next;
+        });
+
+      const onEffortValueChange = (value: number) =>
+        setOverridesByLifter((prev) => {
+          const next = new Map(prev);
+          next.set(res.name, {
+            ...next.get(res.name),
+            effort: { mode: effectiveEffortMode, value },
+          });
+          return next;
+        });
+
       const showProjected = showProjectedByLifter.get(res.name) ?? false;
       const onToggleProjected = () =>
         setShowProjectedByLifter((prev) => {
@@ -278,8 +357,12 @@ export function useTeamViewSelection(results: LifterPipelineResult[]) {
       const shared = {
         effectiveDisplayName,
         effectiveReps,
+        effectiveEffortMode,
+        effectiveEffortValue,
         onExerciseChange,
         onRepsChange,
+        onEffortModeChange,
+        onEffortValueChange,
         availableExerciseOptions,
         showProjected,
         onToggleProjected,
@@ -329,9 +412,9 @@ export function useTeamViewSelection(results: LifterPipelineResult[]) {
         e1rmFamilyRecentSourceLabel: formatE1RMSourceLabel(familyEstimate),
         lastPerformedDateDisplay: lastSessionParts?.date ?? '',
         lastPerformedSetDisplay: lastSessionParts?.setLine ?? '',
-        targetWeightDisplay: `${roundTo5(predictWeightForReps(convertE1RMToDisplayUnit(latestPoint.v, unit), effectiveReps))} ${unit}`,
+        targetWeightDisplay: `${roundTo5(predictWeightForRepsAndEffort(convertE1RMToDisplayUnit(latestPoint.v, unit), effectiveReps, { mode: effectiveEffortMode, value: effectiveEffortValue }))} ${unit}`,
         targetWeightProjectedDisplay: estimate
-          ? `${roundTo5(predictWeightForReps(convertE1RMToDisplayUnit(estimate.e1rm, unit), effectiveReps))} ${unit}`
+          ? `${roundTo5(predictWeightForRepsAndEffort(convertE1RMToDisplayUnit(estimate.e1rm, unit), effectiveReps, { mode: effectiveEffortMode, value: effectiveEffortValue }))} ${unit}`
           : null,
         sessionCount,
         hasData: true,
@@ -341,6 +424,8 @@ export function useTeamViewSelection(results: LifterPipelineResult[]) {
   }, [
     selectedCanonical,
     reps,
+    effortMode,
+    effortValue,
     unit,
     results,
     selectedDisplayName,
@@ -359,6 +444,10 @@ export function useTeamViewSelection(results: LifterPipelineResult[]) {
     setSelectedDisplayName: setSelectedDisplayNameAndReset,
     reps,
     setReps: setRepsAndReset,
+    effortMode,
+    setEffortMode: setEffortModeAndReset,
+    effortValue,
+    setEffortValue: setEffortValueAndReset,
     unit,
     setUnit,
     toggleUnit,

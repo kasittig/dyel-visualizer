@@ -1,0 +1,63 @@
+.effortInputRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Chip buttons (RPE / %) — replicated from StrengthScoreCalculator.module.css */
+.chip {
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text);
+  font-family: var(--heading);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 3px 11px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    border-color 0.15s,
+    color 0.15s;
+}
+
+.chipActive {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+}
+
+/* Numeric input for effort value — consistent with TeamViewPage.repsInput but slightly wider */
+.effortValueInput {
+  width: 60px;
+  padding: 0.3rem 0.5rem;
+  font-size: 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--code-bg);
+  color: var(--text-h);
+  font-family: var(--mono);
+  outline: none;
+  text-align: center;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+
+.effortValueInput:focus {
+  border-color: var(--accent-border);
+  box-shadow: 0 0 0 3px var(--accent-bg);
+}
+
+/* Hide spinner arrows on number inputs */
+.effortValueInput::-webkit-inner-spin-button,
+.effortValueInput::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.effortValueInput[type='number'] {
+  -moz-appearance: textfield;
+}

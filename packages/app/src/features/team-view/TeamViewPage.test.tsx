@@ -52,6 +52,8 @@ const mockRow = (overrides?: Partial<TeamViewRow>): TeamViewRow =>
     e1rmDisplay: '225 lbs',
     e1rmProjectedDisplay: null,
     e1rmSourceLabel: null,
+    e1rmFamilyRecentDisplay: null,
+    e1rmFamilyRecentSourceLabel: null,
     lastPerformedDateDisplay: '1/1',
     lastPerformedSetDisplay: 'Today',
     targetWeightDisplay: '185 lbs',
@@ -62,9 +64,13 @@ const mockRow = (overrides?: Partial<TeamViewRow>): TeamViewRow =>
     hasData: true,
     effectiveDisplayName: 'Bench Press',
     effectiveReps: 1,
+    effectiveEffortMode: 'rpe',
+    effectiveEffortValue: 10,
     availableExerciseOptions: ['Bench Press', 'Squat', 'Deadlift'],
     onExerciseChange: vi.fn(),
     onRepsChange: vi.fn(),
+    onEffortModeChange: vi.fn(),
+    onEffortValueChange: vi.fn(),
     ...overrides,
   }) as TeamViewRow;
 
@@ -79,6 +85,10 @@ const mockSelection = (overrides?: Partial<SelectionState>): SelectionState => (
   setSelectedDisplayName: vi.fn(),
   reps: 1,
   setReps: vi.fn(),
+  effortMode: 'rpe',
+  setEffortMode: vi.fn(),
+  effortValue: 10,
+  setEffortValue: vi.fn(),
   unit: 'lbs',
   setUnit: vi.fn(),
   toggleUnit: vi.fn(),
@@ -106,6 +116,13 @@ const mockSelection = (overrides?: Partial<SelectionState>): SelectionState => (
 describe('TeamViewPage', () => {
   beforeEach(() => {
     vi.mocked(useTeamViewSelection).mockReturnValue(mockSelection());
+    // Radix Popover's Arrow (used by EffortPopover) relies on ResizeObserver, which jsdom
+    // doesn't implement — stub it so the popover mounts cleanly in tests.
+    global.ResizeObserver = vi.fn().mockImplementation(() => ({
+      observe: vi.fn(),
+      unobserve: vi.fn(),
+      disconnect: vi.fn(),
+    }));
   });
 
   it('renders loading state', () => {
@@ -502,5 +519,87 @@ describe('TeamViewPage', () => {
     // Toggle the e1RM projection
     fireEvent.click(screen.getByRole('button', { name: /225 lbs/ }));
     expect(onToggleProjected).toHaveBeenCalled();
+  });
+
+  it('double-clicking a reps input opens the effort popover', () => {
+    vi.mocked(useTeamViewData).mockReturnValue({
+      status: 'success',
+      data: [mockLifterResult('Lifter 1')],
+    });
+    vi.mocked(useTeamViewSelection).mockReturnValue(
+      mockSelection({
+        selectedCanonical: 'bench-classic',
+        selectedDisplayName: 'Bench Press',
+        rows: [mockRow({ lifterName: 'Alice' })],
+      })
+    );
+    render(<TeamViewPage />);
+
+    const spinbuttons = screen.getAllByRole('spinbutton') as HTMLInputElement[];
+    // index 0 is the top-level reps input; index 1 is Alice's row
+    fireEvent.doubleClick(spinbuttons[1]);
+
+    // After double-click, the popover content should appear in the DOM
+    // EffortInput renders with RPE/% chip buttons
+    expect(screen.getAllByRole('button', { name: 'RPE' }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole('button', { name: '%' }).length).toBeGreaterThan(0);
+  });
+
+  it("changing the effort value inside a row popover calls that row's onEffortValueChange", () => {
+    const aliceEffortValueChange = vi.fn();
+    vi.mocked(useTeamViewData).mockReturnValue({
+      status: 'success',
+      data: [mockLifterResult('Lifter 1')],
+    });
+    vi.mocked(useTeamViewSelection).mockReturnValue(
+      mockSelection({
+        selectedCanonical: 'bench-classic',
+        selectedDisplayName: 'Bench Press',
+        rows: [mockRow({ lifterName: 'Alice', onEffortValueChange: aliceEffortValueChange })],
+      })
+    );
+    render(<TeamViewPage />);
+
+    const spinbuttons = screen.getAllByRole('spinbutton') as HTMLInputElement[];
+    // index 1 is Alice's reps input
+    fireEvent.doubleClick(spinbuttons[1]);
+
+    // Find the effort value input (inside the popover)
+    const effortInputs = screen.getAllByRole('spinbutton') as HTMLInputElement[];
+    // After double-click, we should have an extra spinbutton for the effort value
+    const effortValueInput = effortInputs[effortInputs.length - 1];
+    fireEvent.change(effortValueInput, { target: { value: '8' } });
+
+    expect(aliceEffortValueChange).toHaveBeenCalledWith(8);
+  });
+
+  it('the header effort popover wires to setEffortMode and setEffortValue', () => {
+    const setEffortMode = vi.fn();
+    const setEffortValue = vi.fn();
+    vi.mocked(useTeamViewData).mockReturnValue({
+      status: 'success',
+      data: [mockLifterResult('Lifter 1')],
+    });
+    vi.mocked(useTeamViewSelection).mockReturnValue(
+      mockSelection({
+        selectedCanonical: 'bench-classic',
+        selectedDisplayName: 'Bench Press',
+        rows: [mockRow()],
+        setEffortMode,
+        setEffortValue,
+      })
+    );
+    render(<TeamViewPage />);
+
+    const spinbuttons = screen.getAllByRole('spinbutton') as HTMLInputElement[];
+    // index 0 is the top-level reps input
+    fireEvent.doubleClick(spinbuttons[0]);
+
+    // Find the effort value input (inside the popover)
+    const effortInputs = screen.getAllByRole('spinbutton') as HTMLInputElement[];
+    const effortValueInput = effortInputs[effortInputs.length - 1];
+    fireEvent.change(effortValueInput, { target: { value: '7' } });
+
+    expect(setEffortValue).toHaveBeenCalledWith(7);
   });
 });
