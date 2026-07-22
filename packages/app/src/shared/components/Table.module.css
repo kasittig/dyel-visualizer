@@ -22,9 +22,15 @@
 /* Center every header label regardless of its column's cell variant (left/mono/etc.) — headers
    read better centered even when the body cells they label are left- or right-aligned. Higher
    specificity than the single-class variant selectors (.cellLeft/.cellMono/etc.) below, so no
-   per-variant override is needed. */
+   per-variant override is needed. Multi-word headers (e.g. "Target weight") must not wrap onto
+   a second line: with the table at width: 100%, the browser's auto layout algorithm otherwise
+   "solves" a width-constrained row by wrapping just the multi-word headers while single-word
+   ones stay on one line, producing a staggered, misaligned-looking header row. Forcing
+   white-space: nowrap here makes the table overflow into TableCard's existing horizontal
+   scroll container instead, keeping every header on one line and the columns visually aligned. */
 .thead th {
   text-align: center;
+  white-space: nowrap;
 }
 .bodyRow {
   border-bottom: 1px solid var(--border);
