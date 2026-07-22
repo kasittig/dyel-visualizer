@@ -39,13 +39,17 @@ function SubtypeTable({
   const { sortedRows, sortKey, direction, toggleSort } = useSortableRows<
     AccessoryTableDisplay,
     SortCol
-  >(rows, {
-    label: (r) => r.label,
-    effects: (r) => r.effectsDisplay,
-    lastPerformed: (r) => r.lastSession.date,
-    sessionCountInRange: (r) => r.sessionCountInRange,
-    sessionCount: (r) => r.sessionCount,
-  });
+  >(
+    rows,
+    {
+      label: (r) => r.label,
+      effects: (r) => r.effectsDisplay,
+      lastPerformed: (r) => r.lastSession.date,
+      sessionCountInRange: (r) => r.sessionCountInRange,
+      sessionCount: (r) => r.sessionCount,
+    },
+    (r) => r.label
+  );
 
   const sortProps = (col: SortCol) => ({
     onSort: () => toggleSort(col),

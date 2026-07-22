@@ -102,18 +102,21 @@
 /* Min-width guard for the Lifter column so long names don't get squeezed to unreadable
    widths before the table's horizontal scroll kicks in; max-width and ellipsis truncation
    prevent wrapping so long names display on a single line with a tooltip on hover. Sticky
-   positioning pins this column to the left edge during horizontal scroll with an opaque
-   background so scrolled-under cells don't show through */
+   positioning pins this column to the left edge during horizontal scroll; the opaque
+   background so scrolled-under cells don't show through lives in the .cellTint.lifterCell
+   compound selector below, since this class is always paired with .cellTint (see
+   TeamViewPage.tsx's Lifter column cellClassName) and needs to win over .cellTint's
+   translucent background regardless of declaration order */
 .lifterCell {
   min-width: 100px;
   max-width: 200px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  padding-right: 1rem;
   position: sticky;
   left: 0;
   z-index: 1;
-  background: color-mix(in srgb, var(--text) 4%, var(--code-bg));
 }
 
 /* Pins the "Lifter" header cell to match the sticky body column (see .lifterCell) during
@@ -122,6 +125,7 @@
   position: sticky;
   left: 0;
   z-index: 1;
+  padding-right: 1rem;
   background: var(--code-bg);
 }
 
@@ -132,6 +136,16 @@
    dark mode ("Matrix Emerald" theme) and would read as an unintended highlight. */
 .cellTint {
   background: color-mix(in srgb, var(--text) 4%, transparent);
+}
+
+/* Overrides .cellTint's translucent background for the pinned Lifter column specifically:
+   both classes are always applied together on that cell (see TeamViewPage.tsx), and a sticky
+   column needs a fully opaque background so scrolled-under column content doesn't show through
+   it. A compound selector gives this a higher specificity than the single-class .cellTint rule
+   above, so it wins regardless of declaration order — a plain reorder-dependent override here
+   previously caused the pinned column to render other columns' text through it while scrolling. */
+.cellTint.lifterCell {
+  background: color-mix(in srgb, var(--text) 4%, var(--code-bg));
 }
 
 .backLink {

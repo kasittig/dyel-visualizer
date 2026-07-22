@@ -22,11 +22,9 @@ interface TeamViewColumn {
   headerClassName?: string;
   cellClassName?: string | ((row: TeamViewRow) => string | boolean | undefined);
   variant?: 'left' | 'mono';
-  sortValue?: (row: TeamViewRow) => string | number;
   render: (row: TeamViewRow) => ReactNode;
+  sortValue?: (row: TeamViewRow) => string | number;
 }
-
-type SortCol = 'Lifter' | 'Target weight' | 'e1RM' | 'Sessions' | 'Last set' | 'Date';
 
 export function TeamViewPage() {
   const dataState = useTeamViewData();
@@ -90,6 +88,7 @@ export function TeamViewPage() {
       header: 'Exercise',
       variant: 'left',
       cellClassName: () => clsx(styles.cellTint, styles.controlCell),
+      sortValue: (row) => row.effectiveDisplayName,
       render: (row) => (
         <TypeaheadDropdown
           options={row.availableExerciseOptions}
@@ -103,6 +102,7 @@ export function TeamViewPage() {
       header: 'Reps',
       variant: 'left',
       cellClassName: () => clsx(styles.cellTint, styles.repsCell),
+      sortValue: (row) => row.effectiveReps,
       render: (row) => (
         <EffortPopover
           reps={row.effectiveReps}
@@ -135,7 +135,10 @@ export function TeamViewPage() {
       cellClassName: (row) =>
         clsx(styles.cellTint, styles.columnDivider, !row.hasData && styles.placeholderCell),
       sortValue: (row) => {
-        const display = row.showProjected ? row.e1rmProjectedDisplay : row.e1rmDisplay;
+        const display =
+          row.showProjected && row.e1rmProjectedDisplay
+            ? row.e1rmProjectedDisplay
+            : row.e1rmDisplay;
         return (display && parseFloat(display)) || 0;
       },
       render: (row) => (
@@ -172,26 +175,24 @@ export function TeamViewPage() {
   ];
 
   const sortableColumns = columns.filter(
-    (c): c is TeamViewColumn & { sortValue: NonNullable<TeamViewColumn['sortValue']> } =>
-      !!c.sortValue
+    (c): c is TeamViewColumn & { sortValue: (row: TeamViewRow) => string | number } => !!c.sortValue
   );
-  const accessors = Object.fromEntries(
+  const sortAccessors = Object.fromEntries(
     sortableColumns.map((c) => [c.header, c.sortValue])
-  ) as Record<SortCol, (row: TeamViewRow) => string | number>;
-  const { sortedRows, sortKey, direction, toggleSort } = useSortableRows<TeamViewRow, SortCol>(
+  ) as Record<string, (row: TeamViewRow) => string | number>;
+  const { sortedRows, sortKey, direction, toggleSort } = useSortableRows<TeamViewRow, string>(
     rows,
-    accessors
+    sortAccessors,
+    (row) => row.lifterName
   );
 
-  const sortProps = (col: TeamViewColumn) => {
-    if (!col.sortValue) {
-      return {};
-    }
-    return {
-      onSort: () => toggleSort(col.header as SortCol),
-      sortDirection: sortKey === col.header ? direction : null,
-    };
-  };
+  const sortProps = (col: TeamViewColumn) =>
+    col.sortValue
+      ? {
+          onSort: () => toggleSort(col.header),
+          sortDirection: sortKey === col.header ? direction : null,
+        }
+      : {};
 
   if (dataState.status === 'loading') {
     return (
