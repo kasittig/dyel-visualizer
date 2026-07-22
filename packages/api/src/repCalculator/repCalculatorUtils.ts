@@ -164,7 +164,7 @@ export function findMostRecentFamilyE1RM(
 /**
  * Convenience wrapper over `findMostRecentFamilyE1RM` that resolves the baseline canonical and
  * filters `e1rmPoints` down to the target's lift-type family, so callers don't duplicate that
- * boilerplate (shared by the rep calculator and coach view hooks, and the offline backtest).
+ * boilerplate (shared by the rep calculator and team view hooks, and the offline backtest).
  */
 export function resolveFamilyRecentE1RMEstimate(
   liftType: string,

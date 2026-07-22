@@ -1,1 +1,0 @@
-export { CoachViewPage } from './CoachViewPage';

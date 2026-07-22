@@ -1,8 +1,8 @@
 import clsx from 'clsx';
 import type { ReactNode } from 'react';
-import { useCoachViewData } from './useCoachViewData';
-import { useCoachViewSelection } from './useCoachViewSelection';
-import type { CoachViewRow } from './useCoachViewSelection';
+import { useTeamViewData } from './useTeamViewData';
+import { useTeamViewSelection } from './useTeamViewSelection';
+import type { TeamViewRow } from './useTeamViewSelection';
 import { LIFT_TYPE_LABELS } from '../../shared/liftTypeLabels';
 import {
   TypeaheadDropdown,
@@ -13,18 +13,18 @@ import {
   TableCell,
   E1RMCell,
 } from '../../shared/components';
-import styles from './CoachViewPage.module.css';
+import styles from './TeamViewPage.module.css';
 
-interface CoachViewColumn {
+interface TeamViewColumn {
   header: string;
   headerClassName?: string;
-  cellClassName?: string | ((row: CoachViewRow) => string | boolean | undefined);
+  cellClassName?: string | ((row: TeamViewRow) => string | boolean | undefined);
   variant?: 'left' | 'mono';
-  render: (row: CoachViewRow) => ReactNode;
+  render: (row: TeamViewRow) => ReactNode;
 }
 
-export function CoachViewPage() {
-  const dataState = useCoachViewData();
+export function TeamViewPage() {
+  const dataState = useTeamViewData();
   const {
     exerciseOptions,
     selectedDisplayName,
@@ -51,9 +51,9 @@ export function CoachViewPage() {
     selectedLiftType,
     setSelectedLiftType,
     liftTypeOptions,
-  } = useCoachViewSelection(dataState.status === 'success' ? dataState.data : []);
+  } = useTeamViewSelection(dataState.status === 'success' ? dataState.data : []);
 
-  const columns: CoachViewColumn[] = [
+  const columns: TeamViewColumn[] = [
     {
       header: 'Lifter',
       variant: 'left',
@@ -171,7 +171,7 @@ export function CoachViewPage() {
           ← Back to DYEL Visualizer
         </a>
       </p>
-      <div className={styles.coachViewPage}>Coach View</div>
+      <div className={styles.teamViewPage}>Team View</div>
       <div className={styles.header}>
         <TypeaheadDropdown
           options={exerciseOptions}

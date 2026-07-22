@@ -9,13 +9,13 @@ import {
   INDEX_SHEET_ID,
 } from '../data-source';
 
-type CoachViewDataState =
+type TeamViewDataState =
   | { status: 'loading' }
   | { status: 'error'; message: string }
   | { status: 'success'; data: LifterPipelineResult[] };
 
-export function useCoachViewData(): CoachViewDataState {
-  const [state, setState] = useState<CoachViewDataState>({ status: 'loading' });
+export function useTeamViewData(): TeamViewDataState {
+  const [state, setState] = useState<TeamViewDataState>({ status: 'loading' });
 
   useEffect(() => {
     const controller = new AbortController();
