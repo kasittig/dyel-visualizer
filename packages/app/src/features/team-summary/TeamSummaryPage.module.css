@@ -20,14 +20,6 @@
   flex-wrap: wrap;
 }
 
-.headerRow {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  margin-bottom: 1rem;
-  flex-wrap: wrap;
-}
-
 /* Unit toggle chip group, reused from StrengthScoreCalculator */
 .chipGroup {
   composes: chipGroup from '../calculator/StrengthScoreCalculator.module.css';
@@ -37,32 +29,6 @@
 }
 .chipActive {
   composes: chipActive from '../calculator/StrengthScoreCalculator.module.css';
-}
-
-.graphButton {
-  border: 1px solid var(--accent);
-  background: color-mix(in srgb, var(--accent) 12%, transparent);
-  color: var(--accent);
-  font-family: var(--heading);
-  font-size: 0.85rem;
-  font-weight: 700;
-  padding: 0.4rem 1rem;
-  border-radius: 6px;
-  cursor: pointer;
-  transition:
-    background 0.15s,
-    color 0.15s,
-    box-shadow 0.15s;
-}
-
-.graphButton:hover {
-  background: color-mix(in srgb, var(--accent) 22%, transparent);
-}
-
-.graphButtonActive {
-  background: var(--accent);
-  color: var(--on-accent);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
 }
 
 /* Exercise and reps display line */
@@ -95,13 +61,7 @@
   font-style: italic;
 }
 
-/* Thick divider between the Lifter/Target weight column pair and the
-   Date/Last set/e1RM column pair */
-.columnDivider {
-  border-right: 2px solid var(--border);
-}
-
-/* Multi-word headers (e.g. "Target weight") must not wrap onto a second line: with the table at
+/* Multi-word headers (e.g. "Last set") must not wrap onto a second line: with the table at
    width: 100%, the browser's auto layout algorithm otherwise "solves" a width-constrained row by
    wrapping just the multi-word headers while single-word ones stay on one line, producing a
    staggered, misaligned-looking header row. Forcing white-space: nowrap here makes the table
@@ -110,19 +70,6 @@
    not other consumers of the shared Table component. */
 .headerNowrap {
   white-space: nowrap;
-}
-
-/* Min-width guard for wider interactive control cells (typeahead/effort inputs) so they don't
-   shrink to unreadable widths once the table can scroll horizontally */
-.controlCell {
-  min-width: 140px;
-}
-
-/* Min-width guard for the narrower Reps cell — reps are capped at 20 (2 digits), so it only
-   needs enough room for the 40px .repsInput plus cell padding, not the wider .controlCell
-   floor used by the Exercise/RPE-% controls */
-.repsCell {
-  min-width: 64px;
 }
 
 /* Min-width guard for the Lifter column so long names don't get squeezed to unreadable
@@ -183,10 +130,6 @@
   text-decoration: none;
 }
 
-.summaryLink {
-  margin-left: 1rem;
-}
-
 /* Link icon opening a lifter's sheet in the main DYEL Visualizer, shown inline next to their
    name in the Lifter column */
 .lifterLink {
@@ -203,53 +146,4 @@
   letter-spacing: -0.5px;
   margin: 0 0 1.5rem;
   color: var(--text-h);
-}
-
-/* Facet filter row */
-.facetField {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.facetLabel {
-  font-size: 0.75rem;
-  color: var(--muted);
-  font-family: var(--mono);
-}
-
-.facetSelect {
-  padding: 0.3rem 0.5rem;
-  font-size: 0.9rem;
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  background: var(--code-bg);
-  color: var(--text-h);
-  font-family: var(--mono);
-  outline: none;
-}
-
-.facetSelect:focus {
-  border-color: var(--accent-border);
-  box-shadow: 0 0 0 3px var(--accent-bg);
-}
-
-/* Side-by-side layout for the lifter table and the (optional) history chart, so a viewer can
-   compare table values against the graph without scrolling. Each column shrinks/grows evenly;
-   min-width: 0 lets the table's own horizontal-scroll container (TableCard) actually engage
-   inside its half rather than forcing the flex item to overflow the row. */
-.contentSplit {
-  display: flex;
-  align-items: flex-start;
-  gap: 1.5rem;
-}
-
-.tableColumn {
-  flex: 1 1 0;
-  min-width: 0;
-}
-
-.chartColumn {
-  flex: 1 1 0;
-  min-width: 0;
 }

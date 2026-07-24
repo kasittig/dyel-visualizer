@@ -224,6 +224,13 @@ export function TeamViewPage() {
         <a href="." className={styles.accentLink}>
           ← Back to DYEL Visualizer
         </a>
+        <a
+          href="./team/summary"
+          className={clsx(styles.accentLink, styles.summaryLink)}
+          title="Try the new summary leaderboard view"
+        >
+          🏆 Summary view
+        </a>
       </p>
       <div className={styles.teamViewPage}>Team View</div>
       <div className={styles.header}>

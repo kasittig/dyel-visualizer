@@ -3,6 +3,7 @@ import type { TaggedSetRecord } from '@dyel/pipeline';
 import {
   buildLastSessionDetail,
   buildLastSessionDetailForCanonical,
+  buildMostRecentSessionDetail,
   buildSessionCountForCanonical,
   formatLastSessionParts,
   formatLastSessionSummary,
@@ -127,6 +128,37 @@ describe('buildLastSessionDetailForCanonical', () => {
     ],
   ])('%s', (_, input, canonical, expected) => {
     expect(buildLastSessionDetailForCanonical(input, canonical)).toEqual(expected);
+  });
+});
+
+describe('buildMostRecentSessionDetail', () => {
+  const n = new Date(2026, 4, 3),
+    y = new Date(2026, 4, 2),
+    t = new Date(2026, 4, 1);
+  it.each([
+    ['empty input', [], null],
+    [
+      'single record',
+      [rec(n, 'bench', 5, 100, 8)],
+      { date: '2026-05-03', sets: 1, reps: 5, weight: 100, rpe: 8 },
+    ],
+    [
+      'picks most recent date across all lifts',
+      [rec(t, 'bench', 5, 95, 7), rec(y, 'squat', 5, 100, 8), rec(n, 'deadlift', 3, 150, 9)],
+      { date: '2026-05-03', sets: 1, reps: 3, weight: 150, rpe: 9 },
+    ],
+    [
+      'aggregates sets count on same date',
+      [rec(n, 'bench', 5, 100, 8), rec(n, 'squat', 5, 100, 8), rec(n, 'bench', 3, 80, 6)],
+      { date: '2026-05-03', sets: 3, reps: 5, weight: 100, rpe: 8 },
+    ],
+    [
+      'optional rpe to null',
+      [rec(n, 'bench', 5, 100)],
+      { date: '2026-05-03', sets: 1, reps: 5, weight: 100, rpe: null },
+    ],
+  ])('%s', (_, input, expected) => {
+    expect(buildMostRecentSessionDetail(input)).toEqual(expected);
   });
 });
 

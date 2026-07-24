@@ -69,6 +69,7 @@ export type { ConjugateChartData } from './conjugate/conjugateChartData';
 export {
   buildLastSessionDetail,
   buildLastSessionDetailForCanonical,
+  buildMostRecentSessionDetail,
   buildSessionCountForCanonical,
   formatLastSessionParts,
   formatLastSessionSummary,

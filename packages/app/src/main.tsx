@@ -29,6 +29,12 @@ const TeamViewPage = lazy(() =>
   import('./features/team-view/TeamViewPage.tsx').then((m) => ({ default: m.TeamViewPage }))
 );
 
+const TeamSummaryPage = lazy(() =>
+  import('./features/team-summary/TeamSummaryPage.tsx').then((m) => ({
+    default: m.TeamSummaryPage,
+  }))
+);
+
 function resolvePageComponent(page: string | null) {
   if (page === 'conjugate') {
     return (
@@ -65,6 +71,13 @@ function resolvePageComponent(page: string | null) {
       </Suspense>
     );
   }
+  if (page === 'team-summary') {
+    return (
+      <Suspense>
+        <TeamSummaryPage />
+      </Suspense>
+    );
+  }
   if (page === null) {
     return <App />;
   }
@@ -78,12 +91,19 @@ const KNOWN_PAGES = new Set([
   'pipeline-validation',
   'team',
   'coach',
+  'team-summary',
 ]);
 
 function resolvePage(): string | null {
   const queryPage = new URLSearchParams(window.location.search).get('page');
   if (queryPage) {
     return queryPage;
+  }
+  // Special-cased ahead of the last-segment fallback below: /team/summary is a two-segment
+  // path whose last segment ("summary") isn't itself in KNOWN_PAGES, and matching on the last
+  // segment alone would let any /*/summary path resolve here.
+  if (window.location.pathname.replace(/\/$/, '') === '/team/summary') {
+    return 'team-summary';
   }
   const lastSegment = window.location.pathname.split('/').filter(Boolean).pop() ?? '';
   return KNOWN_PAGES.has(lastSegment) ? lastSegment : null;
