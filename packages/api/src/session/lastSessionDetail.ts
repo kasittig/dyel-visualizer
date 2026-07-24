@@ -71,6 +71,22 @@ export function buildLastSessionDetailForCanonical(
   };
 }
 
+export function buildMostRecentSessionDetail(tagged: TaggedSetRecord[]): LastSessionDetail | null {
+  const session = getLatestSession(tagged);
+  if (!session) {
+    return null;
+  }
+
+  const first = session.maxRecs[0]!;
+  return {
+    date: fmtDate(new Date(session.maxDate)),
+    sets: getSets(first, session.maxRecs.length),
+    reps: first.reps,
+    weight: first.weight,
+    rpe: first.rpe ?? null,
+  };
+}
+
 export function buildSessionCountForCanonical(
   tagged: TaggedSetRecord[],
   canonical: string

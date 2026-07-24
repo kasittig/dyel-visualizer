@@ -39,6 +39,14 @@ describe('latestLiftE1RMs', () => {
       ],
       { squat: 300, bench: 200, deadlift: 450 },
     ],
+    [
+      'includes total with other fields',
+      [
+        point(1000, { squat: 300, bench: 200, deadlift: 450, total: 950 }),
+        point(2000, { total: 960 }),
+      ],
+      { squat: 300, bench: 200, deadlift: 450, total: 960 },
+    ],
   ])('%s', (_, data, expected) => {
     expect(latestLiftE1RMs(data)).toEqual(expected);
   });

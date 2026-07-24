@@ -5,8 +5,9 @@ export function latestLiftE1RMs(data: ChartPoint[]): {
   squat?: number;
   bench?: number;
   deadlift?: number;
+  total?: number;
 } {
-  const result: { squat?: number; bench?: number; deadlift?: number } = {};
+  const result: { squat?: number; bench?: number; deadlift?: number; total?: number } = {};
   for (const p of data) {
     if (p.squat !== undefined) {
       result.squat = p.squat as number;
@@ -16,6 +17,9 @@ export function latestLiftE1RMs(data: ChartPoint[]): {
     }
     if (p.deadlift !== undefined) {
       result.deadlift = p.deadlift as number;
+    }
+    if (p.total !== undefined) {
+      result.total = p.total as number;
     }
   }
   return result;
