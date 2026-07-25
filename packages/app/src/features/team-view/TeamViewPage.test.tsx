@@ -240,9 +240,27 @@ describe('TeamViewPage', () => {
 
     const link = screen.getByTitle('Open Alice in DYEL Visualizer');
     expect(link.getAttribute('href')).toBe(
-      `./?sheet=${encodeURIComponent('https://example.com/alice-sheet')}`
+      `/?sheet=${encodeURIComponent('https://example.com/alice-sheet')}`
     );
     expect(link.getAttribute('target')).toBe('_blank');
+  });
+
+  it('back link and summary view link resolve against the site root, not the current path', () => {
+    window.history.pushState({}, '', '/dyel-visualizer/team');
+    vi.mocked(useTeamViewData).mockReturnValue({
+      status: 'success',
+      data: [mockLifterResult('Lifter 1')],
+    });
+    render(<TeamViewPage />);
+
+    expect(screen.getByText('← Back to DYEL Visualizer').getAttribute('href')).toBe(
+      '/dyel-visualizer/'
+    );
+    expect(screen.getByText('🏆 Summary view').getAttribute('href')).toBe(
+      '/dyel-visualizer/team/summary'
+    );
+
+    window.history.pushState({}, '', '/');
   });
 
   it('shows empty state when exercise selected but no rows', () => {

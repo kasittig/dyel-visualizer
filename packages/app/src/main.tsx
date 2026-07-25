@@ -4,6 +4,7 @@ import { createRoot } from 'react-dom/client';
 import './index.css';
 import { App } from './app/App.tsx';
 import { ErrorBoundary } from './shared/components/ErrorBoundary.tsx';
+import { resolvePage } from './shared/pageRouting.ts';
 
 const ConjugateInfoPage = lazy(() =>
   import('./features/conjugate-info/ConjugateInfoPage.tsx').then((m) => ({
@@ -82,32 +83,6 @@ function resolvePageComponent(page: string | null) {
     return <App />;
   }
   return <p>Page not found.</p>;
-}
-
-const KNOWN_PAGES = new Set([
-  'conjugate',
-  'index',
-  'validator',
-  'pipeline-validation',
-  'team',
-  'coach',
-  'team-summary',
-]);
-
-function resolvePage(): string | null {
-  const queryPage = new URLSearchParams(window.location.search).get('page');
-  if (queryPage) {
-    return queryPage;
-  }
-  // Special-cased ahead of the last-segment fallback below: /team/summary is a two-segment
-  // path whose last segment ("summary") isn't itself in KNOWN_PAGES, and matching on the last
-  // segment alone would let any /*/summary path resolve here. Matched by suffix (not equality)
-  // because GitHub Pages serves this app under a subpath (e.g. /dyel-visualizer/team/summary).
-  if (window.location.pathname.replace(/\/$/, '').endsWith('/team/summary')) {
-    return 'team-summary';
-  }
-  const lastSegment = window.location.pathname.split('/').filter(Boolean).pop() ?? '';
-  return KNOWN_PAGES.has(lastSegment) ? lastSegment : null;
 }
 
 const page = resolvePage();

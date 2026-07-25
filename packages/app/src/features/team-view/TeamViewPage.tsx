@@ -7,6 +7,7 @@ import { TeamHistoryChart } from './TeamHistoryChart';
 import type { TeamViewRow } from './useTeamViewSelection';
 import { useSortableRows } from '../../shared/hooks';
 import { LIFT_TYPE_LABELS } from '../../shared/liftTypeLabels';
+import { siteRootPath } from '../../shared/pageRouting';
 import {
   TypeaheadDropdown,
   TableCard,
@@ -80,7 +81,7 @@ export function TeamViewPage() {
           {row.lifterName}
           {row.url && (
             <a
-              href={`./?sheet=${encodeURIComponent(row.url)}`}
+              href={`${siteRootPath()}?sheet=${encodeURIComponent(row.url)}`}
               target="_blank"
               rel="noopener noreferrer"
               className={styles.lifterLink}
@@ -221,11 +222,11 @@ export function TeamViewPage() {
   return (
     <main className={styles.main}>
       <p className={styles.backLink}>
-        <a href="." className={styles.accentLink}>
+        <a href={siteRootPath()} className={styles.accentLink}>
           ← Back to DYEL Visualizer
         </a>
         <a
-          href="./team/summary"
+          href={`${siteRootPath()}team/summary`}
           className={clsx(styles.accentLink, styles.summaryLink)}
           title="Try the new summary leaderboard view"
         >
