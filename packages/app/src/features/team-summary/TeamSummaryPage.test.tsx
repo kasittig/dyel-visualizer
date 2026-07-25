@@ -136,9 +136,24 @@ describe('TeamSummaryPage', () => {
 
     const link = screen.getByTitle('Open Alice in DYEL Visualizer');
     expect(link.getAttribute('href')).toBe(
-      `./?sheet=${encodeURIComponent('https://example.com/alice-sheet')}`
+      `/?sheet=${encodeURIComponent('https://example.com/alice-sheet')}`
     );
     expect(link.getAttribute('target')).toBe('_blank');
+  });
+
+  it('back link resolves against the site root, not the current two-segment path', () => {
+    window.history.pushState({}, '', '/dyel-visualizer/team/summary');
+    vi.mocked(useTeamViewData).mockReturnValue({
+      status: 'success',
+      data: [],
+    });
+    render(<TeamSummaryPage />);
+
+    expect(screen.getByText('← Back to DYEL Visualizer').getAttribute('href')).toBe(
+      '/dyel-visualizer/'
+    );
+
+    window.history.pushState({}, '', '/');
   });
 
   it('renders placeholder rows for lifters with no data', () => {

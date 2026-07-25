@@ -12,9 +12,9 @@ Set `VITE_SHEET_URL` in `.env.local` to pre-fill the sheet URL input during deve
 
 ## Architecture
 
-Single-page React app with no backend. Data comes from either a user-supplied Google Sheet URL or pasted free-text (both are input modes on `SheetUrlPanel`). There is no router — page selection is done via `?page=` query params (or matching path segment) in `main.tsx`.
+Single-page React app with no backend. Data comes from either a user-supplied Google Sheet URL or pasted free-text (both are input modes on `SheetUrlPanel`). There is no router — page selection is done via `?page=` query params (or matching path segment) via `resolvePage()`/`siteRootPath()` in `shared/pageRouting.ts`, consumed by `main.tsx`.
 
-**Page routing (`main.tsx`):**
+**Page routing (`shared/pageRouting.ts`, consumed by `main.tsx`):**
 
 - `?page=conjugate` (or `/conjugate`) → `ConjugateInfoPage` (renders `CONJUGATE.md` as markdown)
 - `?page=index` (or `/index`) → `IndexPage` (list of linked sheets fetched from a hardcoded published index sheet)
@@ -23,6 +23,8 @@ Single-page React app with no backend. Data comes from either a user-supplied Go
 - `?page=team` (or `/team`) → `TeamViewPage` (multi-lifter e1RM/target-weight table; `?page=coach` (or `/coach`) supported as a backward-compatible alias; fans out over every lifter's `PipelineModel` from the index sheet instead of `PipelineContext`'s single model — see `features/team-view/CLAUDE.md`)
 - `?page=team-summary` (or `/team/summary`) → `TeamSummaryPage` (always-visible per-lifter summary/leaderboard table — Squat/Bench/Deadlift/Total/Sessions/Last set/Date — reusing `useTeamViewData` from `features/team-view/`; an internal-preview alternative to `TeamViewPage`, linked from it via a 🏆 "Summary view" link, kept at both URLs so users can compare and give feedback before one replaces the other — see `features/team-summary/CLAUDE.md`; note `resolvePage()` special-cases the `/team/summary` two-segment path since bare last-path-segment matching would otherwise collide with other `/*/summary` paths)
 - no `?page=` → `App` (main visualizer)
+
+**Navigating back to the site root:** `shared/pageRouting.ts` also exports `siteRootPath()`, the inverse of `resolvePage()` — it strips whatever known page path was matched off `window.location.pathname` (same two-segment-before-single-segment precedence as `resolvePage()`) and returns the app's true root path (e.g. `/` locally, `/dyel-visualizer/` on GitHub Pages), always trailing-slash-terminated. `TeamViewPage.tsx`/`TeamSummaryPage.tsx` use it to build their "← Back to DYEL Visualizer" / "🏆 Summary view" / per-lifter sheet deep-link `href`s instead of dot-relative paths (`href="."`) — a dot-relative href resolves based on the _current_ path's depth and trailing slash, which breaks for the two-segment `/team/summary` path (it resolves one level too shallow, landing back on `/team` and creating a navigation loop rather than reaching the root).
 
 **Data flow (`app/App.tsx` composing `app/*` hooks):**
 
@@ -54,6 +56,7 @@ Single-page React app with no backend. Data comes from either a user-supplied Go
 | `shared/hooks/`            | `useCsvResource`, `useLocalStorageState`, `useSortableRows`                                                                                                                                                                                     |
 | `shared/dateUtils.ts`      | Pure date-formatting helpers — no React dependency                                                                                                                                                                                              |
 | `shared/liftTypeLabels.ts` | Lift type labels and canonical ordering (`LIFT_TYPE_LABELS`, `LIFT_TYPE_ORDER`) — no React dependency                                                                                                                                           |
+| `shared/pageRouting.ts`    | `resolvePage()`/`siteRootPath()`/`KNOWN_PAGES` — no-router page selection and its inverse (site-root path for in-app navigation links), consumed by `main.tsx` and `TeamViewPage`/`TeamSummaryPage` — no React dependency                       |
 
 Each `features/*/` and `shared/*/` directory has an `index.ts` barrel and a `CLAUDE.md` with per-file descriptions.
 

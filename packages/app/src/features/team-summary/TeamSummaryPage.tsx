@@ -4,6 +4,7 @@ import { useTeamViewData } from '../team-view';
 import { useTeamSummaryData } from './useTeamSummaryData';
 import type { TeamSummaryRow } from './useTeamSummaryData';
 import { useSortableRows } from '../../shared/hooks';
+import { siteRootPath } from '../../shared/pageRouting';
 import {
   EditableDateChip,
   TableCard,
@@ -41,7 +42,7 @@ export function TeamSummaryPage() {
           {row.lifterName}
           {row.url && (
             <a
-              href={`./?sheet=${encodeURIComponent(row.url)}`}
+              href={`${siteRootPath()}?sheet=${encodeURIComponent(row.url)}`}
               target="_blank"
               rel="noopener noreferrer"
               className={styles.lifterLink}
@@ -138,7 +139,7 @@ export function TeamSummaryPage() {
   return (
     <main className={styles.main}>
       <p className={styles.backLink}>
-        <a href="." className={styles.accentLink}>
+        <a href={siteRootPath()} className={styles.accentLink}>
           ← Back to DYEL Visualizer
         </a>
       </p>

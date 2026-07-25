@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
 import { loadIndexPipelineModels, type LifterPipelineResult } from '@dyel/api';
 import {
-  fetchSheetCsv,
   publishedCsvUrl,
   sheetCsvUrl,
   extractSheetRef,
   PLACEHOLDER_ATHLETE,
   INDEX_SHEET_ID,
 } from '../data-source';
+import { cachedFetchSheetCsv } from './teamCsvCache';
 
 type TeamViewDataState =
   | { status: 'loading' }
@@ -21,12 +21,12 @@ export function useTeamViewData(): TeamViewDataState {
     const controller = new AbortController();
     let isMounted = true;
 
-    fetchSheetCsv(publishedCsvUrl(INDEX_SHEET_ID), controller.signal)
+    cachedFetchSheetCsv(publishedCsvUrl(INDEX_SHEET_ID), controller.signal)
       .then((indexCsv) =>
         loadIndexPipelineModels(indexCsv, PLACEHOLDER_ATHLETE, (url) => {
           const ref = extractSheetRef(url.trim());
           return ref
-            ? fetchSheetCsv(sheetCsvUrl(ref, '0'))
+            ? cachedFetchSheetCsv(sheetCsvUrl(ref, '0'))
             : Promise.reject(new Error(`Invalid sheet URL: ${url}`));
         })
       )

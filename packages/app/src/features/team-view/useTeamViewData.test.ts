@@ -29,9 +29,15 @@ const fixtureModel = {
 describe('useTeamViewData', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    if (typeof localStorage !== 'undefined') {
+      localStorage.clear();
+    }
   });
   afterEach(() => {
     vi.restoreAllMocks();
+    if (typeof localStorage !== 'undefined') {
+      localStorage.clear();
+    }
   });
 
   it('loading → success', async () => {
@@ -55,6 +61,38 @@ describe('useTeamViewData', () => {
       expect(result.current.status).toBe('success');
     });
     expect(result.current).toEqual({ status: 'success', data: fixtureResults });
+  });
+
+  it('reuses cached index CSV text on a second mount instead of refetching', async () => {
+    if (typeof localStorage === 'undefined') {
+      // Skip this test if localStorage is not available in the test environment
+      return;
+    }
+    const indexCsv = 'name,url\nAthlete 1,https://example.com/sheet1';
+    const fixtureResults: LifterPipelineResult[] = [
+      {
+        status: 'success',
+        name: 'Athlete 1',
+        url: 'https://example.com/sheet1',
+        model: fixtureModel as unknown as PipelineModel,
+      },
+    ];
+
+    mockFetchSheetCsv.mockResolvedValue(indexCsv);
+    mockLoadIndexPipelineModels.mockResolvedValue(fixtureResults);
+
+    const first = renderHook(() => useTeamViewData());
+    await waitFor(() => {
+      expect(first.result.current.status).toBe('success');
+    });
+    expect(mockFetchSheetCsv).toHaveBeenCalledTimes(1);
+
+    mockFetchSheetCsv.mockClear();
+    const second = renderHook(() => useTeamViewData());
+    await waitFor(() => {
+      expect(second.result.current.status).toBe('success');
+    });
+    expect(mockFetchSheetCsv).not.toHaveBeenCalled();
   });
 
   it('loading → error', async () => {
