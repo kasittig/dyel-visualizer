@@ -101,8 +101,9 @@ function resolvePage(): string | null {
   }
   // Special-cased ahead of the last-segment fallback below: /team/summary is a two-segment
   // path whose last segment ("summary") isn't itself in KNOWN_PAGES, and matching on the last
-  // segment alone would let any /*/summary path resolve here.
-  if (window.location.pathname.replace(/\/$/, '') === '/team/summary') {
+  // segment alone would let any /*/summary path resolve here. Matched by suffix (not equality)
+  // because GitHub Pages serves this app under a subpath (e.g. /dyel-visualizer/team/summary).
+  if (window.location.pathname.replace(/\/$/, '').endsWith('/team/summary')) {
     return 'team-summary';
   }
   const lastSegment = window.location.pathname.split('/').filter(Boolean).pop() ?? '';
