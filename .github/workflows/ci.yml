@@ -24,6 +24,7 @@ jobs:
       - run: npm run build
         env:
           VITE_SHEET_URL: ${{ vars.VITE_SHEET_URL }}
+          VITE_BASE_PATH: /dyel-visualizer/
       - run: cp packages/app/dist/index.html packages/app/dist/404.html
       - run: npm test
       - uses: actions/upload-artifact@v7

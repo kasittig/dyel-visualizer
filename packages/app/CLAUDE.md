@@ -24,6 +24,16 @@ Single-page React app with no backend. Data comes from either a user-supplied Go
 - `?page=team-summary` (or `/team/summary`) → `TeamSummaryPage` (always-visible per-lifter summary/leaderboard table — Squat/Bench/Deadlift/Total/Sessions/Last set/Date — reusing `useTeamViewData` from `features/team-view/`; an internal-preview alternative to `TeamViewPage`, linked from it via a 🏆 "Summary view" link, kept at both URLs so users can compare and give feedback before one replaces the other — see `features/team-summary/CLAUDE.md`; note `resolvePage()` special-cases the `/team/summary` two-segment path since bare last-path-segment matching would otherwise collide with other `/*/summary` paths)
 - no `?page=` → `App` (main visualizer)
 
+**GitHub Pages deep links need an absolute asset base, not just JS routing:** `resolvePage()`
+correctly identifies deep links like `/team/summary` client-side, but GitHub Pages itself has no
+server-side rewrites — unknown paths are served via `ci.yml`'s `dist/index.html` -> `dist/404.html`
+copy, and that HTML's own asset URLs must resolve correctly before `resolvePage()` ever runs.
+`vite.config.ts`'s `base` therefore uses `process.env.VITE_BASE_PATH ?? '/'` — root `/` locally,
+but `/dyel-visualizer/` (absolute) when set by the CI build — instead of a relative base, because a
+relative base (`./assets/...`) resolves against the current URL's path depth and 404s for any path
+more than one segment below the real site root (this broke `/team/summary` specifically). See the
+comment in `vite.config.ts` for the full explanation.
+
 **Navigating back to the site root:** `shared/pageRouting.ts` also exports `siteRootPath()`, the inverse of `resolvePage()` — it strips whatever known page path was matched off `window.location.pathname` (same two-segment-before-single-segment precedence as `resolvePage()`) and returns the app's true root path (e.g. `/` locally, `/dyel-visualizer/` on GitHub Pages), always trailing-slash-terminated. `TeamViewPage.tsx`/`TeamSummaryPage.tsx` use it to build their "← Back to DYEL Visualizer" / "🏆 Summary view" / per-lifter sheet deep-link `href`s instead of dot-relative paths (`href="."`) — a dot-relative href resolves based on the _current_ path's depth and trailing slash, which breaks for the two-segment `/team/summary` path (it resolves one level too shallow, landing back on `/team` and creating a navigation loop rather than reaching the root).
 
 **Data flow (`app/App.tsx` composing `app/*` hooks):**
