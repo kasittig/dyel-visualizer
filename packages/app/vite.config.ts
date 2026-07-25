@@ -35,7 +35,15 @@ function sheetsProxyPlugin(): Plugin {
 
 export default defineConfig({
   plugins: [react(), sheetsProxyPlugin()],
-  base: './',
+  // GitHub Pages has no server-side rewrites, so deep links (e.g. /team/summary) are served via
+  // a copied `dist/index.html` -> `dist/404.html` fallback (see ci.yml) and the app's own JS
+  // router (`shared/pageRouting.ts`) takes it from there. That fallback file's asset URLs must be
+  // absolute (leading `/`) so they resolve from the origin regardless of how many path segments
+  // deep the requested URL was — a *relative* base (e.g. `./assets/...`) resolves against the
+  // current URL's directory instead, which breaks for any path more than one segment below the
+  // real site root (e.g. `/team/summary`, confirmed 404ing in production). `VITE_BASE_PATH` is
+  // set only by the GitHub Pages CI build (ci.yml); local dev/build/preview default to root `/`.
+  base: process.env.VITE_BASE_PATH ?? '/',
   build: {
     rollupOptions: {
       output: {
