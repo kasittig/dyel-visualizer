@@ -8,17 +8,23 @@ describe('parseTextData', () => {
   });
 
   it.each([
-    ['rep-max grammar', 'comp squat 1rm 300lbs', 'squat', 300, 1, 'lbs'],
-    ['plain multiplication grammar', 'comp bench 225lbs x5', 'bench', 225, 5, 'lbs'],
-    ['implicit reps fallback', 'comp bench 225lbs', 'bench', 225, 1, 'lbs'],
-  ])('parses line item: %s', (_, line, type, weight, reps, unit) => {
+    ['rep-max grammar', 'comp squat 1rm 300lbs', 'comp squat', 300 * 0.453592, 1, 'lbs'],
+    [
+      'plain multiplication grammar',
+      'comp bench 225lbs x5',
+      'comp bench',
+      225 * 0.453592,
+      5,
+      'lbs',
+    ],
+    ['implicit reps fallback', 'comp bench 225lbs', 'comp bench', 225 * 0.453592, 1, 'lbs'],
+  ])('parses line item with the pipeline grammar: %s', (_, line, exercise, weight, reps, unit) => {
     const [res] = parseTextData(line);
     expect(res).toBeDefined();
     if (!res) {
       throw new Error('Parsing failed');
     }
-    expect(res[0].type).toBe(type);
-    expect(res[1]).toMatchObject({ weight, reps, unit });
+    expect(res).toMatchObject({ exercise, weight, reps, meta: { rawUnit: unit } });
   });
 
   it('evaluates multiple independent entries and unit context loops', () => {
@@ -26,12 +32,12 @@ describe('parseTextData', () => {
       'comp squat 1rm 300lbs\ncomp bench 225lbs x5\ncomp deadlift 3rm 180kg'
     );
     expect(mixed).toHaveLength(3);
-    expect(mixed[0][1].unit).toBe('lbs');
-    expect(mixed[1][1].unit).toBe('lbs');
-    expect(mixed[2][1].unit).toBe('kg');
+    expect(mixed[0].meta?.rawUnit).toBe('lbs');
+    expect(mixed[1].meta?.rawUnit).toBe('lbs');
+    expect(mixed[2].meta?.rawUnit).toBe('kg');
 
-    expect(parseTextData('comp squat 300', 'kg')[0][1].unit).toBe('kg');
-    expect(parseTextData('comp squat 1rm 300', 'kg')[0][1].unit).toBe('kg');
+    expect(parseTextData('comp squat 300', 'kg')[0].meta?.rawUnit).toBe('kg');
+    expect(parseTextData('comp squat 1rm 300', 'kg')[0].meta?.rawUnit).toBe('kg');
   });
 
   it('uses provided now parameter for all parsed entries', () => {
@@ -43,11 +49,13 @@ describe('parseTextData', () => {
     );
     expect(mixed).toHaveLength(3);
     // All entries should have the exact same date
-    expect(mixed[0][1].date).toEqual(fixedDate);
-    expect(mixed[1][1].date).toEqual(fixedDate);
-    expect(mixed[2][1].date).toEqual(fixedDate);
-    // Verify they are the same object reference
-    expect(mixed[0][1].date).toBe(mixed[1][1].date);
-    expect(mixed[1][1].date).toBe(mixed[2][1].date);
+    const expected = Date.UTC(2025, 0, 15);
+    expect(mixed[0].date).toBe(expected);
+    expect(mixed[1].date).toBe(expected);
+    expect(mixed[2].date).toBe(expected);
+  });
+
+  it('accepts an explicit ISO date anywhere in the line', () => {
+    expect(parseTextData('comp squat 2024-11-04 405lbs x2')[0].date).toBe(Date.UTC(2024, 10, 4));
   });
 });

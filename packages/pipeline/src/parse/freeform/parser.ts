@@ -20,9 +20,14 @@ function parseDate(dateStr: string, lineNum: number, rawLine: string): number {
   return timestamp;
 }
 
-export function parseFreeformText(content: string, ctx: ParseContext): SetRecord[] {
+export function parseFreeformText(
+  content: string,
+  ctx: ParseContext,
+  defaultDate: number = Date.now()
+): SetRecord[] {
   const records: SetRecord[] = [];
   const effectiveCtx = { ...ctx };
+  const fallbackDate = new Date(defaultDate);
   content.split('\n').forEach((rawLine: string, idx: number) => {
     const lineNum = idx + 1;
     let line = rawLine.trim();
@@ -39,12 +44,16 @@ export function parseFreeformText(content: string, ctx: ParseContext): SetRecord
     if (!line) {
       return;
     }
-    const dateMatch = line.match(/^(\d{4}-\d{2}-\d{2})\s+(\S.*)$/);
-    if (!dateMatch) {
-      throw new ParseError(`Invalid line format: ${line}`, lineNum, rawLine);
-    }
-    const date = parseDate(dateMatch[1], lineNum, rawLine);
-    const tokens = dateMatch[2].split(/\s+/);
+    const tokens = line.split(/\s+/);
+    const dateIndex = tokens.findIndex((token) => /^\d{4}-\d{2}-\d{2}$/.test(token));
+    const date =
+      dateIndex === -1
+        ? Date.UTC(
+            fallbackDate.getUTCFullYear(),
+            fallbackDate.getUTCMonth(),
+            fallbackDate.getUTCDate()
+          )
+        : parseDate(tokens.splice(dateIndex, 1)[0], lineNum, rawLine);
     let weightSpec = '';
     for (let i = tokens.length - 1; i >= 0; i--) {
       const suffix = tokens.slice(i).join(' ');
@@ -58,6 +67,9 @@ export function parseFreeformText(content: string, ctx: ParseContext): SetRecord
           throw err;
         }
       }
+    }
+    if (!weightSpec && /^\d+(?:\.\d+)?(?:lbs|kg)?$/i.test(tokens.at(-1) ?? '')) {
+      weightSpec = `${tokens.pop()} x1`;
     }
     const exercise = tokens.join(' ');
     if (!weightSpec) {

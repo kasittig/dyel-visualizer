@@ -109,7 +109,7 @@ describe('freeformParser', () => {
 
     it('throws errors on malformed tracking structures', () => {
       [
-        'No date here Bench 315x5 @8\n',
+        'No weight here Bench\n',
         '2026-01-10 Bench\n',
         '2026-01-13 Bench 225x5 @8\n2026-01-13 Squat 315x @7\n2026-01-13 Deadlift 405x3 @9\n',
       ].forEach((c: string) => {
@@ -138,6 +138,14 @@ describe('freeformParser', () => {
   });
 
   describe('parseDate (timezone correctness)', () => {
+    it('defaults missing dates to today and accepts an ISO date anywhere', () => {
+      const today = Date.UTC(2026, 6, 30, 18);
+      expect(parseFreeformText('Bench 100x5\n', ctx, today)[0].date).toBe(Date.UTC(2026, 6, 30));
+      expect(parseFreeformText('Bench 2025-03-02 100x5\n', ctx, today)[0].date).toBe(
+        Date.UTC(2025, 2, 2)
+      );
+    });
+
     it.each([
       ['Jan 10', '2026-01-10', Date.UTC(2026, 0, 10)],
       ['Feb 28', '2026-02-28', Date.UTC(2026, 1, 28)],
@@ -151,7 +159,7 @@ describe('freeformParser', () => {
       expect(parseFreeformText(`${dateStr} Bench 100x5\n`, ctx)[0].date).toBe(expected);
     });
 
-    it('rejects malformed dates', () => {
+    it('treats unsupported date formats as exercise text', () => {
       const invalidFormats = [
         '01-10-2026 Bench 100x5',
         '2026/01/10 Bench 100x5',
@@ -161,9 +169,7 @@ describe('freeformParser', () => {
         '01/10 Bench 100x5',
       ];
       invalidFormats.forEach((line) => {
-        expect(() => {
-          parseFreeformText(`${line}\n`, ctx);
-        }).toThrow(ParseError);
+        expect(parseFreeformText(`${line}\n`, ctx)[0].exercise).toContain(line.split(' ')[0]);
       });
     });
 

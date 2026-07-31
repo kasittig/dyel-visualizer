@@ -13,7 +13,7 @@
   ```ts
   throw new ParseError(errorMsg, lineNum + 1, rawLine);
   ```
-- **Date Parsing:** Strictly parse `YYYY-MM-DD` via regex + `Date.UTC` to avoid timezone corruption (see `parseDate`). Do not accept alternate formats.
+- **Date Parsing:** Parse optional `YYYY-MM-DD` tokens via `Date.UTC`; missing dates default to the current UTC calendar date. Do not accept alternate formats as dates.
 - **Unit Precedence Rules:** Evaluate exactly in this order: `Record suffix (e.g., 100kg)` -> `Preamble (units: lbs)` -> `ParseContext.fallback`.
 
 ## ❌ Non-Goals & Strict Constraints
