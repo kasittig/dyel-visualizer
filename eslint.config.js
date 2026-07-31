@@ -88,64 +88,6 @@ export default defineConfig([
     },
   },
   {
-    // shared/charts/* imports chart display helpers (formatChartDate, color constants)
-    files: ['packages/app/src/shared/charts/**/*.tsx'],
-    rules: {
-      '@typescript-eslint/no-restricted-imports': 'off',
-    },
-  },
-  {
-    // ConjugateCharts.tsx imports LINE_COLORS (display constant array)
-    files: ['packages/app/src/features/lift/ConjugateCharts.tsx'],
-    rules: {
-      '@typescript-eslint/no-restricted-imports': 'off',
-    },
-  },
-  {
-    // TeamHistoryChart.tsx imports LINE_COLORS (display constant array) and NORMALIZED_KEY_SUFFIX
-    // (a plain string constant used to key/label the normalized companion line's tooltip) — same
-    // category as ConjugateCharts.tsx's LINE_COLORS exception above, not business-logic derivation.
-    files: ['packages/app/src/features/team-view/TeamHistoryChart.tsx'],
-    rules: {
-      '@typescript-eslint/no-restricted-imports': 'off',
-    },
-  },
-  {
-    // DiagnosticsPanel.tsx imports formatEffect/formatAddlWtOffset (display formatters)
-    files: ['packages/app/src/features/lift/DiagnosticsPanel.tsx'],
-    rules: {
-      '@typescript-eslint/no-restricted-imports': 'off',
-    },
-  },
-  {
-    // VariationRadarChart.tsx imports roundWeight (display rounding in tooltip renderer)
-    files: ['packages/app/src/features/lift/VariationRadarChart.tsx'],
-    rules: {
-      '@typescript-eslint/no-restricted-imports': 'off',
-    },
-  },
-  {
-    // SessionBarChart.tsx imports formatChartDate (display formatter)
-    files: ['packages/app/src/features/sigma/SessionBarChart.tsx'],
-    rules: {
-      '@typescript-eslint/no-restricted-imports': 'off',
-    },
-  },
-  {
-    // RepCalculator.tsx imports CONJUGATE_BARS/STANCES/EQUIPMENT/ADDL_WTS (facet option constants, not derivation)
-    files: ['packages/app/src/features/calculator/RepCalculator.tsx'],
-    rules: {
-      '@typescript-eslint/no-restricted-imports': 'off',
-    },
-  },
-  {
-    // DateRangePicker.tsx imports presetDateRange/activePreset (pure Date-range utilities, no PipelineModel dependency)
-    files: ['packages/app/src/shared/components/DateRangePicker.tsx'],
-    rules: {
-      '@typescript-eslint/no-restricted-imports': 'off',
-    },
-  },
-  {
     // Enforce feature barrel imports: features may only import sibling features via their index.ts barrel.
     // This blocks deep relative imports like ../sigma/SigmaChart while allowing barrel imports like ../sigma.
     // Uses explicit feature directory names to avoid false positives with ../../app or ../../shared imports.

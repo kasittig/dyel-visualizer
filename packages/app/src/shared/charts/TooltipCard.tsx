@@ -1,5 +1,5 @@
 import type React from 'react';
-import { formatChartDate } from '@dyel/api';
+import { formatChartDate } from '@dyel/api/display';
 import styles from './TooltipCard.module.css';
 
 /** Shared floating card used by the Recharts custom tooltips across the charts. */

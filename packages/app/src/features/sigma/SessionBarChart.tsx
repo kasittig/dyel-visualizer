@@ -9,7 +9,7 @@ import {
   YAxis,
 } from 'recharts';
 import type { ChartPoint } from '@dyel/api';
-import { formatChartDate } from '@dyel/api';
+import { formatChartDate } from '@dyel/api/display';
 import { ChartEmpty } from '../../shared/charts/DateLineChart';
 import { ChartTooltip } from '../../shared/charts/TooltipCard';
 import styles from './SessionBarChart.module.css';

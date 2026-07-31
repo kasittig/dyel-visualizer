@@ -78,7 +78,8 @@ This separation ensures business logic stays in `@dyel/api`, React lifecycle sta
 - Never call `usePipelineModel()` directly — only feature hooks do that
 - Feature-local UI state (a popover's open/closed toggle, in-progress calculator inputs, which variation is highlighted) stays colocated in the owning component or feature hook
 
-A small set of display-only helpers and constants are allowlisted to import from `@dyel/api` — these are pure formatters/constants with no business logic (e.g., `shared/charts/**` for chart formatting, `features/lift/DiagnosticsPanel.tsx` for display formatters like `formatEffect`, `features/calculator/RepCalculator.tsx` for facet option constants). See the `@typescript-eslint/no-restricted-imports` block and its per-file overrides in root `eslint.config.js` for the current allowlist; that file is the source of truth, not this line count (which will drift).
+Display-only helpers and constants are imported from the constrained `@dyel/api/display` subpath.
+Components may use that subpath directly while business derivations remain restricted to feature hooks.
 
 ### Feature hook rules (`use*.ts` in `features/*/`)
 
