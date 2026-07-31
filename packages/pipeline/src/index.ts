@@ -1,8 +1,12 @@
 export type { Unit, SetRecord, Point, TagQuery } from './types';
-export type { RawInput, ParseContext, Parser } from './parse/parser';
+export type { RawInput, ParseContext, ParseResult, Parser } from './parse/parser';
 export { ParseError, resolveUnit, ParserRegistry } from './parse/parser';
 export { csvParser } from './parse/csv';
-export { freeformParser, parseFreeformText } from './parse/freeform/parser';
+export {
+  freeformParser,
+  parseFreeformText,
+  parseFreeformTextResult,
+} from './parse/freeform/parser';
 export type { TaggedSetRecord } from './tag/tag';
 export {
   tagRecords,
