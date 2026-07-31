@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useReducer, useState } from 'react';
 import type { DateRange } from 'react-day-picker';
 import type {
   DisplayUnit,
@@ -14,24 +14,15 @@ import type {
 } from '@dyel/api';
 import {
   buildExerciseDisplayNameIndex,
-  buildLastSessionDetailForCanonical,
-  buildSessionCountForCanonical,
+  buildTeamViewRowSnapshot,
   canonicalsMatchingFacets,
   CONJUGATE_ADDL_WTS,
   CONJUGATE_BARS,
   CONJUGATE_EQUIPMENT,
   CONJUGATE_STANCES,
-  convertE1RMToDisplayUnit,
   detectDataUnit,
-  resolveFamilyRecentE1RMEstimate,
-  formatE1RMSourceLabel,
-  formatLastSessionParts,
-  formatWeight,
   groupByLiftType,
   isRecordInDateRange,
-  predictWeightForRepsAndEffort,
-  resolveE1RMEstimate,
-  roundTo5,
   convertEffort,
 } from '@dyel/api';
 import { LIFT_TYPE_ORDER } from '../../shared/liftTypeLabels';
@@ -40,6 +31,38 @@ interface LifterOverride {
   displayName?: string;
   reps?: number;
   effort?: Effort;
+}
+
+interface TeamRowState {
+  overrides: Map<string, LifterOverride>;
+  projected: Map<string, boolean>;
+}
+
+type TeamRowAction =
+  | { type: 'setOverride'; lifter: string; value: LifterOverride }
+  | { type: 'resetOverride'; field: keyof LifterOverride }
+  | { type: 'toggleProjected'; lifter: string };
+
+function teamRowReducer(state: TeamRowState, action: TeamRowAction): TeamRowState {
+  if (action.type === 'setOverride') {
+    const overrides = new Map(state.overrides);
+    overrides.set(action.lifter, { ...overrides.get(action.lifter), ...action.value });
+    return { ...state, overrides };
+  }
+  if (action.type === 'resetOverride') {
+    return {
+      ...state,
+      overrides: new Map(
+        [...state.overrides].map(([lifter, value]) => [
+          lifter,
+          { ...value, [action.field]: undefined },
+        ])
+      ),
+    };
+  }
+  const projected = new Map(state.projected);
+  projected.set(action.lifter, !(projected.get(action.lifter) ?? false));
+  return { ...state, projected };
 }
 
 export interface TeamViewRow {
@@ -96,13 +119,12 @@ export function useTeamViewSelection(results: LifterPipelineResult[]) {
     return firstActive ? detectDataUnit(groupByLiftType(firstActive.model.tagged)) : 'lbs';
   });
 
-  const [overridesByLifter, setOverridesByLifter] = useState<Map<string, LifterOverride>>(
-    new Map()
-  );
-
-  const [showProjectedByLifter, setShowProjectedByLifter] = useState<Map<string, boolean>>(
-    new Map()
-  );
+  const [rowState, dispatchRow] = useReducer(teamRowReducer, {
+    overrides: new Map(),
+    projected: new Map(),
+  });
+  const overridesByLifter = rowState.overrides;
+  const showProjectedByLifter = rowState.projected;
 
   const [selectedBar, setSelectedBar] = useState<ConjugateBar | null>(null);
   const [selectedStance, setSelectedStance] = useState<ConjugateStance | null>(null);
@@ -172,24 +194,12 @@ export function useTeamViewSelection(results: LifterPipelineResult[]) {
 
   const setSelectedDisplayNameAndReset = (name: string) => {
     setSelectedDisplayName(name);
-    setOverridesByLifter((prev) => {
-      const next = new Map<string, LifterOverride>();
-      for (const [k, v] of prev) {
-        next.set(k, { ...v, displayName: undefined });
-      }
-      return next;
-    });
+    dispatchRow({ type: 'resetOverride', field: 'displayName' });
   };
 
   const setRepsAndReset = (r: number) => {
     setReps(r);
-    setOverridesByLifter((prev) => {
-      const next = new Map<string, LifterOverride>();
-      for (const [k, v] of prev) {
-        next.set(k, { ...v, reps: undefined });
-      }
-      return next;
-    });
+    dispatchRow({ type: 'resetOverride', field: 'reps' });
   };
 
   const setEffortModeAndReset = (mode: EffortMode) => {
@@ -206,24 +216,12 @@ export function useTeamViewSelection(results: LifterPipelineResult[]) {
         : convertEffort(reps, { mode: effortMode, value: effortValue }, mode);
     setEffortMode(mode);
     setEffortValue(converted);
-    setOverridesByLifter((prev) => {
-      const next = new Map<string, LifterOverride>();
-      for (const [k, v] of prev) {
-        next.set(k, { ...v, effort: undefined });
-      }
-      return next;
-    });
+    dispatchRow({ type: 'resetOverride', field: 'effort' });
   };
 
   const setEffortValueAndReset = (value: number) => {
     setEffortValue(value);
-    setOverridesByLifter((prev) => {
-      const next = new Map<string, LifterOverride>();
-      for (const [k, v] of prev) {
-        next.set(k, { ...v, effort: undefined });
-      }
-      return next;
-    });
+    dispatchRow({ type: 'resetOverride', field: 'effort' });
   };
 
   const setSelectedBarAndReset = (v: ConjugateBar | null) => {
@@ -255,41 +253,7 @@ export function useTeamViewSelection(results: LifterPipelineResult[]) {
       return [];
     }
 
-    const placeholder = (
-      name: string,
-      url: string,
-      msg: string,
-      shared: Pick<
-        TeamViewRow,
-        | 'effectiveDisplayName'
-        | 'effectiveReps'
-        | 'effectiveEffortMode'
-        | 'effectiveEffortValue'
-        | 'onExerciseChange'
-        | 'onRepsChange'
-        | 'onEffortModeChange'
-        | 'onEffortValueChange'
-        | 'availableExerciseOptions'
-        | 'showProjected'
-        | 'onToggleProjected'
-      >
-    ): TeamViewRow => ({
-      lifterName: name,
-      url,
-      e1rmDisplay: '—',
-      e1rmProjectedDisplay: null,
-      e1rmSourceLabel: null,
-      e1rmFamilyRecentDisplay: null,
-      e1rmFamilyRecentSourceLabel: null,
-      lastPerformedDateDisplay: '—',
-      lastPerformedSetDisplay: msg,
-      targetWeightDisplay: '—',
-      targetWeightProjectedDisplay: null,
-      sessionCount: 0,
-      hasData: false,
-      ...shared,
-    });
-
+    const now = new Date();
     return results.map((res): TeamViewRow => {
       const override = overridesByLifter.get(res.name);
       const effectiveDisplayName = override?.displayName ?? selectedDisplayName;
@@ -307,55 +271,36 @@ export function useTeamViewSelection(results: LifterPipelineResult[]) {
           : exerciseOptions;
 
       const onExerciseChange = (displayName: string) =>
-        setOverridesByLifter((prev) => {
-          const next = new Map(prev);
-          next.set(res.name, { ...next.get(res.name), displayName });
-          return next;
-        });
+        dispatchRow({ type: 'setOverride', lifter: res.name, value: { displayName } });
 
       const onRepsChange = (r: number) =>
-        setOverridesByLifter((prev) => {
-          const next = new Map(prev);
-          next.set(res.name, { ...next.get(res.name), reps: r });
-          return next;
-        });
+        dispatchRow({ type: 'setOverride', lifter: res.name, value: { reps: r } });
 
-      const onEffortModeChange = (mode: EffortMode) =>
-        setOverridesByLifter((prev) => {
-          const isDefaultRpe10 = effectiveEffortMode === 'rpe' && effectiveEffortValue === 10;
-          const isDefaultPct100 = effectiveEffortMode === 'pct' && effectiveEffortValue === 100;
-          const converted =
-            (isDefaultRpe10 && mode === 'pct') || (isDefaultPct100 && mode === 'rpe')
-              ? mode === 'pct'
-                ? 100
-                : 10
-              : convertEffort(
-                  effectiveReps,
-                  { mode: effectiveEffortMode, value: effectiveEffortValue },
-                  mode
-                );
-          const next = new Map(prev);
-          next.set(res.name, { ...next.get(res.name), effort: { mode, value: converted } });
-          return next;
-        });
+      const onEffortModeChange = (mode: EffortMode) => {
+        const isDefaultRpe10 = effectiveEffortMode === 'rpe' && effectiveEffortValue === 10;
+        const isDefaultPct100 = effectiveEffortMode === 'pct' && effectiveEffortValue === 100;
+        const value =
+          (isDefaultRpe10 && mode === 'pct') || (isDefaultPct100 && mode === 'rpe')
+            ? mode === 'pct'
+              ? 100
+              : 10
+            : convertEffort(
+                effectiveReps,
+                { mode: effectiveEffortMode, value: effectiveEffortValue },
+                mode
+              );
+        dispatchRow({ type: 'setOverride', lifter: res.name, value: { effort: { mode, value } } });
+      };
 
       const onEffortValueChange = (value: number) =>
-        setOverridesByLifter((prev) => {
-          const next = new Map(prev);
-          next.set(res.name, {
-            ...next.get(res.name),
-            effort: { mode: effectiveEffortMode, value },
-          });
-          return next;
+        dispatchRow({
+          type: 'setOverride',
+          lifter: res.name,
+          value: { effort: { mode: effectiveEffortMode, value } },
         });
 
       const showProjected = showProjectedByLifter.get(res.name) ?? false;
-      const onToggleProjected = () =>
-        setShowProjectedByLifter((prev) => {
-          const next = new Map(prev);
-          next.set(res.name, !(prev.get(res.name) ?? false));
-          return next;
-        });
+      const onToggleProjected = () => dispatchRow({ type: 'toggleProjected', lifter: res.name });
 
       const shared = {
         effectiveDisplayName,
@@ -371,54 +316,18 @@ export function useTeamViewSelection(results: LifterPipelineResult[]) {
         onToggleProjected,
       };
 
-      if (res.status !== 'success') {
-        return placeholder(res.name, res.url, 'Failed to load', shared);
-      }
-
-      const points = res.model.points.get('e1rm').filter((p) => p.series === effectiveCanonical);
-      if (!points.length) {
-        return placeholder(res.name, res.url, 'No data logged', shared);
-      }
-
-      const latestPoint = points.reduce((max, curr) => (curr.t > max.t ? curr : max));
-      const detail = buildLastSessionDetailForCanonical(res.model.tagged, effectiveCanonical!);
-      const sessionCount = buildSessionCountForCanonical(res.model.tagged, effectiveCanonical!);
-      const lastSessionParts = detail ? formatLastSessionParts(detail, unit) : null;
-
-      const liftType = liftTypeByDisplayName.get(effectiveDisplayName)!;
-      const estimate = resolveE1RMEstimate({
-        liftType,
-        targetCanonical: effectiveCanonical!,
-        baselineName: undefined,
-        today: new Date(),
-        model: res.model.model,
-        e1rmPoints: res.model.points.get('e1rm-max-effort'),
-      });
-
-      const familyEstimate = resolveFamilyRecentE1RMEstimate(
-        liftType,
-        effectiveCanonical!,
-        res.model.points.get('e1rm'),
-        new Date(),
-        res.model.model
-      );
-
       return {
         lifterName: res.name,
         url: res.url,
-        e1rmDisplay: formatWeight(latestPoint.v, unit),
-        e1rmProjectedDisplay: estimate ? formatWeight(estimate.e1rm, unit) : null,
-        e1rmSourceLabel: formatE1RMSourceLabel(estimate),
-        e1rmFamilyRecentDisplay: familyEstimate ? formatWeight(familyEstimate.e1rm, unit) : null,
-        e1rmFamilyRecentSourceLabel: formatE1RMSourceLabel(familyEstimate),
-        lastPerformedDateDisplay: lastSessionParts?.date ?? '',
-        lastPerformedSetDisplay: lastSessionParts?.setLine ?? '',
-        targetWeightDisplay: `${roundTo5(predictWeightForRepsAndEffort(convertE1RMToDisplayUnit(latestPoint.v, unit), effectiveReps, { mode: effectiveEffortMode, value: effectiveEffortValue }))} ${unit}`,
-        targetWeightProjectedDisplay: estimate
-          ? `${roundTo5(predictWeightForRepsAndEffort(convertE1RMToDisplayUnit(estimate.e1rm, unit), effectiveReps, { mode: effectiveEffortMode, value: effectiveEffortValue }))} ${unit}`
-          : null,
-        sessionCount,
-        hasData: true,
+        ...buildTeamViewRowSnapshot({
+          result: res,
+          canonical: effectiveCanonical,
+          liftType: liftTypeByDisplayName.get(effectiveDisplayName) ?? null,
+          reps: effectiveReps,
+          effort: { mode: effectiveEffortMode, value: effectiveEffortValue },
+          unit,
+          now,
+        }),
         ...shared,
       };
     });

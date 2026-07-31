@@ -143,6 +143,8 @@ export {
   type EffectSummary,
 } from './diagnostics/diagnosticsSelectors';
 export { formatEffect, formatAddlWtOffset } from './diagnostics/diagnosticsUtils';
+export { buildTeamViewRowSnapshot } from './team/teamViewRow';
+export type { TeamViewRowSnapshot } from './team/teamViewRow';
 export {
   formatExerciseDisplayName,
   buildExerciseDisplayNameIndex,
