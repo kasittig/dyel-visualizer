@@ -11,6 +11,8 @@ vi.mock('@dyel/api', async () => ({
 }));
 
 const mockFetchSheetCsv = vi.mocked((await import('../data-source')).fetchSheetCsv);
+const mockExtractSheetRef = vi.mocked((await import('../data-source')).extractSheetRef);
+const mockSheetCsvUrl = vi.mocked((await import('../data-source')).sheetCsvUrl);
 const mockLoadIndexPipelineModels = vi.mocked((await import('@dyel/api')).loadIndexPipelineModels);
 
 const fixtureModel = {
@@ -104,5 +106,28 @@ describe('useTeamViewData', () => {
       expect(result.current.status).toBe('error');
     });
     expect(result.current).toEqual({ status: 'error', message: 'Network error' });
+  });
+
+  it('passes one abort signal through index and lifter sheet requests', async () => {
+    mockExtractSheetRef.mockReturnValue({ id: 'sheet1', published: false });
+    mockSheetCsvUrl.mockReturnValue('https://example.com/sheet1.csv');
+    mockFetchSheetCsv
+      .mockResolvedValueOnce('name,url\nAthlete 1,https://example.com/sheet1')
+      .mockResolvedValueOnce('date,exercise,weight,reps');
+    mockLoadIndexPipelineModels.mockImplementation(async (_csv, _athlete, fetchCsv) => {
+      await fetchCsv('https://example.com/sheet1');
+      return [];
+    });
+
+    const view = renderHook(() => useTeamViewData());
+    await waitFor(() => expect(view.result.current.status).toBe('success'));
+
+    const indexSignal = mockFetchSheetCsv.mock.calls[0][1];
+    const lifterSignal = mockFetchSheetCsv.mock.calls[1][1];
+    expect(indexSignal).toBeInstanceOf(AbortSignal);
+    expect(lifterSignal).toBe(indexSignal);
+
+    view.unmount();
+    expect(indexSignal?.aborted).toBe(true);
   });
 });
