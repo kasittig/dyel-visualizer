@@ -8,31 +8,68 @@ import { fetchSheetCsv } from '../data-source';
 // This means /team and /team/summary (which share useTeamViewData) don't re-download every
 // lifter's sheet on every mount/navigation.
 const CACHE_KEY = 'dyel:teamCsvCache';
+const DEFAULT_MAX_AGE_MS = 15 * 60 * 1000;
+const MAX_CACHE_ENTRIES = 50;
 
-function readCsvCache(): Record<string, string> {
+interface CsvCacheEntry {
+  csv: string;
+  fetchedAt: number;
+}
+
+interface CsvCacheOptions {
+  forceRefresh?: boolean;
+  maxAgeMs?: number;
+  now?: number;
+}
+
+function readCsvCache(): Record<string, CsvCacheEntry> {
   try {
     const raw = localStorage.getItem(CACHE_KEY);
-    return raw ? (JSON.parse(raw) as Record<string, string>) : {};
+    if (!raw) {
+      return {};
+    }
+    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    return Object.fromEntries(
+      Object.entries(parsed).filter(
+        (entry): entry is [string, CsvCacheEntry] =>
+          typeof entry[1] === 'object' &&
+          entry[1] !== null &&
+          typeof (entry[1] as CsvCacheEntry).csv === 'string' &&
+          typeof (entry[1] as CsvCacheEntry).fetchedAt === 'number'
+      )
+    );
   } catch {
     return {};
   }
 }
 
-function writeCsvCacheEntry(url: string, csv: string): void {
+function writeCsvCacheEntry(url: string, entry: CsvCacheEntry): void {
   try {
-    localStorage.setItem(CACHE_KEY, JSON.stringify({ ...readCsvCache(), [url]: csv }));
+    const entries = Object.entries({ ...readCsvCache(), [url]: entry })
+      .sort(([, a], [, b]) => b.fetchedAt - a.fetchedAt)
+      .slice(0, MAX_CACHE_ENTRIES);
+    localStorage.setItem(CACHE_KEY, JSON.stringify(Object.fromEntries(entries)));
   } catch {
     // Quota exceeded or storage unavailable (e.g. private browsing): ignore, cache is best-effort.
   }
 }
 
-export function cachedFetchSheetCsv(url: string, signal?: AbortSignal): Promise<string> {
+export function cachedFetchSheetCsv(
+  url: string,
+  signal?: AbortSignal,
+  options: CsvCacheOptions = {}
+): Promise<string> {
+  const now = options.now ?? Date.now();
   const cached = readCsvCache()[url];
-  if (cached !== undefined) {
-    return Promise.resolve(cached);
+  if (
+    !options.forceRefresh &&
+    cached &&
+    now - cached.fetchedAt <= (options.maxAgeMs ?? DEFAULT_MAX_AGE_MS)
+  ) {
+    return Promise.resolve(cached.csv);
   }
   return fetchSheetCsv(url, signal).then((csv) => {
-    writeCsvCacheEntry(url, csv);
+    writeCsvCacheEntry(url, { csv, fetchedAt: now });
     return csv;
   });
 }
