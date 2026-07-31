@@ -5,7 +5,7 @@
 - Package Manager: npm Workspaces
 - Pipeline Compute Engine Package Name: `@dyel/pipeline` maps directly to `packages/pipeline/`
 - API/Business-Logic Package Name: `@dyel/api` maps directly to `packages/api/` — pure TypeScript
-  derivation functions over `@dyel/pipeline` output; no React, no DOM. See `packages/api/CLAUDE.md`.
+  derivation functions over `@dyel/pipeline` output; no React, no DOM. See `packages/api/AGENTS.md`.
 - Application Package Name: `dyel-visualizer` (npm package name; imported as `@dyel/app` is not a
   thing — there is no scoped alias) maps directly to `packages/app/` — the Vite/React frontend.
 
@@ -22,8 +22,8 @@
   must never import `@dyel/pipeline` directly — always go through `@dyel/api`. This is
   ESLint-enforced (`no-restricted-imports` in `eslint.config.js`); the only sanctioned exception is
   one test file with a documented reason (real-fixture `PipelineModel` coverage), also allowlisted
-  in `eslint.config.js`. See `packages/app/CLAUDE.md`'s "Data flow contract" section and
-  `packages/api/CLAUDE.md` for the full rationale and export table.
+  in `eslint.config.js`. See `packages/app/AGENTS.md`'s "Data flow contract" section and
+  `packages/api/AGENTS.md` for the full rationale and export table.
 - Within `packages/app`, components (`.tsx` files under `features/*/`, `shared/*/`) may not import
   **value** exports from `@dyel/api` directly (types are fine) — derive data via a feature hook
   instead. A small, ESLint-allowlisted set of files import genuine display-only formatters/constants
@@ -31,7 +31,7 @@
 - Within `packages/app`, a feature may import a sibling feature only via that feature's `index.ts`
   barrel (e.g. `import { usePipelineDatasets } from '../sigma'`), never a deep relative path into
   its internals (e.g. `../sigma/usePipelineDatasets`). ESLint-enforced with one documented exception
-  (see `packages/app/CLAUDE.md`).
+  (see `packages/app/AGENTS.md`).
 - Any package that needs pipeline types (`SetRecord`, `Point`, `TagQuery`, `Unit`, `PipelineModel`,
   etc.) imports them from `@dyel/pipeline` (or re-exported from `@dyel/api` for `packages/app`
   consumers), never a relative path traversal.
