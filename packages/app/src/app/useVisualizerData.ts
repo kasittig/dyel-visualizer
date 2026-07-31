@@ -14,8 +14,7 @@ import {
 export interface VisualizerData {
   tabRows: Record<LiftType, SplitRows>;
   visibleLiftIds: Set<LiftType>;
-  baselineCanonicals: Partial<Record<LiftType, string>>;
-  targetCanonicals: Partial<Record<LiftType, string>>;
+  defaultCanonicals: Partial<Record<LiftType, string>>;
   dataUnit: 'lbs' | 'kg';
   volumeByDate: Map<string, number>;
   allSessionDates: Date[];
@@ -46,8 +45,7 @@ export function useVisualizerData(
   return {
     tabRows,
     visibleLiftIds,
-    baselineCanonicals: canonicals,
-    targetCanonicals: canonicals,
+    defaultCanonicals: canonicals,
     dataUnit,
     volumeByDate,
     allSessionDates,

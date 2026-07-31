@@ -45,8 +45,7 @@ export function App() {
   const {
     tabRows,
     visibleLiftIds,
-    baselineCanonicals,
-    targetCanonicals,
+    defaultCanonicals,
     dataUnit,
     volumeByDate,
     allSessionDates,
@@ -133,7 +132,7 @@ export function App() {
               {effActiveTab === 'calculator' ? (
                 <div className={styles.calculatorRow}>
                   <div>
-                    <RepCalculator tabRows={tabRows} baselineNames={baselineCanonicals} />
+                    <RepCalculator tabRows={tabRows} baselineNames={defaultCanonicals} />
                   </div>
                   <div>
                     <StrengthScoreCalculator dateRange={dateRange} unit={dataUnit} />
@@ -150,7 +149,7 @@ export function App() {
                 <LiftTabPanel
                   key={shownResetToken}
                   liftType={liftTab}
-                  targetName={targetCanonicals[liftTab]!}
+                  targetName={defaultCanonicals[liftTab]!}
                   dateRange={dateRange}
                   onDateRangeChange={setDateRange}
                   unit={dataUnit}
