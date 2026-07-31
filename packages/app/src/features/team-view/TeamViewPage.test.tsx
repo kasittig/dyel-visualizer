@@ -3,6 +3,7 @@ import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import type { PipelineModel, AthleteContext, LifterPipelineResult } from '@dyel/api';
 import { TeamViewPage } from './TeamViewPage';
 import type { TeamViewRow } from './useTeamViewSelection';
+import { pointStoreMock } from '../../test/helpers/pipelineModelFactory';
 
 type SelectionState = ReturnType<typeof useTeamViewSelection>;
 
@@ -22,17 +23,17 @@ const mockPipelineModel = (overrides?: Partial<PipelineModel>): PipelineModel =>
   unnormalized: [],
   parseErrors: [],
   tagged: [],
-  pointsByDeriver: new Map([
-    [
-      'e1rm',
+  points: pointStoreMock(
+    new Map([
       [
-        { t: Date.now(), v: 100, series: 'bench-classic', tags: new Set() },
-        { t: Date.now(), v: 150, series: 'squat-classic', tags: new Set() },
+        'e1rm',
+        [
+          { t: Date.now(), v: 100, series: 'bench-classic', tags: new Set() },
+          { t: Date.now(), v: 150, series: 'squat-classic', tags: new Set() },
+        ],
       ],
-    ],
-  ]),
-  pointsByLabelByDeriver: new Map(),
-  pointsByDeriverAdjusted: new Map(),
+    ])
+  ),
   athlete: mockAthlete,
   ...overrides,
 });

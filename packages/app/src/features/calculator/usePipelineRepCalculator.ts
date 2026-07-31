@@ -101,7 +101,7 @@ export function usePipelineRepCalculator(
       baselineName: baselineNames[liftType],
       today: new Date(),
       model: pModel.model,
-      e1rmPoints: pModel.pointsByDeriver.get('e1rm-max-effort') ?? [],
+      e1rmPoints: pModel.points.get('e1rm-max-effort'),
     });
   }, [effectiveCanonical, pStatus, pModel, baselineNames, liftType]);
 
@@ -112,7 +112,7 @@ export function usePipelineRepCalculator(
     return resolveFamilyRecentE1RMEstimate(
       liftType,
       effectiveCanonical,
-      pModel.pointsByDeriver.get('e1rm-max-effort') ?? [],
+      pModel.points.get('e1rm-max-effort'),
       new Date(),
       pModel.model
     );
@@ -122,9 +122,9 @@ export function usePipelineRepCalculator(
     if (pStatus !== 'success' || !pModel || !effectiveCanonical) {
       return null;
     }
-    const points = (pModel.pointsByDeriver.get('e1rm-max-effort') ?? []).filter(
-      (p: Point) => p.series === effectiveCanonical
-    );
+    const points = pModel.points
+      .get('e1rm-max-effort')
+      .filter((p: Point) => p.series === effectiveCanonical);
     const actualE1rm = selectBestE1RMPoint(points);
     return actualE1rm ? formatWeight(actualE1rm.e1rm, unit) : null;
   }, [effectiveCanonical, pStatus, pModel, unit]);

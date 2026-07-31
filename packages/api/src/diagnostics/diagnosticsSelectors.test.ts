@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { createPipelinePointStore } from '@dyel/pipeline';
 import type { PipelineModel, VariantAssessment } from '@dyel/pipeline';
 import { selectDiagnosticVariants, summarizeEffects } from './diagnosticsSelectors';
 
@@ -25,10 +26,7 @@ const baseModel = (variants: VariantAssessment[]): PipelineModel => ({
   unknownExercises: [],
   unnormalized: [],
   parseErrors: [],
-  pointsByDeriver: new Map([['e1rm', []]]),
-  pointsByLabelByDeriver: new Map([['e1rm', []]]),
-  pointsByDeriverAdjusted: new Map([['e1rm', []]]),
-  pointsByLabelByDeriverAdjusted: new Map([['e1rm', []]]),
+  points: createPipelinePointStore({ canonical: new Map([['e1rm', []]]) }),
   tagged: [],
   athlete: { sex: 'M', bodyweight: 90 },
 });

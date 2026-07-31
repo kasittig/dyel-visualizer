@@ -76,7 +76,7 @@ export function useTeamViewSelection(results: LifterPipelineResult[]) {
     const canonicalSet = new Set<string>();
     for (const res of results) {
       if (res.status === 'success') {
-        (res.model.pointsByDeriver.get('e1rm') ?? []).forEach((p) => canonicalSet.add(p.series));
+        res.model.points.get('e1rm').forEach((p) => canonicalSet.add(p.series));
       }
     }
     const index = buildExerciseDisplayNameIndex(Array.from(canonicalSet));
@@ -302,9 +302,7 @@ export function useTeamViewSelection(results: LifterPipelineResult[]) {
         res.status === 'success'
           ? exerciseOptions.filter((name) => {
               const canonical = displayNameToCanonical.get(name);
-              return (res.model.pointsByDeriver.get('e1rm') ?? []).some(
-                (p) => p.series === canonical
-              );
+              return res.model.points.get('e1rm').some((p) => p.series === canonical);
             })
           : exerciseOptions;
 
@@ -377,9 +375,7 @@ export function useTeamViewSelection(results: LifterPipelineResult[]) {
         return placeholder(res.name, res.url, 'Failed to load', shared);
       }
 
-      const points = (res.model.pointsByDeriver.get('e1rm') ?? []).filter(
-        (p) => p.series === effectiveCanonical
-      );
+      const points = res.model.points.get('e1rm').filter((p) => p.series === effectiveCanonical);
       if (!points.length) {
         return placeholder(res.name, res.url, 'No data logged', shared);
       }
@@ -396,13 +392,13 @@ export function useTeamViewSelection(results: LifterPipelineResult[]) {
         baselineName: undefined,
         today: new Date(),
         model: res.model.model,
-        e1rmPoints: res.model.pointsByDeriver.get('e1rm-max-effort') ?? [],
+        e1rmPoints: res.model.points.get('e1rm-max-effort'),
       });
 
       const familyEstimate = resolveFamilyRecentE1RMEstimate(
         liftType,
         effectiveCanonical!,
-        res.model.pointsByDeriver.get('e1rm') ?? [],
+        res.model.points.get('e1rm'),
         new Date(),
         res.model.model
       );
@@ -451,9 +447,7 @@ export function useTeamViewSelection(results: LifterPipelineResult[]) {
         const effectiveCanonical = displayNameToCanonical.get(effectiveDisplayName) ?? null;
         const points =
           res.status === 'success'
-            ? (res.model.pointsByDeriver.get('e1rm') ?? []).filter(
-                (p) => p.series === effectiveCanonical
-              )
+            ? res.model.points.get('e1rm').filter((p) => p.series === effectiveCanonical)
             : [];
         raw.set(res.name, points);
       }

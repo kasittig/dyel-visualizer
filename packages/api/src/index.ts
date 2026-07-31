@@ -8,6 +8,8 @@ export type { SplitRows } from './sheet/parseSheetData';
 export type { DisplayUnit } from './weightUnit';
 export type {
   PipelineModel,
+  PipelinePointStore,
+  PointQueryOptions,
   AthleteContext,
   RawInput,
   RenderParams,

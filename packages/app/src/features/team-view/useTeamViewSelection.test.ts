@@ -4,6 +4,7 @@ import type { LifterPipelineResult, Point } from '@dyel/api';
 import { predictWeightForRepsAndEffort, convertE1RMToDisplayUnit, roundTo5 } from '@dyel/api';
 import type { PipelineModel, TaggedSetRecord } from '@dyel/pipeline';
 import { useTeamViewSelection } from './useTeamViewSelection';
+import { pointStoreMock } from '../../test/helpers/pipelineModelFactory';
 
 // Fixture factories
 
@@ -52,20 +53,12 @@ const minimalPipelineModel = (
     unnormalized: [],
     parseErrors: [],
     tagged,
-    pointsByDeriver: new Map([
-      ['e1rm', e1rmPoints],
-      ['e1rm-max-effort', e1rmMaxEffortPoints],
-    ]),
-    pointsByLabelByDeriver: new Map(),
-    // Mirrors pointsByDeriver: real pipeline runs populate this per-deriver too (used by
-    // composite dataset specs like TOTAL_CHART_SPECS via buildDatasetsFromModel), so a
-    // minimal fixture that leaves this empty causes a real crash ("points is not iterable")
-    // for any test that exercises buildChartDatasets against this factory's output.
-    pointsByDeriverAdjusted: new Map([
-      ['e1rm', e1rmPoints],
-      ['e1rm-max-effort', e1rmMaxEffortPoints],
-    ]),
-    pointsByLabelByDeriverAdjusted: new Map(),
+    points: pointStoreMock(
+      new Map([
+        ['e1rm', e1rmPoints],
+        ['e1rm-max-effort', e1rmMaxEffortPoints],
+      ])
+    ),
     athlete: { sex: 'M', bodyweight: 90 },
   }) as unknown as PipelineModel;
 

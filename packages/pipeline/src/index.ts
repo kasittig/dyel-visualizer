@@ -44,5 +44,15 @@ export type {
   ChartPoint,
 } from './dataset/build';
 export { buildDataset } from './dataset/build';
-export type { PipelineResult, PipelineModel } from './pipeline';
-export { runPipeline, runPipelineModel, buildDatasetsFromModel } from './pipeline';
+export type {
+  PipelineResult,
+  PipelineModel,
+  PipelinePointStore,
+  PointQueryOptions,
+} from './pipeline';
+export {
+  runPipeline,
+  runPipelineModel,
+  buildDatasetsFromModel,
+  createPipelinePointStore,
+} from './pipeline';
