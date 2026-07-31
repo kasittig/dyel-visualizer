@@ -21,7 +21,7 @@ describe('runE1RMProjectionBacktest', () => {
   });
 
   it('compares e1RM projection methods (baseline vs. family-recent)', () => {
-    const groundTruthPoints = fixtureModel.pointsByDeriver.get('e1rm-max-effort') ?? [];
+    const groundTruthPoints = fixtureModel.points.get('e1rm-max-effort');
     const summary = runE1RMProjectionBacktest(fixtureModel.tagged, groundTruthPoints);
 
     expect(summary.events.length).toBeGreaterThan(10);

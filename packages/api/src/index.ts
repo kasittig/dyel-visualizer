@@ -8,6 +8,8 @@ export type { SplitRows } from './sheet/parseSheetData';
 export type { DisplayUnit } from './weightUnit';
 export type {
   PipelineModel,
+  PipelinePointStore,
+  PointQueryOptions,
   AthleteContext,
   RawInput,
   RenderParams,
@@ -141,6 +143,8 @@ export {
   type EffectSummary,
 } from './diagnostics/diagnosticsSelectors';
 export { formatEffect, formatAddlWtOffset } from './diagnostics/diagnosticsUtils';
+export { buildTeamViewRowSnapshot } from './team/teamViewRow';
+export type { TeamViewRowSnapshot } from './team/teamViewRow';
 export {
   formatExerciseDisplayName,
   buildExerciseDisplayNameIndex,

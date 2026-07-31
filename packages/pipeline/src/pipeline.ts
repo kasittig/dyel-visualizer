@@ -42,12 +42,45 @@ export interface PipelineModel {
   unknownExercises: string[];
   unnormalized: string[];
   parseErrors: ParseError[];
-  pointsByDeriver: Map<string, Point[]>;
-  pointsByLabelByDeriver: Map<string, Point[]>;
-  pointsByDeriverAdjusted: Map<string, Point[]>;
-  pointsByLabelByDeriverAdjusted: Map<string, Point[]>;
+  points: PipelinePointStore;
   tagged: TaggedSetRecord[];
   athlete: AthleteContext;
+}
+
+export interface PointQueryOptions {
+  groupBy?: 'canonical' | 'label';
+  adjusted?: boolean;
+}
+
+export interface PipelinePointStore {
+  get(deriverId: string, options?: PointQueryOptions): Point[];
+  has(deriverId: string): boolean;
+}
+
+export function createPipelinePointStore({
+  canonical = new Map(),
+  label = canonical,
+  adjustedCanonical = canonical,
+  adjustedLabel = label,
+}: {
+  canonical?: Map<string, Point[]>;
+  label?: Map<string, Point[]>;
+  adjustedCanonical?: Map<string, Point[]>;
+  adjustedLabel?: Map<string, Point[]>;
+} = {}): PipelinePointStore {
+  return {
+    get(deriverId, options) {
+      const source = options?.adjusted
+        ? options.groupBy === 'label'
+          ? adjustedLabel
+          : adjustedCanonical
+        : options?.groupBy === 'label'
+          ? label
+          : canonical;
+      return source.get(deriverId) ?? [];
+    },
+    has: (deriverId) => canonical.has(deriverId),
+  };
 }
 
 function groupByDateAndCanonical(tagged: TaggedSetRecord[]): Map<string, TaggedSetRecord[]> {
@@ -161,7 +194,7 @@ export function runPipelineModel(
   // from their own e1RM data, projected forward to `now` so a stale PR in one stance can't
   // outrank current strength in the other, never supplied externally — see
   // tagCompetitionDeadliftStance. Every downstream consumer of deadlift records' tags
-  // (fitNormalizationModel, tagged, pointsByDeriver, etc.) must see the patched tags, so this
+  // (fitNormalizationModel, tagged, point store, etc.) must see the patched tags, so this
   // runs before any of them.
   const compTagged = tagCompetitionDeadliftStance(rawCompTagged, timestamp);
   const unknownExercises = [...new Set([...unkAliases, ...unkCanonicals])];
@@ -221,6 +254,12 @@ export function runPipelineModel(
       return [id, buildPointsByLabelFromGroups(adjustedLabelGroups!, id)];
     })
   );
+  const points = createPipelinePointStore({
+    canonical: pointsByDeriver,
+    label: pointsByLabelByDeriver,
+    adjustedCanonical: pointsByDeriverAdjusted,
+    adjustedLabel: pointsByLabelByDeriverAdjusted,
+  });
 
   const unnormalized = Array.from(Map.groupBy(pointsByDeriver.get('e1rm')!, (p) => p.series))
     .map(([, pts]) => pts.reduce((a, b) => (b.t > a.t ? b : a)))
@@ -261,10 +300,7 @@ export function runPipelineModel(
     unknownExercises,
     unnormalized,
     parseErrors,
-    pointsByDeriver,
-    pointsByLabelByDeriver,
-    pointsByDeriverAdjusted,
-    pointsByLabelByDeriverAdjusted,
+    points,
     tagged,
     athlete,
   };
@@ -277,14 +313,11 @@ export function buildDatasetsFromModel(
 ): Record<string, RechartsRow[]> {
   return Object.fromEntries(
     specs.map((s) => {
-      const pts =
-        s.kind === 'composite'
-          ? pipelineModel.pointsByDeriverAdjusted.get(s.derive)!
-          : s.kind === 'series' && s.groupBy === 'label' && s.normalize
-            ? pipelineModel.pointsByLabelByDeriverAdjusted.get(s.derive)!
-            : s.kind === 'series' && s.groupBy === 'label'
-              ? pipelineModel.pointsByLabelByDeriver.get(s.derive)!
-              : pipelineModel.pointsByDeriver.get(s.derive)!;
+      const pts = pipelineModel.points.get(s.derive, {
+        adjusted:
+          s.kind === 'composite' || (s.kind === 'series' && s.groupBy === 'label' && !!s.normalize),
+        groupBy: s.kind === 'series' && s.groupBy === 'label' ? 'label' : 'canonical',
+      });
       return [s.id, buildDataset(pts, s, ui, pipelineModel.model, pipelineModel.athlete)];
     })
   );

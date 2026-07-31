@@ -26,12 +26,10 @@ describe('pipeline orchestration', () => {
     }
     expect(model.model.addlWtOffset[chainVariant].offsetKg).toBeGreaterThan(0);
 
-    const unadj = (model.pointsByDeriver.get('e1rm') ?? []).filter(
-      (p) => p.series === chainVariant
-    );
-    const adj = (model.pointsByDeriverAdjusted.get('e1rm') ?? []).filter(
-      (p) => p.series === chainVariant
-    );
+    const unadj = model.points.get('e1rm').filter((p) => p.series === chainVariant);
+    const adj = model.points
+      .get('e1rm', { adjusted: true })
+      .filter((p) => p.series === chainVariant);
 
     expect(unadj.length).toBeGreaterThan(0);
     expect(adj.length).toBeGreaterThan(0);
@@ -52,8 +50,7 @@ describe('pipeline orchestration', () => {
   ])('generates valid models and points for %s', (_, log) => {
     const model = runPipelineModel([{ name: 'log.txt', content: log }], ath());
     ['baseline', 'variantFactor'].forEach((k) => expect(model.model[k]).toBeDefined());
-    ['e1rm', 'tonnage', 'top-set'].forEach((d) => expect(model.pointsByDeriver.has(d)).toBe(true));
-    expect(model.pointsByDeriverAdjusted.has('e1rm')).toBe(true);
+    ['e1rm', 'tonnage', 'top-set'].forEach((d) => expect(model.points.has(d)).toBe(true));
   });
 
   it('classifyAccessorySubtypes is wired into pipeline and applied to tagged records', () => {
@@ -75,17 +72,15 @@ describe('pipeline orchestration', () => {
     });
   });
 
-  it('includes accessory records in pointsByDeriver/pointsByLabelByDeriver so app Accessories tab charts render', () => {
+  it('includes canonical and label-grouped accessory points so app charts render', () => {
     const log = `units: kg\n2024-01-01 Squat 100 x5 @8\n2024-01-01 Bench 80 x5 @8\n2024-01-01 Bicep Curl 15 x10 @8`;
     const model = runPipelineModel([{ name: 'log.txt', content: log }], ath());
     const acc = model.tagged.filter((r) => r.tags.has('lift:accessory'));
 
     expect(acc.length).toBe(1);
+    expect(model.points.get('e1rm').some((p) => p.series === acc[0].canonical)).toBe(true);
     expect(
-      (model.pointsByDeriver.get('e1rm') ?? []).some((p) => p.series === acc[0].canonical)
-    ).toBe(true);
-    expect(
-      (model.pointsByLabelByDeriver.get('e1rm') ?? []).some((p) => p.tags.has('lift:accessory'))
+      model.points.get('e1rm', { groupBy: 'label' }).some((p) => p.tags.has('lift:accessory'))
     ).toBe(true);
     expect(Object.values(model.model.baseline)).not.toContain(acc[0].canonical);
     expect(model.model.variantFactor[acc[0].canonical]).toBeUndefined();

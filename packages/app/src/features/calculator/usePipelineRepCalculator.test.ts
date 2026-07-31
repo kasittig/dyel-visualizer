@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { act, renderHook } from '@testing-library/react';
 import type { TaggedSetRecord, SplitRows, LiftType } from '@dyel/api';
 import { usePipelineRepCalculator } from './usePipelineRepCalculator';
-import { pipelineModelMock } from '../../test/helpers/pipelineModelFactory';
+import { pipelineModelMock, pointStoreMock } from '../../test/helpers/pipelineModelFactory';
 
 vi.mock('../../app/PipelineContext');
 const mockUsePipelineModel = vi.mocked(
@@ -46,9 +46,9 @@ const mockModel = (v = 200) =>
       addlWtOffset: {},
       fittedAt: Date.now(),
     },
-    pointsByDeriver: new Map([
-      ['e1rm-max-effort', [{ t: 1, v, series: 'squat', tags: new Set(['lift:squat']) }]],
-    ]),
+    points: pointStoreMock(
+      new Map([['e1rm-max-effort', [{ t: 1, v, series: 'squat', tags: new Set(['lift:squat']) }]]])
+    ),
   });
 
 describe('usePipelineRepCalculator', () => {
@@ -164,7 +164,7 @@ describe('usePipelineRepCalculator', () => {
           addlWtOffset: {},
           fittedAt: Date.now(),
         },
-        pointsByDeriver: new Map([['e1rm-max-effort', []]]),
+        points: pointStoreMock(new Map([['e1rm-max-effort', []]])),
       }),
     });
     const rows = emptyRows();

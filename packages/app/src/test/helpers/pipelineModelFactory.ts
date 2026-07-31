@@ -1,4 +1,4 @@
-import type { PipelineModel, VariantAssessment } from '@dyel/api';
+import type { PipelineModel, PipelinePointStore, Point, VariantAssessment } from '@dyel/api';
 
 type DiagnosticsReport = PipelineModel['diagnostics'];
 
@@ -36,6 +36,24 @@ export const diagnosticsMock = (overrides?: Partial<DiagnosticsReport>): Diagnos
   ...overrides,
 });
 
+export const pointStoreMock = (
+  canonical: Map<string, Point[]> = new Map(),
+  label = canonical,
+  adjustedCanonical = canonical,
+  adjustedLabel = label
+): PipelinePointStore => ({
+  get: (deriverId, options) =>
+    (options?.adjusted
+      ? options.groupBy === 'label'
+        ? adjustedLabel
+        : adjustedCanonical
+      : options?.groupBy === 'label'
+        ? label
+        : canonical
+    ).get(deriverId) ?? [],
+  has: (deriverId) => canonical.has(deriverId),
+});
+
 /**
  * Factory for creating a full PipelineModel mock.
  * Useful for tests that need to mock the complete model shape.
@@ -46,10 +64,7 @@ export const pipelineModelMock = (overrides?: Partial<PipelineModel>): PipelineM
   unknownExercises: [],
   unnormalized: [],
   parseErrors: [],
-  pointsByDeriver: new Map(),
-  pointsByLabelByDeriver: new Map(),
-  pointsByDeriverAdjusted: new Map(),
-  pointsByLabelByDeriverAdjusted: new Map(),
+  points: pointStoreMock(),
   tagged: [],
   athlete: { sex: 'M', bodyweight: 90 },
   ...overrides,

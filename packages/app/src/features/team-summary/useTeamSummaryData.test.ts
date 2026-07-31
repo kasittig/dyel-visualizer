@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { act, renderHook } from '@testing-library/react';
 import type { LifterPipelineResult, Point } from '@dyel/api';
 import type { TaggedSetRecord } from '@dyel/pipeline';
-import { pipelineModelMock } from '../../test/helpers/pipelineModelFactory';
+import { pipelineModelMock, pointStoreMock } from '../../test/helpers/pipelineModelFactory';
 import { useTeamSummaryData } from './useTeamSummaryData';
 
 // Fixture factories
@@ -57,14 +57,12 @@ const minimalPipelineModel = (
   pipelineModelMock({
     model: { baseline, variantFactor, addlWtOffset: {}, fittedAt: Date.now() },
     tagged,
-    pointsByDeriver: new Map([
-      ['e1rm', e1rmPoints],
-      ['e1rm-max-effort', e1rmMaxEffortPoints],
-    ]),
-    pointsByDeriverAdjusted: new Map([
-      ['e1rm', e1rmPoints],
-      ['e1rm-max-effort', e1rmMaxEffortPoints],
-    ]),
+    points: pointStoreMock(
+      new Map([
+        ['e1rm', e1rmPoints],
+        ['e1rm-max-effort', e1rmMaxEffortPoints],
+      ])
+    ),
   });
 
 const successResult = (

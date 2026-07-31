@@ -3,6 +3,7 @@ import { renderHook, waitFor } from '@testing-library/react';
 import type { LifterPipelineResult } from '@dyel/api';
 import type { PipelineModel } from '@dyel/pipeline';
 import { useTeamViewData } from './useTeamViewData';
+import { pointStoreMock } from '../../test/helpers/pipelineModelFactory';
 
 vi.mock('../data-source');
 vi.mock('@dyel/api', async () => ({
@@ -19,10 +20,7 @@ const fixtureModel = {
   unknownExercises: [],
   unnormalized: [],
   parseErrors: [],
-  pointsByDeriver: new Map(),
-  pointsByLabelByDeriver: new Map(),
-  pointsByDeriverAdjusted: new Map(),
-  pointsByLabelByDeriverAdjusted: new Map(),
+  points: pointStoreMock(),
   athlete: { sex: 'M', bodyweight: 90 },
 };
 

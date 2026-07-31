@@ -41,10 +41,6 @@ const mockPipelineResult = (overrides?: Partial<PipelineResult>): PipelineResult
     model: { baseline: {}, variantFactor: {}, addlWtOffset: {} },
     diagnostics: { byCanonical: new Map(), allFindings: [] },
     athlete: { sex: 'M', bodyweight: 90 },
-    pointsByDeriver: new Map(),
-    pointsByLabelByDeriver: new Map(),
-    pointsByDeriverAdjusted: new Map(),
-    pointsByLabelByDeriverAdjusted: new Map(),
     ...overrides,
   }) as PipelineResult;
 

@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook } from '@testing-library/react';
 import { buildChartDatasets } from '@dyel/api';
 import type { DatasetSpec, RenderParams, Point } from '@dyel/api';
-import { pipelineModelMock } from '../../test/helpers/pipelineModelFactory';
+import { pipelineModelMock, pointStoreMock } from '../../test/helpers/pipelineModelFactory';
 import { usePipelineDatasets } from './usePipelineDatasets';
 
 vi.mock('../../app/PipelineContext');
@@ -49,8 +49,7 @@ describe('usePipelineDatasets', () => {
     expect(renderHook(() => usePipelineDatasets([seriesSpec], {})).result.current).toEqual({});
 
     const model = pipelineModelMock({
-      pointsByDeriver: new Map([['e1rm', [p(1609459200000, 100), p(1612137600000, 110)]]]),
-      pointsByDeriverAdjusted: new Map([['e1rm', [p(1609459200000, 100), p(1612137600000, 110)]]]),
+      points: pointStoreMock(new Map([['e1rm', [p(1609459200000, 100), p(1612137600000, 110)]]])),
     });
     mockUsePipelineModel.mockReturnValue({ status: 'success', model });
     const { result } = renderHook(() => usePipelineDatasets([seriesSpec], {}));
@@ -62,8 +61,7 @@ describe('usePipelineDatasets', () => {
 
   it('tracks memoization dependencies and reference updates across lifecycles', () => {
     const model1 = pipelineModelMock({
-      pointsByDeriver: new Map([['e1rm', [p(1609459200000, 100), p(1612137600000, 110)]]]),
-      pointsByDeriverAdjusted: new Map([['e1rm', [p(1609459200000, 100), p(1612137600000, 110)]]]),
+      points: pointStoreMock(new Map([['e1rm', [p(1609459200000, 100), p(1612137600000, 110)]]])),
     });
     mockUsePipelineModel.mockReturnValue({ status: 'success', model: model1 });
     const ui1: RenderParams = {};
@@ -87,10 +85,7 @@ describe('usePipelineDatasets', () => {
       status: 'success',
       model: pipelineModelMock({
         athlete: { sex: 'F', bodyweight: 65 },
-        pointsByDeriver: new Map([['e1rm', [p(1609459200000, 100), p(1612137600000, 110)]]]),
-        pointsByDeriverAdjusted: new Map([
-          ['e1rm', [p(1609459200000, 100), p(1612137600000, 110)]],
-        ]),
+        points: pointStoreMock(new Map([['e1rm', [p(1609459200000, 100), p(1612137600000, 110)]]])),
       }),
     });
     rerender({ s: specs, u: ui1 });
