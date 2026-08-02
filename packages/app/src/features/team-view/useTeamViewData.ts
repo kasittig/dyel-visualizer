@@ -26,7 +26,7 @@ export function useTeamViewData(): TeamViewDataState {
         loadIndexPipelineModels(indexCsv, PLACEHOLDER_ATHLETE, (url) => {
           const ref = extractSheetRef(url.trim());
           return ref
-            ? cachedFetchSheetCsv(sheetCsvUrl(ref, '0'))
+            ? cachedFetchSheetCsv(sheetCsvUrl(ref, '0'), controller.signal)
             : Promise.reject(new Error(`Invalid sheet URL: ${url}`));
         })
       )
