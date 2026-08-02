@@ -68,8 +68,6 @@ The app enforces a unidirectional data flow: **data source → `usePipelineOrche
 
 This separation ensures business logic stays in `@dyel/api`, React lifecycle stays in feature hooks, and components remain pure rendering functions. ESLint rules in `eslint.config.js` enforce this contract via static analysis.
 
-**Known data-flow modeling issue (documented, not yet refactored):** `useVisualizerData` returns both `baselineCanonicals` and `targetCanonicals` assigned from a single `defaultCanonicalsByLift(...)` memo, falsely implying two independent computations exist (CODE_REVIEW.md's "Lower-priority notes" section flagged this as a real issue, but it was deliberately left out of scope for remediation; see HANDOFF.md's "Remaining, not yet started" section). This is a documentation-only notice to prevent future misreading of the shape as two separate derivations.
-
 ### Component rules (`.tsx` files in `features/*/` and `shared/*/`)
 
 - Render props and hook results only
