@@ -39,7 +39,15 @@ describe('validateTextData (pipeline-native freeform)', () => {
     expect(acc.warnings.some((w) => w.includes('only accessories'))).toBe(true);
 
     const noDate = validateTextData('comp squat 405lbs x2');
-    expect(noDate.verdict).toBe('error');
-    expect(noDate.issues.some((i) => i.includes('YYYY-MM-DD'))).toBe(true);
+    expect(noDate.verdict).toBe('ok');
+    expect(noDate.rows.liftTypes.squat).toBe(1);
+  });
+
+  it('surfaces production parser errors with their original line numbers', () => {
+    const result = validateTextData('comp squat 405lbs x2\ninvalid\ncomp bench 225lbs x3');
+    expect(result.rows).toMatchObject({ total: 3, parsed: 2 });
+    expect(result.rowIssues).toEqual([
+      expect.objectContaining({ row: 2, issues: [expect.stringContaining('No weight')] }),
+    ]);
   });
 });

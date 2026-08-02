@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { freeformParser, parseFreeformText } from './parser';
+import { freeformParser, parseFreeformText, parseFreeformTextResult } from './parser';
 import { ParseError } from '../parser';
 import type { ParseContext } from '../parser';
 import * as fs from 'fs';
@@ -134,6 +134,24 @@ describe('freeformParser', () => {
       expect(parseFreeformText(content, ctx)).toEqual(
         freeformParser.parse({ name: 'test.txt', content }, ctx)
       );
+    });
+  });
+
+  describe('parseFreeformTextResult', () => {
+    it('keeps valid lines and reports every malformed line', () => {
+      const result = parseFreeformTextResult(
+        '2026-01-10 Bench 315x5\ninvalid line\n2026-01-11 Squat 405x3\nalso invalid',
+        ctx
+      );
+      expect(result.records.map((record) => record.exercise)).toEqual(['Bench', 'Squat']);
+      expect(result.errors.map((error) => error.line)).toEqual([2, 4]);
+    });
+
+    it('carries standalone unit preambles across valid lines', () => {
+      expect(parseFreeformTextResult('units: kg\nBench 100x5', ctx).records[0]).toMatchObject({
+        weight: 100,
+        meta: { rawUnit: 'kg' },
+      });
     });
   });
 

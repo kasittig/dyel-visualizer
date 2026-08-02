@@ -9,7 +9,8 @@
 
 ## 📏 Code Style & Idioms
 
-- **Errors:** Throw `ParseError` on failure. It takes the message, 1-based line number, and raw text.
+- **Errors:** `parseFreeformText` throws `ParseError` on failure; `parseFreeformTextResult` collects
+  those errors while retaining valid lines. Errors contain the 1-based line number and raw text.
   ```ts
   throw new ParseError(errorMsg, lineNum + 1, rawLine);
   ```

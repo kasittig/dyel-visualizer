@@ -9,6 +9,7 @@ here: output weights are always kg; no unit information escapes this stage.
       id: string;
       canParse(input: RawInput): boolean;                      // cheap sniff
       parse(input: RawInput, ctx: ParseContext): SetRecord[];  // throws ParseError with line/row context
+      parseResult?(input: RawInput, ctx: ParseContext): ParseResult; // collects recoverable errors
     }
 
 Unit precedence: `record-level > ctx.datasetUnit > ctx.fallback ('lbs')`.
@@ -47,8 +48,8 @@ Every record carries `meta.rawUnit` / `meta.rawWeight` (audit trail).
   - Exercise name = tokens not consumed by date/effort roles (multi-word ok).
   - Dates are optional ISO `YYYY-MM-DD` tokens and may appear anywhere on the line. Missing dates
     default to the current UTC calendar date. Other date formats are treated as exercise text.
-    This is the most intricate module in the system. Hard-fail with line
-    context; never guess silently.
+    This is the most intricate module in the system. Each malformed line produces a contextual
+    `ParseError`; valid surrounding lines remain available to the pipeline.
 
 ## Boundaries
 

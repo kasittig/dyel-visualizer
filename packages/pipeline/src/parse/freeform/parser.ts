@@ -102,6 +102,37 @@ export function parseFreeformText(
   return records;
 }
 
+export function parseFreeformTextResult(
+  content: string,
+  ctx: ParseContext,
+  defaultDate: number = Date.now()
+): { records: SetRecord[]; errors: ParseError[] } {
+  const records: SetRecord[] = [];
+  const errors: ParseError[] = [];
+  const effectiveCtx = { ...ctx };
+
+  for (const [index, rawLine] of content.split('\n').entries()) {
+    const trimmed = rawLine.trim();
+    if (!trimmed) {
+      continue;
+    }
+    const unitOnly = trimmed.match(/^units:\s*(kg|lbs)\s*$/i);
+    if (unitOnly) {
+      effectiveCtx.datasetUnit = unitOnly[1].toLowerCase() as Unit;
+      continue;
+    }
+    try {
+      records.push(...parseFreeformText(rawLine, effectiveCtx, defaultDate));
+    } catch (error) {
+      if (!(error instanceof ParseError)) {
+        throw error;
+      }
+      errors.push(new ParseError(error.message, index + 1, rawLine));
+    }
+  }
+  return { records, errors };
+}
+
 export const freeformParser: Parser = {
   id: 'freeform',
   canParse: (input: RawInput): boolean => {
@@ -109,5 +140,8 @@ export const freeformParser: Parser = {
   },
   parse: (input: RawInput, context: ParseContext): SetRecord[] => {
     return parseFreeformText(input.content, context);
+  },
+  parseResult: (input: RawInput, context: ParseContext) => {
+    return parseFreeformTextResult(input.content, context);
   },
 };

@@ -144,15 +144,9 @@ export function runPipelineModel(
   const records: SetRecord[] = [];
 
   for (const input of raw) {
-    try {
-      records.push(...registry.parse(input, PARSE_CONTEXT));
-    } catch (err) {
-      if (err instanceof ParseError) {
-        parseErrors.push(err);
-      } else {
-        throw err;
-      }
-    }
+    const parsed = registry.parseResult(input, PARSE_CONTEXT);
+    records.push(...parsed.records);
+    parseErrors.push(...parsed.errors);
   }
 
   const { resolved, unknown: unkAliases } = resolveCanonicalNames(records);
