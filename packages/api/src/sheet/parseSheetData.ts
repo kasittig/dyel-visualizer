@@ -22,8 +22,12 @@ export function splitByEffort(records: TaggedSetRecord[], type: LiftType): Split
   if (type === 'accessory') {
     return { all: records, maxEffort: records, volume: [] };
   }
-  const maxEffort = records.filter((r) => r.sets === 1 || r.rpe !== undefined);
-  return { all: records, maxEffort, volume: records.filter((r) => !maxEffort.includes(r)) };
+  const maxEffort: TaggedSetRecord[] = [];
+  const volume: TaggedSetRecord[] = [];
+  for (const record of records) {
+    (record.sets === 1 || record.rpe !== undefined ? maxEffort : volume).push(record);
+  }
+  return { all: records, maxEffort, volume };
 }
 
 export function groupByLiftType(tagged: TaggedSetRecord[]): Record<LiftType, SplitRows> {
