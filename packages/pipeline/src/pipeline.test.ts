@@ -5,6 +5,21 @@ import type { PipelineModel } from './pipeline';
 const ath = () => ({ sex: 'M' as const, bodyweight: 90 });
 
 describe('pipeline orchestration', () => {
+  it('retains valid freeform records around malformed lines', () => {
+    const model = runPipelineModel(
+      [
+        {
+          name: 'mixed.txt',
+          content: '2026-01-10 Squat 315x5\ninvalid line\n2026-01-11 Bench 225x5',
+        },
+      ],
+      ath()
+    );
+    expect(model.tagged.map((record) => record.exercise)).toEqual(['squat', 'bench']);
+    expect(model.parseErrors).toHaveLength(1);
+    expect(model.parseErrors[0].line).toBe(2);
+  });
+
   it('fits normalization model on full tagged set including speed-work records', () => {
     const log = `units: kg\n2024-01-01 Bench 100 x5 @8\n2024-01-02 Bench 105 x5 @8\n2024-01-03 Bench 110 x5 @8\n2024-01-04 Bench 115 x5 @8\n2024-01-02 Dumbbell Bench 3x5 @ 45\n2024-01-07 Dumbbell Bench 3x5 @ 50`;
     const model = runPipelineModel([{ name: 'log.txt', content: log }], ath()) as PipelineModel;

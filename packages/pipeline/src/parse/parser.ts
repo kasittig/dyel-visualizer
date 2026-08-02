@@ -14,6 +14,12 @@ export interface Parser {
   id: string;
   canParse(input: RawInput): boolean;
   parse(input: RawInput, ctx: ParseContext): SetRecord[];
+  parseResult?(input: RawInput, ctx: ParseContext): ParseResult;
+}
+
+export interface ParseResult {
+  records: SetRecord[];
+  errors: ParseError[];
 }
 
 export class ParseError extends Error {
@@ -63,5 +69,23 @@ export class ParserRegistry {
       );
     }
     return parser.parse(input, ctx);
+  }
+
+  parseResult(input: RawInput, ctx: ParseContext): ParseResult {
+    const parser = this.parsers.find((candidate) => candidate.canParse(input));
+    if (!parser) {
+      return { records: [], errors: [new ParseError(`No parser found for input: ${input.name}`)] };
+    }
+    if (parser.parseResult) {
+      return parser.parseResult(input, ctx);
+    }
+    try {
+      return { records: parser.parse(input, ctx), errors: [] };
+    } catch (error) {
+      if (error instanceof ParseError) {
+        return { records: [], errors: [error] };
+      }
+      throw error;
+    }
   }
 }
