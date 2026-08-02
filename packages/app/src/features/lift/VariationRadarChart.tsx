@@ -2,7 +2,8 @@ import { usePipelineVariationRadarData } from './usePipelineVariationRadarData';
 import { BaseRadarChart } from '../../shared/charts/BaseRadarChart';
 import { ChartTooltip, type TooltipLine } from '../../shared/charts/TooltipCard';
 import { CollapsibleSection } from '../../shared/components/CollapsibleSection';
-import { formatChartDate, roundWeight, type RadarRow } from '@dyel/api';
+import { formatChartDate, roundWeight } from '@dyel/api/display';
+import type { RadarRow } from '@dyel/api';
 import styles from './VariationRadarChart.module.css';
 
 export function VariationRadarChart({

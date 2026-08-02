@@ -1,11 +1,7 @@
 import { useState, type CSSProperties } from 'react';
 import { usePipelineDiagnostics } from './usePipelineDiagnostics';
-import {
-  formatEffect,
-  formatAddlWtOffset,
-  type DisplayUnit,
-  type DiagnosticVariant,
-} from '@dyel/api';
+import { formatEffect, formatAddlWtOffset } from '@dyel/api/display';
+import type { DisplayUnit, DiagnosticVariant } from '@dyel/api';
 import {
   CollapsibleSection,
   TableCard,

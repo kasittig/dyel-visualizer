@@ -4,7 +4,7 @@ import {
   CONJUGATE_STANCES,
   CONJUGATE_EQUIPMENT,
   CONJUGATE_ADDL_WTS,
-} from '@dyel/api';
+} from '@dyel/api/display';
 import type { LiftType, SplitRows } from '@dyel/api';
 import { usePipelineRepCalculator } from './usePipelineRepCalculator';
 import styles from './RepCalculator.module.css';

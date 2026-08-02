@@ -1,7 +1,7 @@
 import type React from 'react';
 import { CartesianGrid, LineChart, ResponsiveContainer, XAxis, YAxis } from 'recharts';
 import type { ChartPoint } from '@dyel/api';
-import { formatChartDate } from '@dyel/api';
+import { formatChartDate } from '@dyel/api/display';
 import styles from './DateLineChart.module.css';
 
 export function ChartEmpty() {

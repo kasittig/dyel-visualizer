@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { Line, Tooltip } from 'recharts';
 import type { ChartPoint } from '@dyel/api';
-import { LINE_COLORS } from '@dyel/api';
+import { LINE_COLORS } from '@dyel/api/display';
 import { DateLineChart } from './DateLineChart';
 import { ChartTooltip, type TooltipLine } from './TooltipCard';
 

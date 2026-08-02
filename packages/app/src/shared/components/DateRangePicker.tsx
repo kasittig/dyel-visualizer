@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import * as Popover from '@radix-ui/react-popover';
 import { DayPicker, type DateRange } from 'react-day-picker';
-import { presetDateRange, activePreset, type PresetId } from '@dyel/api';
+import { presetDateRange, activePreset, type PresetId } from '@dyel/api/display';
 import { formatDate, parseDate } from '../dateUtils';
 import 'react-day-picker/style.css';
 import styles from './DateRangePicker.module.css';
