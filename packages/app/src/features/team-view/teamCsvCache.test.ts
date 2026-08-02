@@ -34,10 +34,10 @@ describe('cachedFetchSheetCsv', () => {
     }
     mockFetchSheetCsv.mockResolvedValue('a,b\n1,2');
 
-    await cachedFetchSheetCsv('https://example.com/sheet1');
+    await cachedFetchSheetCsv('https://example.com/sheet1', undefined, { now: 1000 });
 
     expect(JSON.parse(localStorage.getItem('dyel:teamCsvCache')!)).toEqual({
-      'https://example.com/sheet1': 'a,b\n1,2',
+      'https://example.com/sheet1': { csv: 'a,b\n1,2', fetchedAt: 1000 },
     });
   });
 
@@ -68,8 +68,46 @@ describe('cachedFetchSheetCsv', () => {
 
     expect(mockFetchSheetCsv).toHaveBeenCalledTimes(2);
     expect(JSON.parse(localStorage.getItem('dyel:teamCsvCache')!)).toEqual({
-      'https://example.com/sheet1': 'csv1',
-      'https://example.com/sheet2': 'csv2',
+      'https://example.com/sheet1': { csv: 'csv1', fetchedAt: expect.any(Number) },
+      'https://example.com/sheet2': { csv: 'csv2', fetchedAt: expect.any(Number) },
     });
+  });
+
+  it('refetches expired entries and supports an explicit refresh bypass', async () => {
+    if (typeof localStorage === 'undefined') {
+      return;
+    }
+    mockFetchSheetCsv
+      .mockResolvedValueOnce('old')
+      .mockResolvedValueOnce('new')
+      .mockResolvedValueOnce('forced');
+
+    await cachedFetchSheetCsv('https://example.com/sheet1', undefined, { now: 1000 });
+    expect(
+      await cachedFetchSheetCsv('https://example.com/sheet1', undefined, {
+        now: 2000,
+        maxAgeMs: 500,
+      })
+    ).toBe('new');
+    expect(
+      await cachedFetchSheetCsv('https://example.com/sheet1', undefined, {
+        now: 2001,
+        forceRefresh: true,
+      })
+    ).toBe('forced');
+    expect(mockFetchSheetCsv).toHaveBeenCalledTimes(3);
+  });
+
+  it('keeps only the 50 most recently fetched URLs', async () => {
+    if (typeof localStorage === 'undefined') {
+      return;
+    }
+    mockFetchSheetCsv.mockResolvedValue('csv');
+    await Promise.all(
+      Array.from({ length: 51 }, (_, index) =>
+        cachedFetchSheetCsv(`https://example.com/${index}`, undefined, { now: index })
+      )
+    );
+    expect(Object.keys(JSON.parse(localStorage.getItem('dyel:teamCsvCache')!))).toHaveLength(50);
   });
 });
