@@ -77,6 +77,6 @@ export function mergeVolumeIntoChartPoints(
 ): ChartPoint[] {
   return chartData.map((point) => {
     const volume = volumeByDate.get(localDateKey(String(point.date)));
-    return volume !== undefined ? { ...point, volume } : point;
+    return volume !== undefined ? { ...point, volume: Math.round(volume) } : point;
   });
 }
