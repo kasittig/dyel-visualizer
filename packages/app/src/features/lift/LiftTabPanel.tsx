@@ -3,8 +3,7 @@ import { ConjugateCharts } from './ConjugateCharts';
 import { DiagnosticsPanel } from './DiagnosticsPanel';
 import { VariationRadarChart } from './VariationRadarChart';
 import { AccessoryTable } from './AccessoryTable';
-import { CollapsibleSection } from '../../shared/components/CollapsibleSection';
-import { EditableDateChip } from '../../shared/components/EditableDateChip';
+import { CollapsibleSection, EditableDateChip } from '../../shared/components';
 import type { DateRange } from 'react-day-picker';
 
 export function LiftTabPanel({
@@ -31,6 +30,7 @@ export function LiftTabPanel({
       <CollapsibleSection
         label={`${liftType.charAt(0).toUpperCase() + liftType.slice(1)} performance`}
         persistenceId={`visualizer:${liftType}:performance`}
+        summary="e1RM history by variation"
         trailing={<EditableDateChip dateRange={dateRange} onDateRangeChange={onDateRangeChange} />}
       >
         <ConjugateCharts

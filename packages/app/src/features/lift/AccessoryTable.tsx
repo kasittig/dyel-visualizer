@@ -59,7 +59,11 @@ function SubtypeTable({
   });
 
   return (
-    <CollapsibleSection persistenceId={persistenceId} label={label}>
+    <CollapsibleSection
+      persistenceId={persistenceId}
+      label={label}
+      summary={`${rows.length} exercise${rows.length === 1 ? '' : 's'} · ${rows.reduce((total, row) => total + row.sessionCountInRange, 0)} sessions in range`}
+    >
       <TableCard>
         <Table>
           <TableHeadRow>

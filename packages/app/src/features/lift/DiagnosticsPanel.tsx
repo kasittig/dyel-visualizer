@@ -75,6 +75,7 @@ export function DiagnosticsPanel({
       <CollapsibleSection
         label="Diagnostics"
         persistenceId={`visualizer:${liftType}:diagnostics`}
+        summary={`${variants.length} variation${variants.length === 1 ? '' : 's'} · ${weakEffects.length} weak · ${overtrainedEffects.length} overtrained`}
       >
         <TableCard>
           <div className={styles.cardPadded}>

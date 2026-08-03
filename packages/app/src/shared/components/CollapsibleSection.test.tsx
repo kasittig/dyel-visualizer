@@ -33,7 +33,7 @@ describe('CollapsibleSection', () => {
     fireEvent.click(toggle);
 
     expect(toggle.getAttribute('aria-expanded')).toBe('false');
-    expect(screen.getByText('Section contents').parentElement?.hidden).toBe(true);
+    expect(screen.queryByText('Section contents')).toBeNull();
     expect(localStorage.getItem(storageKey)).toBe('false');
   });
 
@@ -56,14 +56,14 @@ describe('CollapsibleSection', () => {
 
     expect(trigger.getAttribute('aria-expanded')).toBe('false');
     const region = document.getElementById(trigger.getAttribute('aria-controls')!);
-    expect(region?.hidden).toBe(true);
+    expect(region).toBeNull();
   });
 
   it('restores a persisted collapsed state', () => {
     localStorage.setItem(storageKey, 'false');
     renderSection();
 
-    expect(screen.getByText('Section contents').parentElement?.hidden).toBe(true);
+    expect(screen.queryByText('Section contents')).toBeNull();
     expect(
       screen.getByRole('button', { name: /test section/i }).getAttribute('aria-expanded')
     ).toBe('false');
@@ -137,8 +137,8 @@ describe('CollapsibleSection', () => {
       </>
     );
 
-    expect(screen.getByText('First contents').parentElement?.hidden).toBe(true);
-    expect(screen.getByText('Second contents').parentElement?.hidden).toBe(false);
+    expect(screen.queryByText('First contents')).toBeNull();
+    expect(screen.getByText('Second contents')).toBeTruthy();
   });
 
   it.each(['not-json', 'null', '"false"', '{}'])(
@@ -151,6 +151,26 @@ describe('CollapsibleSection', () => {
       expect(
         screen.getByRole('button', { name: /test section/i }).getAttribute('aria-expanded')
       ).toBe('true');
+    }
+  );
+
+  it.each(['Latest: 405 lbs', 'No data in range'])(
+    'shows the %s summary only when collapsed',
+    (summary) => {
+      render(
+        <CollapsibleSection label="Performance" persistenceId="test:summary" summary={summary}>
+          <p>Chart content</p>
+        </CollapsibleSection>
+      );
+      const button = screen.getByRole('button', { name: /performance/i });
+      expect(screen.queryByText(summary)).toBeNull();
+      fireEvent.click(button);
+      expect(button.getAttribute('aria-expanded')).toBe('false');
+      expect(screen.queryByText('Chart content')).toBeNull();
+      expect(screen.getByText(summary)).toBeTruthy();
+
+      fireEvent.click(button);
+      expect(screen.getByText('Chart content')).toBeTruthy();
     }
   );
 });
