@@ -1,10 +1,11 @@
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { Line, Tooltip } from 'recharts';
 import type { ChartPoint } from '@dyel/api';
 import { LINE_COLORS } from '@dyel/api/display';
 import { DateLineChart } from './DateLineChart';
 import { ChartTooltip, type TooltipLine } from './TooltipCard';
-import { MOBILE_LAYOUT_QUERY, useMediaQuery } from '../hooks';
+import { ChartLegend } from './ChartLegend';
+import { TOUCH_EXPLORATION_QUERY, useMediaQuery } from '../hooks';
 
 export interface MultiSeriesLineChartProps {
   data: ChartPoint[];
@@ -31,7 +32,19 @@ export function MultiSeriesLineChart({
   height,
   summary,
 }: MultiSeriesLineChartProps) {
-  const mobile = useMediaQuery(MOBILE_LAYOUT_QUERY);
+  const touch = useMediaQuery(TOUCH_EXPLORATION_QUERY);
+  const [hiddenKeys, setHiddenKeys] = useState<Set<string>>(() => new Set());
+  const toggleKey = useCallback((key: string) => {
+    setHiddenKeys((current) => {
+      const next = new Set(current);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
+  }, []);
   const tooltipContent = useCallback(
     ({
       active,
@@ -64,38 +77,50 @@ export function MultiSeriesLineChart({
   );
 
   return (
-    <DateLineChart
-      data={data}
-      unit={unit}
-      yAxisWidth={yAxisWidth}
-      height={height}
-      summary={summary}
-    >
-      <Tooltip content={tooltipContent} trigger={mobile ? 'click' : 'hover'} />
-      {extraChildren}
-      {seriesKeys.map((key, i) => {
-        const isHigh = highlightedKey === key;
-        const click = onKeyClick ? () => onKeyClick(key) : undefined;
-        return (
-          <Line
-            key={key}
-            type="monotone"
-            dataKey={key}
-            stroke={isHigh ? 'var(--text-h)' : LINE_COLORS[i % LINE_COLORS.length]}
-            strokeWidth={isHigh ? 3 : 1.5}
-            dot={{ r: isHigh ? 4 : 3 }}
-            activeDot={{
-              r: 5,
-              onClick: click,
-              style: { cursor: onKeyClick ? 'pointer' : undefined },
-            }}
-            onClick={click}
-            style={{ cursor: onKeyClick ? 'pointer' : undefined }}
-            connectNulls
-            isAnimationActive={false}
-          />
-        );
-      })}
-    </DateLineChart>
+    <>
+      <ChartLegend
+        items={seriesKeys.map((key, i) => ({
+          key,
+          label: key,
+          color: LINE_COLORS[i % LINE_COLORS.length],
+        }))}
+        hiddenKeys={hiddenKeys}
+        onToggle={toggleKey}
+      />
+      <DateLineChart
+        data={data}
+        unit={unit}
+        yAxisWidth={yAxisWidth}
+        height={height}
+        summary={summary}
+      >
+        <Tooltip content={tooltipContent} trigger={touch ? 'click' : 'hover'} />
+        {extraChildren}
+        {seriesKeys.map((key, i) => {
+          const isHigh = highlightedKey === key;
+          const click = onKeyClick ? () => onKeyClick(key) : undefined;
+          return (
+            <Line
+              key={key}
+              hide={hiddenKeys.has(key)}
+              type="monotone"
+              dataKey={key}
+              stroke={isHigh ? 'var(--text-h)' : LINE_COLORS[i % LINE_COLORS.length]}
+              strokeWidth={isHigh ? 3 : 1.5}
+              dot={{ r: isHigh ? 4 : 3 }}
+              activeDot={{
+                r: 5,
+                onClick: click,
+                style: { cursor: onKeyClick ? 'pointer' : undefined },
+              }}
+              onClick={click}
+              style={{ cursor: onKeyClick ? 'pointer' : undefined }}
+              connectNulls
+              isAnimationActive={false}
+            />
+          );
+        })}
+      </DateLineChart>
+    </>
   );
 }

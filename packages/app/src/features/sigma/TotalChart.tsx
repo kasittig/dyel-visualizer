@@ -1,9 +1,10 @@
+import { useCallback, useState } from 'react';
 import { Line, Tooltip } from 'recharts';
 import type { ChartPoint } from '@dyel/api';
 import { DateLineChart, ChartEmpty } from '../../shared/charts/DateLineChart';
 import { ChartTooltip } from '../../shared/charts/TooltipCard';
 import { ChartLegend } from '../../shared/charts/ChartLegend';
-import { MOBILE_LAYOUT_QUERY, useMediaQuery } from '../../shared/hooks';
+import { TOUCH_EXPLORATION_QUERY, useMediaQuery } from '../../shared/hooks';
 import styles from './TotalChart.module.css';
 import {
   SQUAT_COLOR,
@@ -14,7 +15,19 @@ import {
 } from '../../shared/charts/colors.ts';
 
 export function TotalChart({ chartData, unit }: { chartData: ChartPoint[]; unit: string }) {
-  const mobile = useMediaQuery(MOBILE_LAYOUT_QUERY);
+  const touch = useMediaQuery(TOUCH_EXPLORATION_QUERY);
+  const [hiddenKeys, setHiddenKeys] = useState<Set<string>>(() => new Set());
+  const toggleKey = useCallback((key: string) => {
+    setHiddenKeys((current) => {
+      const next = new Set(current);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
+  }, []);
   if (chartData.length === 0) {
     return <ChartEmpty />;
   }
@@ -30,6 +43,8 @@ export function TotalChart({ chartData, unit }: { chartData: ChartPoint[]; unit:
           { key: 'pushPull', label: 'Push/Pull', color: PUSH_PULL_COLOR, dash: 'long' },
           { key: 'total', label: 'Est. total', color: TOTAL_COLOR, dash: 'short' },
         ]}
+        hiddenKeys={hiddenKeys}
+        onToggle={toggleKey}
       />
       <DateLineChart
         data={chartData}
@@ -38,7 +53,7 @@ export function TotalChart({ chartData, unit }: { chartData: ChartPoint[]; unit:
         summary={`Estimated one-rep max trends across ${chartData.length} training dates. Lines show squat, bench, deadlift, push/pull, and estimated total in ${unit}.`}
       >
         <Tooltip
-          trigger={mobile ? 'click' : 'hover'}
+          trigger={touch ? 'click' : 'hover'}
           content={({ active, payload, label }) => {
             if (!active || !payload?.length) {
               return null;
@@ -61,6 +76,7 @@ export function TotalChart({ chartData, unit }: { chartData: ChartPoint[]; unit:
         <Line
           type="monotone"
           dataKey="squat"
+          hide={hiddenKeys.has('squat')}
           name="Squat"
           stroke={SQUAT_COLOR}
           dot={{ r: 3 }}
@@ -72,6 +88,7 @@ export function TotalChart({ chartData, unit }: { chartData: ChartPoint[]; unit:
         <Line
           type="monotone"
           dataKey="bench"
+          hide={hiddenKeys.has('bench')}
           name="Bench"
           stroke={BENCH_COLOR}
           dot={{ r: 3 }}
@@ -82,6 +99,7 @@ export function TotalChart({ chartData, unit }: { chartData: ChartPoint[]; unit:
         <Line
           type="monotone"
           dataKey="deadlift"
+          hide={hiddenKeys.has('deadlift')}
           name="Deadlift"
           stroke={DEADLIFT_COLOR}
           dot={{ r: 3 }}
@@ -93,6 +111,7 @@ export function TotalChart({ chartData, unit }: { chartData: ChartPoint[]; unit:
         <Line
           type="monotone"
           dataKey="pushPull"
+          hide={hiddenKeys.has('pushPull')}
           name="Push/Pull"
           stroke={PUSH_PULL_COLOR}
           strokeDasharray="5 5"
@@ -105,6 +124,7 @@ export function TotalChart({ chartData, unit }: { chartData: ChartPoint[]; unit:
         <Line
           type="monotone"
           dataKey="total"
+          hide={hiddenKeys.has('total')}
           name="Est. Total"
           stroke={TOTAL_COLOR}
           strokeDasharray="3 3"

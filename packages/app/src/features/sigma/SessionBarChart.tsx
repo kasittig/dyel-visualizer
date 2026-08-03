@@ -1,3 +1,4 @@
+import { useCallback, useState } from 'react';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import type { ChartPoint } from '@dyel/api';
 import { formatChartDate } from '@dyel/api/display';
@@ -12,10 +13,23 @@ import {
 } from '../../shared/charts/colors.ts';
 import { ChartLegend } from '../../shared/charts/ChartLegend';
 import { formatMobileChartDate } from '../../shared/charts/chartResponsive';
-import { MOBILE_LAYOUT_QUERY, useMediaQuery } from '../../shared/hooks';
+import { MOBILE_LAYOUT_QUERY, TOUCH_EXPLORATION_QUERY, useMediaQuery } from '../../shared/hooks';
 
 export function SessionBarChart({ chartData, unit }: { chartData: ChartPoint[]; unit: string }) {
   const mobile = useMediaQuery(MOBILE_LAYOUT_QUERY);
+  const touch = useMediaQuery(TOUCH_EXPLORATION_QUERY);
+  const [hiddenKeys, setHiddenKeys] = useState<Set<string>>(() => new Set());
+  const toggleKey = useCallback((key: string) => {
+    setHiddenKeys((current) => {
+      const next = new Set(current);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
+  }, []);
   if (chartData.length === 0) {
     return <ChartEmpty />;
   }
@@ -30,6 +44,8 @@ export function SessionBarChart({ chartData, unit }: { chartData: ChartPoint[]; 
           { key: 'deadlift', label: 'Deadlift', color: DEADLIFT_COLOR },
           { key: 'volume', label: 'Accessory', color: PUSH_PULL_COLOR },
         ]}
+        hiddenKeys={hiddenKeys}
+        onToggle={toggleKey}
       />
       <div
         role="img"
@@ -61,7 +77,7 @@ export function SessionBarChart({ chartData, unit }: { chartData: ChartPoint[]; 
               tickCount={mobile ? 5 : undefined}
             />
             <Tooltip
-              trigger={mobile ? 'click' : 'hover'}
+              trigger={touch ? 'click' : 'hover'}
               content={({ active, payload, label }) => {
                 if (!active || !payload?.length) {
                   return null;
@@ -81,10 +97,20 @@ export function SessionBarChart({ chartData, unit }: { chartData: ChartPoint[]; 
                 );
               }}
             />
-            <Bar dataKey="squat" name="Squat" fill={SQUAT_COLOR} />
-            <Bar dataKey="bench" name="Bench" fill={BENCH_COLOR} />
-            <Bar dataKey="deadlift" name="Deadlift" fill={DEADLIFT_COLOR} />
-            <Bar dataKey="volume" name="Accessory Volume" fill={PUSH_PULL_COLOR} />
+            <Bar dataKey="squat" name="Squat" fill={SQUAT_COLOR} hide={hiddenKeys.has('squat')} />
+            <Bar dataKey="bench" name="Bench" fill={BENCH_COLOR} hide={hiddenKeys.has('bench')} />
+            <Bar
+              dataKey="deadlift"
+              name="Deadlift"
+              fill={DEADLIFT_COLOR}
+              hide={hiddenKeys.has('deadlift')}
+            />
+            <Bar
+              dataKey="volume"
+              name="Accessory Volume"
+              fill={PUSH_PULL_COLOR}
+              hide={hiddenKeys.has('volume')}
+            />
           </BarChart>
         </ResponsiveContainer>
       </div>

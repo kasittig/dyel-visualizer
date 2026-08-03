@@ -1,6 +1,7 @@
 import { useCallback, useSyncExternalStore } from 'react';
 
 export const MOBILE_LAYOUT_QUERY = '(max-width: 640px)';
+export const TOUCH_EXPLORATION_QUERY = '(hover: none), (pointer: coarse)';
 
 export function useMediaQuery(query: string): boolean {
   const subscribe = useCallback(
