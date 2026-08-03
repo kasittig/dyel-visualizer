@@ -250,12 +250,14 @@ export function SheetUrlPanel({
       )}
 
       {!mobile && (
-        <div className={styles.desktopPanel}>
+        <div
+          className={`${styles.desktopPanel} ${!showUrlPanel ? styles.desktopPanelCompact : ''}`}
+        >
           <h1>DYEL Visualizer</h1>
           {!showUrlPanel ? (
             <p className={styles.subtitle}>
               <button onClick={onForceOpen} className={styles.linkButton}>
-                Change data source
+                Data source
               </button>{' '}
               ·{' '}
               <button
@@ -266,8 +268,7 @@ export function SheetUrlPanel({
               >
                 ↻
               </button>{' '}
-              · <a href="?page=conjugate">What is the conjugate method?</a> ·{' '}
-              <a href="?page=team">View team</a>
+              · <a href="?page=conjugate">Help</a> · <a href="?page=team">Team</a>
             </p>
           ) : (
             <div className={styles.desktopSettings}>

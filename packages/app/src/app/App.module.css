@@ -5,7 +5,7 @@
   min-width: 0;
 }
 .content {
-  margin-top: var(--section-space);
+  margin-top: 0.75rem;
   min-width: 0;
 }
 .errorMsg {
