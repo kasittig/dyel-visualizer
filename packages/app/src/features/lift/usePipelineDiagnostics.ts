@@ -25,6 +25,7 @@ export interface DiagnosticRow extends DiagnosticVariant {
   ageDays: number;
   ageDisplay: string;
   latestDateDisplay: string;
+  latestSetDisplay: string;
   trendDisplay: string;
   observationDisplay: string;
   calculationDisplay: string;
@@ -92,6 +93,9 @@ export function usePipelineDiagnostics(
           year: 'numeric',
           timeZone: 'UTC',
         }).format(variant.latestAt),
+        latestSetDisplay: variant.latestSet
+          ? `${variant.latestSet.sets && variant.latestSet.sets > 1 ? `${variant.latestSet.sets} sets · ` : ''}${formatWeight(variant.latestSet.weight, unit)} × ${variant.latestSet.reps}${variant.latestSet.rpe === undefined ? '' : ` @${variant.latestSet.rpe}`}`
+          : 'Set details unavailable',
         trendDisplay:
           trendPercent === null
             ? 'No prior observation'

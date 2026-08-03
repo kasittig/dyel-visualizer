@@ -10,7 +10,7 @@ const LABELS = {
   optimal: ['On target', 'var(--success)'],
   overperforming: ['Above expected', 'var(--warning)'],
   weakness: ['Below expected', 'var(--danger)'],
-  stale: ['Needs retest', 'var(--muted)'],
+  stale: ['Outdated', 'var(--muted)'],
 } satisfies Record<DiagnosticVariant['status'], readonly [string, string]>;
 
 const FITTED_LABELS = {
@@ -190,7 +190,7 @@ export function DiagnosticsPanel({
                       className={styles.findingToggle}
                       aria-expanded={!isCollapsed}
                       aria-controls={detailId}
-                      aria-label={`${r.displayName}: ${lbl}. ${isCollapsed ? 'Expand' : 'Collapse'} diagnostic`}
+                      aria-label={`${r.displayName}: ${lbl}${r.status === 'stale' ? `, last tested ${r.ageDisplay}` : ''}. ${isCollapsed ? 'Expand' : 'Collapse'} diagnostic`}
                       onClick={() => toggleRow(r.canonical)}
                     >
                       <span className={styles.variationName}>
@@ -201,6 +201,9 @@ export function DiagnosticsPanel({
                           </span>
                         )}
                       </span>
+                      {r.status === 'stale' && (
+                        <span className={styles.staleAge}>Last tested {r.ageDisplay}</span>
+                      )}
                       <span className={styles.status}>{lbl}</span>
                       <span className={styles.collapseIcon} aria-hidden="true">
                         {isCollapsed ? '＋' : '−'}
@@ -245,7 +248,8 @@ export function DiagnosticsPanel({
                         <span className={styles.provenance}>
                           <span>
                             <strong>Latest</strong>
-                            {r.latestDateDisplay} · {r.actualE1rmDisplay}
+                            {r.latestDateDisplay} · {r.latestSetDisplay} · {r.actualE1rmDisplay}{' '}
+                            e1RM
                           </span>
                           <span>
                             <strong>Recent trend</strong>
