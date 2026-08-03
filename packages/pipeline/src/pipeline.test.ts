@@ -30,7 +30,7 @@ describe('pipeline orchestration', () => {
   });
 
   it.each(['chains', 'bands'])(
-    'uses %s-adjusted e1RM points in diagnostics exactly once',
+    'compares %s bar-weight e1RM with an offset-adjusted bar-weight expectation',
     (modifier) => {
       const log = `2023-12-31 Bench 110kg x3 @9\n2023-12-31 Bench (${modifier}) 90kg x3 @9\n2024-01-01 Bench 100kg x5 @8\n2024-01-01 Bench (${modifier}) 80kg x5\n2024-01-05 Bench 105kg x5 @8\n2024-01-05 Bench (${modifier}) 85kg x5`;
       const model = runPipelineModel([{ name: 'log.txt', content: log }], ath()) as PipelineModel;
@@ -60,8 +60,16 @@ describe('pipeline orchestration', () => {
       const latestUnadjusted = unadj.reduce((a, b) => (b.t > a.t ? b : a));
       const latestAdjusted = adj.reduce((a, b) => (b.t > a.t ? b : a));
       const diagnostic = model.diagnostics.variants.find((v) => v.canonical === adjustedVariant)!;
-      expect(diagnostic.actualE1rmKg).toBeCloseTo(latestAdjusted.v);
-      expect(diagnostic.actualE1rmKg).not.toBeCloseTo(latestUnadjusted.v);
+      const baselineLatest = model.points
+        .get('e1rm')
+        .filter((p) => p.series === model.model.baseline['lift:bench'])
+        .reduce((a, b) => (b.t > a.t ? b : a));
+      expect(diagnostic.actualE1rmKg).toBeCloseTo(latestUnadjusted.v);
+      expect(diagnostic.actualE1rmKg).not.toBeCloseTo(latestAdjusted.v);
+      expect(diagnostic.expectedE1rmKg).toBeCloseTo(
+        model.model.variantFactor[adjustedVariant].factor * baselineLatest.v -
+          model.model.addlWtOffset[adjustedVariant].offsetKg
+      );
     }
   );
 
@@ -96,7 +104,7 @@ describe('pipeline orchestration', () => {
     });
   });
 
-  it('includes canonical and label-grouped accessory points so app charts render', () => {
+  it('includes accessory chart points while surfacing unknown names for recognition', () => {
     const log = `units: kg\n2024-01-01 Squat 100 x3 @9\n2024-01-01 Bench 80 x3 @9\n2024-01-01 Bicep Curl 15 x10 @8`;
     const model = runPipelineModel([{ name: 'log.txt', content: log }], ath());
     const acc = model.tagged.filter((r) => r.tags.has('lift:accessory'));
@@ -108,6 +116,27 @@ describe('pipeline orchestration', () => {
     ).toBe(true);
     expect(Object.values(model.model.baseline)).not.toContain(acc[0].canonical);
     expect(model.model.variantFactor[acc[0].canonical]).toBeUndefined();
+    expect(model.diagnostics.unassessed).toContainEqual({
+      canonical: acc[0].canonical,
+      displayName: 'Bicep Curl',
+      lift: null,
+      reason: 'missing-lift',
+    });
+  });
+
+  it('sources missing-lift diagnostics from unknown exercise classifications', () => {
+    const model = runPipelineModel(
+      [{ name: 'log.txt', content: '2024-01-01 Mystery Press 50kg x5 @8' }],
+      ath()
+    );
+
+    expect(model.unknownExercises).toEqual(['Mystery Press']);
+    expect(model.diagnostics.unassessed).toContainEqual({
+      canonical: model.tagged[0].canonical,
+      displayName: 'Mystery Press',
+      lift: null,
+      reason: 'missing-lift',
+    });
   });
 
   describe('automatic competition deadlift-stance derivation', () => {

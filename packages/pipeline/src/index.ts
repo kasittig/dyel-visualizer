@@ -42,6 +42,8 @@ export type {
   DiagnosticsReport,
   VariantAssessment,
   PerformanceStatus,
+  UnassessedReason,
+  UnassessedVariant,
   Quality,
 } from './analyze/diagnose';
 export { diagnose } from './analyze/diagnose';

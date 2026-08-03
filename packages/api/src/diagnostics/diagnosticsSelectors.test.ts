@@ -1,7 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import { createPipelinePointStore } from '@dyel/pipeline';
 import type { PipelineModel, VariantAssessment } from '@dyel/pipeline';
-import { selectDiagnosticVariants, summarizeEffects } from './diagnosticsSelectors';
+import {
+  selectDiagnosticVariants,
+  selectUnassessedDiagnostics,
+  summarizeEffects,
+} from './diagnosticsSelectors';
 
 const baseVariant = (overrides?: Partial<VariantAssessment>): VariantAssessment => ({
   canonical: 'squat',
@@ -21,15 +25,42 @@ const baseVariant = (overrides?: Partial<VariantAssessment>): VariantAssessment 
   ...overrides,
 });
 
-const baseModel = (variants: VariantAssessment[]): PipelineModel => ({
+const baseModel = (
+  variants: VariantAssessment[],
+  unassessed: PipelineModel['diagnostics']['unassessed'] = []
+): PipelineModel => ({
   model: { baseline: {}, variantFactor: {}, addlWtOffset: {}, fittedAt: 0 },
-  diagnostics: { variants, weaknesses: [], unassessed: [] },
+  diagnostics: { variants, weaknesses: [], unassessed },
   unknownExercises: [],
   unnormalized: [],
   parseErrors: [],
   points: createPipelinePointStore({ canonical: new Map([['e1rm', []]]) }),
   tagged: [],
   athlete: { sex: 'M', bodyweight: 90 },
+});
+
+describe('selectUnassessedDiagnostics', () => {
+  const items: PipelineModel['diagnostics']['unassessed'] = [
+    {
+      canonical: 'squat-pause',
+      displayName: 'Pause Squat',
+      lift: 'lift:squat',
+      reason: 'missing-factor',
+    },
+    {
+      canonical: 'bench-bands',
+      displayName: 'Bench (Bands)',
+      lift: 'lift:bench',
+      reason: 'missing-baseline',
+    },
+    { canonical: 'unknown', displayName: 'Unknown', lift: null, reason: 'missing-lift' },
+  ];
+
+  it('returns all items without a lift scope and matching items with one', () => {
+    expect(selectUnassessedDiagnostics(baseModel([], items))).toEqual(items);
+    expect(selectUnassessedDiagnostics(baseModel([], items), 'bench')).toEqual([items[1]]);
+    expect(selectUnassessedDiagnostics(baseModel([], items), 'accessory')).toEqual([items[2]]);
+  });
 });
 
 describe('selectDiagnosticVariants', () => {

@@ -4,6 +4,13 @@ import type { BaselineRange } from '../tag/detect/canonical';
 
 export type Quality = string;
 export type PerformanceStatus = 'optimal' | 'weakness' | 'overperforming';
+export type UnassessedReason = 'missing-lift' | 'missing-factor' | 'missing-baseline';
+export interface UnassessedVariant {
+  canonical: string;
+  displayName: string;
+  lift: string | null;
+  reason: UnassessedReason;
+}
 export interface VariantAssessment {
   canonical: string;
   displayName: string;
@@ -23,7 +30,7 @@ export interface VariantAssessment {
 export interface DiagnosticsReport {
   variants: VariantAssessment[];
   weaknesses: { quality: Quality; score: number; evidence: string[] }[];
-  unassessed: string[];
+  unassessed: UnassessedVariant[];
 }
 
 const DAY_MS = 86400000;
@@ -47,22 +54,31 @@ export function diagnose(
   );
 
   const variants: VariantAssessment[] = [];
-  const unassessed: string[] = [];
+  const unassessed: UnassessedVariant[] = [];
   const votes = new Map<Quality, { score: number; evidence: string[] }>();
 
   for (const [canonical, latest] of latestBySeries) {
     const lift = Array.from(latest.tags).find((t) => t.startsWith('lift:'));
+    if (!lift || lift === 'lift:accessory') {
+      continue;
+    }
     const factor = Object.values(model.baseline).includes(canonical)
       ? 1
       : model.variantFactor[canonical]?.factor;
-    const baseLatest = lift ? latestBySeries.get(model.baseline[lift]) : null;
+    const baseLatest = latestBySeries.get(model.baseline[lift]);
 
-    if (!lift || !factor || !baseLatest) {
-      unassessed.push(canonical);
+    if (!factor || !baseLatest) {
+      unassessed.push({
+        canonical,
+        displayName: displayNameByCanonical.get(canonical) ?? canonical,
+        lift,
+        reason: !factor ? 'missing-factor' : 'missing-baseline',
+      });
       continue;
     }
 
-    const expectedE1rmKg = factor * baseLatest.v;
+    const addlWt = model.addlWtOffset[canonical];
+    const expectedE1rmKg = Math.max(0, factor * baseLatest.v - (addlWt?.offsetKg ?? 0));
     const ratio = latest.v / expectedE1rmKg;
     const averageIndex = factor * 100;
     const range = baselineRangeByCanonical.get(canonical);
@@ -83,8 +99,6 @@ export function diagnose(
 
     const status: VariantAssessment['status'] =
       timestamp - latest.t > opts.staleDays * DAY_MS ? 'stale' : normalStatus;
-    const addlWt = model.addlWtOffset[canonical];
-
     const v: VariantAssessment = {
       canonical,
       displayName: displayNameByCanonical.get(canonical) ?? canonical,

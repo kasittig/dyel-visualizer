@@ -5,9 +5,11 @@ import {
   formatEffect,
   formatWeight,
   selectDiagnosticVariants,
+  selectUnassessedDiagnostics,
   summarizeEffects,
   type DiagnosticVariant,
   type DisplayUnit,
+  type UnassessedVariant,
 } from '@dyel/api';
 
 export type { DiagnosticVariant } from '@dyel/api';
@@ -22,11 +24,17 @@ export interface DiagnosticRow extends DiagnosticVariant {
   ageDisplay: string;
 }
 
+export interface DiagnosticNeedRow extends UnassessedVariant {
+  reasonDisplay: string;
+  actionDisplay: string;
+}
+
 export interface DiagnosticResult {
   variants: DiagnosticRow[];
   hasDeadlift: boolean;
   weakEffects: string[];
   overtrainedEffects: string[];
+  needsData: DiagnosticNeedRow[];
 }
 
 export function usePipelineDiagnostics(
@@ -60,10 +68,34 @@ export function usePipelineDiagnostics(
     });
   }, [model, liftType, unit]);
 
+  const needsData = useMemo(() => {
+    if (!model) {
+      return [];
+    }
+    return selectUnassessedDiagnostics(model, liftType).map((item) => ({
+      ...item,
+      ...(item.reason === 'missing-lift'
+        ? {
+            reasonDisplay: 'Lift not recognized',
+            actionDisplay: 'Rename the exercise so it clearly identifies its lift.',
+          }
+        : item.reason === 'missing-factor'
+          ? {
+              reasonDisplay: 'Needs comparison history',
+              actionDisplay:
+                'Log this variation alongside its competition lift to establish an expected relationship.',
+            }
+          : {
+              reasonDisplay: 'Needs competition baseline',
+              actionDisplay: 'Log a recent competition-lift set for this lift.',
+            }),
+    }));
+  }, [model, liftType]);
+
   const hasDeadlift = variants.some((v) => v.lift.includes('deadlift'));
   const { weakEffects, overtrainedEffects } = useMemo(() => {
     return summarizeEffects(variants);
   }, [variants]);
 
-  return { variants, hasDeadlift, weakEffects, overtrainedEffects };
+  return { variants, hasDeadlift, weakEffects, overtrainedEffects, needsData };
 }

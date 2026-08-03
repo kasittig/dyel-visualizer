@@ -24,9 +24,10 @@ run and NEVER stored on identity types.
   expected %-range per canonical for the independent fitted, long-term signal. When a range
   exists, `VariantAssessment.expectedBaseline` is populated and `fittedStatus` compares the
   fitted variant factor against it; without a range, `fittedStatus` is `null`.
-- `VariantAssessment.ratio` = actual / expected (actual = latest e1rm point; the pipeline
-  supplies its weight-space offset-adjusted point for chain/band variants). `status` is the
-  current-readiness signal and always compares this ratio
+- `VariantAssessment.ratio` = actual / expected. Actual is the latest bar-weight e1RM point.
+  For chain/band variants, expected bar-weight e1RM is the fitted total-resistance expectation
+  minus the model's estimated additional-weight offset. `status` is the current-readiness signal
+  and always compares this ratio
   against `opts.tolerance`. Possible values:
   - `'optimal'` — current ratio within tolerance.
   - `'weakness'` — current ratio below tolerance.
@@ -51,8 +52,13 @@ run and NEVER stored on identity types.
   variant with the quality → +1, each non-stale 'overperforming' variant → −1,
   'optimal' → 0, 'stale' → 0 (no votes). Report qualities with score > 0; evidence
   lists contributing canonicals from BOTH non-stale signs.
-- Unassessed canonicals: those with no `lift:` tag, no fitted `variantFactor`, or no
-  baseline latest point (i.e., genuinely cannot be assessed). Staleness alone no
+- Unassessed lift variations are structured as canonical/display name/lift/reason. `diagnose`
+  emits missing-factor and missing-baseline findings for classified primary lifts; the pipeline
+  appends missing-lift findings from `unknownExercises`, since unknown records have already been
+  classified as accessories before points reach `diagnose`. Missing-lift findings deliberately
+  remain unscoped (`lift: null`) so consumers can distinguish recognition failures. Reason codes
+  are `missing-lift`, `missing-factor`, or `missing-baseline`. Accessory-only records are outside
+  lift normalization and omitted rather than mislabeled as needing comparison history. Staleness alone no
   longer routes to `unassessed`; instead, stale variants appear in `variants` with
   `status: 'stale'`.
 

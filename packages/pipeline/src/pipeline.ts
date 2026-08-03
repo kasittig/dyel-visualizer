@@ -258,8 +258,10 @@ export function runPipelineModel(
 
   const effectsByCanonical = new Map(tagged.map((r) => [r.canonical, [...r.effects]]));
   const displayNameLatest = new Map<string, { date: number; name: string }>();
+  const canonicalByDisplayName = new Map<string, string>();
 
   for (const r of tagged) {
+    canonicalByDisplayName.set(r.meta?.rawExercise ?? r.canonical, r.canonical);
     const existing = displayNameLatest.get(r.canonical);
     if (!existing || r.date > existing.date) {
       displayNameLatest.set(r.canonical, {
@@ -275,13 +277,21 @@ export function runPipelineModel(
   );
 
   const diagnostics = diagnose(
-    pointsByDeriverAdjusted.get('e1rm')!,
+    pointsByDeriver.get('e1rm')!,
     model,
     effectsByCanonical,
     { tolerance: 0.05, staleDays: 90 },
     timestamp,
     displayNameByCanonical,
     baselineRangeByCanonical
+  );
+  diagnostics.unassessed.push(
+    ...unknownExercises.map((displayName) => ({
+      canonical: canonicalByDisplayName.get(displayName) ?? displayName,
+      displayName,
+      lift: null,
+      reason: 'missing-lift' as const,
+    }))
   );
 
   return {

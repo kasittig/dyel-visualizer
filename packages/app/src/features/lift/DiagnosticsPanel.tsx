@@ -34,7 +34,10 @@ export function DiagnosticsPanel({
 }) {
   const [activeEffect, setActiveEffect] = useState<string | null>(null);
   const [collapsedRows, setCollapsedRows] = useState<Set<string>>(() => new Set());
-  const { variants, weakEffects, overtrainedEffects } = usePipelineDiagnostics(liftType, unit);
+  const { variants, weakEffects, overtrainedEffects, needsData } = usePipelineDiagnostics(
+    liftType,
+    unit
+  );
   const rows = variants;
   const { sortedRows, sortKey, direction, toggleSort } = useSortableRows<DiagnosticRow, SortColumn>(
     rows,
@@ -47,7 +50,7 @@ export function DiagnosticsPanel({
     (r) => r.displayName
   );
 
-  if (variants.length === 0) {
+  if (variants.length === 0 && needsData.length === 0) {
     return null;
   }
 
@@ -73,7 +76,7 @@ export function DiagnosticsPanel({
       <CollapsibleSection
         label="Diagnostics"
         persistenceId={`visualizer:${liftType}:diagnostics`}
-        summary={`${variants.length} variation${variants.length === 1 ? '' : 's'} · ${weakEffects.length} below expected · ${overtrainedEffects.length} above expected`}
+        summary={`${variants.length} variation${variants.length === 1 ? '' : 's'} · ${weakEffects.length} below expected · ${overtrainedEffects.length} above expected · ${needsData.length} need data`}
       >
         <TableCard>
           {(weakEffects.length > 0 || overtrainedEffects.length > 0) && (
@@ -118,112 +121,136 @@ export function DiagnosticsPanel({
               </div>
             </div>
           )}
-          <div className={styles.sortBar} aria-label="Sort diagnostics">
-            <span>Sort by</span>
-            {(
-              [
-                ['diagnostic', 'Status'],
-                ['evidence', 'Index'],
-                ['variation', 'Variation'],
-              ] as const
-            ).map(([column, label]) => (
-              <button
-                type="button"
-                key={column}
-                className={`${styles.sortButton} ${sortKey === column ? styles.sortButtonActive : ''}`}
-                onClick={() => toggleSort(column)}
-                aria-pressed={sortKey === column}
-                aria-label={
-                  sortKey === column
-                    ? `${label}, sorted ${direction === 'asc' ? 'ascending' : 'descending'}`
-                    : `Sort by ${label}`
-                }
-              >
-                {label}
-                {sortKey === column && (
-                  <span aria-hidden="true"> {direction === 'asc' ? '↑' : '↓'}</span>
-                )}
-              </button>
-            ))}
-          </div>
-          <div className={styles.findings} role="list">
-            {sortedRows.map((r) => {
-              const [lbl, color] = LABELS[r.status];
-              const isCollapsed = collapsedRows.has(r.canonical);
-              const detailId = `diagnostic-${r.canonical}-details`;
-              const isHigh =
-                r.displayName === highlightedVariation ||
-                (activeEffect !== null && r.effects.includes(activeEffect));
-              return (
-                <div
-                  role="listitem"
-                  key={r.displayName}
-                  className={`${styles.finding} ${isHigh ? styles.findingSelected : ''}`}
-                  style={{ '--diagnostic-color': color } as CSSProperties}
+          {variants.length > 0 && (
+            <div className={styles.sortBar} aria-label="Sort diagnostics">
+              <span>Sort by</span>
+              {(
+                [
+                  ['diagnostic', 'Status'],
+                  ['evidence', 'Index'],
+                  ['variation', 'Variation'],
+                ] as const
+              ).map(([column, label]) => (
+                <button
+                  type="button"
+                  key={column}
+                  className={`${styles.sortButton} ${sortKey === column ? styles.sortButtonActive : ''}`}
+                  onClick={() => toggleSort(column)}
+                  aria-pressed={sortKey === column}
+                  aria-label={
+                    sortKey === column
+                      ? `${label}, sorted ${direction === 'asc' ? 'ascending' : 'descending'}`
+                      : `Sort by ${label}`
+                  }
                 >
-                  <button
-                    type="button"
-                    className={styles.findingToggle}
-                    aria-expanded={!isCollapsed}
-                    aria-controls={detailId}
-                    aria-label={`${r.displayName}: ${lbl}. ${isCollapsed ? 'Expand' : 'Collapse'} diagnostic`}
-                    onClick={() => toggleRow(r.canonical)}
+                  {label}
+                  {sortKey === column && (
+                    <span aria-hidden="true"> {direction === 'asc' ? '↑' : '↓'}</span>
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
+          {variants.length > 0 && (
+            <div className={styles.findings} role="list">
+              {sortedRows.map((r) => {
+                const [lbl, color] = LABELS[r.status];
+                const isCollapsed = collapsedRows.has(r.canonical);
+                const detailId = `diagnostic-${r.canonical}-details`;
+                const isHigh =
+                  r.displayName === highlightedVariation ||
+                  (activeEffect !== null && r.effects.includes(activeEffect));
+                return (
+                  <div
+                    role="listitem"
+                    key={r.displayName}
+                    className={`${styles.finding} ${isHigh ? styles.findingSelected : ''}`}
+                    style={{ '--diagnostic-color': color } as CSSProperties}
                   >
-                    <span className={styles.variationName}>
-                      {r.displayName}
-                      {r.isCompLift && (
-                        <span className={styles.compBadge} title="Competition variant">
-                          🏆
-                        </span>
-                      )}
-                    </span>
-                    <span className={styles.status}>{lbl}</span>
-                    <span className={styles.collapseIcon} aria-hidden="true">
-                      {isCollapsed ? '＋' : '−'}
-                    </span>
-                  </button>
-                  {!isCollapsed && (
                     <button
                       type="button"
-                      id={detailId}
-                      className={styles.findingDetails}
-                      onClick={() => {
-                        setActiveEffect(null);
-                        onVariationClick?.(r.displayName);
-                      }}
+                      className={styles.findingToggle}
+                      aria-expanded={!isCollapsed}
+                      aria-controls={detailId}
+                      aria-label={`${r.displayName}: ${lbl}. ${isCollapsed ? 'Expand' : 'Collapse'} diagnostic`}
+                      onClick={() => toggleRow(r.canonical)}
                     >
-                      <span className={styles.comparison}>
-                        <span className={styles.actual}>
-                          {r.actualE1rmDisplay}
-                          <small>latest e1RM</small>
-                        </span>
-                        <span className={styles.arrow} aria-hidden="true">
-                          →
-                        </span>
-                        <span className={styles.expected}>
-                          {r.expectedE1rmDisplay}
-                          <small>expected e1RM</small>
-                        </span>
-                        <span className={styles.comparisonContext}>
-                          <strong>{r.deltaDisplay}</strong>
-                          <span>Fitted index {r.averageIndex.toFixed(1)}%</span>
-                          <span>Target range {r.expectedBaseline ?? 'within ±5%'}</span>
-                          {r.fittedStatus && <span>{FITTED_LABELS[r.fittedStatus]}</span>}
-                        </span>
+                      <span className={styles.variationName}>
+                        {r.displayName}
+                        {r.isCompLift && (
+                          <span className={styles.compBadge} title="Competition variant">
+                            🏆
+                          </span>
+                        )}
                       </span>
-                      <span className={styles.findingFooter}>
-                        <span className={styles.effects}>{r.effectsDisplay}</span>
-                        <span className={styles.recency}>
-                          Tested {r.ageDisplay === 'Today' ? 'today' : r.ageDisplay}
-                          {r.status === 'stale' && <strong> · Retest recommended</strong>}
-                        </span>
+                      <span className={styles.status}>{lbl}</span>
+                      <span className={styles.collapseIcon} aria-hidden="true">
+                        {isCollapsed ? '＋' : '−'}
                       </span>
                     </button>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+                    {!isCollapsed && (
+                      <button
+                        type="button"
+                        id={detailId}
+                        className={styles.findingDetails}
+                        onClick={() => {
+                          setActiveEffect(null);
+                          onVariationClick?.(r.displayName);
+                        }}
+                      >
+                        <span className={styles.comparison}>
+                          <span className={styles.actual}>
+                            {r.actualE1rmDisplay}
+                            <small>latest e1RM</small>
+                          </span>
+                          <span className={styles.arrow} aria-hidden="true">
+                            →
+                          </span>
+                          <span className={styles.expected}>
+                            {r.expectedE1rmDisplay}
+                            <small>expected e1RM</small>
+                          </span>
+                          <span className={styles.comparisonContext}>
+                            <strong>{r.deltaDisplay}</strong>
+                            <span>Fitted index {r.averageIndex.toFixed(1)}%</span>
+                            <span>Target range {r.expectedBaseline ?? 'within ±5%'}</span>
+                            {r.fittedStatus && <span>{FITTED_LABELS[r.fittedStatus]}</span>}
+                          </span>
+                        </span>
+                        <span className={styles.findingFooter}>
+                          <span className={styles.effects}>{r.effectsDisplay}</span>
+                          <span className={styles.recency}>
+                            Tested {r.ageDisplay === 'Today' ? 'today' : r.ageDisplay}
+                            {r.status === 'stale' && <strong> · Retest recommended</strong>}
+                          </span>
+                        </span>
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          {needsData.length > 0 && (
+            <section
+              className={styles.needsData}
+              aria-labelledby={`diagnostic-${liftType}-needs-data`}
+            >
+              <div className={styles.needsDataHeader}>
+                <h3 id={`diagnostic-${liftType}-needs-data`}>Needs data</h3>
+                <span>{needsData.length}</span>
+              </div>
+              <div role="list">
+                {needsData.map((item) => (
+                  <div className={styles.needRow} role="listitem" key={item.canonical}>
+                    <span className={styles.needName}>{item.displayName}</span>
+                    <span className={styles.needReason}>{item.reasonDisplay}</span>
+                    <span className={styles.needAction}>{item.actionDisplay}</span>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
         </TableCard>
       </CollapsibleSection>
     </div>

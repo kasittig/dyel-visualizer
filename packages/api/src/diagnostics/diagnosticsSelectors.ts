@@ -1,4 +1,6 @@
-import type { PipelineModel } from '@dyel/pipeline';
+import type { PipelineModel, UnassessedVariant } from '@dyel/pipeline';
+
+export type { UnassessedVariant } from '@dyel/pipeline';
 
 export interface DiagnosticVariant {
   canonical: string;
@@ -45,6 +47,18 @@ export function selectDiagnosticVariants(
   }));
 
   return liftType ? list.filter((v) => v.lift === `lift:${liftType}`) : list;
+}
+
+export function selectUnassessedDiagnostics(
+  model: PipelineModel,
+  liftType?: string
+): UnassessedVariant[] {
+  return liftType
+    ? model.diagnostics.unassessed.filter(
+        (item) =>
+          item.lift === `lift:${liftType}` || (liftType === 'accessory' && item.lift === null)
+      )
+    : model.diagnostics.unassessed;
 }
 
 export function summarizeEffects(variants: DiagnosticVariant[]): EffectSummary {

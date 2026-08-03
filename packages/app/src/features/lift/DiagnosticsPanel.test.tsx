@@ -42,6 +42,7 @@ describe('DiagnosticsPanel', () => {
       hasDeadlift: false,
       weakEffects: [],
       overtrainedEffects: [],
+      needsData: [],
     });
   });
 
@@ -74,6 +75,7 @@ describe('DiagnosticsPanel', () => {
       hasDeadlift: false,
       weakEffects: ['paused'],
       overtrainedEffects: [],
+      needsData: [],
     });
 
     render(<DiagnosticsPanel liftType="squat" unit="lbs" />);
@@ -100,6 +102,7 @@ describe('DiagnosticsPanel', () => {
       hasDeadlift: false,
       weakEffects: [],
       overtrainedEffects: [],
+      needsData: [],
     });
 
     const { container } = render(<DiagnosticsPanel liftType="squat" unit="lbs" />);
@@ -145,5 +148,33 @@ describe('DiagnosticsPanel', () => {
     ).toBe('true');
     fireEvent.click(diagnostics.getByRole('button', { name: 'Status, sorted ascending' }));
     expect(diagnostics.getByRole('button', { name: 'Status, sorted descending' })).toBeDefined();
+  });
+
+  it('renders unassessed variations with a reason and next action', () => {
+    mockUsePipelineDiagnostics.mockReturnValue({
+      variants: [],
+      hasDeadlift: false,
+      weakEffects: [],
+      overtrainedEffects: [],
+      needsData: [
+        {
+          canonical: 'bench-bands',
+          displayName: 'Bench (Bands)',
+          lift: 'lift:bench',
+          reason: 'missing-factor',
+          reasonDisplay: 'Needs comparison history',
+          actionDisplay:
+            'Log this variation alongside its competition lift to establish an expected relationship.',
+        },
+      ],
+    });
+
+    const { container } = render(<DiagnosticsPanel liftType="bench" unit="lbs" />);
+    const diagnostics = within(container);
+    expect(diagnostics.getByRole('heading', { name: 'Needs data' })).toBeDefined();
+    expect(diagnostics.getByText('Bench (Bands)')).toBeDefined();
+    expect(diagnostics.getByText('Needs comparison history')).toBeDefined();
+    expect(diagnostics.getByText(/Log this variation alongside/)).toBeDefined();
+    expect(diagnostics.queryByText('Sort by')).toBeNull();
   });
 });
