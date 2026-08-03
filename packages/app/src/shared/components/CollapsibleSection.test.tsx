@@ -80,6 +80,40 @@ describe('CollapsibleSection', () => {
     expect(screen.getByText('Other contents')).toBeTruthy();
   });
 
+  it.each([
+    ['lift tabs', 'visualizer:squat:performance', 'visualizer:bench:performance'],
+    ['lift panels', 'visualizer:squat:diagnostics', 'visualizer:squat:variation-radar'],
+    ['overview panels', 'visualizer:sigma:overview', 'visualizer:sigma:total-volume'],
+    ['calculators', 'visualizer:calculator:rep', 'visualizer:calculator:strength-score'],
+  ])('persists %s independently across remounts', (_, firstId, secondId) => {
+    const view = render(
+      <>
+        <CollapsibleSection label="First" persistenceId={firstId}>
+          <div>First contents</div>
+        </CollapsibleSection>
+        <CollapsibleSection label="Second" persistenceId={secondId}>
+          <div>Second contents</div>
+        </CollapsibleSection>
+      </>
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /First/ }));
+    view.unmount();
+    render(
+      <>
+        <CollapsibleSection label="First" persistenceId={firstId}>
+          <div>First contents</div>
+        </CollapsibleSection>
+        <CollapsibleSection label="Second" persistenceId={secondId}>
+          <div>Second contents</div>
+        </CollapsibleSection>
+      </>
+    );
+
+    expect(screen.queryByText('First contents')).toBeNull();
+    expect(screen.getByText('Second contents')).toBeTruthy();
+  });
+
   it.each(['not-json', 'null', '"false"', '{}'])(
     'falls back to expanded for invalid stored value %s',
     (storedValue) => {
