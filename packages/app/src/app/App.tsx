@@ -140,6 +140,7 @@ export function App() {
                     value={dateRange}
                     onChange={setDateRange}
                     sessionDates={allSessionDates}
+                    scopeLabel="Applies to all visualization tabs"
                   />
                 </div>
               </div>

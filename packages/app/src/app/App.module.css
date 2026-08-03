@@ -54,6 +54,7 @@
 
 .datePickerWrap {
   align-self: center;
+  flex: 0 1 auto;
 }
 
 .calculatorRow {
