@@ -118,7 +118,8 @@ export function App() {
           )}
           {effStatus === 'success' && (
             <>
-              <nav className={styles.tabNav} aria-label="Visualization and date controls">
+              <div className={styles.tabNav}>
+                <nav className={styles.viewNav} aria-label="Visualization views">
                 {[
                   { id: 'sigma' as const, label: 'Σ' },
                   ...tabs,
@@ -134,15 +135,16 @@ export function App() {
                     {label}
                   </button>
                 ))}
+                </nav>
                 <div className={styles.tabSpacer} />
-                <div className={styles.datePickerWrap}>
+                <div className={styles.datePickerWrap} role="toolbar" aria-label="Date filters">
                   <DateRangePicker
                     value={dateRange}
                     onChange={setDateRange}
                     sessionDates={allSessionDates}
                   />
                 </div>
-              </nav>
+              </div>
               <div className={styles.mobileTopControls}>
                 <div className={styles.mobileScreenHeader}>
                   <span className={styles.mobileEyebrow}>
