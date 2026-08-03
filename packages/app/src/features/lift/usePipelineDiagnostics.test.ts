@@ -73,4 +73,66 @@ describe('usePipelineDiagnostics', () => {
     rerender();
     expect(result.current.variants).toBe(initialArray);
   });
+
+  it.each([
+    ['lbs', '220 lbs', '243 lbs', 'Speed-Strength, Mid-Range, +11.0lbs'],
+    ['kg', '100 kg', '110 kg', 'Speed-Strength, Mid-Range, +5.0kg'],
+  ] as const)('formats diagnostic rows in %s', (unit, actual, expected, effectsDisplay) => {
+    mockUsePipelineModel.mockReturnValue({
+      status: 'success',
+      model: pipelineModelMock({
+        diagnostics: {
+          variants: [
+            variantAssessmentMock({
+              effects: ['speed-strength', 'mid-range'],
+              actualE1rmKg: 100,
+              expectedE1rmKg: 110,
+              ratio: 0.9,
+              staleDays: 3.9,
+            }),
+          ],
+          weaknesses: [],
+          unassessed: [],
+        },
+      }),
+    });
+
+    expect(
+      renderHook(() => usePipelineDiagnostics('squat', unit)).result.current.variants[0]
+    ).toMatchObject({
+      effectsDisplay,
+      actualE1rmDisplay: actual,
+      expectedE1rmDisplay: expected,
+      deltaPercent: expect.closeTo(-10),
+      deltaDisplay: '-10.0%',
+      ageDays: 3,
+      ageDisplay: '3 days ago',
+    });
+  });
+
+  it.each([
+    [1.025, 0, 2.5, '+2.5%', 'Today'],
+    [1, 1.8, 0, '0.0%', '1 day ago'],
+  ])(
+    'derives signed delta and recency from ratio %s',
+    (ratio, staleDays, delta, display, ageDisplay) => {
+      mockUsePipelineModel.mockReturnValue({
+        status: 'success',
+        model: pipelineModelMock({
+          diagnostics: {
+            variants: [variantAssessmentMock({ ratio, staleDays })],
+            weaknesses: [],
+            unassessed: [],
+          },
+        }),
+      });
+
+      expect(renderHook(() => usePipelineDiagnostics()).result.current.variants[0]).toMatchObject({
+        deltaPercent: expect.closeTo(delta),
+        deltaDisplay: display,
+        ageDays: Math.floor(staleDays),
+        ageDisplay,
+      });
+    }
+  );
 });

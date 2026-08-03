@@ -7,7 +7,7 @@ import { usePipelineDiagnostics } from './usePipelineDiagnostics';
 vi.mock('./usePipelineDiagnostics');
 const mockUsePipelineDiagnostics = vi.mocked(usePipelineDiagnostics);
 
-const variant = (status: DiagnosticVariant['status'], averageIndex: number): DiagnosticVariant => ({
+const variant = (status: DiagnosticVariant['status'], averageIndex: number) => ({
   canonical: status,
   displayName: status,
   lift: 'lift:squat',
@@ -20,6 +20,13 @@ const variant = (status: DiagnosticVariant['status'], averageIndex: number): Dia
   averageIndex,
   expectedBaseline: '90-110%',
   isCompLift: false,
+  effectsDisplay: status === 'weakness' ? 'Paused, +20 lb' : '—',
+  actualE1rmDisplay: `${averageIndex} lb`,
+  expectedE1rmDisplay: '100 lb',
+  deltaPercent: averageIndex - 100,
+  deltaDisplay: `${averageIndex > 100 ? '+' : ''}${(averageIndex - 100).toFixed(1)}%`,
+  ageDays: status === 'stale' ? 117 : 3,
+  ageDisplay: status === 'stale' ? '117 days ago' : '3 days ago',
 });
 
 describe('DiagnosticsPanel', () => {
@@ -37,17 +44,36 @@ describe('DiagnosticsPanel', () => {
     });
   });
 
-  it('describes every status neutrally and presents its evidence as a direct comparison', () => {
+  it('describes every status and presents actual-versus-expected evidence with recency', () => {
     render(<DiagnosticsPanel liftType="squat" unit="lbs" />);
 
-    ['Below range', 'In range', 'Above range', 'Outdated'].forEach((label) =>
+    ['Below range', 'In range', 'Above range', 'Needs retest'].forEach((label) =>
       expect(screen.getByText(label)).toBeDefined()
     );
-    const cells = screen.getAllByRole('cell').map((cell) => cell.textContent);
-    ['82.0% (90-110%)', '100.0% (90-110%)', '118.0% (90-110%)', '95.0% (90-110%)'].forEach(
-      (evidence) => expect(cells).toContain(evidence)
-    );
+    expect(screen.getByText('82 lb vs 100 lb expected')).toBeDefined();
+    expect(screen.getByText(/-18\.0% below expectation · Tested 3 days ago/)).toBeDefined();
+    expect(screen.getByText(/0\.0% at expectation · Tested 3 days ago/)).toBeDefined();
+    expect(screen.getByText(/\+18\.0% above expectation · Tested 3 days ago/)).toBeDefined();
+    expect(screen.getByText(/-5\.0% below expectation · Tested 117 days ago/)).toBeDefined();
+    expect(screen.getByText(/Retest recommended/)).toBeDefined();
+    expect(screen.getByText('Paused, +20 lb')).toBeDefined();
     expect(screen.queryByText('Overtrained')).toBeNull();
-    expect(screen.getByText('Performance (expected)')).toBeDefined();
+    expect(screen.getByText('Latest e1RM vs expected')).toBeDefined();
+  });
+
+  it('renders effect filters as toggle buttons', () => {
+    mockUsePipelineDiagnostics.mockReturnValue({
+      variants: [variant('weakness', 82)],
+      hasDeadlift: false,
+      weakEffects: ['paused'],
+      overtrainedEffects: [],
+    });
+
+    render(<DiagnosticsPanel liftType="squat" unit="lbs" />);
+
+    expect(screen.getByRole('button', { name: 'Paused' }).getAttribute('aria-pressed')).toBe(
+      'false'
+    );
+    expect(screen.getByText('Effects on below-range variations:')).toBeDefined();
   });
 });

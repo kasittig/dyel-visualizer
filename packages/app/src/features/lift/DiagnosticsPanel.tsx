@@ -1,6 +1,6 @@
-import { useMemo, useState, type CSSProperties } from 'react';
-import { usePipelineDiagnostics } from './usePipelineDiagnostics';
-import { formatEffect, formatAddlWtOffset } from '@dyel/api/display';
+import { useState, type CSSProperties } from 'react';
+import { usePipelineDiagnostics, type DiagnosticRow } from './usePipelineDiagnostics';
+import { formatEffect } from '@dyel/api/display';
 import type { DisplayUnit, DiagnosticVariant } from '@dyel/api';
 import {
   CollapsibleSection,
@@ -17,10 +17,8 @@ const LABELS = {
   optimal: ['In range', 'var(--success)'],
   overperforming: ['Above range', 'var(--warning)'],
   weakness: ['Below range', 'var(--danger)'],
-  stale: ['Outdated', 'var(--muted)'],
+  stale: ['Needs retest', 'var(--muted)'],
 } satisfies Record<DiagnosticVariant['status'], readonly [string, string]>;
-
-type DiagnosticRow = DiagnosticVariant & { formattedEffects: string };
 
 type SortColumn = 'variation' | 'effects' | 'evidence' | 'diagnostic';
 
@@ -36,26 +34,14 @@ export function DiagnosticsPanel({
   unit: DisplayUnit;
 }) {
   const [activeEffect, setActiveEffect] = useState<string | null>(null);
-  const { variants, weakEffects, overtrainedEffects } = usePipelineDiagnostics(liftType);
-  const rows = useMemo(
-    () =>
-      variants.map((variant) => ({
-        ...variant,
-        formattedEffects: [
-          ...variant.effects.map(formatEffect),
-          ...(variant.addlWtOffset !== undefined
-            ? [formatAddlWtOffset(variant.addlWtOffset.offsetKg, unit)]
-            : []),
-        ].join(', '),
-      })),
-    [variants, unit]
-  );
+  const { variants, weakEffects, overtrainedEffects } = usePipelineDiagnostics(liftType, unit);
+  const rows = variants;
   const { sortedRows, sortKey, direction, toggleSort } = useSortableRows<DiagnosticRow, SortColumn>(
     rows,
     {
       variation: (r) => r.displayName,
-      effects: (r) => r.formattedEffects,
-      evidence: (r) => r.averageIndex ?? -Infinity,
+      effects: (r) => r.effectsDisplay,
+      evidence: (r) => r.deltaPercent,
       diagnostic: (r) => LABELS[r.status][0],
     },
     (r) => r.displayName
@@ -80,7 +66,7 @@ export function DiagnosticsPanel({
       <CollapsibleSection
         label="Diagnostics"
         persistenceId={`visualizer:${liftType}:diagnostics`}
-        summary={`${variants.length} variation${variants.length === 1 ? '' : 's'} · ${weakEffects.length} weak · ${overtrainedEffects.length} overtrained`}
+        summary={`${variants.length} variation${variants.length === 1 ? '' : 's'} · ${weakEffects.length} below range · ${overtrainedEffects.length} above range`}
       >
         <TableCard>
           <div className={styles.cardPadded}>
@@ -88,31 +74,33 @@ export function DiagnosticsPanel({
               <div className={styles.summary}>
                 {weakEffects.length > 0 && (
                   <div className={styles.summaryRow}>
-                    <span className={styles.summaryLabel}>Below-range effects:</span>
+                    <span className={styles.summaryLabel}>Effects on below-range variations:</span>
                     {weakEffects.map((e) => (
-                      <span
+                      <button
+                        type="button"
                         key={e}
                         className={`${styles.chip} ${activeEffect === e ? styles.chipActive : styles.chipDanger}`}
                         onClick={() => handleEffectClick(e)}
-                        style={{ cursor: 'pointer' }}
+                        aria-pressed={activeEffect === e}
                       >
                         {formatEffect(e)}
-                      </span>
+                      </button>
                     ))}
                   </div>
                 )}
                 {overtrainedEffects.length > 0 && (
                   <div className={styles.summaryRow}>
-                    <span className={styles.summaryLabel}>Above-range effects:</span>
+                    <span className={styles.summaryLabel}>Effects on above-range variations:</span>
                     {overtrainedEffects.map((e) => (
-                      <span
+                      <button
+                        type="button"
                         key={e}
                         className={`${styles.chip} ${activeEffect === e ? styles.chipActive : styles.chipWarning}`}
                         onClick={() => handleEffectClick(e)}
-                        style={{ cursor: 'pointer' }}
+                        aria-pressed={activeEffect === e}
                       >
                         {formatEffect(e)}
-                      </span>
+                      </button>
                     ))}
                   </div>
                 )}
@@ -128,7 +116,7 @@ export function DiagnosticsPanel({
                 Effects
               </TableCell>
               <TableCell as="th" variant="mono" {...headerSort('evidence')}>
-                Performance (expected)
+                Latest e1RM vs expected
               </TableCell>
               <TableCell as="th" variant="left" {...headerSort('diagnostic')}>
                 Diagnostic
@@ -157,10 +145,21 @@ export function DiagnosticsPanel({
                         </span>
                       )}
                     </TableCell>
-                    <TableCell variant="text">{r.formattedEffects}</TableCell>
+                    <TableCell variant="text">{r.effectsDisplay}</TableCell>
                     <TableCell variant="mono" className={styles.evidence}>
-                      <span>{r.averageIndex?.toFixed(1) ?? '-'}%</span>{' '}
-                      <span>({r.expectedBaseline ?? 'range unavailable'})</span>
+                      <span className={styles.evidenceValues}>
+                        {r.actualE1rmDisplay} vs {r.expectedE1rmDisplay} expected
+                      </span>
+                      <span className={styles.evidenceContext}>
+                        {r.deltaPercent === 0
+                          ? `${r.deltaDisplay} at expectation`
+                          : `${r.deltaDisplay} ${r.deltaPercent > 0 ? 'above' : 'below'} expectation`}
+                        {' · '}
+                        Tested {r.ageDisplay === 'Today' ? 'today' : r.ageDisplay}
+                        {r.status === 'stale' && (
+                          <strong className={styles.retest}> · Retest recommended</strong>
+                        )}
+                      </span>
                     </TableCell>
                     <TableCell
                       variant="diagnostic"
