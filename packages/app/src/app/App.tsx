@@ -136,11 +136,11 @@ export function App() {
                 ))}
                 <div className={styles.tabSpacer} />
                 <div className={styles.datePickerWrap}>
+                  <span className={styles.dateScopeHint}>All visualizations</span>
                   <DateRangePicker
                     value={dateRange}
                     onChange={setDateRange}
                     sessionDates={allSessionDates}
-                    scopeLabel="Applies to all visualization tabs"
                   />
                 </div>
               </div>

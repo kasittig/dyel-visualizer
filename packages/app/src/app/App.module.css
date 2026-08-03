@@ -55,6 +55,15 @@
 .datePickerWrap {
   align-self: center;
   flex: 0 1 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.dateScopeHint {
+  color: var(--text);
+  font-size: 0.72rem;
+  white-space: nowrap;
 }
 
 .calculatorRow {
