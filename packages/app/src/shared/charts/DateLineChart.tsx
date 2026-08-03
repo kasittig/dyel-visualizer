@@ -3,6 +3,7 @@ import { CartesianGrid, LineChart, ResponsiveContainer, XAxis, YAxis } from 'rec
 import type { ChartPoint } from '@dyel/api';
 import { formatChartDate } from '@dyel/api/display';
 import styles from './DateLineChart.module.css';
+import { formatMobileChartDate, useMobileChart } from './useMobileChart';
 
 export function ChartEmpty() {
   return (
@@ -18,27 +19,43 @@ export function DateLineChart({
   yAxisWidth = 45,
   height = 300,
   children,
+  summary,
 }: {
   data: ChartPoint[];
   unit: string;
   yAxisWidth?: number;
   height?: number;
   children: React.ReactNode;
+  summary?: string;
 }) {
+  const mobile = useMobileChart();
   return (
-    <div className={styles.chartWrapper}>
-      <ResponsiveContainer width="100%" height={height}>
-        <LineChart data={data} margin={{ top: 4, right: 16, bottom: 40, left: 0 }}>
+    <div className={styles.chartWrapper} role="img" aria-label={summary}>
+      <ResponsiveContainer width="100%" height={mobile ? Math.min(height, 260) : height}>
+        <LineChart
+          data={data}
+          margin={
+            mobile
+              ? { top: 4, right: 4, bottom: 22, left: -8 }
+              : { top: 4, right: 16, bottom: 40, left: 0 }
+          }
+        >
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis
             dataKey="date"
-            tickFormatter={formatChartDate}
-            angle={-45}
-            textAnchor="end"
+            tickFormatter={mobile ? formatMobileChartDate : formatChartDate}
+            angle={mobile ? 0 : -45}
+            textAnchor={mobile ? 'middle' : 'end'}
             interval="preserveStartEnd"
+            minTickGap={mobile ? 48 : 20}
             tick={{ fontSize: 11 }}
           />
-          <YAxis tick={{ fontSize: 11 }} width={yAxisWidth} unit={` ${unit}`} />
+          <YAxis
+            tick={{ fontSize: 11 }}
+            width={mobile ? Math.min(yAxisWidth, 42) : yAxisWidth}
+            unit={` ${unit}`}
+            tickCount={mobile ? 5 : undefined}
+          />
           {children}
         </LineChart>
       </ResponsiveContainer>

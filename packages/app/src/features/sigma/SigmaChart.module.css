@@ -4,3 +4,41 @@
 .sectionLabel {
   composes: sectionLabel from '../../shared/charts/charts.module.css';
 }
+
+.pie {
+  width: 100%;
+}
+
+.comparison {
+  display: grid;
+  gap: 0.9rem;
+  padding: 1rem 0.85rem 1.1rem;
+}
+
+.comparisonRow {
+  display: grid;
+  grid-template-columns: 4.5rem minmax(4rem, 1fr) auto;
+  align-items: center;
+  gap: 0.65rem;
+  color: var(--text-h);
+  font-size: 0.78rem;
+}
+
+.comparisonLabel {
+  font-family: var(--heading);
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.comparisonTrack {
+  height: 0.65rem;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  background: var(--bg);
+}
+
+.comparisonFill {
+  display: block;
+  height: 100%;
+}

@@ -36,6 +36,7 @@ export function ConjugateCharts({
         seriesKeys={variations}
         highlightedKey={highlightedVariation}
         onKeyClick={onVariationClick}
+        summary={`Estimated one-rep max history for ${liftType}, comparing ${variations.length} variations across ${data.length} training dates in ${unit}. Tap a point to inspect its value.`}
         extraChildren={
           showNormalized && (
             <Line
