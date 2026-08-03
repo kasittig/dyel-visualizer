@@ -65,7 +65,7 @@ export function usePipelineOrchestration(
 
   const effRaw = useMemo(
     () =>
-      rawStatus === 'success' || inputMode === 'text'
+      rawStatus === 'success' || inputMode === 'text' || raw.length
         ? raw
         : cache && cache.sheetKey === url
           ? cache.raw
@@ -77,7 +77,7 @@ export function usePipelineOrchestration(
     if (pStatus === 'success') {
       return model;
     }
-    if (['idle', 'loading', 'error'].includes(rawStatus) && effRaw !== raw && effRaw.length) {
+    if (['idle', 'loading', 'error'].includes(rawStatus) && effRaw.length) {
       try {
         return buildPipelineModel(effRaw, athleteBase);
       } catch {
@@ -86,7 +86,7 @@ export function usePipelineOrchestration(
     }
     return null;
   }, [pStatus, model, rawStatus, effRaw, raw, athleteBase]);
-  const isUsingCachedData = effRaw !== raw && effModel !== null;
+  const isUsingCachedData = inputMode === 'url' && rawStatus !== 'success' && effModel !== null;
 
   return {
     status: pStatus === 'success' || effModel !== null ? 'success' : pStatus,

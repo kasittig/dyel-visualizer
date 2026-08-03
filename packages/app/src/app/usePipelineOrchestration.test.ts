@@ -87,6 +87,21 @@ describe('usePipelineOrchestration', () => {
     expect(result.current.lastUpdatedAt?.toISOString()).toBe('2026-08-02T14:30:00.000Z');
   });
 
+  it('keeps the current model visible while its source refreshes', () => {
+    mockRes.mockReturnValue({
+      status: 'loading',
+      raw: testRawInput,
+      lastUpdatedAt: new Date('2026-08-02T15:00:00.000Z'),
+    });
+
+    const { result } = run();
+
+    expect(result.current.status).toBe('success');
+    expect(result.current.requestStatus).toBe('loading');
+    expect(result.current.model).toBeTruthy();
+    expect(result.current.isUsingCachedData).toBe(true);
+  });
+
   it('keeps the cached model visible when a refresh fails', () => {
     localStorage.setItem(
       'dyel:sheetDataCache',
