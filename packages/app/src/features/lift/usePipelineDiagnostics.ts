@@ -7,8 +7,7 @@ import {
   convertWeight,
   selectDiagnosticVariants,
   selectUnassessedDiagnostics,
-  summarizeEffects,
-  summarizeDiagnosticAttention,
+  summarizeDiagnosticEvidence,
   type DiagnosticVariant,
   type DisplayUnit,
   type UnassessedVariant,
@@ -40,8 +39,12 @@ export interface DiagnosticNeedRow extends UnassessedVariant {
 export interface DiagnosticResult {
   variants: DiagnosticRow[];
   hasDeadlift: boolean;
-  weakEffects: string[];
-  overtrainedEffects: string[];
+  effectEvidence: {
+    effect: string;
+    label: string;
+    belowCount: number;
+    aboveCount: number;
+  }[];
   needsData: DiagnosticNeedRow[];
   attentionSummary: {
     belowCount: number;
@@ -137,12 +140,18 @@ export function usePipelineDiagnostics(
   }, [model, liftType]);
 
   const hasDeadlift = variants.some((v) => v.lift.includes('deadlift'));
-  const { weakEffects, overtrainedEffects } = useMemo(() => {
-    return summarizeEffects(variants);
-  }, [variants]);
+  const evidence = useMemo(() => summarizeDiagnosticEvidence(variants), [variants]);
+  const effectEvidence = useMemo(
+    () =>
+      evidence.effects.map((item) => ({
+        ...item,
+        label: formatEffect(item.effect),
+      })),
+    [evidence]
+  );
 
   const attentionSummary = useMemo(() => {
-    const summary = summarizeDiagnosticAttention(variants);
+    const summary = evidence;
     return {
       belowCount: summary.belowCount,
       aboveCount: summary.aboveCount,
@@ -151,7 +160,13 @@ export function usePipelineDiagnostics(
         : null,
       leadingBelowEffectCount: summary.leadingBelowEffect?.count ?? 0,
     };
-  }, [variants]);
+  }, [evidence]);
 
-  return { variants, hasDeadlift, weakEffects, overtrainedEffects, needsData, attentionSummary };
+  return {
+    variants,
+    hasDeadlift,
+    effectEvidence,
+    needsData,
+    attentionSummary,
+  };
 }

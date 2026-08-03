@@ -22,8 +22,7 @@ describe('usePipelineDiagnostics', () => {
     expect(renderHook(() => usePipelineDiagnostics()).result.current).toEqual({
       variants: [],
       hasDeadlift: false,
-      weakEffects: [],
-      overtrainedEffects: [],
+      effectEvidence: [],
       needsData: [],
       attentionSummary: {
         belowCount: 0,

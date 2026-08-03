@@ -1,6 +1,5 @@
 import { useState, type CSSProperties } from 'react';
 import { usePipelineDiagnostics, type DiagnosticRow } from './usePipelineDiagnostics';
-import { formatEffect } from '@dyel/api/display';
 import type { DisplayUnit, DiagnosticVariant } from '@dyel/api';
 import { CollapsibleSection, TableCard } from '../../shared/components';
 import { useSortableRows } from '../../shared/hooks';
@@ -34,8 +33,10 @@ export function DiagnosticsPanel({
 }) {
   const [activeEffect, setActiveEffect] = useState<string | null>(null);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(() => new Set());
-  const { variants, weakEffects, overtrainedEffects, needsData, attentionSummary } =
-    usePipelineDiagnostics(liftType, unit);
+  const { variants, effectEvidence, needsData, attentionSummary } = usePipelineDiagnostics(
+    liftType,
+    unit
+  );
   const rows = variants;
   const { sortedRows, sortKey, direction, toggleSort } = useSortableRows<DiagnosticRow, SortColumn>(
     rows,
@@ -97,46 +98,36 @@ export function DiagnosticsPanel({
               )}
             </section>
           )}
-          {(weakEffects.length > 0 || overtrainedEffects.length > 0) && (
+          {effectEvidence.length > 0 && (
             <div className={styles.cardPadded}>
-              <div className={styles.summary}>
-                {weakEffects.length > 0 && (
-                  <div className={styles.summaryRow}>
-                    <span className={styles.summaryLabel}>
-                      Effects on below-expected variations:
-                    </span>
-                    {weakEffects.map((e) => (
-                      <button
-                        type="button"
-                        key={e}
-                        className={`${styles.chip} ${activeEffect === e ? styles.chipActive : styles.chipDanger}`}
-                        onClick={() => handleEffectClick(e)}
-                        aria-pressed={activeEffect === e}
-                      >
-                        {formatEffect(e)}
-                      </button>
-                    ))}
-                  </div>
-                )}
-                {overtrainedEffects.length > 0 && (
-                  <div className={styles.summaryRow}>
-                    <span className={styles.summaryLabel}>
-                      Effects on above-expected variations:
-                    </span>
-                    {overtrainedEffects.map((e) => (
-                      <button
-                        type="button"
-                        key={e}
-                        className={`${styles.chip} ${activeEffect === e ? styles.chipActive : styles.chipWarning}`}
-                        onClick={() => handleEffectClick(e)}
-                        aria-pressed={activeEffect === e}
-                      >
-                        {formatEffect(e)}
-                      </button>
-                    ))}
-                  </div>
-                )}
+              <div
+                className={styles.summary}
+                role="group"
+                aria-label="Highlight by effect evidence"
+              >
+                <span className={styles.summaryLabel}>Effect evidence</span>
+                <div className={styles.summaryRow}>
+                  {effectEvidence.map((item) => (
+                    <button
+                      type="button"
+                      key={item.effect}
+                      className={`${styles.chip} ${activeEffect === item.effect ? styles.chipActive : item.belowCount > 0 && item.aboveCount > 0 ? styles.chipMixed : item.belowCount > 0 ? styles.chipDanger : styles.chipWarning}`}
+                      onClick={() => handleEffectClick(item.effect)}
+                      aria-pressed={activeEffect === item.effect}
+                    >
+                      <span>{item.label}</span>
+                      <small>
+                        {item.belowCount} below · {item.aboveCount} above
+                      </small>
+                    </button>
+                  ))}
+                </div>
               </div>
+              <span className={styles.srOnly} aria-live="polite">
+                {activeEffect
+                  ? `${effectEvidence.find((item) => item.effect === activeEffect)?.label} highlights ${effectEvidence.find((item) => item.effect === activeEffect)?.belowCount ?? 0} below-expected and ${effectEvidence.find((item) => item.effect === activeEffect)?.aboveCount ?? 0} above-expected variations.`
+                  : 'No effect highlighted.'}
+              </span>
             </div>
           )}
           {variants.length > 0 && (
@@ -177,7 +168,9 @@ export function DiagnosticsPanel({
                 const detailId = `diagnostic-${r.canonical}-details`;
                 const isHigh =
                   r.displayName === highlightedVariation ||
-                  (activeEffect !== null && r.effects.includes(activeEffect));
+                  (activeEffect !== null &&
+                    (r.status === 'weakness' || r.status === 'overperforming') &&
+                    r.effects.includes(activeEffect));
                 return (
                   <div
                     role="listitem"

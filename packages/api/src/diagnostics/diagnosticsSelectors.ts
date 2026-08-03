@@ -31,10 +31,64 @@ export interface EffectSummary {
   overtrainedEffects: string[];
 }
 
+export interface DiagnosticEffectEvidence {
+  effect: string;
+  belowCount: number;
+  aboveCount: number;
+}
+
 export interface DiagnosticAttentionSummary {
   belowCount: number;
   aboveCount: number;
   leadingBelowEffect: { effect: string; count: number } | null;
+}
+
+export interface DiagnosticEvidenceSummary extends DiagnosticAttentionSummary {
+  effects: DiagnosticEffectEvidence[];
+}
+
+export function summarizeDiagnosticEvidence(
+  variants: DiagnosticVariant[]
+): DiagnosticEvidenceSummary {
+  let belowCount = 0;
+  let aboveCount = 0;
+  let leadingBelowEffect: DiagnosticAttentionSummary['leadingBelowEffect'] = null;
+  const evidence = new Map<string, { belowCount: number; aboveCount: number }>();
+  for (const variant of variants) {
+    if (variant.status !== 'weakness' && variant.status !== 'overperforming') {
+      continue;
+    }
+    if (variant.status === 'weakness') {
+      belowCount += 1;
+    } else {
+      aboveCount += 1;
+    }
+    for (const effect of variant.effects) {
+      const counts = evidence.get(effect) ?? { belowCount: 0, aboveCount: 0 };
+      counts[variant.status === 'weakness' ? 'belowCount' : 'aboveCount'] += 1;
+      evidence.set(effect, counts);
+      if (
+        variant.status === 'weakness' &&
+        (!leadingBelowEffect ||
+          counts.belowCount > leadingBelowEffect.count ||
+          (counts.belowCount === leadingBelowEffect.count &&
+            effect.localeCompare(leadingBelowEffect.effect) < 0))
+      ) {
+        leadingBelowEffect = { effect, count: counts.belowCount };
+      }
+    }
+  }
+  const effects = Array.from(evidence, ([effect, counts]) => ({ effect, ...counts })).sort(
+    (a, b) =>
+      b.belowCount + b.aboveCount - (a.belowCount + a.aboveCount) ||
+      a.effect.localeCompare(b.effect)
+  );
+  return {
+    belowCount,
+    aboveCount,
+    leadingBelowEffect,
+    effects,
+  };
 }
 
 export function selectDiagnosticVariants(
@@ -82,60 +136,28 @@ export function selectUnassessedDiagnostics(
 }
 
 export function summarizeEffects(variants: DiagnosticVariant[]): EffectSummary {
-  const counter = new Map<string, number>();
-
-  for (const v of variants) {
-    if (v.status === 'overperforming' || v.status === 'weakness') {
-      const delta = v.status === 'overperforming' ? 1 : -1;
-      for (const e of v.effects) {
-        counter.set(e, (counter.get(e) ?? 0) + delta);
-      }
-    }
-  }
-
   const weakEffects: string[] = [];
   const overtrainedEffects: string[] = [];
-
-  for (const [e, count] of counter) {
-    if (count < 0) {
-      weakEffects.push(e);
+  for (const effect of summarizeDiagnosticEvidence(variants).effects) {
+    if (effect.belowCount > effect.aboveCount) {
+      weakEffects.push(effect.effect);
     }
-    if (count > 0) {
-      overtrainedEffects.push(e);
+    if (effect.aboveCount > effect.belowCount) {
+      overtrainedEffects.push(effect.effect);
     }
   }
-
   return { weakEffects, overtrainedEffects };
+}
+
+export function summarizeDiagnosticEffectEvidence(
+  variants: DiagnosticVariant[]
+): DiagnosticEffectEvidence[] {
+  return summarizeDiagnosticEvidence(variants).effects;
 }
 
 export function summarizeDiagnosticAttention(
   variants: DiagnosticVariant[]
 ): DiagnosticAttentionSummary {
-  let belowCount = 0;
-  let aboveCount = 0;
-  const belowEffects = new Map<string, number>();
-
-  for (const variant of variants) {
-    if (variant.status === 'weakness') {
-      belowCount += 1;
-      for (const effect of variant.effects) {
-        belowEffects.set(effect, (belowEffects.get(effect) ?? 0) + 1);
-      }
-    } else if (variant.status === 'overperforming') {
-      aboveCount += 1;
-    }
-  }
-
-  let leadingBelowEffect: DiagnosticAttentionSummary['leadingBelowEffect'] = null;
-  for (const [effect, count] of belowEffects) {
-    if (
-      !leadingBelowEffect ||
-      count > leadingBelowEffect.count ||
-      (count === leadingBelowEffect.count && effect.localeCompare(leadingBelowEffect.effect) < 0)
-    ) {
-      leadingBelowEffect = { effect, count };
-    }
-  }
-
+  const { belowCount, aboveCount, leadingBelowEffect } = summarizeDiagnosticEvidence(variants);
   return { belowCount, aboveCount, leadingBelowEffect };
 }
