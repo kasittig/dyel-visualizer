@@ -1,7 +1,7 @@
 import { spawn } from 'node:child_process';
 import { chromium } from 'playwright';
 
-const port = 4174;
+const port = 4184;
 const baseUrl = `http://127.0.0.1:${port}`;
 const server = spawn(
   process.execPath,
@@ -45,12 +45,13 @@ try {
     ['team', '/?page=team'],
   ];
 
-  for (const width of [320, 375, 390, 430]) {
+  const widths = [320, 375, 390, 430, 768, 820, 1024];
+  for (const width of widths) {
     const context = await browser.newContext({
       viewport: { width, height: 667 },
       reducedMotion: 'reduce',
       hasTouch: true,
-      isMobile: true,
+      isMobile: width <= 430,
     });
     for (const [name, path] of pages) {
       const page = await context.newPage();
