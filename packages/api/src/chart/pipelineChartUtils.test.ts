@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import type { RechartsRow, ChartPoint } from '@dyel/pipeline';
 import {
   latestLiftE1RMs,
+  mergeVolumeIntoChartPoints,
   mergeRechartsRowsToChartPoints,
   mergeWideRechartsRows,
 } from './pipelineChartUtils';
@@ -10,6 +11,17 @@ const row = (t: number, id: string, v: number): RechartsRow => ({ t, [id]: v });
 const point = (t: number, overrides?: Partial<ChartPoint>): ChartPoint => ({
   date: new Date(t).toISOString(),
   ...overrides,
+});
+
+describe('mergeVolumeIntoChartPoints', () => {
+  it('rounds matched accessory volume for display and leaves unmatched dates unchanged', () => {
+    expect(
+      mergeVolumeIntoChartPoints(
+        [{ date: '2024-03-15' }, { date: '2024-03-16', squat: 300 }],
+        new Map([['2024-03-15', 1234.56]])
+      )
+    ).toEqual([{ date: '2024-03-15', volume: 1235 }, { date: '2024-03-16', squat: 300 }]);
+  });
 });
 
 describe('latestLiftE1RMs', () => {

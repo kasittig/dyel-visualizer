@@ -45,7 +45,7 @@ try {
     ['team', '/?page=team'],
   ];
 
-  const widths = [320, 375, 390, 430, 768, 820, 1024];
+  const widths = [320, 375, 390, 430, 641, 768, 820, 1024];
   for (const width of widths) {
     const context = await browser.newContext({
       viewport: { width, height: 667 },
@@ -55,7 +55,7 @@ try {
     });
     for (const [name, path] of pages) {
       const page = await context.newPage();
-      await page.goto(`${baseUrl}${path}`, { waitUntil: 'networkidle' });
+      await page.goto(`${baseUrl}${path}`, { waitUntil: 'domcontentloaded' });
       const overflow = await page.evaluate(() => {
         const viewport = document.documentElement.clientWidth;
         const intentionallyScrollable = (element) => {
@@ -95,6 +95,35 @@ try {
       ) {
         failures.push(`${name} at ${width}px: ${JSON.stringify(overflow)}`);
       }
+      if (width >= 641) {
+        const undersized = await page.evaluate(() =>
+          [...document.querySelectorAll("button, [role='button'], a[href], input, select, textarea")]
+            .filter((element) => {
+              const style = getComputedStyle(element);
+              return (
+                element.getClientRects().length > 0 &&
+                style.display !== 'none' &&
+                style.visibility !== 'hidden'
+              );
+            })
+            .map((element) => {
+              const bounds = element.getBoundingClientRect();
+              return {
+                target:
+                  element.getAttribute('aria-label') ||
+                  element.getAttribute('placeholder') ||
+                  element.textContent?.trim() ||
+                  element.tagName.toLowerCase(),
+                width: Math.round(bounds.width),
+                height: Math.round(bounds.height),
+              };
+            })
+            .filter(({ width: targetWidth, height }) => targetWidth < 44 || height < 44)
+        );
+        if (undersized.length) {
+          failures.push(`${name} at ${width}px: undersized targets ${JSON.stringify(undersized)}`);
+        }
+      }
       const fixedNav = await page.locator('nav[aria-label="Primary navigation"]').count();
       if (fixedNav === 1) {
         const spacing = await page.evaluate(() => {
@@ -133,7 +162,7 @@ try {
       reducedMotion: 'reduce',
     });
     const page = await context.newPage();
-    await page.goto(`${baseUrl}${pages[0][1]}`, { waitUntil: 'networkidle' });
+    await page.goto(`${baseUrl}${pages[0][1]}`, { waitUntil: 'domcontentloaded' });
     const toolbar = page.locator('[role="toolbar"][aria-labelledby="training-period-label"]');
     const viewNav = page.locator('nav[aria-label="Visualization views"]');
     const stickyControls = toolbar.locator('..');
