@@ -31,6 +31,12 @@ export interface EffectSummary {
   overtrainedEffects: string[];
 }
 
+export interface DiagnosticEffectEvidence {
+  effect: string;
+  belowCount: number;
+  aboveCount: number;
+}
+
 export interface DiagnosticAttentionSummary {
   belowCount: number;
   aboveCount: number;
@@ -106,6 +112,29 @@ export function summarizeEffects(variants: DiagnosticVariant[]): EffectSummary {
   }
 
   return { weakEffects, overtrainedEffects };
+}
+
+export function summarizeDiagnosticEffectEvidence(
+  variants: DiagnosticVariant[]
+): DiagnosticEffectEvidence[] {
+  const evidence = new Map<string, { belowCount: number; aboveCount: number }>();
+
+  for (const variant of variants) {
+    if (variant.status !== 'weakness' && variant.status !== 'overperforming') {
+      continue;
+    }
+    for (const effect of variant.effects) {
+      const counts = evidence.get(effect) ?? { belowCount: 0, aboveCount: 0 };
+      counts[variant.status === 'weakness' ? 'belowCount' : 'aboveCount'] += 1;
+      evidence.set(effect, counts);
+    }
+  }
+
+  return Array.from(evidence, ([effect, counts]) => ({ effect, ...counts })).sort(
+    (a, b) =>
+      b.belowCount + b.aboveCount - (a.belowCount + a.aboveCount) ||
+      a.effect.localeCompare(b.effect)
+  );
 }
 
 export function summarizeDiagnosticAttention(

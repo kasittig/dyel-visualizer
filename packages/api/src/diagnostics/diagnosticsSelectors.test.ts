@@ -6,6 +6,7 @@ import {
   selectUnassessedDiagnostics,
   summarizeEffects,
   summarizeDiagnosticAttention,
+  summarizeDiagnosticEffectEvidence,
 } from './diagnosticsSelectors';
 
 const baseVariant = (overrides?: Partial<VariantAssessment>): VariantAssessment => ({
@@ -235,5 +236,27 @@ describe('summarizeDiagnosticAttention', () => {
     ],
   ])('%s', (_, variants, expected) => {
     expect(summarizeDiagnosticAttention(variants)).toEqual(expected);
+  });
+});
+
+describe('summarizeDiagnosticEffectEvidence', () => {
+  it('preserves supporting and conflicting counts while excluding stale and optimal rows', () => {
+    expect(
+      summarizeDiagnosticEffectEvidence([
+        baseVariant({ status: 'weakness', effects: ['power', 'strength'] }),
+        baseVariant({ status: 'weakness', effects: ['power'] }),
+        baseVariant({ status: 'overperforming', effects: ['power', 'speed'] }),
+        baseVariant({ status: 'stale', effects: ['power'] }),
+        baseVariant({ status: 'optimal', effects: ['power'] }),
+      ])
+    ).toEqual([
+      { effect: 'power', belowCount: 2, aboveCount: 1 },
+      { effect: 'speed', belowCount: 0, aboveCount: 1 },
+      { effect: 'strength', belowCount: 1, aboveCount: 0 },
+    ]);
+  });
+
+  it('returns an empty list without actionable evidence', () => {
+    expect(summarizeDiagnosticEffectEvidence([])).toEqual([]);
   });
 });

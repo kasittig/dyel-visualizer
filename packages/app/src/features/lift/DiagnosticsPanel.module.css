@@ -58,7 +58,8 @@
   min-width: 6rem;
 }
 .chip {
-  display: inline-block;
+  display: inline-grid;
+  gap: 0.08rem;
   appearance: none;
   border: 1px solid transparent;
   padding: 0.15rem 0.55rem;
@@ -69,6 +70,12 @@
   color: var(--chip-color);
   font-family: inherit;
   cursor: pointer;
+}
+.chip small {
+  font-family: var(--mono);
+  font-size: 0.64rem;
+  font-weight: 500;
+  opacity: 0.82;
 }
 .chip:hover {
   border-color: currentColor;
@@ -84,6 +91,11 @@
 .chipWarning {
   --chip-bg: color-mix(in srgb, var(--warning) 15%, transparent);
   --chip-color: var(--warning);
+}
+.chipMixed {
+  --chip-bg: color-mix(in srgb, var(--accent) 10%, transparent);
+  --chip-color: color-mix(in srgb, var(--text) 88%, var(--accent));
+  border-color: color-mix(in srgb, var(--accent) 35%, transparent);
 }
 .chipActive {
   --chip-bg: color-mix(in srgb, var(--accent) 15%, transparent);
