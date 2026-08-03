@@ -43,7 +43,7 @@ export function SigmaTab({
       </CollapsibleSection>
       <SigmaChart chartData={chartData} unit={unit} />
       <CollapsibleSection
-        label="Total Volume"
+        label="Total volume"
         persistenceId="visualizer:sigma:total-volume"
         summary={volumeSessions ? `${volumeSessions} sessions in range` : 'No data in range'}
       >

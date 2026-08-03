@@ -403,7 +403,7 @@ describe('TeamViewPage', () => {
     expect(screen.getByRole('combobox', { name: 'Bar' })).toBeDefined();
     expect(screen.getByRole('combobox', { name: 'Stance' })).toBeDefined();
     expect(screen.getByRole('combobox', { name: 'Equipment' })).toBeDefined();
-    expect(screen.getByRole('combobox', { name: 'Additional Weight' })).toBeDefined();
+    expect(screen.getByRole('combobox', { name: 'Additional weight' })).toBeDefined();
 
     fireEvent.change(screen.getByRole('combobox', { name: 'Bar' }), {
       target: { value: 'ssb' },
@@ -427,7 +427,7 @@ describe('TeamViewPage', () => {
 
     expect((screen.getByRole('combobox', { name: 'Bar' }) as HTMLSelectElement).value).toBe('');
     expect(
-      (screen.getByRole('combobox', { name: 'Additional Weight' }) as HTMLSelectElement).value
+      (screen.getByRole('combobox', { name: 'Additional weight' }) as HTMLSelectElement).value
     ).toBe('');
   });
 
@@ -692,7 +692,7 @@ describe('TeamViewPage', () => {
     expect(button.className).not.toMatch(/graphButtonActive/);
     fireEvent.click(button);
 
-    expect(screen.getByText('History Across Lifters')).toBeDefined();
+    expect(screen.getByText('History across lifters')).toBeDefined();
   });
 
   it('clicking Graph button again hides the history chart section and removes highlight', () => {
@@ -715,12 +715,12 @@ describe('TeamViewPage', () => {
     const button = screen.getByRole('button', { name: 'Graph' });
     fireEvent.click(button);
 
-    expect(screen.getByText('History Across Lifters')).toBeDefined();
+    expect(screen.getByText('History across lifters')).toBeDefined();
     expect(button.className).toMatch(/graphButtonActive/);
 
     fireEvent.click(button);
 
-    expect(screen.queryByText('History Across Lifters')).toBeNull();
+    expect(screen.queryByText('History across lifters')).toBeNull();
     expect(button.className).not.toMatch(/graphButtonActive/);
   });
 
@@ -743,14 +743,14 @@ describe('TeamViewPage', () => {
 
     // Click Graph button to open the chart
     fireEvent.click(screen.getByRole('button', { name: 'Graph' }));
-    expect(screen.getByText('History Across Lifters')).toBeDefined();
+    expect(screen.getByText('History across lifters')).toBeDefined();
 
     // Click the close button
     const closeButton = screen.getByRole('button', { name: 'Close chart' });
     fireEvent.click(closeButton);
 
     // Chart should be hidden
-    expect(screen.queryByText('History Across Lifters')).toBeNull();
+    expect(screen.queryByText('History across lifters')).toBeNull();
   });
 
   it('focuses mobile editing on the selected lifter', () => {

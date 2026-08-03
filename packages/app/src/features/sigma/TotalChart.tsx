@@ -34,7 +34,7 @@ export function TotalChart({ chartData, unit }: { chartData: ChartPoint[]; unit:
 
   return (
     <div className={styles.card}>
-      <span className={styles.sectionLabel}>e1RM Over Time</span>
+      <span className={styles.sectionLabel}>e1RM over time</span>
       <ChartLegend
         items={[
           { key: 'squat', label: 'Squat', color: SQUAT_COLOR, dash: 'short' },

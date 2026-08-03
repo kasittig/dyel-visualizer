@@ -340,8 +340,7 @@ button.tab-title:hover {
   font-size: 0.82rem;
   font-weight: 700;
   color: var(--text-h);
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
+  letter-spacing: 0.02em;
   flex-shrink: 0;
 }
 

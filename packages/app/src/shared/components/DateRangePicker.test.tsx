@@ -66,7 +66,7 @@ describe('DateRangePicker', () => {
       />
     );
 
-    fireEvent.click(screen.getByLabelText('Date range: ALL TIME'));
+    fireEvent.click(screen.getByLabelText('Date range: All time'));
     const panel = screen.getByLabelText('Choose date range');
     fireEvent.click(within(panel).getByRole('button', { name: '1 MO' }));
 
@@ -87,8 +87,8 @@ describe('DateRangePicker', () => {
       />
     );
 
-    fireEvent.click(screen.getByLabelText('Date range: ALL TIME'));
-    fireEvent.click(within(screen.getByLabelText('Choose date range')).getByText('CUSTOM'));
+    fireEvent.click(screen.getByLabelText('Date range: All time'));
+    fireEvent.click(within(screen.getByLabelText('Choose date range')).getByText('Custom'));
     const panel = screen.getByLabelText('Choose date range');
     fireEvent.mouseDown(within(panel).getByRole('grid'));
 

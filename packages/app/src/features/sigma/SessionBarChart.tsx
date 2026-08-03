@@ -36,7 +36,7 @@ export function SessionBarChart({ chartData, unit }: { chartData: ChartPoint[]; 
 
   return (
     <div className={styles.card}>
-      <span className={styles.sectionLabel}>Session Volume</span>
+      <span className={styles.sectionLabel}>Session volume</span>
       <ChartLegend
         items={[
           { key: 'squat', label: 'Squat', color: SQUAT_COLOR },

@@ -26,8 +26,7 @@
   font-family: var(--heading);
   font-size: 10px;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.03em;
   color: var(--text);
 }
 
@@ -35,8 +34,7 @@
   font-family: var(--heading);
   font-size: 9px;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
+  letter-spacing: 0.02em;
   color: var(--text);
   margin-bottom: 6px;
 }
@@ -136,8 +134,7 @@
   font-family: var(--heading);
   font-size: 9px;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.09em;
+  letter-spacing: 0.02em;
   color: var(--text);
 }
 

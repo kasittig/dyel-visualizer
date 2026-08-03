@@ -53,7 +53,7 @@ export function PipelineValidationPage() {
   return (
     <main className={styles.main}>
       <div className={styles.header}>
-        <h1>Pipeline Validation</h1>
+        <h1>Pipeline validation</h1>
         <p className={styles.backLinkP}>
           <a href="./" className={styles.accentLink}>
             ← Back to DYEL Visualizer
@@ -105,12 +105,12 @@ export function PipelineValidationPage() {
             <span className={styles.verdictMessage}>{msg}</span>
           </div>
           <IssueList
-            title="Parse Errors"
+            title="Parse errors"
             items={activeResult.parseErrors.map((e) => e.toString())}
             color="var(--danger)"
           />
           <IssueList
-            title="Unknown Exercises"
+            title="Unknown exercises"
             items={activeResult.unknownExercises}
             color="var(--warning)"
           />

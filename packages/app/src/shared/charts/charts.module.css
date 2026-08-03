@@ -17,8 +17,7 @@
   font-size: 0.82rem;
   font-weight: 700;
   color: var(--text-h);
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
+  letter-spacing: 0.02em;
   margin-bottom: 0.25rem;
   text-align: center;
 }
@@ -34,8 +33,7 @@
   font-family: var(--heading);
   font-size: 10px;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.03em;
   color: var(--text);
   padding: 8px 12px 0;
   display: block;

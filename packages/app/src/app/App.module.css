@@ -94,7 +94,6 @@
   font-family: var(--heading);
   font-weight: 400;
   font-size: 0.95rem;
-  text-transform: uppercase;
   color: var(--text-h);
   white-space: nowrap;
   transition:
@@ -274,7 +273,6 @@
     font-size: 0.82rem;
     font-weight: 700;
     letter-spacing: 0.09em;
-    text-transform: uppercase;
   }
 
   .liftSelector {
@@ -303,7 +301,6 @@
     font-family: var(--heading);
     font-size: 0.75rem;
     font-weight: 600;
-    text-transform: uppercase;
   }
 
   .liftSelectorTabActive {
@@ -345,7 +342,6 @@
     font-size: 0.68rem;
     font-weight: 600;
     letter-spacing: 0.04em;
-    text-transform: uppercase;
   }
 
   .mobileNavSymbol {

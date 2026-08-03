@@ -38,7 +38,7 @@ export function TeamHistoryChart({
     <div className={styles.card}>
       <div className={styles.cardHeader}>
         <span className={clsx(styles.sectionLabel, styles.headerLabel)}>
-          History Across Lifters
+          History across lifters
         </span>
         <DateRangePicker
           value={dateRange}

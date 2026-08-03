@@ -84,7 +84,7 @@ export function ValidatorPage() {
   return (
     <main className={styles.main}>
       <div className={styles.header}>
-        <h1>Sheet Validator</h1>
+        <h1>Sheet validator</h1>
         <p className={styles.backLinkP}>
           <a href="./" className={styles.accentLink}>
             ← Back to DYEL Visualizer
@@ -218,11 +218,11 @@ export function ValidatorPage() {
             </section>
           )}
 
-          <IssueList title="Issues to Fix" items={activeResult.issues} color="var(--danger)" />
+          <IssueList title="Issues to fix" items={activeResult.issues} color="var(--danger)" />
 
           {activeResult.rowIssues.length > 0 && (
             <section className={styles.section}>
-              <h2 className={styles.dangerHeading}>Entry Issues</h2>
+              <h2 className={styles.dangerHeading}>Entry issues</h2>
               <div className={styles.rowIssueStack}>
                 {activeResult.rowIssues.map(({ row, exercise, issues }) => (
                   <div key={row} className={styles.rowIssueCard}>

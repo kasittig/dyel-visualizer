@@ -51,12 +51,12 @@ export function RepCalculator({
   } = usePipelineRepCalculator(tabRows, baselineNames);
 
   return (
-    <CollapsibleSection label="Rep Calculator" persistenceId="visualizer:calculator:rep">
+    <CollapsibleSection label="Rep calculator" persistenceId="visualizer:calculator:rep">
       <div className={styles.card}>
         <div className={styles.leftCol}>
-          <span className={styles.sectionLabel}>Rep Calculator</span>
+          <span className={styles.sectionLabel}>Rep calculator</span>
           <div className={styles.field}>
-            <div className={styles.fieldLabel}>Lift Type</div>
+            <div className={styles.fieldLabel}>Lift type</div>
             <div className={styles.chipGroup}>
               {LIFT_TYPE_ORDER.filter(
                 (t) => t !== 'accessory' || tabRows.accessory.all.length > 0
@@ -112,7 +112,7 @@ export function RepCalculator({
                       ['board', 'blocks', 'deficit'].includes(selectedEquipment),
                   },
                   {
-                    label: 'Additional Weight',
+                    label: 'Additional weight',
                     value: selectedAddlWt,
                     change: setSelectedAddlWt,
                     opts: CONJUGATE_ADDL_WTS,

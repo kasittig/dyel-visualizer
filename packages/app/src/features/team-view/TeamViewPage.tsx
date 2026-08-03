@@ -236,7 +236,7 @@ export function TeamViewPage() {
           🏆 Summary view
         </a>
       </p>
-      <div className={styles.teamViewPage}>Team View</div>
+      <div className={styles.teamViewPage}>Team view</div>
       <div className={styles.header}>
         <TypeaheadDropdown
           options={exerciseOptions}
@@ -280,7 +280,7 @@ export function TeamViewPage() {
 
       <div className={styles.headerRow}>
         <div className={styles.facetField}>
-          <div className={styles.facetLabel}>Lift Type</div>
+          <div className={styles.facetLabel}>Lift type</div>
           <div className={styles.chipGroup}>
             <button
               type="button"
@@ -317,7 +317,7 @@ export function TeamViewPage() {
               opts: equipmentOptions,
             },
             {
-              label: 'Additional Weight',
+              label: 'Additional weight',
               value: selectedAddlWt,
               change: setSelectedAddlWt,
               opts: addlWtOptions,

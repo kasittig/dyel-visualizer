@@ -11,7 +11,7 @@ const PRESETS: { label: string; presetId: PresetId }[] = [
   { label: '2 WKS', presetId: '2w' },
   { label: '1 MO', presetId: '1m' },
   { label: '3 MO', presetId: '3m' },
-  { label: 'ALL TIME', presetId: 'all' },
+  { label: 'All time', presetId: 'all' },
 ];
 
 export function DateRangePicker({
@@ -91,10 +91,10 @@ export function DateRangePicker({
   const currentPreset = activePreset(value.from, value.to, latestDate);
   const showPresets = sessionDates && sessionDates.length > 0;
   const currentLabel = currentPreset
-    ? (PRESETS.find(({ presetId }) => presetId === currentPreset)?.label ?? 'DATE RANGE')
+    ? (PRESETS.find(({ presetId }) => presetId === currentPreset)?.label ?? 'Date range')
     : value.from || value.to
       ? `${formatDate(value.from) || 'Start'} – ${formatDate(value.to) || 'Today'}`
-      : 'DATE RANGE';
+      : 'Date range';
 
   const selectPreset = (presetId: PresetId) => {
     onChange(
@@ -165,7 +165,7 @@ export function DateRangePicker({
                     className={`${styles.mobilePreset} ${currentPreset === null ? styles.presetActive : ''}`}
                     onClick={() => setShowCustomPicker((shown) => !shown)}
                   >
-                    CUSTOM
+                    Custom
                   </button>
                 </div>
               )}

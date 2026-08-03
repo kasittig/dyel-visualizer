@@ -55,12 +55,12 @@ export function StrengthScoreCalculator({
 
   return (
     <CollapsibleSection
-      label="Strength Score Calculator"
+      label="Strength score calculator"
       persistenceId="visualizer:calculator:strength-score"
     >
       <div className={styles.card}>
         <div className={styles.leftCol}>
-          <span className={styles.sectionLabel}>Score Calculator</span>
+          <span className={styles.sectionLabel}>Score calculator</span>
           <div className={styles.field}>
             <div className={styles.fieldLabel}>Gender</div>
             <div className={styles.chipGroup}>
@@ -102,7 +102,7 @@ export function StrengthScoreCalculator({
             />
           </div>
           <div className={styles.field}>
-            <div className={styles.fieldLabel}>Competition Total</div>
+            <div className={styles.fieldLabel}>Competition total</div>
             <input
               type="text"
               value={

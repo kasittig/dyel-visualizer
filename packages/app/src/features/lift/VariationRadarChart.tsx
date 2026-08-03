@@ -32,7 +32,7 @@ export function VariationRadarChart({
         summary={`${data.length} variations compared`}
       >
         <div className={styles.card}>
-          <span className={styles.sectionLabel}>Variation Breakdown</span>
+          <span className={styles.sectionLabel}>Variation breakdown</span>
           <BaseRadarChart
             data={data}
             angleKey="variation"

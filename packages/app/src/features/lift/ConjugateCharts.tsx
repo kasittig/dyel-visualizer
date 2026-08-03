@@ -29,7 +29,7 @@ export function ConjugateCharts({
 
   return (
     <div className={styles.card}>
-      <span className={styles.sectionLabel}>e1RM History</span>
+      <span className={styles.sectionLabel}>e1RM history</span>
       <MultiSeriesLineChart
         data={data}
         unit={unit}
