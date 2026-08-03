@@ -85,7 +85,7 @@ describe('groupByLiftType', () => {
 describe('parseSheetData (end-to-end)', () => {
   it('parses CSV and groups rows by lift type with effort splits', () => {
     const csv =
-      'Date,Exercise,Reps,Weight (lbs),Sets,RPE\n2026-01-01,Squat,5,225,3,\n2026-01-01,Squat,3,275,1,9\n2026-01-02,Bench,8,185,4,\n2026-01-02,Bench Press,1,225,,8\n2026-01-03,Deadlift,3,315,1,8\n2026-01-03,Conventional Deadlift,5,275,2,';
+      'Date,Exercise,Reps,Weight (lbs),Sets,RPE\n2026-01-01,Squat,5,225,3,\n2026-01-01,Squat,3,275,1,9\n2026-01-02,Bench,8,185,4,\n2026-01-02,Bench Press,1,225,,9\n2026-01-03,Deadlift,3,315,1,9\n2026-01-03,Conventional Deadlift,5,275,2,';
     const res = parseSheetData(csv, athlete);
     expect(res.squat.maxEffort).toHaveLength(1);
     expect(res.squat.volume).toHaveLength(1);

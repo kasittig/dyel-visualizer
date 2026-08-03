@@ -43,6 +43,21 @@ describe('validateSheetCsv (pipeline-native)', () => {
     ).toBe('lbs');
   });
 
+  it('promotes all rows for a variation only when its history contains a qualifying RM', () => {
+    const csv = `date,exercise,weight (lbs),reps,rpe
+2024-01-01,Incline Bench,185,8,8
+2024-01-08,Incline Bench,225,2,9
+2024-01-01,Squat,315,3,8
+2024-01-01,Face Pull,40,12,`;
+
+    expect(validateSheetCsv(csv).rows.liftTypes).toEqual({
+      squat: 0,
+      bench: 2,
+      deadlift: 0,
+      accessory: 2,
+    });
+  });
+
   it('enforces validation rules and warning conditions', () => {
     const noDate = validateSheetCsv('exercise,weight (lbs),reps\nSquat,315,5');
     expect(noDate.verdict).toBe('warning');

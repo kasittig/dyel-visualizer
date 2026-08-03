@@ -20,7 +20,7 @@ describe('validateTextData (pipeline-native freeform)', () => {
     ],
     ['returns error when no lines parse', 'gibberish\nmore gibberish', 'error', 2, 0],
     ['handles rep-max lines', '2024-11-04 comp squat 1rm 405lbs', 'ok', 1, 1],
-    ['allows units: header line', 'units: kg\n2024-01-05 comp squat 140 x 5', 'ok', 1, 1],
+    ['allows units: header line', 'units: kg\n2024-01-05 comp squat 140 x 5', 'warning', 1, 1],
   ])('%s', (_, text, verdict, total, parsed) => {
     const r = validateTextData(text);
     expect(r.verdict).toBe(verdict);
@@ -41,6 +41,14 @@ describe('validateTextData (pipeline-native freeform)', () => {
     const noDate = validateTextData('comp squat 405lbs x2');
     expect(noDate.verdict).toBe('ok');
     expect(noDate.rows.liftTypes.squat).toBe(1);
+  });
+
+  it('counts recognized variations from qualifying history rather than names alone', () => {
+    expect(
+      validateTextData(
+        '2024-11-04 incline bench 225lbs x8 @8\n2024-11-11 incline bench 245lbs x3 @9\n2024-11-06 squat 315lbs x3 @8\n2024-11-08 face pulls 40lbs x12'
+      ).rows.liftTypes
+    ).toEqual({ squat: 0, bench: 2, deadlift: 0, accessory: 2 });
   });
 
   it('surfaces production parser errors with their original line numbers', () => {

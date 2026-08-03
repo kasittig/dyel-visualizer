@@ -1,5 +1,6 @@
 import Papa from 'papaparse';
-import { classifyExerciseName } from './classifyExerciseName';
+import type { SetRecord } from '@dyel/pipeline';
+import { countHistoryAwareLiftTypes, emptyLiftTypeCounts } from './historyAwareLiftTypes';
 
 export interface SheetValidationIssue {
   row: number;
@@ -37,8 +38,6 @@ const emptyCols = (): ColumnInfo => ({
   hasSets: false,
   weightUnit: null,
 });
-const emptyLifts = () => ({ squat: 0, bench: 0, deadlift: 0, accessory: 0 });
-
 function findHeaderLineIndex(lines: string[]): number {
   return lines.findIndex(
     (l) => l.trim() && l.split(',').some((c) => c.trim().toLowerCase().startsWith('exercise'))
@@ -58,7 +57,7 @@ export function validateSheetCsv(csv: string): SheetValidationResult {
       verdict: 'error',
       headerRow: null,
       columns: emptyCols(),
-      rows: { total: 0, parsed: 0, liftTypes: emptyLifts() },
+      rows: { total: 0, parsed: 0, liftTypes: emptyLiftTypeCounts() },
       issues: [
         "No header row found. Add a row with an 'exercise' column (and 'date', 'weight', 'reps').",
       ],
@@ -72,7 +71,7 @@ export function validateSheetCsv(csv: string): SheetValidationResult {
       verdict: 'error',
       headerRow: null,
       columns: emptyCols(),
-      rows: { total: 0, parsed: 0, liftTypes: emptyLifts() },
+      rows: { total: 0, parsed: 0, liftTypes: emptyLiftTypeCounts() },
       issues: ['No data rows found. Add at least one row of exercise data.'],
       warnings: [],
       rowIssues: [],
@@ -122,7 +121,7 @@ export function validateSheetCsv(csv: string): SheetValidationResult {
       verdict: 'error',
       headerRow,
       columns,
-      rows: { total: 0, parsed: 0, liftTypes: emptyLifts() },
+      rows: { total: 0, parsed: 0, liftTypes: emptyLiftTypeCounts() },
       issues,
       warnings,
       rowIssues: [],
@@ -134,7 +133,7 @@ export function validateSheetCsv(csv: string): SheetValidationResult {
     );
   }
 
-  const liftTypes = emptyLifts(),
+  const validRecords: SetRecord[] = [],
     rowIssues: SheetValidationIssue[] = [];
   let parsed = 0,
     failed = 0;
@@ -188,14 +187,18 @@ export function validateSheetCsv(csv: string): SheetValidationResult {
         rowIssues.push({ row: i + 1, exercise: name, issues: warn });
       }
       parsed++;
-      const cl = classifyExerciseName(name);
-      if (!cl.isUnknown) {
-        liftTypes[cl.type as keyof typeof liftTypes]++;
-      }
+      validRecords.push({
+        date: dtStr ? new Date(dtStr).getTime() : 0,
+        exercise: name,
+        weight: parseFloat(wtStr),
+        reps: rpStr ? parseInt(rpStr, 10) : 1,
+        ...(rpeStr ? { rpe: parseFloat(rpeStr) } : {}),
+      });
     }
   });
 
   const total = data.length;
+  const liftTypes = countHistoryAwareLiftTypes(validRecords);
   if (!parsed && total) {
     issues.push(
       `None of the ${total} data row${total === 1 ? '' : 's'} could be parsed. See row issues below.`

@@ -6,6 +6,7 @@ import {
   matches,
   classifyExerciseName,
   classifyAccessorySubtypes,
+  tagRecordsByPrimaryEvidence,
 } from './tag';
 import type { TaggedSetRecord } from './tag';
 import { isCoreExercise, classifyAccessoryEffects } from './detect/detectors';
@@ -173,6 +174,63 @@ describe('classifyExerciseName', () => {
     const result = classifyExerciseName(name);
     expect(result.type).toBe(expectedType);
     expect(result.isUnknown).toBe(expectedIsUnknown);
+  });
+});
+
+describe('tagRecordsByPrimaryEvidence', () => {
+  const record = (exercise: string, reps: number, rpe?: number): SetRecord => ({
+    date: 1706745600000,
+    exercise,
+    weight: 100,
+    reps,
+    ...(rpe === undefined ? {} : { rpe }),
+  });
+
+  it.each([
+    ['one rep with no RPE', 1, undefined, 'lift:bench'],
+    ['three reps at RPE 9', 3, 9, 'lift:bench'],
+    ['three reps below RPE 9', 3, 8.5, 'lift:accessory'],
+    ['more than three reps', 4, 10, 'lift:accessory'],
+    ['fractional reps', 2.5, 10, 'lift:accessory'],
+  ])('classifies recognized candidates using %s', (_, reps, rpe, expectedTag) => {
+    expect(
+      tagRecordsByPrimaryEvidence([record('Incline Bench', reps, rpe)]).tagged[0].tags
+    ).toContain(expectedTag);
+  });
+
+  it('promotes every record for a canonical variation when any record qualifies', () => {
+    const result = tagRecordsByPrimaryEvidence([
+      record('Incline Bench', 8, 8),
+      record('Incline Bench', 3, 9),
+      record('Incline Bench', 5, 7),
+    ]);
+
+    expect(result.tagged.every((r) => r.tags.has('lift:bench'))).toBe(true);
+    expect(result.primaryTagged).toHaveLength(3);
+    expect(result.unknown).toEqual([]);
+  });
+
+  it('promotes canonical aliases regardless of history order', () => {
+    const result = tagRecordsByPrimaryEvidence([
+      record('Bench Press', 8, 8),
+      record('Comp Bench', 3, 9),
+      record('Bench', 5, 7),
+    ]);
+
+    expect(result.tagged.map((r) => r.canonical)).toEqual(['bench', 'bench', 'bench']);
+    expect(result.tagged.every((r) => r.tags.has('lift:bench'))).toBe(true);
+  });
+
+  it('keeps unknown validation independent from accessory classification', () => {
+    const result = tagRecordsByPrimaryEvidence([
+      record('Incline Bench', 8, 8),
+      record('Face Pulls', 1, 10),
+    ]);
+
+    expect(result.tagged.every((r) => r.tags.has('lift:accessory'))).toBe(true);
+    expect(result.tagged.map((r) => r.canonical)).toEqual(['bench-incline', 'face-pulls']);
+    expect(result.tagged[0]).toMatchObject({ effects: [], baselineRange: null });
+    expect(result.unknown).toEqual(['Face Pulls']);
   });
 });
 
