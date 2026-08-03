@@ -15,7 +15,7 @@ import { useAppSettings } from './useAppSettings';
 import { usePipelineOrchestration } from './usePipelineOrchestration';
 import { useVisualizerData } from './useVisualizerData';
 import { PrimaryTabs } from './PrimaryTabs';
-import { PRIMARY_TABPANEL_ID, primaryTabId } from './appTabA11y';
+import { PRIMARY_TABPANEL_ID } from './appTabA11y';
 import styles from './App.module.css';
 
 export function App() {
@@ -76,6 +76,10 @@ export function App() {
     ...tabs,
     { id: 'calculator' as const, label: 'Calculator' },
   ];
+  const activeTabLabel =
+    effActiveTab === 'sigma'
+      ? 'Overview'
+      : (primaryTabs.find(({ id }) => id === effActiveTab)?.label ?? 'Visualization');
 
   const selectLift = (lift: LiftType) => {
     setLastLiftTab(lift);
@@ -180,7 +184,7 @@ export function App() {
               <div
                 id={PRIMARY_TABPANEL_ID}
                 role="tabpanel"
-                aria-labelledby={primaryTabId(effActiveTab)}
+                aria-label={activeTabLabel}
                 tabIndex={0}
               >
                 {effActiveTab === 'calculator' ? (

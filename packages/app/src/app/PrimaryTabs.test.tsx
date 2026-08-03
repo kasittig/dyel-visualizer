@@ -3,7 +3,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import type { PageTab } from './appTabs';
 import { PrimaryTabs } from './PrimaryTabs';
-import { PRIMARY_TABPANEL_ID, primaryTabId } from './appTabA11y';
+import { PRIMARY_TABPANEL_ID } from './appTabA11y';
 
 const tabs = [
   { id: 'sigma' as const, label: 'Σ', accessibleLabel: 'Overview' },
@@ -19,7 +19,10 @@ function Harness() {
       <div
         id={PRIMARY_TABPANEL_ID}
         role="tabpanel"
-        aria-labelledby={primaryTabId(activeTab)}
+        aria-label={
+          tabs.find(({ id }) => id === activeTab)?.accessibleLabel ??
+          tabs.find(({ id }) => id === activeTab)?.label
+        }
       />
     </>
   );
@@ -38,7 +41,7 @@ describe('PrimaryTabs', () => {
     expect(overview.tabIndex).toBe(0);
     expect(squat.getAttribute('aria-selected')).toBe('false');
     expect(squat.tabIndex).toBe(-1);
-    expect(screen.getByRole('tabpanel').getAttribute('aria-labelledby')).toBe(overview.id);
+    expect(screen.getByRole('tabpanel', { name: 'Overview' })).toBeDefined();
   });
 
   it.each([
