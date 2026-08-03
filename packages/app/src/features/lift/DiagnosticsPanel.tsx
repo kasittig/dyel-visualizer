@@ -122,6 +122,12 @@ export function DiagnosticsPanel({
                 key={column}
                 className={`${styles.sortButton} ${sortKey === column ? styles.sortButtonActive : ''}`}
                 onClick={() => toggleSort(column)}
+                aria-pressed={sortKey === column}
+                aria-label={
+                  sortKey === column
+                    ? `${label}, sorted ${direction === 'asc' ? 'ascending' : 'descending'}`
+                    : `Sort by ${label}`
+                }
               >
                 {label}
                 {sortKey === column && (
@@ -178,22 +184,26 @@ export function DiagnosticsPanel({
                     >
                       <span className={styles.comparison}>
                         <span className={styles.actual}>
-                          {r.expectedBaseline ? `${r.averageIndex.toFixed(1)}%` : r.deltaDisplay}
-                          <small>{r.expectedBaseline ? 'strength index' : 'vs fitted trend'}</small>
+                          {r.actualE1rmDisplay}
+                          <small>latest e1RM</small>
                         </span>
                         <span className={styles.arrow} aria-hidden="true">
                           →
                         </span>
                         <span className={styles.expected}>
-                          {r.expectedBaseline ?? 'within ±5%'}
-                          <small>{r.expectedBaseline ? 'target range' : 'target'}</small>
+                          {r.expectedE1rmDisplay}
+                          <small>expected e1RM</small>
+                        </span>
+                        <span className={styles.comparisonContext}>
+                          <strong>{r.deltaDisplay}</strong>
+                          <span>Strength index {r.averageIndex.toFixed(1)}%</span>
+                          <span>Target range {r.expectedBaseline ?? 'within ±5%'}</span>
                         </span>
                       </span>
                       <span className={styles.findingFooter}>
                         <span className={styles.effects}>{r.effectsDisplay}</span>
                         <span className={styles.recency}>
-                          Latest e1RM {r.actualE1rmDisplay} · Tested{' '}
-                          {r.ageDisplay === 'Today' ? 'today' : r.ageDisplay}
+                          Tested {r.ageDisplay === 'Today' ? 'today' : r.ageDisplay}
                           {r.status === 'stale' && <strong> · Retest recommended</strong>}
                         </span>
                       </span>

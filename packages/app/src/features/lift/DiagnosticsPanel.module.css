@@ -201,6 +201,19 @@
   font-size: 1.25rem;
   font-weight: 700;
 }
+.comparisonContext {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.65rem;
+  color: color-mix(in srgb, var(--text) 72%, transparent);
+  font-family: var(--heading);
+  font-size: 0.72rem;
+  line-height: 1.35;
+}
+.comparisonContext strong {
+  color: var(--text);
+}
 .findingFooter {
   grid-area: footer;
   display: flex;

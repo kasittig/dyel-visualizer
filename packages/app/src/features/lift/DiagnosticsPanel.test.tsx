@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { DiagnosticVariant } from '@dyel/api';
 import { DiagnosticsPanel } from './DiagnosticsPanel';
@@ -45,16 +45,21 @@ describe('DiagnosticsPanel', () => {
   });
 
   it('describes every status and presents actual-versus-expected evidence with recency', () => {
-    render(<DiagnosticsPanel liftType="squat" unit="lbs" />);
+    const { container } = render(<DiagnosticsPanel liftType="squat" unit="lbs" />);
 
     ['Below range', 'In range', 'Above range', 'Needs retest'].forEach((label) =>
       expect(screen.getByText(label)).toBeDefined()
     );
-    expect(screen.getByText('82.0%')).toBeDefined();
-    expect(screen.getAllByText('90-110%')).toHaveLength(4);
-    expect(screen.getAllByText('strength index')).toHaveLength(4);
-    expect(screen.getByText(/Latest e1RM 82 lb · Tested 3 days ago/)).toBeDefined();
-    expect(screen.getByText(/Latest e1RM 95 lb · Tested 117 days ago/)).toBeDefined();
+    const weaknessDetails = within(container.querySelector('#diagnostic-weakness-details')!);
+    expect(weaknessDetails.getByText('82 lb')).toBeDefined();
+    expect(weaknessDetails.getByText('100 lb')).toBeDefined();
+    expect(weaknessDetails.getByText('-18.0%')).toBeDefined();
+    expect(weaknessDetails.getByText('Strength index 82.0%')).toBeDefined();
+    expect(screen.getAllByText('Target range 90-110%')).toHaveLength(4);
+    expect(weaknessDetails.getByText(/Tested 3 days ago/)).toBeDefined();
+    expect(
+      within(container.querySelector('#diagnostic-stale-details')!).getByText(/Tested 117 days ago/)
+    ).toBeDefined();
     expect(screen.getByText(/Retest recommended/)).toBeDefined();
     expect(screen.getByText('Paused, +20 lb')).toBeDefined();
     expect(screen.queryByText('Overtrained')).toBeNull();
@@ -94,5 +99,21 @@ describe('DiagnosticsPanel', () => {
     expect(expand.getAttribute('aria-expanded')).toBe('false');
     fireEvent.click(expand);
     expect(container.querySelector('#diagnostic-weakness-details')).not.toBeNull();
+  });
+
+  it('announces the active sort criterion and direction', () => {
+    const { container } = render(<DiagnosticsPanel liftType="squat" unit="lbs" />);
+    const diagnostics = within(container);
+
+    const statusSort = diagnostics.getByRole('button', { name: 'Sort by Status' });
+    expect(statusSort.getAttribute('aria-pressed')).toBe('false');
+    fireEvent.click(statusSort);
+    expect(
+      diagnostics
+        .getByRole('button', { name: 'Status, sorted ascending' })
+        .getAttribute('aria-pressed')
+    ).toBe('true');
+    fireEvent.click(diagnostics.getByRole('button', { name: 'Status, sorted ascending' }));
+    expect(diagnostics.getByRole('button', { name: 'Status, sorted descending' })).toBeDefined();
   });
 });
