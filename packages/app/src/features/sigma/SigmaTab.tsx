@@ -24,9 +24,10 @@ export function SigmaTab({
     : chartData.length
       ? `${chartData.length} dates in range`
       : 'No data in range';
-  const volumeSessions = chartData.filter(
-    ({ squat, bench, deadlift, volume }) => squat || bench || deadlift || volume
-  ).length;
+  let volumeSessions = 0;
+  for (const { squat, bench, deadlift, volume } of chartData) {
+    if (squat || bench || deadlift || volume) volumeSessions += 1;
+  }
 
   return (
     <>

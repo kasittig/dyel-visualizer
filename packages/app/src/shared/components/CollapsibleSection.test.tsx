@@ -33,7 +33,7 @@ describe('CollapsibleSection', () => {
     fireEvent.click(toggle);
 
     expect(toggle.getAttribute('aria-expanded')).toBe('false');
-    expect(screen.getByText('Section contents').parentElement?.hidden).toBe(true);
+    expect(screen.queryByText('Section contents')).toBeNull();
     expect(localStorage.getItem(storageKey)).toBe('false');
   });
 
@@ -56,14 +56,14 @@ describe('CollapsibleSection', () => {
 
     expect(trigger.getAttribute('aria-expanded')).toBe('false');
     const region = document.getElementById(trigger.getAttribute('aria-controls')!);
-    expect(region?.hidden).toBe(true);
+    expect(region).toBeNull();
   });
 
   it('restores a persisted collapsed state', () => {
     localStorage.setItem(storageKey, 'false');
     renderSection();
 
-    expect(screen.getByText('Section contents').parentElement?.hidden).toBe(true);
+    expect(screen.queryByText('Section contents')).toBeNull();
     expect(
       screen.getByRole('button', { name: /test section/i }).getAttribute('aria-expanded')
     ).toBe('false');
@@ -137,8 +137,8 @@ describe('CollapsibleSection', () => {
       </>
     );
 
-    expect(screen.getByText('First contents').parentElement?.hidden).toBe(true);
-    expect(screen.getByText('Second contents').parentElement?.hidden).toBe(false);
+    expect(screen.queryByText('First contents')).toBeNull();
+    expect(screen.getByText('Second contents')).toBeTruthy();
   });
 
   it.each(['not-json', 'null', '"false"', '{}'])(

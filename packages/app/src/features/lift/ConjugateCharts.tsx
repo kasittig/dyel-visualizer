@@ -1,22 +1,27 @@
+import type { DateRange } from 'react-day-picker';
 import { Line } from 'recharts';
-import { NORMALIZED_KEY, type PipelineConjugateChartData } from './usePipelineConjugateChartData';
+import { usePipelineConjugateChartData, NORMALIZED_KEY } from './usePipelineConjugateChartData';
 import { MultiSeriesLineChart, ChartEmpty } from '../../shared/charts';
 import styles from './ConjugateCharts.module.css';
 
 export function ConjugateCharts({
   liftType,
-  chartData,
+  dateRange,
   unit,
   highlightedVariation = null,
   onVariationClick,
 }: {
   liftType: string;
-  chartData: PipelineConjugateChartData;
+  dateRange: DateRange;
   unit: 'lbs' | 'kg';
   highlightedVariation?: string | null;
   onVariationClick?: (v: string) => void;
 }) {
-  const { variations, data, showNormalized, bestSetByLabelAndDate } = chartData;
+  const { variations, data, showNormalized, bestSetByLabelAndDate } = usePipelineConjugateChartData(
+    liftType,
+    dateRange,
+    unit
+  );
 
   if (variations.length === 0) {
     return <ChartEmpty />;

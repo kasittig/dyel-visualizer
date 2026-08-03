@@ -110,6 +110,8 @@ try {
         }
       }
       if (name === 'visualizer' && width === 390) {
+        const closeSettings = page.getByRole('button', { name: 'Close data settings' });
+        if (await closeSettings.isVisible()) await closeSettings.click();
         const section = page.getByRole('button', { name: /overview/i }).first();
         await section.click();
         await section.click();

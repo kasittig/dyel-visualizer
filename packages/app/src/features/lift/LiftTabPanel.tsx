@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { ConjugateCharts } from './ConjugateCharts';
-import { usePipelineConjugateChartData } from './usePipelineConjugateChartData';
 import { DiagnosticsPanel } from './DiagnosticsPanel';
 import { VariationRadarChart } from './VariationRadarChart';
 import { AccessoryTable } from './AccessoryTable';
@@ -21,7 +20,6 @@ export function LiftTabPanel({
   unit: 'lbs' | 'kg';
 }) {
   const [selectedVariation, setSelectedVariation] = useState<string | null>(null);
-  const chartData = usePipelineConjugateChartData(liftType, dateRange, unit);
 
   const handleVariationClick = (variation: string | null) => {
     setSelectedVariation((v) => (variation === null || v === variation ? null : variation));
@@ -37,7 +35,7 @@ export function LiftTabPanel({
       >
         <ConjugateCharts
           liftType={liftType}
-          chartData={chartData}
+          dateRange={dateRange}
           unit={unit}
           highlightedVariation={selectedVariation}
           onVariationClick={handleVariationClick}
