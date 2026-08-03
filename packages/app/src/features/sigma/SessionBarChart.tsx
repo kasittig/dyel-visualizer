@@ -89,7 +89,7 @@ export function SessionBarChart({ chartData, unit }: { chartData: ChartPoint[]; 
                       key: String(item.dataKey),
                       detail: (
                         <span style={{ color: item.color }}>
-                          {item.name}: {item.value} {unit}
+                          {item.name}: {Math.round(Number(item.value))} {unit}
                         </span>
                       ),
                     }))}
