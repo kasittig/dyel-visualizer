@@ -6,6 +6,7 @@
   border: 1px solid var(--border);
   border-radius: 6px;
   overflow: hidden;
+  width: 100%;
 }
 
 .leftCol {
@@ -135,4 +136,45 @@
   font-size: 11px;
   color: var(--text);
   margin: 0;
+}
+
+@media (max-width: 640px) {
+  .card {
+    grid-template-columns: minmax(0, 1fr);
+    max-width: none;
+  }
+
+  .leftCol {
+    padding: 1rem;
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .rightCol {
+    padding: 1rem;
+  }
+
+  .chip,
+  .input {
+    min-height: var(--touch-target);
+  }
+
+  .chip {
+    padding: 0.6rem 0.75rem;
+  }
+
+  .input {
+    font-size: 1rem;
+  }
+
+  .facetGrid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.75rem;
+  }
+
+  .e1rmDisplay {
+    margin-top: 0.25rem;
+    padding-top: 0.875rem;
+    border-top: 1px solid var(--border);
+  }
 }

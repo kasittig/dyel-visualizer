@@ -90,6 +90,7 @@ export function StrengthScoreCalculator({
             <div className={styles.fieldLabel}>Bodyweight</div>
             <input
               type="number"
+              inputMode="decimal"
               min="0"
               value={bodyweight}
               onChange={(e) => setBodyweight(e.target.value)}

@@ -6,6 +6,7 @@
   border: 1px solid var(--border);
   border-radius: 6px;
   overflow: hidden;
+  width: 100%;
 }
 
 .leftCol {
@@ -183,4 +184,36 @@
   height: 100%;
   border-radius: 2px;
   transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@media (max-width: 640px) {
+  .card {
+    grid-template-columns: minmax(0, 1fr);
+    max-width: none;
+  }
+
+  .leftCol {
+    padding: 1rem;
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .chip,
+  .input {
+    min-height: var(--touch-target);
+  }
+
+  .chip {
+    flex: 1;
+    padding: 0.6rem 0.75rem;
+  }
+
+  .input {
+    font-size: 1rem;
+  }
+
+  .scoreRow {
+    min-height: 0;
+    padding: 1rem;
+  }
 }

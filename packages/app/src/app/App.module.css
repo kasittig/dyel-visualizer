@@ -1,9 +1,11 @@
 .main {
-  padding: 2rem;
+  padding: var(--page-gutter);
   text-align: left;
+  min-width: 0;
 }
 .content {
-  margin-top: 1.25rem;
+  margin-top: var(--section-space);
+  min-width: 0;
 }
 .errorMsg {
   color: red;
@@ -17,6 +19,7 @@
   align-items: center;
   gap: 0.5rem;
   margin-bottom: 0.5rem;
+  max-width: 100%;
 }
 .tab {
   background: none;
@@ -59,4 +62,39 @@
   align-items: flex-start;
   flex-wrap: wrap;
   justify-content: center;
+}
+
+@media (max-width: 640px) {
+  .tabNav {
+    align-items: stretch;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    scrollbar-width: thin;
+  }
+
+  .tab {
+    min-height: var(--touch-target);
+    padding-inline: 0.75rem;
+    flex: 0 0 auto;
+  }
+
+  .tabSpacer {
+    display: none;
+  }
+
+  .datePickerWrap {
+    flex: 0 0 auto;
+  }
+
+  .calculatorRow {
+    margin-top: 1.5rem;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1.5rem;
+    justify-content: stretch;
+  }
+
+  .calculatorRow > div {
+    min-width: 0;
+  }
 }

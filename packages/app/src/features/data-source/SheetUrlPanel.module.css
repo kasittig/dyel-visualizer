@@ -108,3 +108,40 @@
   border-color: var(--accent-border);
   box-shadow: 0 0 0 3px var(--accent-bg);
 }
+
+@media (max-width: 640px) {
+  .wrapper {
+    padding-bottom: 1rem;
+  }
+
+  .subtitle,
+  .helperLinks {
+    line-height: 1.8;
+  }
+
+  .linkButton,
+  .refreshButton {
+    min-height: var(--touch-target);
+  }
+
+  .refreshButton {
+    min-width: var(--touch-target);
+  }
+
+  .urlRow {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 0.375rem;
+  }
+
+  .urlLabel {
+    white-space: normal;
+  }
+
+  .urlInput,
+  .input,
+  .textArea {
+    min-height: var(--touch-target);
+    font-size: 1rem;
+  }
+}

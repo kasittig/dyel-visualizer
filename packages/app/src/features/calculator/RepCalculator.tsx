@@ -182,6 +182,7 @@ export function RepCalculator({
                     <input
                       id={id}
                       type="number"
+                      inputMode={id === 'calc-reps' ? 'numeric' : 'decimal'}
                       value={val}
                       onChange={(e) => change(e.target.value)}
                       placeholder="—"
