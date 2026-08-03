@@ -10,7 +10,7 @@ const LABELS = {
   optimal: ['On target', 'var(--success)'],
   overperforming: ['Above expected', 'var(--warning)'],
   weakness: ['Below expected', 'var(--danger)'],
-  stale: ['Needs retest', 'var(--muted)'],
+  stale: ['Outdated', 'var(--muted)'],
 } satisfies Record<DiagnosticVariant['status'], readonly [string, string]>;
 
 const FITTED_LABELS = {
@@ -34,10 +34,8 @@ export function DiagnosticsPanel({
 }) {
   const [activeEffect, setActiveEffect] = useState<string | null>(null);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(() => new Set());
-  const { variants, weakEffects, overtrainedEffects, needsData } = usePipelineDiagnostics(
-    liftType,
-    unit
-  );
+  const { variants, weakEffects, overtrainedEffects, needsData, attentionSummary } =
+    usePipelineDiagnostics(liftType, unit);
   const rows = variants;
   const { sortedRows, sortKey, direction, toggleSort } = useSortableRows<DiagnosticRow, SortColumn>(
     rows,
@@ -76,9 +74,29 @@ export function DiagnosticsPanel({
       <CollapsibleSection
         label="Diagnostics"
         persistenceId={`visualizer:${liftType}:diagnostics`}
-        summary={`${variants.length} variation${variants.length === 1 ? '' : 's'} · ${weakEffects.length} below expected · ${overtrainedEffects.length} above expected · ${needsData.length} need data`}
+        summary={`${variants.length} variation${variants.length === 1 ? '' : 's'} · ${attentionSummary.belowCount} below expected · ${attentionSummary.aboveCount} above expected · ${needsData.length} need data`}
       >
         <TableCard>
+          {variants.length > 0 && (
+            <section
+              className={styles.attention}
+              aria-labelledby={`diagnostic-${liftType}-attention`}
+            >
+              <span className={styles.attentionEyebrow}>What needs attention</span>
+              <h3 id={`diagnostic-${liftType}-attention`}>
+                {attentionSummary.belowCount === 0 && attentionSummary.aboveCount === 0
+                  ? 'No current findings need attention'
+                  : `${attentionSummary.belowCount} variation${attentionSummary.belowCount === 1 ? '' : 's'} below expected · ${attentionSummary.aboveCount} variation${attentionSummary.aboveCount === 1 ? '' : 's'} above expected`}
+              </h3>
+              {attentionSummary.leadingBelowEffectDisplay && (
+                <p>
+                  <strong>{attentionSummary.leadingBelowEffectDisplay}</strong> appears in{' '}
+                  {attentionSummary.leadingBelowEffectCount} below-expected{' '}
+                  {attentionSummary.leadingBelowEffectCount === 1 ? 'variation' : 'variations'}.
+                </p>
+              )}
+            </section>
+          )}
           {(weakEffects.length > 0 || overtrainedEffects.length > 0) && (
             <div className={styles.cardPadded}>
               <div className={styles.summary}>
@@ -172,7 +190,7 @@ export function DiagnosticsPanel({
                       className={styles.findingToggle}
                       aria-expanded={!isCollapsed}
                       aria-controls={detailId}
-                      aria-label={`${r.displayName}: ${lbl}. ${isCollapsed ? 'Expand' : 'Collapse'} diagnostic`}
+                      aria-label={`${r.displayName}: ${lbl}${r.status === 'stale' ? `, last tested ${r.ageDisplay}` : ''}. ${isCollapsed ? 'Expand' : 'Collapse'} diagnostic`}
                       onClick={() => toggleRow(r.canonical)}
                     >
                       <span className={styles.variationName}>
@@ -183,6 +201,9 @@ export function DiagnosticsPanel({
                           </span>
                         )}
                       </span>
+                      {r.status === 'stale' && (
+                        <span className={styles.staleAge}>Last tested {r.ageDisplay}</span>
+                      )}
                       <span className={styles.status}>{lbl}</span>
                       <span className={styles.collapseIcon} aria-hidden="true">
                         {isCollapsed ? '＋' : '−'}
@@ -227,7 +248,8 @@ export function DiagnosticsPanel({
                         <span className={styles.provenance}>
                           <span>
                             <strong>Latest</strong>
-                            {r.latestDateDisplay} · {r.actualE1rmDisplay}
+                            {r.latestDateDisplay} · {r.latestSetDisplay} · {r.actualE1rmDisplay}{' '}
+                            e1RM
                           </span>
                           <span>
                             <strong>Recent trend</strong>

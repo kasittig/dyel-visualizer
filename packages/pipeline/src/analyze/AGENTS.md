@@ -51,7 +51,7 @@ run and NEVER stored on identity types.
   the outputs-computed-fresh-every-run boundary: never stored on identity types, always
   derived from normalized model state.
 - Drill-down provenance stays structured on each `VariantAssessment`: `baselineE1rmKg` and
-  `expectedFactor` reproduce the expected-value calculation; `latestAt` and
+  `expectedFactor` reproduce the expected-value calculation; `latestAt`, `latestSet`, and
   `previousE1rmKg` support recency/trend display; `observationCount` counts the variation's
   e1RM observations and `comparisonCount` reports the fitted relationship's sample count;
   it is `null` for baseline lifts because their identity factor is not fitted from comparisons.

@@ -17,6 +17,21 @@ const MAX_EFFORT_REPS = 5;
 export const isSpeedWork = (s: Pick<SetRecord, 'rpe' | 'sets' | 'meta'>) =>
   s.rpe === undefined && Number(s.sets ?? s.meta?.sets ?? 1) >= SPEED_WORK_SET_THRESHOLD;
 
+export const selectMaxEffortSet = (sets: TaggedSetRecord[]): TaggedSetRecord | null => {
+  let best: TaggedSetRecord | null = null;
+  let bestE1rm = -Infinity;
+  for (const set of sets) {
+    if (set.reps <= MAX_EFFORT_REPS && !isSpeedWork(set)) {
+      const e1rm = calcE1RM(set.weight, set.reps, set.rpe);
+      if (e1rm > bestE1rm) {
+        best = set;
+        bestE1rm = e1rm;
+      }
+    }
+  }
+  return best;
+};
+
 export const derivers: Record<string, SeriesDeriver> = {
   e1rm: {
     id: 'e1rm',
@@ -29,14 +44,8 @@ export const derivers: Record<string, SeriesDeriver> = {
   'e1rm-max-effort': {
     id: 'e1rm-max-effort',
     derive: (sets) => {
-      let best: number | null = null;
-      for (const set of sets) {
-        if (set.reps <= MAX_EFFORT_REPS && !isSpeedWork(set)) {
-          const e1rm = calcE1RM(set.weight, set.reps, set.rpe);
-          best = best === null ? e1rm : Math.max(best, e1rm);
-        }
-      }
-      return best;
+      const best = selectMaxEffortSet(sets);
+      return best ? calcE1RM(best.weight, best.reps, best.rpe) : null;
     },
   },
   tonnage: {

@@ -15,6 +15,7 @@ export interface DiagnosticVariant {
   baselineE1rmKg: number;
   expectedFactor: number;
   latestAt: number;
+  latestSet: { weight: number; reps: number; rpe?: number; sets?: number } | null;
   previousE1rmKg: number | null;
   observationCount: number;
   comparisonCount: number | null;
@@ -28,6 +29,12 @@ export interface DiagnosticVariant {
 export interface EffectSummary {
   weakEffects: string[];
   overtrainedEffects: string[];
+}
+
+export interface DiagnosticAttentionSummary {
+  belowCount: number;
+  aboveCount: number;
+  leadingBelowEffect: { effect: string; count: number } | null;
 }
 
 export function selectDiagnosticVariants(
@@ -48,6 +55,7 @@ export function selectDiagnosticVariants(
     baselineE1rmKg: v.baselineE1rmKg,
     expectedFactor: v.expectedFactor,
     latestAt: v.latestAt,
+    latestSet: v.latestSet,
     previousE1rmKg: v.previousE1rmKg,
     observationCount: v.observationCount,
     comparisonCount: v.comparisonCount,
@@ -98,4 +106,36 @@ export function summarizeEffects(variants: DiagnosticVariant[]): EffectSummary {
   }
 
   return { weakEffects, overtrainedEffects };
+}
+
+export function summarizeDiagnosticAttention(
+  variants: DiagnosticVariant[]
+): DiagnosticAttentionSummary {
+  let belowCount = 0;
+  let aboveCount = 0;
+  const belowEffects = new Map<string, number>();
+
+  for (const variant of variants) {
+    if (variant.status === 'weakness') {
+      belowCount += 1;
+      for (const effect of variant.effects) {
+        belowEffects.set(effect, (belowEffects.get(effect) ?? 0) + 1);
+      }
+    } else if (variant.status === 'overperforming') {
+      aboveCount += 1;
+    }
+  }
+
+  let leadingBelowEffect: DiagnosticAttentionSummary['leadingBelowEffect'] = null;
+  for (const [effect, count] of belowEffects) {
+    if (
+      !leadingBelowEffect ||
+      count > leadingBelowEffect.count ||
+      (count === leadingBelowEffect.count && effect.localeCompare(leadingBelowEffect.effect) < 0)
+    ) {
+      leadingBelowEffect = { effect, count };
+    }
+  }
+
+  return { belowCount, aboveCount, leadingBelowEffect };
 }

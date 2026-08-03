@@ -6,7 +6,7 @@ import { freeformParser } from './parse/freeform/parser';
 import type { TaggedSetRecord } from './tag/tag';
 import { classifyAccessorySubtypes, tagRecordsByPrimaryEvidence } from './tag/tag';
 import { parseExercise } from './tag/detect/parseExercise';
-import { derivers } from './derive/derivers';
+import { derivers, selectMaxEffortSet } from './derive/derivers';
 import type { NormalizationModel } from './derive/normalize';
 import {
   fitNormalizationModel,
@@ -275,6 +275,12 @@ export function runPipelineModel(
   const baselineRangeByCanonical = new Map(
     tagged.flatMap((r) => (r.baselineRange ? [[r.canonical, r.baselineRange] as const] : []))
   );
+  const maxEffortSetByPoint = new Map<string, TaggedSetRecord>(
+    Array.from(canonicalGroups.values()).flatMap((sets) => {
+      const best = selectMaxEffortSet(sets);
+      return best ? [[`${sets[0].canonical}::${sets[0].date}`, best] as const] : [];
+    })
+  );
 
   const diagnostics = diagnose(
     pointsByDeriver.get('e1rm-max-effort')!,
@@ -283,7 +289,8 @@ export function runPipelineModel(
     { tolerance: 0.05, staleDays: 90 },
     timestamp,
     displayNameByCanonical,
-    baselineRangeByCanonical
+    baselineRangeByCanonical,
+    maxEffortSetByPoint
   );
   diagnostics.unassessed.push(
     ...unknownExercises.map((displayName) => ({

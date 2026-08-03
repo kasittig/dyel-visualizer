@@ -17,6 +17,7 @@ export const variantAssessmentMock = (
   baselineE1rmKg: 100,
   expectedFactor: 1,
   latestAt: Date.UTC(2026, 0, 10),
+  latestSet: { weight: 100, reps: 3, rpe: 9 },
   previousE1rmKg: 100,
   observationCount: 4,
   comparisonCount: null,

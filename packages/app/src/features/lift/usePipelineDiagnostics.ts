@@ -8,6 +8,7 @@ import {
   selectDiagnosticVariants,
   selectUnassessedDiagnostics,
   summarizeEffects,
+  summarizeDiagnosticAttention,
   type DiagnosticVariant,
   type DisplayUnit,
   type UnassessedVariant,
@@ -24,6 +25,7 @@ export interface DiagnosticRow extends DiagnosticVariant {
   ageDays: number;
   ageDisplay: string;
   latestDateDisplay: string;
+  latestSetDisplay: string;
   trendDisplay: string;
   observationDisplay: string;
   calculationDisplay: string;
@@ -41,6 +43,12 @@ export interface DiagnosticResult {
   weakEffects: string[];
   overtrainedEffects: string[];
   needsData: DiagnosticNeedRow[];
+  attentionSummary: {
+    belowCount: number;
+    aboveCount: number;
+    leadingBelowEffectDisplay: string | null;
+    leadingBelowEffectCount: number;
+  };
 }
 
 export function usePipelineDiagnostics(
@@ -85,6 +93,9 @@ export function usePipelineDiagnostics(
           year: 'numeric',
           timeZone: 'UTC',
         }).format(variant.latestAt),
+        latestSetDisplay: variant.latestSet
+          ? `${variant.latestSet.sets && variant.latestSet.sets > 1 ? `${variant.latestSet.sets} sets · ` : ''}${formatWeight(variant.latestSet.weight, unit)} × ${variant.latestSet.reps}${variant.latestSet.rpe === undefined ? '' : ` @${variant.latestSet.rpe}`}`
+          : 'Set details unavailable',
         trendDisplay:
           trendPercent === null
             ? 'No prior observation'
@@ -130,5 +141,17 @@ export function usePipelineDiagnostics(
     return summarizeEffects(variants);
   }, [variants]);
 
-  return { variants, hasDeadlift, weakEffects, overtrainedEffects, needsData };
+  const attentionSummary = useMemo(() => {
+    const summary = summarizeDiagnosticAttention(variants);
+    return {
+      belowCount: summary.belowCount,
+      aboveCount: summary.aboveCount,
+      leadingBelowEffectDisplay: summary.leadingBelowEffect
+        ? formatEffect(summary.leadingBelowEffect.effect)
+        : null,
+      leadingBelowEffectCount: summary.leadingBelowEffect?.count ?? 0,
+    };
+  }, [variants]);
+
+  return { variants, hasDeadlift, weakEffects, overtrainedEffects, needsData, attentionSummary };
 }

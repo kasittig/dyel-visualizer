@@ -1,4 +1,4 @@
-import type { Point } from '../types';
+import type { Point, SetRecord } from '../types';
 import type { NormalizationModel } from '../derive/normalize';
 import type { BaselineRange } from '../tag/detect/canonical';
 
@@ -20,6 +20,7 @@ export interface VariantAssessment {
   baselineE1rmKg: number;
   expectedFactor: number;
   latestAt: number;
+  latestSet: Pick<SetRecord, 'weight' | 'reps' | 'rpe' | 'sets'> | null;
   previousE1rmKg: number | null;
   observationCount: number;
   comparisonCount: number | null;
@@ -49,7 +50,8 @@ export function diagnose(
   opts: { tolerance: number; staleDays: number },
   now: number | undefined,
   displayNameByCanonical: ReadonlyMap<string, string> = new Map(),
-  baselineRangeByCanonical: ReadonlyMap<string, BaselineRange> = new Map()
+  baselineRangeByCanonical: ReadonlyMap<string, BaselineRange> = new Map(),
+  maxEffortSetByPoint: ReadonlyMap<string, SetRecord> = new Map()
 ): DiagnosticsReport {
   const timestamp = now ?? Date.now();
   const pointsBySeries = Map.groupBy(points, (p) => p.series);
@@ -116,6 +118,7 @@ export function diagnose(
       baselineE1rmKg: baseLatest.v,
       expectedFactor: factor,
       latestAt: latest.t,
+      latestSet: maxEffortSetByPoint.get(`${canonical}::${latest.t}`) ?? null,
       previousE1rmKg: previous?.v ?? null,
       observationCount: observations.length,
       comparisonCount: model.variantFactor[canonical]?.n ?? null,

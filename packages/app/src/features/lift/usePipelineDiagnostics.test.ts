@@ -25,6 +25,12 @@ describe('usePipelineDiagnostics', () => {
       weakEffects: [],
       overtrainedEffects: [],
       needsData: [],
+      attentionSummary: {
+        belowCount: 0,
+        aboveCount: 0,
+        leadingBelowEffectDisplay: null,
+        leadingBelowEffectCount: 0,
+      },
     });
 
     const dataset = [
@@ -146,6 +152,7 @@ describe('usePipelineDiagnostics', () => {
               baselineE1rmKg: 120,
               expectedFactor: 0.95,
               latestAt: Date.UTC(2026, 0, 10),
+              latestSet: { weight: 100, reps: 3, rpe: 9, sets: 1 },
               previousE1rmKg: 95,
               comparisonCount: 3,
               ratio: 0.9,
@@ -170,6 +177,7 @@ describe('usePipelineDiagnostics', () => {
       ageDays: 3,
       ageDisplay: '3 days ago',
       latestDateDisplay: 'Jan 10, 2026',
+      latestSetDisplay: unit === 'lbs' ? '220 lbs × 3 @9' : '100 kg × 3 @9',
       trendDisplay: '+5.3% vs prior observation',
       observationDisplay: '4 observations · 3 fitted comparisons',
       calculationDisplay:

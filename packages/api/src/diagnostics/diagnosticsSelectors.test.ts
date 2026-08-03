@@ -5,6 +5,7 @@ import {
   selectDiagnosticVariants,
   selectUnassessedDiagnostics,
   summarizeEffects,
+  summarizeDiagnosticAttention,
 } from './diagnosticsSelectors';
 
 const baseVariant = (overrides?: Partial<VariantAssessment>): VariantAssessment => ({
@@ -16,6 +17,7 @@ const baseVariant = (overrides?: Partial<VariantAssessment>): VariantAssessment 
   baselineE1rmKg: 100,
   expectedFactor: 1,
   latestAt: 1000,
+  latestSet: { weight: 100, reps: 3, rpe: 9 },
   previousE1rmKg: 98,
   observationCount: 4,
   comparisonCount: null,
@@ -77,6 +79,7 @@ describe('selectDiagnosticVariants', () => {
       lift: 'lift:squat',
       expectedE1rmKg: 150,
       actualE1rmKg: 155,
+      latestSet: { weight: 140, reps: 3, rpe: 9 },
       ratio: 1.033,
       status: 'overperforming',
       fittedStatus: 'optimal',
@@ -200,5 +203,37 @@ describe('summarizeEffects', () => {
       baseVariant({ status: 'overperforming', effects: ['hypertrophy', 'speed'] }),
     ]);
     expect(new Set(o.overtrainedEffects)).toEqual(new Set(['hypertrophy', 'speed']));
+  });
+});
+
+describe('summarizeDiagnosticAttention', () => {
+  it.each([
+    ['empty input', [], { belowCount: 0, aboveCount: 0, leadingBelowEffect: null }],
+    [
+      'mixed current findings while excluding stale and optimal rows',
+      [
+        baseVariant({ status: 'weakness', effects: ['power', 'strength'] }),
+        baseVariant({ status: 'weakness', effects: ['power'] }),
+        baseVariant({ status: 'overperforming', effects: ['speed'] }),
+        baseVariant({ status: 'stale', effects: ['power'] }),
+        baseVariant({ status: 'optimal', effects: ['power'] }),
+      ],
+      { belowCount: 2, aboveCount: 1, leadingBelowEffect: { effect: 'power', count: 2 } },
+    ],
+    [
+      'all in range',
+      [baseVariant({ status: 'optimal' }), baseVariant({ status: 'optimal' })],
+      { belowCount: 0, aboveCount: 0, leadingBelowEffect: null },
+    ],
+    [
+      'deterministic alphabetical tie breaking',
+      [
+        baseVariant({ status: 'weakness', effects: ['strength'] }),
+        baseVariant({ status: 'weakness', effects: ['power'] }),
+      ],
+      { belowCount: 2, aboveCount: 0, leadingBelowEffect: { effect: 'power', count: 1 } },
+    ],
+  ])('%s', (_, variants, expected) => {
+    expect(summarizeDiagnosticAttention(variants)).toEqual(expected);
   });
 });
