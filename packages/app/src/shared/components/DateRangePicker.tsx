@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo, useId } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import * as Popover from '@radix-ui/react-popover';
 import { DayPicker, type DateRange } from 'react-day-picker';
 import { presetDateRange, activePreset, type PresetId } from '@dyel/api/display';
@@ -31,7 +31,6 @@ export function DateRangePicker({
   const [focused, setFocused] = useState<'start' | 'end' | null>(null);
   const [calendarMonth, setCalendarMonth] = useState<Date>(() => value.from ?? new Date());
   const mobile = useMediaQuery(MOBILE_LAYOUT_QUERY);
-  const labelId = useId();
 
   const outerRef = useRef<HTMLDivElement>(null);
   const popoverContentRef = useRef<HTMLDivElement>(null);
@@ -96,7 +95,6 @@ export function DateRangePicker({
     : value.from || value.to
       ? `${formatDate(value.from) || 'Start'} – ${formatDate(value.to) || 'Today'}`
       : 'DATE RANGE';
-  const exactRangeLabel = `${formatDate(value.from) || 'First session'} – ${formatDate(value.to) || 'Today'}`;
 
   const selectPreset = (presetId: PresetId) => {
     onChange(
@@ -192,44 +190,31 @@ export function DateRangePicker({
           </Popover.Root>
         </div>
       )}
-      {!mobile && (
-        <div className={styles.desktopGroup} role="group" aria-labelledby={labelId}>
-          <div className={styles.desktopHeading}>
-            <span id={labelId} className={styles.desktopLabel}>
-              Date range
-            </span>
-            {scopeLabel && <span className={styles.scopeLabel}>{scopeLabel}</span>}
-          </div>
-          <div className={styles.desktopControls}>
-            {showPresets && (
-              <div className={styles.presets} aria-label="Date range presets">
-                {PRESETS.map((p) => (
-                  <button
-                    key={p.label}
-                    type="button"
-                    aria-pressed={currentPreset === p.presetId}
-                    className={`${styles.preset} ${currentPreset === p.presetId ? styles.presetActive : ''}`}
-                    onClick={() => selectPreset(p.presetId)}
-                  >
-                    {p.label}
-                  </button>
-                ))}
-              </div>
-            )}
+      {!mobile && showPresets && (
+        <div className={styles.presets} aria-label="Date range presets">
+          {PRESETS.map((p) => (
             <button
+              key={p.label}
               type="button"
-              className={`${styles.exactRange} ${currentPreset === null ? styles.presetActive : ''}`}
-              aria-label={`Custom date range. Applied range: ${exactRangeLabel}`}
-              aria-expanded={showCustomPicker || !showPresets}
-              onClick={() => {
-                setShowCustomPicker((shown) => !shown);
-                setOpen(true);
-              }}
+              aria-pressed={currentPreset === p.presetId}
+              className={`${styles.preset} ${currentPreset === p.presetId ? styles.presetActive : ''}`}
+              onClick={() => selectPreset(p.presetId)}
             >
-              <span aria-hidden="true">▦</span>
-              <span>{exactRangeLabel}</span>
+              {p.label}
             </button>
-          </div>
+          ))}
+          <button
+            type="button"
+            aria-pressed={currentPreset === null}
+            className={`${styles.preset} ${currentPreset === null ? styles.presetActive : ''}`}
+            onClick={() => {
+              setShowCustomPicker((shown) => !shown);
+              setOpen(true);
+            }}
+            aria-expanded={showCustomPicker}
+          >
+            Custom
+          </button>
         </div>
       )}
       {!mobile && (!showPresets || showCustomPicker) && (

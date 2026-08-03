@@ -95,7 +95,7 @@ describe('DateRangePicker', () => {
     expect(screen.getByLabelText('Choose date range')).toBeDefined();
   });
 
-  it('groups the desktop presets and exact range under a visible scoped label', () => {
+  it('keeps the desktop date presets in one compact control group', () => {
     useDesktopLayout();
     const latest = new Date(2026, 6, 20);
 
@@ -104,23 +104,17 @@ describe('DateRangePicker', () => {
         value={{ from: new Date(2026, 6, 6), to: latest }}
         onChange={vi.fn()}
         sessionDates={[latest]}
-        scopeLabel="Applies to all visualization tabs"
       />
     );
 
-    const group = screen.getByRole('group', { name: 'Date range' });
-    expect(within(group).getByText('Applies to all visualization tabs')).toBeDefined();
-    expect(within(group).getByRole('button', { name: '2 WKS' }).getAttribute('aria-pressed')).toBe(
+    const presets = screen.getByLabelText('Date range presets');
+    expect(within(presets).getByRole('button', { name: '2 WKS' }).getAttribute('aria-pressed')).toBe(
       'true'
     );
-    expect(
-      within(group).getByRole('button', {
-        name: 'Custom date range. Applied range: 7/6/2026 – 7/20/2026',
-      })
-    ).toBeDefined();
+    expect(within(presets).getByRole('button', { name: 'Custom' })).toBeDefined();
   });
 
-  it('opens custom date inputs from the keyboard-focusable desktop exact-range control', () => {
+  it('opens custom date inputs from the compact desktop Custom control', () => {
     useDesktopLayout();
     const latest = new Date(2026, 6, 20);
 
@@ -132,9 +126,7 @@ describe('DateRangePicker', () => {
       />
     );
 
-    const trigger = screen.getByRole('button', {
-      name: 'Custom date range. Applied range: 7/6/2026 – 7/20/2026',
-    });
+    const trigger = screen.getByRole('button', { name: 'Custom' });
     trigger.focus();
     fireEvent.click(trigger);
 
