@@ -21,7 +21,7 @@
   border: 1px solid transparent;
   border-radius: 999px;
   background: transparent;
-  font: inherit;
+  font-family: inherit;
   cursor: pointer;
 }
 
