@@ -327,10 +327,71 @@ describe('summarizeDiagnosticEvidence', () => {
     expect(findings[0].canonical).toBe('large');
     expect(findings.find((finding) => finding.canonical === 'small')?.confidence).toBe('limited');
     expect(findings.some((finding) => finding.canonical === 'stale')).toBe(false);
-    expect(findings.find((finding) => finding.canonical === 'large')?.relatedCount).toBe(3);
+    expect(findings.find((finding) => finding.canonical === 'large')).toMatchObject({
+      agreementCount: 1,
+      relatedCount: 2,
+    });
     expect(findings.findIndex((finding) => finding.canonical === 'tie-a')).toBeLessThan(
       findings.findIndex((finding) => finding.canonical === 'tie-b')
     );
+  });
+
+  it('does not treat the finding itself as corroboration', () => {
+    expect(
+      summarizeDiagnosticEvidence([
+        baseVariant({
+          canonical: 'isolated',
+          status: 'weakness',
+          ratio: 0.8,
+          effects: ['power'],
+          observationCount: 4,
+          comparisonCount: 4,
+          staleDays: 0,
+        }),
+      ]).rankedFindings[0]
+    ).toMatchObject({
+      confidence: 'moderate',
+      agreementCount: 0,
+      relatedCount: 0,
+    });
+  });
+
+  it('counts an overlapping peer once and lowers evidence when a peer contradicts the finding', () => {
+    const target = baseVariant({
+      canonical: 'target',
+      status: 'weakness',
+      ratio: 0.8,
+      effects: ['power', 'speed'],
+      observationCount: 4,
+      comparisonCount: 4,
+      staleDays: 45,
+    });
+    const agreeing = baseVariant({
+      canonical: 'agreeing',
+      status: 'weakness',
+      ratio: 0.85,
+      effects: ['power', 'speed'],
+    });
+    const withoutContradiction = summarizeDiagnosticEvidence([
+      target,
+      agreeing,
+    ]).rankedFindings.find((finding) => finding.canonical === 'target')!;
+    const withContradiction = summarizeDiagnosticEvidence([
+      target,
+      agreeing,
+      baseVariant({
+        canonical: 'opposing',
+        status: 'overperforming',
+        ratio: 1.15,
+        effects: ['power'],
+      }),
+    ]).rankedFindings.find((finding) => finding.canonical === 'target')!;
+
+    expect(withoutContradiction).toMatchObject({ agreementCount: 1, relatedCount: 1 });
+    expect(withContradiction).toMatchObject({ agreementCount: 1, relatedCount: 2 });
+    expect(withContradiction.priorityScore).toBeLessThan(withoutContradiction.priorityScore);
+    expect(withContradiction.confidence).toBe('moderate');
+    expect(withoutContradiction.confidence).toBe('high');
   });
 });
 

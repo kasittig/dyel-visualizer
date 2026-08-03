@@ -33,13 +33,8 @@ export function DiagnosticsPanel({
 }) {
   const [activeEffect, setActiveEffect] = useState<string | null>(null);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(() => new Set());
-  const {
-    variants,
-    effectEvidence,
-    needsData,
-    attentionSummary,
-    priorityFindings = [],
-  } = usePipelineDiagnostics(liftType, unit);
+  const { variants, effectEvidence, needsData, attentionSummary, priorityFindings } =
+    usePipelineDiagnostics(liftType, unit);
   const rows = variants;
   const { sortedRows, sortKey, direction, toggleSort } = useSortableRows<DiagnosticRow, SortColumn>(
     rows,

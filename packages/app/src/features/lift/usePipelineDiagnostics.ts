@@ -52,7 +52,7 @@ export interface DiagnosticResult {
     leadingBelowEffectDisplay: string | null;
     leadingBelowEffectCount: number;
   };
-  priorityFindings?: {
+  priorityFindings: {
     canonical: string;
     title: string;
     detail: string;
@@ -176,7 +176,7 @@ export function usePipelineDiagnostics(
         detail: finding.effects.length
           ? `Associated effects: ${finding.effects.map(formatEffect).join(', ')} · ${finding.agreementCount} of ${finding.relatedCount} related signals agree`
           : 'No associated effect labels available',
-        confidence: `${finding.confidence[0].toUpperCase()}${finding.confidence.slice(1)} confidence · ${finding.observationCount} observation${finding.observationCount === 1 ? '' : 's'}${finding.comparisonCount ? ` · ${finding.comparisonCount} comparisons` : ''}`,
+        confidence: `${finding.confidence[0].toUpperCase()}${finding.confidence.slice(1)} confidence · ${Math.floor(finding.staleDays) === 0 ? 'tested today' : `tested ${Math.floor(finding.staleDays)} day${Math.floor(finding.staleDays) === 1 ? '' : 's'} ago`} · ${finding.observationCount} observation${finding.observationCount === 1 ? '' : 's'}${finding.comparisonCount ? ` · ${finding.comparisonCount} comparisons` : ''}`,
       })),
     [evidence]
   );

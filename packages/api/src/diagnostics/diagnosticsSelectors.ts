@@ -57,6 +57,7 @@ export interface DiagnosticPriorityFinding {
   deviationPercent: number;
   observationCount: number;
   comparisonCount: number;
+  staleDays: number;
   agreementCount: number;
   relatedCount: number;
   effects: string[];
@@ -69,6 +70,7 @@ export function summarizeDiagnosticEvidence(
   let aboveCount = 0;
   let leadingBelowEffect: DiagnosticAttentionSummary['leadingBelowEffect'] = null;
   const evidence = new Map<string, { belowCount: number; aboveCount: number }>();
+  const variantsByEffect = new Map<string, DiagnosticVariant[]>();
   for (const variant of variants) {
     if (variant.status !== 'weakness' && variant.status !== 'overperforming') {
       continue;
@@ -79,6 +81,9 @@ export function summarizeDiagnosticEvidence(
       aboveCount += 1;
     }
     for (const effect of variant.effects) {
+      const related = variantsByEffect.get(effect) ?? [];
+      related.push(variant);
+      variantsByEffect.set(effect, related);
       const counts = evidence.get(effect) ?? { belowCount: 0, aboveCount: 0 };
       counts[variant.status === 'weakness' ? 'belowCount' : 'aboveCount'] += 1;
       evidence.set(effect, counts);
@@ -103,14 +108,22 @@ export function summarizeDiagnosticEvidence(
       if (variant.status !== 'weakness' && variant.status !== 'overperforming') {
         return [];
       }
-      let agreementCount = 0;
-      let relatedCount = 0;
+      const related = new Map<string, DiagnosticVariant>();
       for (const effect of variant.effects) {
-        const counts = evidence.get(effect)!;
-        agreementCount += variant.status === 'weakness' ? counts.belowCount : counts.aboveCount;
-        relatedCount += counts.belowCount + counts.aboveCount;
+        for (const peer of variantsByEffect.get(effect) ?? []) {
+          if (peer.canonical !== variant.canonical) {
+            related.set(peer.canonical, peer);
+          }
+        }
       }
-      const agreement = relatedCount ? agreementCount / relatedCount : 0.5;
+      let agreementCount = 0;
+      for (const peer of related.values()) {
+        if (peer.status === variant.status) {
+          agreementCount += 1;
+        }
+      }
+      const relatedCount = related.size;
+      const agreement = relatedCount ? agreementCount / relatedCount : 0;
       const recency = Math.max(0, 1 - variant.staleDays / 90);
       const sample = Math.min(1, (variant.comparisonCount ?? variant.observationCount) / 4);
       const evidenceQuality = recency * 0.4 + sample * 0.3 + agreement * 0.3;
@@ -131,6 +144,7 @@ export function summarizeDiagnosticEvidence(
           deviationPercent,
           observationCount: variant.observationCount,
           comparisonCount: variant.comparisonCount ?? 0,
+          staleDays: variant.staleDays,
           agreementCount,
           relatedCount,
           effects: variant.effects,
