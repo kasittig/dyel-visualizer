@@ -124,8 +124,8 @@ function buildPointsByLabelFromGroups(
 // Projects a canonical's day-level max-effort e1RM trend forward to `now`, rather than
 // returning the raw all-time best, so a stale PR in one stance can't outrank current
 // strength in the other when comparing stances (see tagCompetitionDeadliftStance). Uses
-// `e1rm-max-effort` (drops any day classified as all-speed-work via `isSpeedWork` — 2+ sets
-// with no RPE), matching how the rest of the app treats comp-lift day-level data for legacy
+// `e1rm-max-effort` (drops any day without a qualifying set of 5 reps or fewer, including
+// all-speed-work days via `isSpeedWork` — 2+ sets with no RPE), matching how the rest of the app treats comp-lift day-level data for legacy
 // parity (see derive/CLAUDE.md) — note this means a lifter who never logs RPE at all will have
 // most of their multi-set training days excluded from this specific comparison, leaving only
 // their single-set max-attempt days to determine the trend.
