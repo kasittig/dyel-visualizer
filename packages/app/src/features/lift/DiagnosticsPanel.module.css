@@ -179,9 +179,11 @@
 }
 .actual small,
 .expected small {
+  color: color-mix(in srgb, var(--text) 82%, transparent);
   font-family: var(--heading);
-  font-size: 0.58rem;
-  font-weight: 500;
+  font-size: 0.62rem;
+  font-weight: 600;
+  line-height: 1.2;
   letter-spacing: 0.07em;
   text-transform: uppercase;
 }
