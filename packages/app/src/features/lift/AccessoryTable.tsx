@@ -25,12 +25,14 @@ type SortCol = 'label' | 'effects' | 'lastPerformed' | 'sessionCountInRange' | '
 
 function SubtypeTable({
   label,
+  persistenceId,
   rows,
   inRangeHeader,
   highlightedVariation,
   onVariationClick,
 }: {
   label: string;
+  persistenceId: string;
   rows: AccessoryTableDisplay[];
   inRangeHeader: string;
   highlightedVariation?: string | null;
@@ -57,7 +59,7 @@ function SubtypeTable({
   });
 
   return (
-    <CollapsibleSection label={label}>
+    <CollapsibleSection persistenceId={persistenceId} label={label}>
       <TableCard>
         <Table>
           <TableHeadRow>
@@ -129,6 +131,7 @@ export function AccessoryTable({
         <SubtypeTable
           key={subtype ?? 'null'}
           label={label}
+          persistenceId={`visualizer:accessory:table:${subtype ?? 'uncategorized'}`}
           rows={rows}
           inRangeHeader={rangeHeader}
           highlightedVariation={highlightedVariation}

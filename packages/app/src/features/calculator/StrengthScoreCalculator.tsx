@@ -54,7 +54,10 @@ export function StrengthScoreCalculator({
   );
 
   return (
-    <CollapsibleSection label="Strength Score Calculator">
+    <CollapsibleSection
+      label="Strength Score Calculator"
+      persistenceId="visualizer:calculator:strength-score"
+    >
       <div className={styles.card}>
         <div className={styles.leftCol}>
           <span className={styles.sectionLabel}>Score Calculator</span>

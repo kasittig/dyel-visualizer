@@ -72,7 +72,10 @@ export function DiagnosticsPanel({
 
   return (
     <div className={styles.wrapper}>
-      <CollapsibleSection label="Diagnostics">
+      <CollapsibleSection
+        label="Diagnostics"
+        persistenceId={`visualizer:${liftType}:diagnostics`}
+      >
         <TableCard>
           <div className={styles.cardPadded}>
             {(weakEffects.length > 0 || overtrainedEffects.length > 0) && (

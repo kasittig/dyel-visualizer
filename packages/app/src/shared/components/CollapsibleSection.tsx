@@ -1,16 +1,31 @@
-import { useId, useState } from 'react';
+import { useId } from 'react';
 import type React from 'react';
+import { useLocalStorageState } from '../hooks';
+
+const deserializeExpanded = (raw: string) => {
+  const value: unknown = JSON.parse(raw);
+  if (typeof value !== 'boolean') {
+    throw new TypeError('Stored section state must be a boolean');
+  }
+  return value;
+};
 
 export function CollapsibleSection({
   label,
   children,
   trailing,
+  persistenceId,
 }: {
   label: string;
   children: React.ReactNode;
   trailing?: React.ReactNode;
+  persistenceId: string;
 }) {
-  const [isExpanded, setIsExpanded] = useState(true);
+  const [isExpanded, setIsExpanded] = useLocalStorageState(
+    `dyel:collapsibleSection:${persistenceId}`,
+    true,
+    { deserialize: deserializeExpanded }
+  );
   const generatedId = useId();
   const triggerId = `${generatedId}-trigger`;
   const regionId = `${generatedId}-region`;
