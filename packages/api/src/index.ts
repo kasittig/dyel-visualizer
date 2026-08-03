@@ -138,8 +138,10 @@ export {
 } from './model/modelSelectors';
 export {
   selectDiagnosticVariants,
+  selectUnassessedDiagnostics,
   summarizeEffects,
   type DiagnosticVariant,
+  type UnassessedVariant,
   type EffectSummary,
 } from './diagnostics/diagnosticsSelectors';
 export { formatEffect, formatAddlWtOffset } from './diagnostics/diagnosticsUtils';

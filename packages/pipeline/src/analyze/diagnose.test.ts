@@ -63,14 +63,61 @@ describe('diagnose evaluations', () => {
     expect(stale.variants.find((v) => v.canonical === 'bench-chains')?.status).toBe('stale');
     expect(stale.unassessed).toEqual([]);
 
-    const unassessed = diagnose(
+    expect(
+      diagnose(
+        [basePt, pt('bench-bands', 70, day(20))],
+        model,
+        map,
+        opts,
+        undefined,
+        new Map([['bench-bands', 'Bench (Bands)']])
+      ).unassessed
+    ).toEqual([
+      {
+        canonical: 'bench-bands',
+        displayName: 'Bench (Bands)',
+        lift: 'lift:bench',
+        reason: 'missing-factor',
+      },
+    ]);
+  });
+
+  it.each([
+    [
+      'missing lift tag',
+      [{ ...pt('unknown', 70, day(20)), tags: new Set<string>() }],
+      model,
+      'missing-lift',
+      null,
+    ],
+    [
+      'missing normalization factor',
       [basePt, pt('bench-bands', 70, day(20))],
       model,
-      map,
-      opts,
-      undefined
-    );
-    expect(unassessed.unassessed).toEqual(['bench-bands']);
+      'missing-factor',
+      'lift:bench',
+    ],
+    [
+      'missing competition baseline observation',
+      [
+        {
+          ...pt('squat-pause', 100, day(20)),
+          tags: new Set(['lift:squat']),
+        },
+      ],
+      {
+        ...model,
+        baseline: { ...model.baseline, 'lift:squat': 'squat' },
+        variantFactor: { ...model.variantFactor, 'squat-pause': { factor: 0.9, n: 2 } },
+      },
+      'missing-baseline',
+      'lift:squat',
+    ],
+  ] as const)('records a structured reason for %s', (_, points, testModel, reason, lift) => {
+    expect(diagnose([...points], testModel, map, opts, undefined).unassessed[0]).toMatchObject({
+      reason,
+      lift,
+    });
   });
 
   it('aggregates weaknesses and filters out stale or sub-zero metrics', () => {

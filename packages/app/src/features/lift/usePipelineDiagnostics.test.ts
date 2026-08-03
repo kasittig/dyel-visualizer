@@ -23,6 +23,7 @@ describe('usePipelineDiagnostics', () => {
       hasDeadlift: false,
       weakEffects: [],
       overtrainedEffects: [],
+      needsData: [],
     });
 
     const dataset = [
@@ -72,6 +73,40 @@ describe('usePipelineDiagnostics', () => {
     const initialArray = result.current.variants;
     rerender();
     expect(result.current.variants).toBe(initialArray);
+  });
+
+  it('formats and scopes actionable unassessed reasons', () => {
+    mockUsePipelineModel.mockReturnValue({
+      status: 'success',
+      model: pipelineModelMock({
+        diagnostics: {
+          variants: [],
+          weaknesses: [],
+          unassessed: [
+            {
+              canonical: 'squat-pause',
+              displayName: 'Pause Squat',
+              lift: 'lift:squat',
+              reason: 'missing-factor',
+            },
+            {
+              canonical: 'bench-bands',
+              displayName: 'Bench (Bands)',
+              lift: 'lift:bench',
+              reason: 'missing-baseline',
+            },
+          ],
+        },
+      }),
+    });
+
+    expect(renderHook(() => usePipelineDiagnostics('bench')).result.current.needsData).toEqual([
+      expect.objectContaining({
+        canonical: 'bench-bands',
+        reasonDisplay: 'Needs competition baseline',
+        actionDisplay: 'Log a recent competition-lift set for this lift.',
+      }),
+    ]);
   });
 
   it.each([

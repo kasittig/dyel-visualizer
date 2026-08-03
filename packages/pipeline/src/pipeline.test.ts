@@ -108,6 +108,9 @@ describe('pipeline orchestration', () => {
     ).toBe(true);
     expect(Object.values(model.model.baseline)).not.toContain(acc[0].canonical);
     expect(model.model.variantFactor[acc[0].canonical]).toBeUndefined();
+    expect(model.diagnostics.unassessed.some((item) => item.canonical === acc[0].canonical)).toBe(
+      false
+    );
   });
 
   describe('automatic competition deadlift-stance derivation', () => {

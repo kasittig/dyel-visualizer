@@ -14,5 +14,6 @@ export {
   usePipelineDiagnostics,
   type DiagnosticResult,
   type DiagnosticRow,
+  type DiagnosticNeedRow,
 } from './usePipelineDiagnostics';
 export type { DiagnosticVariant } from '@dyel/api';
