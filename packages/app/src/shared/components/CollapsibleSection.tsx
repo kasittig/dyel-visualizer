@@ -54,9 +54,11 @@ function PersistedCollapsibleSection({
         {!isExpanded && summary != null && <span className="tab-title-summary">{summary}</span>}
         {trailing}
       </button>
-      <div id={regionId} role="region" aria-labelledby={triggerId} hidden={!isExpanded}>
-        {children}
-      </div>
+      {isExpanded && (
+        <div id={regionId} role="region" aria-labelledby={triggerId}>
+          {children}
+        </div>
+      )}
     </>
   );
 }

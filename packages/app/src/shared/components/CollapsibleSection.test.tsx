@@ -165,7 +165,12 @@ describe('CollapsibleSection', () => {
       const button = screen.getByRole('button', { name: /performance/i });
       expect(screen.queryByText(summary)).toBeNull();
       fireEvent.click(button);
+      expect(button.getAttribute('aria-expanded')).toBe('false');
+      expect(screen.queryByText('Chart content')).toBeNull();
       expect(screen.getByText(summary)).toBeTruthy();
+
+      fireEvent.click(button);
+      expect(screen.getByText('Chart content')).toBeTruthy();
     }
   );
 });

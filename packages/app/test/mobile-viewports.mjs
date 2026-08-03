@@ -109,6 +109,17 @@ try {
           failures.push(`${name} at ${width}px: fixed navigation overlaps page content`);
         }
       }
+      if (name === 'visualizer' && width === 390) {
+        const section = page.getByRole('button', { name: /overview/i }).first();
+        await section.click();
+        await section.click();
+        const chart = page.locator('.recharts-responsive-container').first();
+        await chart.waitFor({ state: 'visible' });
+        const bounds = await chart.boundingBox();
+        if (!bounds || bounds.width <= 0) {
+          failures.push('visualizer chart has zero width after collapse and re-expand');
+        }
+      }
       await page.close();
     }
     await context.close();
