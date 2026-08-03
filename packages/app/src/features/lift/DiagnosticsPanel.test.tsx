@@ -17,6 +17,12 @@ const variant = (status: DiagnosticVariant['status'], averageIndex: number) => (
   ratio: averageIndex / 100,
   actualE1rmKg: averageIndex,
   expectedE1rmKg: 100,
+  baselineE1rmKg: 110,
+  expectedFactor: 0.91,
+  latestAt: Date.UTC(2026, 0, 10),
+  previousE1rmKg: averageIndex - 2,
+  observationCount: 4,
+  comparisonCount: 3,
   staleDays: status === 'stale' ? 117 : 3,
   averageIndex,
   expectedBaseline: '90-110%',
@@ -28,6 +34,11 @@ const variant = (status: DiagnosticVariant['status'], averageIndex: number) => (
   deltaDisplay: `${averageIndex > 100 ? '+' : ''}${(averageIndex - 100).toFixed(1)}%`,
   ageDays: status === 'stale' ? 117 : 3,
   ageDisplay: status === 'stale' ? '117 days ago' : '3 days ago',
+  latestDateDisplay: 'Jan 10, 2026',
+  trendDisplay: '+2.0% vs prior observation',
+  observationDisplay: '4 observations · 3 fitted comparisons',
+  calculationDisplay: '110.0 lb baseline × 91.0% = 100.1 lb expected',
+  rationaleDisplay: 'The latest e1RM is 18.0% below its expected value.',
 });
 
 describe('DiagnosticsPanel', () => {
@@ -52,6 +63,12 @@ describe('DiagnosticsPanel', () => {
     ['Below expected', 'On target', 'Above expected', 'Needs retest'].forEach((label) =>
       expect(screen.getByText(label)).toBeDefined()
     );
+    [
+      'weakness: Below expected. Expand diagnostic',
+      'optimal: On target. Expand diagnostic',
+      'overperforming: Above expected. Expand diagnostic',
+      'stale: Needs retest. Expand diagnostic',
+    ].forEach((name) => fireEvent.click(screen.getByRole('button', { name })));
     const weaknessDetails = within(container.querySelector('#diagnostic-weakness-details')!);
     expect(weaknessDetails.getByText('82 lb')).toBeDefined();
     expect(weaknessDetails.getByText('100 lb')).toBeDefined();
@@ -65,6 +82,11 @@ describe('DiagnosticsPanel', () => {
     ).toBeDefined();
     expect(screen.getByText(/Retest recommended/)).toBeDefined();
     expect(screen.getByText('Paused, +20 lb')).toBeDefined();
+    expect(screen.getAllByText('Recent trend')).toHaveLength(4);
+    expect(screen.getAllByText('+2.0% vs prior observation')).toHaveLength(4);
+    expect(screen.getAllByText('4 observations · 3 fitted comparisons')).toHaveLength(4);
+    expect(screen.getAllByText('Expected calculation')).toHaveLength(4);
+    expect(screen.getAllByText('Why this status')).toHaveLength(4);
     expect(screen.queryByText('Overtrained')).toBeNull();
     expect(screen.getByText('Sort by')).toBeDefined();
   });
@@ -106,6 +128,11 @@ describe('DiagnosticsPanel', () => {
     });
 
     const { container } = render(<DiagnosticsPanel liftType="squat" unit="lbs" />);
+    fireEvent.click(
+      within(container).getByRole('button', {
+        name: 'weakness: Below expected. Expand diagnostic',
+      })
+    );
     const details = within(container.querySelector('#diagnostic-weakness-details')!);
     expect(within(container).getByText('Below expected')).toBeDefined();
     expect(details.getByText('205 lb')).toBeDefined();
@@ -118,25 +145,38 @@ describe('DiagnosticsPanel', () => {
   it('collapses and expands individual diagnostic rows', () => {
     const { container } = render(<DiagnosticsPanel liftType="squat" unit="lbs" />);
 
-    const collapse = container.querySelector<HTMLButtonElement>(
-      '[aria-controls="diagnostic-weakness-details"]'
-    )!;
-    expect(collapse.getAttribute('aria-expanded')).toBe('true');
-    expect(container.querySelector('#diagnostic-weakness-details')).not.toBeNull();
-    fireEvent.click(collapse);
-
-    expect(container.querySelector('#diagnostic-weakness-details')).toBeNull();
     const expand = container.querySelector<HTMLButtonElement>(
       '[aria-controls="diagnostic-weakness-details"]'
     )!;
     expect(expand.getAttribute('aria-expanded')).toBe('false');
+    expect(container.querySelector('#diagnostic-weakness-details')).toBeNull();
     fireEvent.click(expand);
     expect(container.querySelector('#diagnostic-weakness-details')).not.toBeNull();
+  });
+
+  it('synchronizes expanded evidence with the variation chart highlight', () => {
+    const onVariationClick = vi.fn();
+    const { container } = render(
+      <DiagnosticsPanel liftType="squat" unit="lbs" onVariationClick={onVariationClick} />
+    );
+    fireEvent.click(
+      within(container).getByRole('button', {
+        name: 'weakness: Below expected. Expand diagnostic',
+      })
+    );
+    fireEvent.click(container.querySelector('#diagnostic-weakness-details')!);
+
+    expect(onVariationClick).toHaveBeenCalledWith('weakness');
   });
 
   it('announces the active sort criterion and direction', () => {
     const { container } = render(<DiagnosticsPanel liftType="squat" unit="lbs" />);
     const diagnostics = within(container);
+    fireEvent.click(
+      diagnostics.getByRole('button', {
+        name: 'weakness: Below expected. Expand diagnostic',
+      })
+    );
 
     const statusSort = diagnostics.getByRole('button', { name: 'Sort by Status' });
     expect(statusSort.getAttribute('aria-pressed')).toBe('false');
@@ -148,6 +188,7 @@ describe('DiagnosticsPanel', () => {
     ).toBe('true');
     fireEvent.click(diagnostics.getByRole('button', { name: 'Status, sorted ascending' }));
     expect(diagnostics.getByRole('button', { name: 'Status, sorted descending' })).toBeDefined();
+    expect(container.querySelector('#diagnostic-weakness-details')).not.toBeNull();
   });
 
   it('renders unassessed variations with a reason and next action', () => {

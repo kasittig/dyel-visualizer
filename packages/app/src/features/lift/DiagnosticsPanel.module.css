@@ -121,7 +121,9 @@
   appearance: none;
   display: grid;
   grid-template-columns: minmax(13rem, 1fr) minmax(20rem, 1.35fr);
-  grid-template-areas: 'footer comparison';
+  grid-template-areas:
+    'footer comparison'
+    'provenance provenance';
   gap: 0.45rem 1.5rem;
   width: 100%;
   border: 0;
@@ -231,6 +233,38 @@
 .recency strong {
   color: var(--text);
 }
+.provenance {
+  grid-area: provenance;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  margin-top: 0.35rem;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--border);
+}
+.provenance > span {
+  display: grid;
+  align-content: start;
+  gap: 0.18rem;
+  min-width: 0;
+  padding: 9px 11px;
+  background: color-mix(in srgb, var(--surface) 96%, var(--accent));
+  color: color-mix(in srgb, var(--text) 76%, transparent);
+  font-size: 0.72rem;
+  line-height: 1.4;
+}
+.provenance strong {
+  color: var(--text);
+  font-family: var(--heading);
+  font-size: 0.64rem;
+  letter-spacing: 0.055em;
+  text-transform: uppercase;
+}
+.provenanceWide {
+  grid-column: span 3;
+}
 .needsData {
   border-top: 1px solid var(--border);
 }
@@ -281,11 +315,18 @@
     grid-template-columns: 1fr;
     grid-template-areas:
       'comparison'
-      'footer';
+      'footer'
+      'provenance';
     gap: 0.8rem;
   }
   .comparison {
     grid-template-columns: auto auto auto;
+  }
+  .provenance {
+    grid-template-columns: 1fr;
+  }
+  .provenanceWide {
+    grid-column: auto;
   }
   .sortBar {
     overflow-x: auto;

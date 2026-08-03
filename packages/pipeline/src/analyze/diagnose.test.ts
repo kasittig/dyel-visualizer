@@ -39,6 +39,8 @@ describe('diagnose evaluations', () => {
       ratio: 1,
       status: 'optimal',
       fittedStatus: null,
+      observationCount: 1,
+      comparisonCount: null,
     });
 
     const checks = [
@@ -80,6 +82,27 @@ describe('diagnose evaluations', () => {
         reason: 'missing-factor',
       },
     ]);
+  });
+
+  it('includes calculation, trend, and evidence provenance', () => {
+    const earlier = pt('bench-chains', 75, day(10));
+    const latest = pt('bench-chains', 80, day(20));
+    const assessment = diagnose(
+      [basePt, earlier, latest],
+      model,
+      map,
+      opts,
+      undefined
+    ).variants.find((variant) => variant.canonical === 'bench-chains');
+
+    expect(assessment).toMatchObject({
+      baselineE1rmKg: 100,
+      expectedFactor: 0.8,
+      latestAt: latest.t,
+      previousE1rmKg: 75,
+      observationCount: 2,
+      comparisonCount: 5,
+    });
   });
 
   it.each([

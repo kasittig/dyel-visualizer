@@ -12,6 +12,12 @@ export interface DiagnosticVariant {
   ratio: number;
   actualE1rmKg: number;
   expectedE1rmKg: number;
+  baselineE1rmKg: number;
+  expectedFactor: number;
+  latestAt: number;
+  previousE1rmKg: number | null;
+  observationCount: number;
+  comparisonCount: number | null;
   staleDays: number;
   averageIndex: number;
   expectedBaseline: string | null;
@@ -39,6 +45,12 @@ export function selectDiagnosticVariants(
     ratio: v.ratio,
     actualE1rmKg: v.actualE1rmKg,
     expectedE1rmKg: v.expectedE1rmKg,
+    baselineE1rmKg: v.baselineE1rmKg,
+    expectedFactor: v.expectedFactor,
+    latestAt: v.latestAt,
+    previousE1rmKg: v.previousE1rmKg,
+    observationCount: v.observationCount,
+    comparisonCount: v.comparisonCount,
     staleDays: v.staleDays,
     averageIndex: v.averageIndex,
     expectedBaseline: v.expectedBaseline,
