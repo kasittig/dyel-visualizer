@@ -48,6 +48,11 @@
   --heading: 'Chakra Petch', system-ui, sans-serif;
   --mono: 'JetBrains Mono', ui-monospace, Consolas, monospace;
 
+  /* Shared responsive layout tokens. Keep feature breakpoints aligned to these values. */
+  --page-gutter: 2rem;
+  --section-space: 1.25rem;
+  --touch-target: 44px;
+
   font: 18px/145% var(--sans);
   letter-spacing: 0.18px;
   color-scheme: light dark;
@@ -135,6 +140,13 @@
 
 body {
   margin: 0;
+  min-width: 0;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
 }
 
 h1,
@@ -193,6 +205,33 @@ button.tab-title {
   width: calc(100% + 0.7rem);
   border-radius: 5px;
   transition: background 0.12s;
+}
+
+@media (max-width: 640px) {
+  :root {
+    --page-gutter: 1rem;
+    --section-space: 1rem;
+  }
+
+  #root {
+    border-inline: 0;
+    overflow-x: clip;
+  }
+
+  h1 {
+    font-size: 2rem;
+  }
+
+  button.tab-title {
+    min-height: var(--touch-target);
+    margin-block: 0.25rem;
+  }
+}
+
+@media (max-width: 359px) {
+  :root {
+    --page-gutter: 0.75rem;
+  }
 }
 
 button.tab-title:hover {
