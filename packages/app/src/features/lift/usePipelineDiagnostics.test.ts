@@ -30,6 +30,7 @@ describe('usePipelineDiagnostics', () => {
         leadingBelowEffectDisplay: null,
         leadingBelowEffectCount: 0,
       },
+      priorityFindings: [],
     });
 
     const dataset = [

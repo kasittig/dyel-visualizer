@@ -33,10 +33,13 @@ export function DiagnosticsPanel({
 }) {
   const [activeEffect, setActiveEffect] = useState<string | null>(null);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(() => new Set());
-  const { variants, effectEvidence, needsData, attentionSummary } = usePipelineDiagnostics(
-    liftType,
-    unit
-  );
+  const {
+    variants,
+    effectEvidence,
+    needsData,
+    attentionSummary,
+    priorityFindings = [],
+  } = usePipelineDiagnostics(liftType, unit);
   const rows = variants;
   const { sortedRows, sortKey, direction, toggleSort } = useSortableRows<DiagnosticRow, SortColumn>(
     rows,
@@ -95,6 +98,17 @@ export function DiagnosticsPanel({
                   {attentionSummary.leadingBelowEffectCount} below-expected{' '}
                   {attentionSummary.leadingBelowEffectCount === 1 ? 'variation' : 'variations'}.
                 </p>
+              )}
+              {priorityFindings.length > 0 && (
+                <ol className={styles.priorities} aria-label="Highest-priority diagnostic findings">
+                  {priorityFindings.map((finding) => (
+                    <li key={finding.canonical}>
+                      <strong>{finding.title}</strong>
+                      <span>{finding.confidence}</span>
+                      <small>{finding.detail}</small>
+                    </li>
+                  ))}
+                </ol>
               )}
             </section>
           )}

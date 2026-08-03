@@ -148,6 +148,7 @@ export {
   type EffectSummary,
   type DiagnosticEffectEvidence,
   type DiagnosticEvidenceSummary,
+  type DiagnosticPriorityFinding,
   type DiagnosticAttentionSummary,
 } from './diagnostics/diagnosticsSelectors';
 export { formatEffect, formatAddlWtOffset } from './diagnostics/diagnosticsUtils';

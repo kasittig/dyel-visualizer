@@ -52,6 +52,12 @@ export interface DiagnosticResult {
     leadingBelowEffectDisplay: string | null;
     leadingBelowEffectCount: number;
   };
+  priorityFindings?: {
+    canonical: string;
+    title: string;
+    detail: string;
+    confidence: string;
+  }[];
 }
 
 export function usePipelineDiagnostics(
@@ -162,11 +168,25 @@ export function usePipelineDiagnostics(
     };
   }, [evidence]);
 
+  const priorityFindings = useMemo(
+    () =>
+      evidence.rankedFindings.slice(0, 3).map((finding) => ({
+        canonical: finding.canonical,
+        title: `${finding.displayName} · ${finding.deviationPercent.toFixed(1)}% ${finding.status === 'weakness' ? 'below' : 'above'} expected`,
+        detail: finding.effects.length
+          ? `Associated effects: ${finding.effects.map(formatEffect).join(', ')} · ${finding.agreementCount} of ${finding.relatedCount} related signals agree`
+          : 'No associated effect labels available',
+        confidence: `${finding.confidence[0].toUpperCase()}${finding.confidence.slice(1)} confidence · ${finding.observationCount} observation${finding.observationCount === 1 ? '' : 's'}${finding.comparisonCount ? ` · ${finding.comparisonCount} comparisons` : ''}`,
+      })),
+    [evidence]
+  );
+
   return {
     variants,
     hasDeadlift,
     effectEvidence,
     needsData,
     attentionSummary,
+    priorityFindings,
   };
 }
