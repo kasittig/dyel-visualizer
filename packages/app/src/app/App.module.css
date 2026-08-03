@@ -64,6 +64,7 @@
 .datePickerWrap {
   align-self: center;
   margin-left: auto;
+  flex: 0 1 auto;
 }
 
 @media (min-width: 641px) and (max-width: 1024px) {

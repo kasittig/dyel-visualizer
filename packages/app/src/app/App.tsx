@@ -137,6 +137,7 @@ export function App() {
                         value={dateRange}
                         onChange={setDateRange}
                         sessionDates={allSessionDates}
+                        scopeLabel="Applies to all visualization tabs"
                       />
                     </div>
                   </>
@@ -155,6 +156,7 @@ export function App() {
                     value={dateRange}
                     onChange={setDateRange}
                     sessionDates={allSessionDates}
+                    scopeLabel="Applies to all visualization tabs"
                   />
                 </div>
                 {mobileDestination === 'lifts' && (

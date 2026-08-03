@@ -4,6 +4,42 @@
   gap: 0.5rem;
 }
 
+.desktopGroup {
+  display: grid;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.desktopHeading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.desktopLabel {
+  color: var(--text-h);
+  font-family: var(--heading);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.scopeLabel {
+  color: var(--text);
+  font-size: 0.72rem;
+  white-space: nowrap;
+}
+
+.desktopControls {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
 .presets {
   display: flex;
   align-items: center;
@@ -33,6 +69,26 @@
   border-color: var(--accent-border);
   background: var(--accent-bg);
   color: var(--accent);
+}
+
+.exactRange {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 2rem;
+  padding: 0.3rem 0.55rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text-h);
+  cursor: pointer;
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.exactRange:hover {
+  border-color: var(--accent-border);
 }
 
 .container {
@@ -101,6 +157,10 @@
 }
 
 @media (max-width: 640px) {
+  .desktopGroup {
+    display: none;
+  }
+
   .outerWrapper,
   .presets {
     width: 100%;
@@ -127,6 +187,24 @@
     width: 50%;
     min-width: 0;
     min-height: 44px;
+  }
+}
+
+@media (min-width: 641px) and (max-width: 1100px) {
+  .desktopHeading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.1rem;
+  }
+
+  .desktopControls {
+    align-items: flex-end;
+    flex-direction: column;
+  }
+
+  .presets {
+    flex-wrap: wrap;
+    justify-content: flex-end;
   }
 }
 

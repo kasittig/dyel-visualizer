@@ -19,6 +19,14 @@ describe('DateRangePicker', () => {
     }));
   });
 
+  const useDesktopLayout = () =>
+    vi.stubGlobal('matchMedia', (query: string) => ({
+      matches: false,
+      media: query,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }));
+
   it('exposes the current preset through the compact mobile control', () => {
     const latest = new Date(2026, 6, 20);
 
@@ -72,5 +80,54 @@ describe('DateRangePicker', () => {
     fireEvent.mouseDown(within(panel).getByRole('grid'));
 
     expect(screen.getByLabelText('Choose date range')).toBeDefined();
+  });
+
+  it('groups the desktop presets and exact range under a visible scoped label', () => {
+    useDesktopLayout();
+    const latest = new Date(2026, 6, 20);
+
+    render(
+      <DateRangePicker
+        value={{ from: new Date(2026, 6, 6), to: latest }}
+        onChange={vi.fn()}
+        sessionDates={[latest]}
+        scopeLabel="Applies to all visualization tabs"
+      />
+    );
+
+    const group = screen.getByRole('group', { name: 'Date range' });
+    expect(within(group).getByText('Applies to all visualization tabs')).toBeDefined();
+    expect(within(group).getByRole('button', { name: '2 WKS' }).getAttribute('aria-pressed')).toBe(
+      'true'
+    );
+    expect(
+      within(group).getByRole('button', {
+        name: 'Custom date range. Applied range: 7/6/2026 – 7/20/2026',
+      })
+    ).toBeDefined();
+  });
+
+  it('opens custom date inputs from the keyboard-focusable desktop exact-range control', () => {
+    useDesktopLayout();
+    const latest = new Date(2026, 6, 20);
+
+    render(
+      <DateRangePicker
+        value={{ from: new Date(2026, 6, 6), to: latest }}
+        onChange={vi.fn()}
+        sessionDates={[latest]}
+      />
+    );
+
+    const trigger = screen.getByRole('button', {
+      name: 'Custom date range. Applied range: 7/6/2026 – 7/20/2026',
+    });
+    trigger.focus();
+    fireEvent.click(trigger);
+
+    expect(document.activeElement).toBe(trigger);
+    expect(screen.getByLabelText('Start date')).toBeDefined();
+    expect(screen.getByLabelText('End date')).toBeDefined();
+    expect(trigger.getAttribute('aria-expanded')).toBe('true');
   });
 });
