@@ -120,7 +120,7 @@ try {
     });
     const page = await context.newPage();
     await page.goto(`${baseUrl}${pages[0][1]}`, { waitUntil: 'networkidle' });
-    const toolbar = page.locator('[role="toolbar"][aria-label="Date filters"]');
+    const toolbar = page.locator('[role="toolbar"][aria-labelledby="training-period-label"]');
     const viewNav = page.locator('nav[aria-label="Visualization views"]');
     const stickyControls = toolbar.locator('..');
     const toolbarCount = await toolbar.count();
@@ -139,7 +139,9 @@ try {
       }));
       await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
       await page.waitForTimeout(50);
-      const afterTop = await stickyControls.evaluate((element) => element.getBoundingClientRect().top);
+      const afterTop = await stickyControls.evaluate(
+        (element) => element.getBoundingClientRect().top
+      );
       if (before.position !== 'sticky' || Math.abs(afterTop) > 1) {
         failures.push(
           `visualizer at ${width}px: toolbar did not remain sticky (${JSON.stringify({ before, afterTop })})`

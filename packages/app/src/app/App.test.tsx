@@ -74,15 +74,15 @@ describe('desktop workspace controls', () => {
   it('exposes distinct primary navigation and a globally scoped filter toolbar', () => {
     render(<App />);
 
-    const desktopNav = screen.getAllByRole('navigation', { name: 'Primary navigation' })[0]!;
-    expect(within(desktopNav).getByRole('button', { name: 'Overview' })).toBeTruthy();
-    expect(within(desktopNav).getByRole('button', { name: 'Accessories' })).toBeTruthy();
+    const desktopNav = screen.getByRole('navigation', { name: 'Visualization views' });
+    expect(within(desktopNav).getByRole('tab', { name: 'Overview' })).toBeTruthy();
+    expect(within(desktopNav).getByRole('tab', { name: 'Accessories' })).toBeTruthy();
 
-    const toolbar = screen.getByRole('region', { name: 'Training period' });
+    const toolbar = screen.getByRole('toolbar', { name: 'Training period' });
     expect(within(toolbar).getByText('Applies to all charts and calculations')).toBeTruthy();
     expect(within(toolbar).getByRole('button', { name: 'Date picker' })).toBeTruthy();
 
-    fireEvent.click(within(desktopNav).getByRole('button', { name: 'Bench' }));
+    fireEvent.click(within(desktopNav).getByRole('tab', { name: 'Bench' }));
     expect(setActiveTab).toHaveBeenCalledWith('bench');
   });
 });

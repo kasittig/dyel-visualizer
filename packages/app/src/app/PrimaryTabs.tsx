@@ -52,24 +52,24 @@ export function PrimaryTabs({
       <nav className={styles.viewNav} aria-label="Visualization views">
         <div className={styles.tabList} role="tablist" aria-label="Visualization">
           {tabs.map(({ id, label, accessibleLabel }, index) => (
-          <button
-            key={id}
-            ref={(node) => {
-              tabRefs.current[index] = node;
-            }}
-            id={primaryTabId(id)}
-            type="button"
-            role="tab"
-            aria-label={accessibleLabel}
-            aria-selected={activeTab === id}
-            aria-controls={PRIMARY_TABPANEL_ID}
-            tabIndex={activeTab === id ? 0 : -1}
-            onClick={() => onSelect(id)}
-            onKeyDown={(event) => handleKeyDown(event, index)}
-            className={clsx(styles.tab, activeTab === id && styles.tabActive)}
-          >
-            {label}
-          </button>
+            <button
+              key={id}
+              ref={(node) => {
+                tabRefs.current[index] = node;
+              }}
+              id={primaryTabId(id)}
+              type="button"
+              role="tab"
+              aria-label={accessibleLabel}
+              aria-selected={activeTab === id}
+              aria-controls={PRIMARY_TABPANEL_ID}
+              tabIndex={activeTab === id ? 0 : -1}
+              onClick={() => onSelect(id)}
+              onKeyDown={(event) => handleKeyDown(event, index)}
+              className={clsx(styles.tab, activeTab === id && styles.tabActive)}
+            >
+              {label}
+            </button>
           ))}
         </div>
       </nav>

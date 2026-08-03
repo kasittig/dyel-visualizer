@@ -42,7 +42,7 @@ try {
     const page = await browser.newPage({ viewport: { width, height: 800 } });
     await page.goto(`${baseUrl}${path}`, { waitUntil: 'networkidle' });
 
-    const overviewTab = page.getByRole('button', { name: 'Overview', exact: true });
+    const overviewTab = page.getByRole('tab', { name: 'Overview', exact: true });
     if ((await overviewTab.count()) !== 1 || !(await overviewTab.isVisible())) {
       failures.push(`${width}px: desktop/tablet Overview tab is not visible with a clear name`);
     }

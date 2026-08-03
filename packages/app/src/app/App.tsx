@@ -126,27 +126,29 @@ export function App() {
           {effStatus === 'success' && (
             <>
               <div className={styles.controlDock}>
-              <PrimaryTabs
-                tabs={primaryTabs}
-                activeTab={effActiveTab}
-                onSelect={setActiveTab}
-              />
-              <section className={styles.filterToolbar} aria-labelledby="training-period-label">
-                <div className={styles.filterDescription}>
-                  <span id="training-period-label" className={styles.filterLabel}>
-                    Training period
-                  </span>
-                  <span className={styles.filterScope}>Applies to all charts and calculations</span>
-                </div>
-                <div className={styles.datePickerWrap} role="toolbar" aria-label="Date filters">
-                  <DateRangePicker
-                    value={dateRange}
-                    onChange={setDateRange}
-                    sessionDates={allSessionDates}
-                    scopeLabel="Applies to all visualization tabs"
-                  />
-                </div>
-              </section>
+                <PrimaryTabs tabs={primaryTabs} activeTab={effActiveTab} onSelect={setActiveTab} />
+                <section
+                  className={styles.filterToolbar}
+                  role="toolbar"
+                  aria-labelledby="training-period-label"
+                >
+                  <div className={styles.filterDescription}>
+                    <span id="training-period-label" className={styles.filterLabel}>
+                      Training period
+                    </span>
+                    <span className={styles.filterScope}>
+                      Applies to all charts and calculations
+                    </span>
+                  </div>
+                  <div className={styles.datePickerWrap}>
+                    <DateRangePicker
+                      value={dateRange}
+                      onChange={setDateRange}
+                      sessionDates={allSessionDates}
+                      scopeLabel="Applies to all visualization tabs"
+                    />
+                  </div>
+                </section>
               </div>
               <div className={styles.mobileTopControls}>
                 <div className={styles.mobileScreenHeader}>
