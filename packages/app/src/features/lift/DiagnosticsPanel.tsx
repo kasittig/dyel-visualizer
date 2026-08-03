@@ -57,8 +57,8 @@ export function DiagnosticsPanel({
         summary={`${variants.length} variation${variants.length === 1 ? '' : 's'} · ${weakEffects.length} below range · ${overtrainedEffects.length} above range`}
       >
         <TableCard>
-          <div className={styles.cardPadded}>
-            {(weakEffects.length > 0 || overtrainedEffects.length > 0) && (
+          {(weakEffects.length > 0 || overtrainedEffects.length > 0) && (
+            <div className={styles.cardPadded}>
               <div className={styles.summary}>
                 {weakEffects.length > 0 && (
                   <div className={styles.summaryRow}>
@@ -93,8 +93,8 @@ export function DiagnosticsPanel({
                   </div>
                 )}
               </div>
-            )}
-          </div>
+            </div>
+          )}
           <div className={styles.sortBar} aria-label="Sort diagnostics">
             <span>Sort by</span>
             {(

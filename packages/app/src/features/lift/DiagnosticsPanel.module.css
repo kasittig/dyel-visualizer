@@ -3,14 +3,15 @@
 }
 
 .cardPadded {
-  padding: 16px 18px 10px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
 }
 
 .summary {
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
-  margin-bottom: 1rem;
+  margin: 0;
   font-size: 0.85rem;
 }
 .summaryRow {
@@ -69,7 +70,6 @@
   align-items: center;
   gap: 0.4rem;
   padding: 10px 18px;
-  border-top: 1px solid var(--border);
   border-bottom: 1px solid var(--border);
   color: color-mix(in srgb, var(--text) 70%, transparent);
   font-family: var(--heading);
