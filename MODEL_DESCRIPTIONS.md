@@ -6,11 +6,16 @@ package originally had similarly-named functions (`predictE1RM`, `normalizeToBas
 fully removed from the workspace (see `HANDOFF.md`) and its logic ported/rearchitected into
 `@dyel/pipeline`, so each section below now names the pipeline-native equivalent.
 
-## e1RM Prediction (`projectE1RMToDate`)
+## e1RM Prediction
 
 ### What it does
 
-Given a set of known e1RM values (one per session date) and a target date, returns a predicted e1RM using piecewise linear interpolation and extrapolation.
+The production rep-calculator and team-view projection carries the most recent valid e1RM
+observation forward. A corrected walk-forward backtest found this conservative estimator more
+accurate than both the former linear extrapolation and a Bayesian local-level model on the
+repository's real training-log fixture.
+
+`projectE1RMToDate` remains available for interpolation and historical normalization fitting:
 
 - **Between sessions:** linearly interpolates between the two surrounding data points.
 - **After the last session:** linearly extrapolates forward at the slope of the last two sessions.
@@ -19,24 +24,34 @@ Given a set of known e1RM values (one per session date) and a target date, retur
 - **No sessions:** returns `null`.
 - **Floor:** all predictions are clamped to a minimum of 0.
 
+The backtest also contains a private Bayesian local-level candidate. It improved on linear
+extrapolation but did not beat carrying the latest observation forward, so it is deliberately not
+part of the production or public API.
+
 Each session's e1RM is the best (highest) e1RM across all sets on that date, computed with the Epley formula (`weight × (1 + reps / 30)`, RPE-adjusted when present — see `derive/e1rm.ts`'s `calcE1RM`). `projectE1RMToDate(points, targetDate)` (`packages/pipeline/src/derive/normalize.ts`) takes already-derived `{t, v}` points (e.g. from the pipeline's `e1rm` deriver) rather than raw sessions directly, but is otherwise an unchanged, pure port of legacy's algorithm — same edge-extrapolation behavior, same interpolation.
 
-Each exercise variation (canonical) has its own independent prediction curve, since points are grouped by canonical before this function ever sees them.
+Each exercise variation (canonical) is evaluated independently before any fitted normalization
+factor converts it to another variation.
 
 ### Assumptions
 
-1. **Linear progression within a cycle.** Strength gains (or losses) are assumed to be constant between any two consecutive sessions.
-2. **The boundary rate continues unchanged.** Forward extrapolation uses the slope of the last two sessions; backward extrapolation uses the slope of the first two. There is no decay or correction applied to either.
-3. **Best set per day.** When someone performs multiple sets on the same day, only the highest e1RM is kept. Lower sets do not affect the curve.
-4. **Conjugate variations are independent.** In Conjugate Mode, "bench" and "bench w/ chains" are treated as completely separate exercises with no shared signal.
+1. **Production carry-forward.** Strength stays at its most recently observed level until another
+   qualifying session supplies evidence. The estimate does not claim to model gains during gaps.
+2. **Best set per day.** When someone performs multiple sets on the same day, only the highest e1RM
+   is kept. Lower sets do not affect the estimate.
+3. **Conjugate variations are independent before normalization.** "Bench" and "bench w/ chains"
+   supply separate observations; fitted factors perform any subsequent conversion.
+4. **Legacy linear helper.** Callers of `projectE1RMToDate` still assume linear change between
+   sessions and continuation of the boundary slope outside them.
 
 ### Cases not handled
 
-- **Deload weeks.** A planned drop in training load (and therefore e1RM) followed by a peak will look like a trough to the model. Extrapolating through or beyond a deload will be inaccurate.
-- **Training breaks.** An injury or extended layoff creates a large time gap. The model computes the rate across that gap, which will underestimate the actual progress rate on either side.
-- **Peaking cycles.** A competition peak often produces an e1RM spike that is not a sustainable trend. Using a peak date as the "last session" will cause the forward extrapolation to overestimate future e1RMs.
-- **Non-linear progress curves.** Beginners tend to progress faster early on; advanced lifters plateau. The model applies a constant rate regardless of training age or phase.
-- **Regression below zero.** If extrapolation would produce a negative e1RM, the result is clamped to 0. A prediction of 0 is not meaningful — it just means the linear model has run out of range.
+- **Training breaks.** Production uncertainty is not displayed yet, so an old carried-forward value
+  can look more certain than it is.
+- **Peaks and anomalous sessions.** Carry-forward avoids extending a spike's slope, but the spike
+  remains the estimate until another qualifying session replaces it.
+- **True 1RM validation.** The current fixture contains formula-derived e1RM outcomes rather than
+  frequent tested maxima, so it evaluates stability of logged performance rather than absolute 1RM truth.
 
 ## Cross-exercise e1RM normalization (`fitNormalizationModel` / `normalizeE1rm` / `projectToVariant`)
 
