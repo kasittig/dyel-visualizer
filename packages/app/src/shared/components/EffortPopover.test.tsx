@@ -33,7 +33,7 @@ describe('EffortPopover', () => {
       expect(input.max).toBe('20');
     });
 
-    it('has title hint on reps input', () => {
+    it('exposes a touch- and screen-reader-friendly effort hint', () => {
       render(
         <EffortPopover
           reps={5}
@@ -46,7 +46,8 @@ describe('EffortPopover', () => {
       );
 
       const input = screen.getByDisplayValue('5');
-      expect(input.getAttribute('title')).toBe('Double-click to set RPE / %');
+      expect(input.getAttribute('aria-label')).toBe('Reps: 5. Activate to set RPE or percentage');
+      expect(input.getAttribute('title')).toBeNull();
     });
   });
 

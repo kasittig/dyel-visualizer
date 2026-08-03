@@ -129,6 +129,7 @@ export function App() {
                     onClick={() => setActiveTab(id)}
                     className={clsx(styles.tab, effActiveTab === id && styles.tabActive)}
                     aria-current={effActiveTab === id ? 'page' : undefined}
+                    aria-pressed={effActiveTab === id}
                   >
                     {label}
                   </button>

@@ -31,7 +31,7 @@ export function EffortPopover({
   const badgeText = effortMode === 'rpe' ? `RPE${effortValue}` : `${effortValue}%`;
 
   // Radix's built-in "click/focus outside to dismiss" doesn't compose cleanly with a plain
-  // Popover.Anchor driven by our own onDoubleClick: Popover.Anchor (unlike Popover.Trigger)
+  // Popover.Anchor driven by our own click handler: Popover.Anchor (unlike Popover.Trigger)
   // isn't automatically exempted from outside-interaction detection, so re-clicking the same
   // anchor to reopen (or interacting with it while already open) can race with Radix's own
   // dismissal and leave the popover unable to reopen. Same fix DateRangePicker.tsx already
@@ -66,8 +66,10 @@ export function EffortPopover({
               max={20}
               value={reps}
               className={clsx(styles.repsInput, open && styles.repsInputActive)}
-              title="Double-click to set RPE / %"
-              onDoubleClick={() => setOpen(true)}
+              aria-label={`Reps: ${reps}. Activate to set RPE or percentage`}
+              aria-expanded={open}
+              inputMode="numeric"
+              onClick={() => setOpen(true)}
               onChange={(e) => {
                 const val = parseInt(e.target.value, 10);
                 onRepsChange(Number.isNaN(val) || val < 1 ? 1 : val);
@@ -88,6 +90,7 @@ export function EffortPopover({
             className={styles.popover}
             sideOffset={8}
             collisionPadding={8}
+            aria-label="Effort settings"
             onInteractOutside={(e) => e.preventDefault()}
             onFocusOutside={(e) => e.preventDefault()}
           >

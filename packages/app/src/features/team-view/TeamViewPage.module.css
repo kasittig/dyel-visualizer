@@ -260,7 +260,8 @@
 
 @media (max-width: 640px) {
   .main {
-    padding: 1rem;
+    padding: max(1rem, var(--safe-top)) max(1rem, var(--safe-right)) max(1rem, var(--safe-bottom))
+      max(1rem, var(--safe-left));
   }
   .backLink {
     display: flex;
