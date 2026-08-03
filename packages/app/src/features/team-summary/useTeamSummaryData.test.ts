@@ -172,6 +172,32 @@ describe('useTeamSummaryData', () => {
       expect(result.current.unit).toBe('lbs');
     });
 
+    it.each([
+      ['lbs', ['220 lbs', '198 lbs', '265 lbs', '683 lbs'], [220, 198, 265, 683]],
+      ['kg', ['100 kg', '90 kg', '120 kg', '310 kg'], [100, 90, 120, 310]],
+    ] as const)('formats already-converted chart values once in %s', (unit, displays, values) => {
+      const model = minimalPipelineModel(
+        [
+          taggedRecord('squat', 'Squat', { meta: { rawUnit: unit } }),
+          taggedRecord('bench', 'Bench', { meta: { rawUnit: unit } }),
+          taggedRecord('deadlift', 'Deadlift', { meta: { rawUnit: unit } }),
+        ],
+        [],
+        [
+          point(1, 100, 'squat', ['lift:squat']),
+          point(1, 90, 'bench', ['lift:bench']),
+          point(1, 120, 'deadlift', ['lift:deadlift']),
+        ]
+      );
+      const { result } = renderHook(() => useTeamSummaryData([successResult('Lifter', model)]));
+      const row = result.current.rows[0];
+
+      expect([row.squatDisplay, row.benchDisplay, row.deadliftDisplay, row.totalDisplay]).toEqual(
+        displays
+      );
+      expect([row.squat, row.bench, row.deadlift, row.total]).toEqual(values);
+    });
+
     it('toggles unit and updates display values', () => {
       const model = minimalPipelineModel(
         [taggedRecord('squat', 'Squat', { meta: { rawUnit: 'kg' } })],
