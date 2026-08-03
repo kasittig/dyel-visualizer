@@ -6,6 +6,12 @@ import { usePipelineDiagnostics } from './usePipelineDiagnostics';
 
 vi.mock('./usePipelineDiagnostics');
 const mockUsePipelineDiagnostics = vi.mocked(usePipelineDiagnostics);
+const attentionSummary = {
+  belowCount: 1,
+  aboveCount: 1,
+  leadingBelowEffectDisplay: 'Power',
+  leadingBelowEffectCount: 1,
+};
 
 const variant = (status: DiagnosticVariant['status'], averageIndex: number) => ({
   canonical: status,
@@ -54,6 +60,7 @@ describe('DiagnosticsPanel', () => {
       weakEffects: [],
       overtrainedEffects: [],
       needsData: [],
+      attentionSummary,
     });
   });
 
@@ -98,6 +105,7 @@ describe('DiagnosticsPanel', () => {
       weakEffects: ['paused'],
       overtrainedEffects: [],
       needsData: [],
+      attentionSummary,
     });
 
     render(<DiagnosticsPanel liftType="squat" unit="lbs" />);
@@ -125,6 +133,7 @@ describe('DiagnosticsPanel', () => {
       weakEffects: [],
       overtrainedEffects: [],
       needsData: [],
+      attentionSummary,
     });
 
     const { container } = render(<DiagnosticsPanel liftType="squat" unit="lbs" />);
@@ -208,6 +217,12 @@ describe('DiagnosticsPanel', () => {
             'Log this variation alongside its competition lift to establish an expected relationship.',
         },
       ],
+      attentionSummary: {
+        belowCount: 0,
+        aboveCount: 0,
+        leadingBelowEffectDisplay: null,
+        leadingBelowEffectCount: 0,
+      },
     });
 
     const { container } = render(<DiagnosticsPanel liftType="bench" unit="lbs" />);
@@ -217,5 +232,42 @@ describe('DiagnosticsPanel', () => {
     expect(diagnostics.getByText('Needs comparison history')).toBeDefined();
     expect(diagnostics.getByText(/Log this variation alongside/)).toBeDefined();
     expect(diagnostics.queryByText('Sort by')).toBeNull();
+  });
+
+  it('summarizes current findings before the detailed rows', () => {
+    const { container } = render(<DiagnosticsPanel liftType="squat" unit="lbs" />);
+    const summary = within(
+      container.querySelector('[aria-labelledby="diagnostic-squat-attention"]')!
+    );
+
+    expect(summary.getByText('What needs attention')).toBeDefined();
+    expect(
+      summary.getByRole('heading', {
+        name: '1 variation below expected · 1 variation above expected',
+      })
+    ).toBeDefined();
+    expect(summary.getByText(/Power/)).toBeDefined();
+    expect(summary.getByText(/1 below-expected variation/)).toBeDefined();
+  });
+
+  it('reports when every current finding is in range', () => {
+    mockUsePipelineDiagnostics.mockReturnValue({
+      variants: [variant('optimal', 100), variant('stale', 95)],
+      hasDeadlift: false,
+      weakEffects: [],
+      overtrainedEffects: [],
+      needsData: [],
+      attentionSummary: {
+        belowCount: 0,
+        aboveCount: 0,
+        leadingBelowEffectDisplay: null,
+        leadingBelowEffectCount: 0,
+      },
+    });
+
+    render(<DiagnosticsPanel liftType="squat" unit="lbs" />);
+    expect(
+      screen.getByRole('heading', { name: 'No current findings need attention' })
+    ).toBeDefined();
   });
 });

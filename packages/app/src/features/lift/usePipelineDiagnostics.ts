@@ -8,6 +8,7 @@ import {
   selectDiagnosticVariants,
   selectUnassessedDiagnostics,
   summarizeEffects,
+  summarizeDiagnosticAttention,
   type DiagnosticVariant,
   type DisplayUnit,
   type UnassessedVariant,
@@ -41,6 +42,12 @@ export interface DiagnosticResult {
   weakEffects: string[];
   overtrainedEffects: string[];
   needsData: DiagnosticNeedRow[];
+  attentionSummary: {
+    belowCount: number;
+    aboveCount: number;
+    leadingBelowEffectDisplay: string | null;
+    leadingBelowEffectCount: number;
+  };
 }
 
 export function usePipelineDiagnostics(
@@ -130,5 +137,17 @@ export function usePipelineDiagnostics(
     return summarizeEffects(variants);
   }, [variants]);
 
-  return { variants, hasDeadlift, weakEffects, overtrainedEffects, needsData };
+  const attentionSummary = useMemo(() => {
+    const summary = summarizeDiagnosticAttention(variants);
+    return {
+      belowCount: summary.belowCount,
+      aboveCount: summary.aboveCount,
+      leadingBelowEffectDisplay: summary.leadingBelowEffect
+        ? formatEffect(summary.leadingBelowEffect.effect)
+        : null,
+      leadingBelowEffectCount: summary.leadingBelowEffect?.count ?? 0,
+    };
+  }, [variants]);
+
+  return { variants, hasDeadlift, weakEffects, overtrainedEffects, needsData, attentionSummary };
 }

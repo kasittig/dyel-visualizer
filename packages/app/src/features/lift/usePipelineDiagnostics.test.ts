@@ -25,6 +25,12 @@ describe('usePipelineDiagnostics', () => {
       weakEffects: [],
       overtrainedEffects: [],
       needsData: [],
+      attentionSummary: {
+        belowCount: 0,
+        aboveCount: 0,
+        leadingBelowEffectDisplay: null,
+        leadingBelowEffectCount: 0,
+      },
     });
 
     const dataset = [

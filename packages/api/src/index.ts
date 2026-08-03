@@ -140,9 +140,11 @@ export {
   selectDiagnosticVariants,
   selectUnassessedDiagnostics,
   summarizeEffects,
+  summarizeDiagnosticAttention,
   type DiagnosticVariant,
   type UnassessedVariant,
   type EffectSummary,
+  type DiagnosticAttentionSummary,
 } from './diagnostics/diagnosticsSelectors';
 export { formatEffect, formatAddlWtOffset } from './diagnostics/diagnosticsUtils';
 export { buildTeamViewRowSnapshot } from './team/teamViewRow';

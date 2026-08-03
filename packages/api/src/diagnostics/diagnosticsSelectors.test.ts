@@ -5,6 +5,7 @@ import {
   selectDiagnosticVariants,
   selectUnassessedDiagnostics,
   summarizeEffects,
+  summarizeDiagnosticAttention,
 } from './diagnosticsSelectors';
 
 const baseVariant = (overrides?: Partial<VariantAssessment>): VariantAssessment => ({
@@ -200,5 +201,37 @@ describe('summarizeEffects', () => {
       baseVariant({ status: 'overperforming', effects: ['hypertrophy', 'speed'] }),
     ]);
     expect(new Set(o.overtrainedEffects)).toEqual(new Set(['hypertrophy', 'speed']));
+  });
+});
+
+describe('summarizeDiagnosticAttention', () => {
+  it.each([
+    ['empty input', [], { belowCount: 0, aboveCount: 0, leadingBelowEffect: null }],
+    [
+      'mixed current findings while excluding stale and optimal rows',
+      [
+        baseVariant({ status: 'weakness', effects: ['power', 'strength'] }),
+        baseVariant({ status: 'weakness', effects: ['power'] }),
+        baseVariant({ status: 'overperforming', effects: ['speed'] }),
+        baseVariant({ status: 'stale', effects: ['power'] }),
+        baseVariant({ status: 'optimal', effects: ['power'] }),
+      ],
+      { belowCount: 2, aboveCount: 1, leadingBelowEffect: { effect: 'power', count: 2 } },
+    ],
+    [
+      'all in range',
+      [baseVariant({ status: 'optimal' }), baseVariant({ status: 'optimal' })],
+      { belowCount: 0, aboveCount: 0, leadingBelowEffect: null },
+    ],
+    [
+      'deterministic alphabetical tie breaking',
+      [
+        baseVariant({ status: 'weakness', effects: ['strength'] }),
+        baseVariant({ status: 'weakness', effects: ['power'] }),
+      ],
+      { belowCount: 2, aboveCount: 0, leadingBelowEffect: { effect: 'power', count: 1 } },
+    ],
+  ])('%s', (_, variants, expected) => {
+    expect(summarizeDiagnosticAttention(variants)).toEqual(expected);
   });
 });
