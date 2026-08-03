@@ -1,4 +1,4 @@
-import { useState, type CSSProperties } from 'react';
+import { useMemo, useState, type CSSProperties } from 'react';
 import { usePipelineDiagnostics } from './usePipelineDiagnostics';
 import { formatEffect, formatAddlWtOffset } from '@dyel/api/display';
 import type { DisplayUnit, DiagnosticVariant } from '@dyel/api';
@@ -14,13 +14,15 @@ import { useSortableRows } from '../../shared/hooks';
 import styles from './DiagnosticsPanel.module.css';
 
 const LABELS = {
-  optimal: ['Optimal', 'var(--success)'],
-  overperforming: ['Overtrained', 'var(--warning)'],
-  weakness: ['Weakness', 'var(--danger)'],
-  stale: ['Stale', 'var(--muted)'],
-};
+  optimal: ['In range', 'var(--success)'],
+  overperforming: ['Above range', 'var(--warning)'],
+  weakness: ['Below range', 'var(--danger)'],
+  stale: ['Outdated', 'var(--muted)'],
+} satisfies Record<DiagnosticVariant['status'], readonly [string, string]>;
 
-type SortColumn = 'variation' | 'effects' | 'averageIndex' | 'expectedBaseline' | 'diagnostic';
+type DiagnosticRow = DiagnosticVariant & { formattedEffects: string };
+
+type SortColumn = 'variation' | 'effects' | 'evidence' | 'diagnostic';
 
 export function DiagnosticsPanel({
   onVariationClick,
@@ -35,23 +37,26 @@ export function DiagnosticsPanel({
 }) {
   const [activeEffect, setActiveEffect] = useState<string | null>(null);
   const { variants, weakEffects, overtrainedEffects } = usePipelineDiagnostics(liftType);
-  const { sortedRows, sortKey, direction, toggleSort } = useSortableRows<
-    DiagnosticVariant,
-    SortColumn
-  >(
-    variants,
-    {
-      variation: (r) => r.displayName,
-      effects: (r) =>
-        [
-          ...r.effects.map(formatEffect),
-          ...(r.addlWtOffset !== undefined
-            ? [formatAddlWtOffset(r.addlWtOffset.offsetKg, unit)]
+  const rows = useMemo(
+    () =>
+      variants.map((variant) => ({
+        ...variant,
+        formattedEffects: [
+          ...variant.effects.map(formatEffect),
+          ...(variant.addlWtOffset !== undefined
+            ? [formatAddlWtOffset(variant.addlWtOffset.offsetKg, unit)]
             : []),
         ].join(', '),
-      averageIndex: (r) => r.averageIndex ?? -Infinity,
-      expectedBaseline: (r) => r.expectedBaseline ?? '',
-      diagnostic: (r) => (LABELS[r.status as keyof typeof LABELS] ?? ['Stale'])[0] as string,
+      })),
+    [variants, unit]
+  );
+  const { sortedRows, sortKey, direction, toggleSort } = useSortableRows<DiagnosticRow, SortColumn>(
+    rows,
+    {
+      variation: (r) => r.displayName,
+      effects: (r) => r.formattedEffects,
+      evidence: (r) => r.averageIndex ?? -Infinity,
+      diagnostic: (r) => LABELS[r.status][0],
     },
     (r) => r.displayName
   );
@@ -83,7 +88,7 @@ export function DiagnosticsPanel({
               <div className={styles.summary}>
                 {weakEffects.length > 0 && (
                   <div className={styles.summaryRow}>
-                    <span className={styles.summaryLabel}>Weak spots:</span>
+                    <span className={styles.summaryLabel}>Below-range effects:</span>
                     {weakEffects.map((e) => (
                       <span
                         key={e}
@@ -98,7 +103,7 @@ export function DiagnosticsPanel({
                 )}
                 {overtrainedEffects.length > 0 && (
                   <div className={styles.summaryRow}>
-                    <span className={styles.summaryLabel}>Overworked:</span>
+                    <span className={styles.summaryLabel}>Above-range effects:</span>
                     {overtrainedEffects.map((e) => (
                       <span
                         key={e}
@@ -122,11 +127,8 @@ export function DiagnosticsPanel({
               <TableCell as="th" variant="left" {...headerSort('effects')}>
                 Effects
               </TableCell>
-              <TableCell as="th" variant="mono" {...headerSort('averageIndex')}>
-                Avg Index
-              </TableCell>
-              <TableCell as="th" variant="mono" {...headerSort('expectedBaseline')}>
-                Baseline Range
+              <TableCell as="th" variant="mono" {...headerSort('evidence')}>
+                Performance (expected)
               </TableCell>
               <TableCell as="th" variant="left" {...headerSort('diagnostic')}>
                 Diagnostic
@@ -134,10 +136,7 @@ export function DiagnosticsPanel({
             </TableHeadRow>
             <tbody>
               {sortedRows.map((r) => {
-                const [lbl, color] = LABELS[r.status as keyof typeof LABELS] ?? [
-                  'Stale',
-                  'var(--muted)',
-                ];
+                const [lbl, color] = LABELS[r.status];
                 const isHigh =
                   r.displayName === highlightedVariation ||
                   (activeEffect !== null && r.effects.includes(activeEffect));
@@ -158,16 +157,11 @@ export function DiagnosticsPanel({
                         </span>
                       )}
                     </TableCell>
-                    <TableCell variant="text">
-                      {[
-                        ...r.effects.map(formatEffect),
-                        ...(r.addlWtOffset !== undefined
-                          ? [formatAddlWtOffset(r.addlWtOffset.offsetKg, unit)]
-                          : []),
-                      ].join(', ')}
+                    <TableCell variant="text">{r.formattedEffects}</TableCell>
+                    <TableCell variant="mono" className={styles.evidence}>
+                      <span>{r.averageIndex?.toFixed(1) ?? '-'}%</span>{' '}
+                      <span>({r.expectedBaseline ?? 'range unavailable'})</span>
                     </TableCell>
-                    <TableCell variant="mono">{r.averageIndex?.toFixed(1) ?? '-'}%</TableCell>
-                    <TableCell variant="mono">{r.expectedBaseline}</TableCell>
                     <TableCell
                       variant="diagnostic"
                       style={{ '--diagnostic-color': color } as CSSProperties}
