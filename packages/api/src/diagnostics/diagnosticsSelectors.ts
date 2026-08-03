@@ -45,6 +45,22 @@ export interface DiagnosticAttentionSummary {
 
 export interface DiagnosticEvidenceSummary extends DiagnosticAttentionSummary {
   effects: DiagnosticEffectEvidence[];
+  rankedFindings: DiagnosticPriorityFinding[];
+}
+
+export interface DiagnosticPriorityFinding {
+  canonical: string;
+  displayName: string;
+  status: 'weakness' | 'overperforming';
+  priorityScore: number;
+  confidence: 'high' | 'moderate' | 'limited';
+  deviationPercent: number;
+  observationCount: number;
+  comparisonCount: number;
+  staleDays: number;
+  agreementCount: number;
+  relatedCount: number;
+  effects: string[];
 }
 
 export function summarizeDiagnosticEvidence(
@@ -54,6 +70,7 @@ export function summarizeDiagnosticEvidence(
   let aboveCount = 0;
   let leadingBelowEffect: DiagnosticAttentionSummary['leadingBelowEffect'] = null;
   const evidence = new Map<string, { belowCount: number; aboveCount: number }>();
+  const variantsByEffect = new Map<string, DiagnosticVariant[]>();
   for (const variant of variants) {
     if (variant.status !== 'weakness' && variant.status !== 'overperforming') {
       continue;
@@ -64,6 +81,9 @@ export function summarizeDiagnosticEvidence(
       aboveCount += 1;
     }
     for (const effect of variant.effects) {
+      const related = variantsByEffect.get(effect) ?? [];
+      related.push(variant);
+      variantsByEffect.set(effect, related);
       const counts = evidence.get(effect) ?? { belowCount: 0, aboveCount: 0 };
       counts[variant.status === 'weakness' ? 'belowCount' : 'aboveCount'] += 1;
       evidence.set(effect, counts);
@@ -83,11 +103,61 @@ export function summarizeDiagnosticEvidence(
       b.belowCount + b.aboveCount - (a.belowCount + a.aboveCount) ||
       a.effect.localeCompare(b.effect)
   );
+  const rankedFindings = variants
+    .flatMap<DiagnosticPriorityFinding>((variant) => {
+      if (variant.status !== 'weakness' && variant.status !== 'overperforming') {
+        return [];
+      }
+      const related = new Map<string, DiagnosticVariant>();
+      for (const effect of variant.effects) {
+        for (const peer of variantsByEffect.get(effect) ?? []) {
+          if (peer.canonical !== variant.canonical) {
+            related.set(peer.canonical, peer);
+          }
+        }
+      }
+      let agreementCount = 0;
+      for (const peer of related.values()) {
+        if (peer.status === variant.status) {
+          agreementCount += 1;
+        }
+      }
+      const relatedCount = related.size;
+      const agreement = relatedCount ? agreementCount / relatedCount : 0;
+      const recency = Math.max(0, 1 - variant.staleDays / 90);
+      const sample = Math.min(1, (variant.comparisonCount ?? variant.observationCount) / 4);
+      const evidenceQuality = recency * 0.4 + sample * 0.3 + agreement * 0.3;
+      const deviationPercent = Math.abs(variant.ratio - 1) * 100;
+      return [
+        {
+          canonical: variant.canonical,
+          displayName: variant.displayName,
+          status: variant.status,
+          priorityScore: Number(
+            (
+              Math.max(0, deviationPercent - 5) *
+              (0.5 + recency * 0.2 + sample * 0.15 + agreement * 0.15)
+            ).toFixed(2)
+          ),
+          confidence:
+            evidenceQuality >= 0.75 ? 'high' : evidenceQuality >= 0.45 ? 'moderate' : 'limited',
+          deviationPercent,
+          observationCount: variant.observationCount,
+          comparisonCount: variant.comparisonCount ?? 0,
+          staleDays: variant.staleDays,
+          agreementCount,
+          relatedCount,
+          effects: variant.effects,
+        },
+      ];
+    })
+    .sort((a, b) => b.priorityScore - a.priorityScore || a.canonical.localeCompare(b.canonical));
   return {
     belowCount,
     aboveCount,
     leadingBelowEffect,
     effects,
+    rankedFindings,
   };
 }
 

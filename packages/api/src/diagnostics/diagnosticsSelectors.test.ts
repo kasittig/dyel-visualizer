@@ -250,7 +250,7 @@ describe('summarizeDiagnosticEvidence', () => {
         baseVariant({ status: 'stale', effects: ['power'] }),
         baseVariant({ status: 'optimal', effects: ['power'] }),
       ])
-    ).toEqual({
+    ).toMatchObject({
       belowCount: 2,
       aboveCount: 1,
       leadingBelowEffect: { effect: 'power', count: 2 },
@@ -259,7 +259,139 @@ describe('summarizeDiagnosticEvidence', () => {
         { effect: 'speed', belowCount: 0, aboveCount: 1 },
         { effect: 'strength', belowCount: 1, aboveCount: 0 },
       ],
+      rankedFindings: expect.arrayContaining([
+        expect.objectContaining({ canonical: 'squat', priorityScore: expect.any(Number) }),
+      ]),
     });
+  });
+
+  it('ranks by magnitude and evidence while handling ties, contradictions, stale, and sparse data', () => {
+    const findings = summarizeDiagnosticEvidence([
+      baseVariant({
+        canonical: 'large',
+        displayName: 'Large',
+        status: 'weakness',
+        ratio: 0.75,
+        effects: ['power'],
+        observationCount: 5,
+        comparisonCount: 5,
+        staleDays: 2,
+      }),
+      baseVariant({
+        canonical: 'small',
+        displayName: 'Small',
+        status: 'weakness',
+        ratio: 0.9,
+        effects: ['power'],
+        observationCount: 1,
+        comparisonCount: 1,
+        staleDays: 80,
+      }),
+      baseVariant({
+        canonical: 'opposite',
+        displayName: 'Opposite',
+        status: 'overperforming',
+        ratio: 1.1,
+        effects: ['power'],
+        observationCount: 3,
+        comparisonCount: 3,
+        staleDays: 2,
+      }),
+      baseVariant({
+        canonical: 'stale',
+        status: 'stale',
+        ratio: 0.5,
+        effects: ['power'],
+        staleDays: 120,
+      }),
+      baseVariant({
+        canonical: 'tie-b',
+        status: 'weakness',
+        ratio: 0.9,
+        effects: [],
+        observationCount: 1,
+        comparisonCount: 1,
+        staleDays: 30,
+      }),
+      baseVariant({
+        canonical: 'tie-a',
+        status: 'weakness',
+        ratio: 0.9,
+        effects: [],
+        observationCount: 1,
+        comparisonCount: 1,
+        staleDays: 30,
+      }),
+    ]).rankedFindings;
+
+    expect(findings[0].canonical).toBe('large');
+    expect(findings.find((finding) => finding.canonical === 'small')?.confidence).toBe('limited');
+    expect(findings.some((finding) => finding.canonical === 'stale')).toBe(false);
+    expect(findings.find((finding) => finding.canonical === 'large')).toMatchObject({
+      agreementCount: 1,
+      relatedCount: 2,
+    });
+    expect(findings.findIndex((finding) => finding.canonical === 'tie-a')).toBeLessThan(
+      findings.findIndex((finding) => finding.canonical === 'tie-b')
+    );
+  });
+
+  it('does not treat the finding itself as corroboration', () => {
+    expect(
+      summarizeDiagnosticEvidence([
+        baseVariant({
+          canonical: 'isolated',
+          status: 'weakness',
+          ratio: 0.8,
+          effects: ['power'],
+          observationCount: 4,
+          comparisonCount: 4,
+          staleDays: 0,
+        }),
+      ]).rankedFindings[0]
+    ).toMatchObject({
+      confidence: 'moderate',
+      agreementCount: 0,
+      relatedCount: 0,
+    });
+  });
+
+  it('counts an overlapping peer once and lowers evidence when a peer contradicts the finding', () => {
+    const target = baseVariant({
+      canonical: 'target',
+      status: 'weakness',
+      ratio: 0.8,
+      effects: ['power', 'speed'],
+      observationCount: 4,
+      comparisonCount: 4,
+      staleDays: 45,
+    });
+    const agreeing = baseVariant({
+      canonical: 'agreeing',
+      status: 'weakness',
+      ratio: 0.85,
+      effects: ['power', 'speed'],
+    });
+    const withoutContradiction = summarizeDiagnosticEvidence([
+      target,
+      agreeing,
+    ]).rankedFindings.find((finding) => finding.canonical === 'target')!;
+    const withContradiction = summarizeDiagnosticEvidence([
+      target,
+      agreeing,
+      baseVariant({
+        canonical: 'opposing',
+        status: 'overperforming',
+        ratio: 1.15,
+        effects: ['power'],
+      }),
+    ]).rankedFindings.find((finding) => finding.canonical === 'target')!;
+
+    expect(withoutContradiction).toMatchObject({ agreementCount: 1, relatedCount: 1 });
+    expect(withContradiction).toMatchObject({ agreementCount: 1, relatedCount: 2 });
+    expect(withContradiction.priorityScore).toBeLessThan(withoutContradiction.priorityScore);
+    expect(withContradiction.confidence).toBe('moderate');
+    expect(withoutContradiction.confidence).toBe('high');
   });
 });
 

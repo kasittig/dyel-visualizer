@@ -62,6 +62,7 @@ describe('DiagnosticsPanel', () => {
       effectEvidence: [],
       needsData: [],
       attentionSummary,
+      priorityFindings: [],
     });
   });
 
@@ -113,6 +114,7 @@ describe('DiagnosticsPanel', () => {
       effectEvidence: [{ effect: 'paused', label: 'Paused', belowCount: 1, aboveCount: 1 }],
       needsData: [],
       attentionSummary,
+      priorityFindings: [],
     });
 
     const onVariationClick = vi.fn();
@@ -166,6 +168,7 @@ describe('DiagnosticsPanel', () => {
       effectEvidence: [],
       needsData: [],
       attentionSummary,
+      priorityFindings: [],
     });
 
     const { container } = render(<DiagnosticsPanel liftType="squat" unit="lbs" />);
@@ -254,6 +257,7 @@ describe('DiagnosticsPanel', () => {
         leadingBelowEffectDisplay: null,
         leadingBelowEffectCount: 0,
       },
+      priorityFindings: [],
     });
 
     const { container } = render(<DiagnosticsPanel liftType="bench" unit="lbs" />);
@@ -281,6 +285,55 @@ describe('DiagnosticsPanel', () => {
     expect(summary.getByText(/1 below-expected variation/)).toBeDefined();
   });
 
+  it('renders ranked findings in order with cautious evidence and confidence metadata', () => {
+    mockUsePipelineDiagnostics.mockReturnValue({
+      variants: [variant('weakness', 82)],
+      hasDeadlift: false,
+      effectEvidence: [],
+      needsData: [],
+      attentionSummary,
+      priorityFindings: [
+        {
+          canonical: 'first',
+          title: 'First · 18.0% below expected',
+          confidence: 'High confidence · tested 2 days ago · 4 observations · 4 comparisons',
+          detail: 'Associated effects: Power · 2 of 3 related signals agree',
+        },
+        {
+          canonical: 'second',
+          title: 'Second · 12.0% above expected',
+          confidence: 'Moderate confidence · tested 12 days ago · 2 observations',
+          detail: 'No associated effect labels available',
+        },
+        {
+          canonical: 'third',
+          title: 'Third · 8.0% below expected',
+          confidence: 'Limited confidence · tested 70 days ago · 1 observation',
+          detail: 'Associated effects: Speed · 0 of 1 related signals agree',
+        },
+        {
+          canonical: 'fourth',
+          title: 'Fourth · 7.0% above expected',
+          confidence: 'Limited confidence · tested 80 days ago · 1 observation',
+          detail: 'Associated effects: Power · No related signals',
+        },
+      ],
+    });
+
+    render(<DiagnosticsPanel liftType="squat" unit="lbs" />);
+    const list = screen.getByRole('list', { name: 'Highest-priority diagnostic findings' });
+    expect(
+      within(list)
+        .getAllByRole('listitem')
+        .map((item) => item.textContent)
+    ).toEqual([
+      'First · 18.0% below expectedHigh confidence · tested 2 days ago · 4 observations · 4 comparisonsAssociated effects: Power · 2 of 3 related signals agree',
+      'Second · 12.0% above expectedModerate confidence · tested 12 days ago · 2 observationsNo associated effect labels available',
+      'Third · 8.0% below expectedLimited confidence · tested 70 days ago · 1 observationAssociated effects: Speed · 0 of 1 related signals agree',
+    ]);
+    expect(within(list).queryByText(/Fourth/)).toBeNull();
+  });
+
   it('reports when every current finding is in range', () => {
     mockUsePipelineDiagnostics.mockReturnValue({
       variants: [variant('optimal', 100), variant('stale', 95)],
@@ -293,6 +346,7 @@ describe('DiagnosticsPanel', () => {
         leadingBelowEffectDisplay: null,
         leadingBelowEffectCount: 0,
       },
+      priorityFindings: [],
     });
 
     render(<DiagnosticsPanel liftType="squat" unit="lbs" />);

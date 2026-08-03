@@ -52,6 +52,12 @@ export interface DiagnosticResult {
     leadingBelowEffectDisplay: string | null;
     leadingBelowEffectCount: number;
   };
+  priorityFindings: {
+    canonical: string;
+    title: string;
+    detail: string;
+    confidence: string;
+  }[];
 }
 
 export function usePipelineDiagnostics(
@@ -162,11 +168,25 @@ export function usePipelineDiagnostics(
     };
   }, [evidence]);
 
+  const priorityFindings = useMemo(
+    () =>
+      evidence.rankedFindings.slice(0, 3).map((finding) => ({
+        canonical: finding.canonical,
+        title: `${finding.displayName} · ${finding.deviationPercent.toFixed(1)}% ${finding.status === 'weakness' ? 'below' : 'above'} expected`,
+        detail: finding.effects.length
+          ? `Associated effects: ${finding.effects.map(formatEffect).join(', ')} · ${finding.relatedCount === 0 ? 'No related signals' : `${finding.agreementCount} of ${finding.relatedCount} related signals agree`}`
+          : 'No associated effect labels available',
+        confidence: `${finding.confidence[0].toUpperCase()}${finding.confidence.slice(1)} confidence · ${Math.floor(finding.staleDays) === 0 ? 'tested today' : `tested ${Math.floor(finding.staleDays)} day${Math.floor(finding.staleDays) === 1 ? '' : 's'} ago`} · ${finding.observationCount} observation${finding.observationCount === 1 ? '' : 's'}${finding.comparisonCount ? ` · ${finding.comparisonCount} comparisons` : ''}`,
+      })),
+    [evidence]
+  );
+
   return {
     variants,
     hasDeadlift,
     effectEvidence,
     needsData,
     attentionSummary,
+    priorityFindings,
   };
 }

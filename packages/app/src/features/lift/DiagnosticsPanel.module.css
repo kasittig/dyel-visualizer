@@ -48,6 +48,28 @@
 .attention p strong {
   color: var(--text);
 }
+.priorities {
+  display: grid;
+  gap: 0.45rem;
+  margin: 0.55rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+.priorities li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.12rem 0.75rem;
+  padding-top: 0.45rem;
+  border-top: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
+  font-size: 0.76rem;
+}
+.priorities span,
+.priorities small {
+  color: color-mix(in srgb, var(--text) 70%, transparent);
+}
+.priorities small {
+  grid-column: 1 / -1;
+}
 
 .summary {
   display: flex;

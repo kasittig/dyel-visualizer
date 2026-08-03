@@ -30,6 +30,7 @@ describe('usePipelineDiagnostics', () => {
         leadingBelowEffectDisplay: null,
         leadingBelowEffectCount: 0,
       },
+      priorityFindings: [],
     });
 
     const dataset = [
@@ -211,6 +212,30 @@ describe('usePipelineDiagnostics', () => {
       renderHook(() => usePipelineDiagnostics('squat', 'kg')).result.current.variants[0]
         .calculationDisplay
     ).toBe('100.0 kg baseline × 100.0% + 5.0 kg band assistance = 105.0 kg expected');
+  });
+
+  it('describes an isolated finding without an empty agreement ratio', () => {
+    mockUsePipelineModel.mockReturnValue({
+      status: 'success',
+      model: pipelineModelMock({
+        diagnostics: {
+          variants: [
+            variantAssessmentMock({
+              canonical: 'isolated',
+              status: 'weakness',
+              ratio: 0.8,
+              effects: ['power'],
+            }),
+          ],
+          weaknesses: [],
+          unassessed: [],
+        },
+      }),
+    });
+
+    expect(
+      renderHook(() => usePipelineDiagnostics()).result.current.priorityFindings[0].detail
+    ).toBe('Associated effects: Power · No related signals');
   });
 
   it.each([
