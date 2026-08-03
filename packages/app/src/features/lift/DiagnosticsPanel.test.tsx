@@ -311,6 +311,12 @@ describe('DiagnosticsPanel', () => {
           confidence: 'Limited confidence · tested 70 days ago · 1 observation',
           detail: 'Associated effects: Speed · 0 of 1 related signals agree',
         },
+        {
+          canonical: 'fourth',
+          title: 'Fourth · 7.0% above expected',
+          confidence: 'Limited confidence · tested 80 days ago · 1 observation',
+          detail: 'Associated effects: Power · No related signals',
+        },
       ],
     });
 
@@ -325,6 +331,7 @@ describe('DiagnosticsPanel', () => {
       'Second · 12.0% above expectedModerate confidence · tested 12 days ago · 2 observationsNo associated effect labels available',
       'Third · 8.0% below expectedLimited confidence · tested 70 days ago · 1 observationAssociated effects: Speed · 0 of 1 related signals agree',
     ]);
+    expect(within(list).queryByText(/Fourth/)).toBeNull();
   });
 
   it('reports when every current finding is in range', () => {

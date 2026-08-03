@@ -214,6 +214,30 @@ describe('usePipelineDiagnostics', () => {
     ).toBe('100.0 kg baseline × 100.0% + 5.0 kg band assistance = 105.0 kg expected');
   });
 
+  it('describes an isolated finding without an empty agreement ratio', () => {
+    mockUsePipelineModel.mockReturnValue({
+      status: 'success',
+      model: pipelineModelMock({
+        diagnostics: {
+          variants: [
+            variantAssessmentMock({
+              canonical: 'isolated',
+              status: 'weakness',
+              ratio: 0.8,
+              effects: ['power'],
+            }),
+          ],
+          weaknesses: [],
+          unassessed: [],
+        },
+      }),
+    });
+
+    expect(
+      renderHook(() => usePipelineDiagnostics()).result.current.priorityFindings[0].detail
+    ).toBe('Associated effects: Power · No related signals');
+  });
+
   it.each([
     [1.025, 0, 2.5, '+2.5%', 'Today'],
     [1, 1.8, 0, '0.0%', '1 day ago'],

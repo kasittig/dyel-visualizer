@@ -96,7 +96,7 @@ export function DiagnosticsPanel({
               )}
               {priorityFindings.length > 0 && (
                 <ol className={styles.priorities} aria-label="Highest-priority diagnostic findings">
-                  {priorityFindings.map((finding) => (
+                  {priorityFindings.slice(0, 3).map((finding) => (
                     <li key={finding.canonical}>
                       <strong>{finding.title}</strong>
                       <span>{finding.confidence}</span>
