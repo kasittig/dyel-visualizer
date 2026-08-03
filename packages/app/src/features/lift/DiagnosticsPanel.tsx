@@ -158,9 +158,9 @@ export function DiagnosticsPanel({
                       )}
                     </TableCell>
                     <TableCell variant="text">{r.formattedEffects}</TableCell>
-                    <TableCell variant="mono">
-                      {r.averageIndex?.toFixed(1) ?? '-'}% (
-                      {r.expectedBaseline ?? 'range unavailable'})
+                    <TableCell variant="mono" className={styles.evidence}>
+                      <span>{r.averageIndex?.toFixed(1) ?? '-'}%</span>{' '}
+                      <span>({r.expectedBaseline ?? 'range unavailable'})</span>
                     </TableCell>
                     <TableCell
                       variant="diagnostic"
