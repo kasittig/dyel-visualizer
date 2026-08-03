@@ -206,6 +206,21 @@
   }
 }
 
+@media (min-width: 901px) and (max-width: 1024px) {
+  .tabNav {
+    flex-wrap: wrap;
+  }
+
+  .tabSpacer {
+    display: none;
+  }
+
+  .datePickerWrap {
+    width: 100%;
+    min-width: 0;
+  }
+}
+
 @media (max-width: 640px) {
   .main {
     padding-top: max(var(--page-gutter), var(--safe-top));
