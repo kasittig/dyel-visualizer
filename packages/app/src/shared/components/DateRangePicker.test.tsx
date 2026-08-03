@@ -41,6 +41,19 @@ describe('DateRangePicker', () => {
     expect(screen.getByRole('button', { name: 'Date range: 2 WKS' })).toBeDefined();
   });
 
+  it('shows the global date scope beside the compact mobile control', () => {
+    render(
+      <DateRangePicker
+        value={{}}
+        onChange={vi.fn()}
+        scopeLabel="Applies to all visualization tabs"
+      />
+    );
+
+    expect(screen.getByRole('group', { name: 'Date range' })).toBeDefined();
+    expect(screen.getByText('Applies to all visualization tabs')).toBeDefined();
+  });
+
   it('selects a preset from the compact date-range panel', () => {
     const latest = new Date(2026, 6, 20);
     const onChange = vi.fn();

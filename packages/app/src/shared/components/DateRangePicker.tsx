@@ -122,7 +122,9 @@ export function DateRangePicker({
   return (
     <div ref={outerRef} className={styles.outerWrapper}>
       {mobile && (
-        <Popover.Root open={open} onOpenChange={setOpen}>
+        <div className={styles.mobileGroup} role="group" aria-label="Date range">
+          {scopeLabel && <span className={styles.mobileScopeLabel}>{scopeLabel}</span>}
+          <Popover.Root open={open} onOpenChange={setOpen}>
           <Popover.Trigger asChild>
             <button
               type="button"
@@ -187,7 +189,8 @@ export function DateRangePicker({
               <Popover.Close className={styles.mobileDone}>Done</Popover.Close>
             </Popover.Content>
           </Popover.Portal>
-        </Popover.Root>
+          </Popover.Root>
+        </div>
       )}
       {!mobile && (
         <div className={styles.desktopGroup} role="group" aria-labelledby={labelId}>
