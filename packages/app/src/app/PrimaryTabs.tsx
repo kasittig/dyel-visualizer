@@ -49,7 +49,7 @@ export function PrimaryTabs({
 
   return (
     <div className={styles.tabNav}>
-      <nav aria-label="Visualization views">
+      <nav className={styles.viewNav} aria-label="Visualization views">
         <div className={styles.tabList} role="tablist" aria-label="Visualization">
           {tabs.map(({ id, label, accessibleLabel }, index) => (
           <button
