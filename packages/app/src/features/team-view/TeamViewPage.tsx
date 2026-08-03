@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useTeamViewData } from './useTeamViewData';
 import { useTeamViewSelection } from './useTeamViewSelection';
@@ -27,6 +27,26 @@ interface TeamViewColumn {
   variant?: 'left' | 'mono';
   render: (row: TeamViewRow) => ReactNode;
   sortValue?: (row: TeamViewRow) => string | number;
+}
+
+const MOBILE_QUERY = '(max-width: 640px)';
+
+function useMobileLayout() {
+  const [isMobile, setIsMobile] = useState(
+    () => typeof window.matchMedia === 'function' && window.matchMedia(MOBILE_QUERY).matches
+  );
+
+  useEffect(() => {
+    if (typeof window.matchMedia !== 'function') {
+      return;
+    }
+    const query = window.matchMedia(MOBILE_QUERY);
+    const update = () => setIsMobile(query.matches);
+    query.addEventListener('change', update);
+    return () => query.removeEventListener('change', update);
+  }, []);
+
+  return isMobile;
 }
 
 export function TeamViewPage() {
@@ -68,6 +88,8 @@ export function TeamViewPage() {
   } = useTeamViewSelection(dataState.status === 'success' ? dataState.data : []);
 
   const [showHistoryChart, setShowHistoryChart] = useState(false);
+  const [mobileLifter, setMobileLifter] = useState('');
+  const isMobile = useMobileLayout();
 
   const columns: TeamViewColumn[] = [
     {
@@ -202,6 +224,7 @@ export function TeamViewPage() {
           sortDirection: sortKey === col.header ? direction : null,
         }
       : {};
+  const focusedRow = sortedRows.find((row) => row.lifterName === mobileLifter) ?? sortedRows[0];
 
   if (dataState.status === 'loading') {
     return (
@@ -352,42 +375,132 @@ export function TeamViewPage() {
               <div className={styles.emptyState}>No data for this exercise yet</div>
             ) : (
               <>
-                <TableCard>
-                  <Table>
-                    <TableHeadRow>
-                      {columns.map((col) => (
-                        <TableCell
-                          key={col.header}
-                          as="th"
-                          variant={col.variant ?? 'mono'}
-                          className={col.headerClassName}
-                          {...sortProps(col)}
-                        >
-                          {col.header}
-                        </TableCell>
-                      ))}
-                    </TableHeadRow>
-                    <tbody>
-                      {sortedRows.map((row) => (
-                        <TableRow key={row.lifterName}>
+                {!isMobile && (
+                  <div className={styles.desktopTable}>
+                    <TableCard>
+                      <Table>
+                        <TableHeadRow>
                           {columns.map((col) => (
                             <TableCell
                               key={col.header}
+                              as="th"
                               variant={col.variant ?? 'mono'}
-                              className={clsx(
-                                typeof col.cellClassName === 'function'
-                                  ? col.cellClassName(row)
-                                  : col.cellClassName
-                              )}
+                              className={col.headerClassName}
+                              {...sortProps(col)}
                             >
-                              {col.render(row)}
+                              {col.header}
                             </TableCell>
                           ))}
-                        </TableRow>
+                        </TableHeadRow>
+                        <tbody>
+                          {sortedRows.map((row) => (
+                            <TableRow key={row.lifterName}>
+                              {columns.map((col) => (
+                                <TableCell
+                                  key={col.header}
+                                  variant={col.variant ?? 'mono'}
+                                  className={clsx(
+                                    typeof col.cellClassName === 'function'
+                                      ? col.cellClassName(row)
+                                      : col.cellClassName
+                                  )}
+                                >
+                                  {col.render(row)}
+                                </TableCell>
+                              ))}
+                            </TableRow>
+                          ))}
+                        </tbody>
+                      </Table>
+                    </TableCard>
+                  </div>
+                )}
+                {isMobile && (
+                  <section className={styles.mobileCoach} aria-label="Focused lifter programming">
+                    <label htmlFor="mobile-lifter">Lifter</label>
+                    <select
+                      id="mobile-lifter"
+                      value={focusedRow?.lifterName ?? ''}
+                      onChange={(event) => setMobileLifter(event.target.value)}
+                    >
+                      {sortedRows.map((row) => (
+                        <option key={row.lifterName}>{row.lifterName}</option>
                       ))}
-                    </tbody>
-                  </Table>
-                </TableCard>
+                    </select>
+                    {focusedRow && (
+                      <article className={styles.coachCard}>
+                        <header>
+                          <strong>{focusedRow.lifterName}</strong>
+                          {focusedRow.url && (
+                            <a
+                              href={`${siteRootPath()}?sheet=${encodeURIComponent(focusedRow.url)}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              Open ↗
+                            </a>
+                          )}
+                        </header>
+                        <div className={styles.mobileField}>
+                          <label>Exercise</label>
+                          <TypeaheadDropdown
+                            options={focusedRow.availableExerciseOptions}
+                            value={focusedRow.effectiveDisplayName || null}
+                            onChange={focusedRow.onExerciseChange}
+                            placeholder="Search exercise..."
+                          />
+                        </div>
+                        <div className={styles.mobileField}>
+                          <label>Reps and effort</label>
+                          <EffortPopover
+                            reps={focusedRow.effectiveReps}
+                            onRepsChange={focusedRow.onRepsChange}
+                            effortMode={focusedRow.effectiveEffortMode}
+                            effortValue={focusedRow.effectiveEffortValue}
+                            onEffortModeChange={focusedRow.onEffortModeChange}
+                            onEffortValueChange={focusedRow.onEffortValueChange}
+                          />
+                        </div>
+                        <dl className={styles.resultGrid}>
+                          <div>
+                            <dt>Target</dt>
+                            <dd>
+                              {focusedRow.showProjected && focusedRow.targetWeightProjectedDisplay
+                                ? focusedRow.targetWeightProjectedDisplay
+                                : focusedRow.targetWeightDisplay}
+                            </dd>
+                          </div>
+                          <div>
+                            <dt>e1RM</dt>
+                            <dd>
+                              <E1RMCell
+                                actualDisplay={focusedRow.e1rmDisplay}
+                                projectedDisplay={focusedRow.e1rmProjectedDisplay}
+                                sourceLabel={focusedRow.e1rmSourceLabel}
+                                projectedFamilyRecentDisplay={focusedRow.e1rmFamilyRecentDisplay}
+                                familyRecentSourceLabel={focusedRow.e1rmFamilyRecentSourceLabel}
+                                showProjected={focusedRow.showProjected}
+                                onToggle={focusedRow.onToggleProjected}
+                              />
+                            </dd>
+                          </div>
+                          <div>
+                            <dt>Sessions</dt>
+                            <dd>{focusedRow.sessionCount}</dd>
+                          </div>
+                          <div>
+                            <dt>Last trained</dt>
+                            <dd>{focusedRow.lastPerformedDateDisplay}</dd>
+                          </div>
+                          <div className={styles.lastSetResult}>
+                            <dt>Last set</dt>
+                            <dd>{focusedRow.lastPerformedSetDisplay}</dd>
+                          </div>
+                        </dl>
+                      </article>
+                    )}
+                  </section>
+                )}
                 {erroredLifterCount > 0 && (
                   <p className={styles.errorNote}>
                     {erroredLifterCount} lifter{erroredLifterCount === 1 ? '' : 's'} could not be

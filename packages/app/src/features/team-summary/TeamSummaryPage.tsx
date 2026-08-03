@@ -1,4 +1,5 @@
 import clsx from 'clsx';
+import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useTeamViewData } from '../team-view';
 import { useTeamSummaryData } from './useTeamSummaryData';
@@ -22,6 +23,26 @@ interface TeamViewColumn {
   variant?: 'left' | 'mono';
   render: (row: TeamSummaryRow) => ReactNode;
   sortValue?: (row: TeamSummaryRow) => string | number;
+}
+
+const MOBILE_QUERY = '(max-width: 640px)';
+
+function useMobileLayout() {
+  const [isMobile, setIsMobile] = useState(
+    () => typeof window.matchMedia === 'function' && window.matchMedia(MOBILE_QUERY).matches
+  );
+
+  useEffect(() => {
+    if (typeof window.matchMedia !== 'function') {
+      return;
+    }
+    const query = window.matchMedia(MOBILE_QUERY);
+    const update = () => setIsMobile(query.matches);
+    query.addEventListener('change', update);
+    return () => query.removeEventListener('change', update);
+  }, []);
+
+  return isMobile;
 }
 
 export function TeamSummaryPage() {
@@ -111,6 +132,8 @@ export function TeamSummaryPage() {
     sortAccessors,
     (row) => row.lifterName
   );
+  const [expandedLifter, setExpandedLifter] = useState<string | null>(null);
+  const isMobile = useMobileLayout();
 
   const sortProps = (col: TeamViewColumn) =>
     col.sortValue
@@ -164,42 +187,126 @@ export function TeamSummaryPage() {
         <div className={styles.emptyState}>No lifters available</div>
       ) : (
         <>
-          <TableCard>
-            <Table>
-              <TableHeadRow>
-                {columns.map((col) => (
-                  <TableCell
-                    key={col.header}
-                    as="th"
-                    variant={col.variant ?? 'mono'}
-                    className={col.headerClassName}
-                    {...sortProps(col)}
-                  >
-                    {col.header}
-                  </TableCell>
+          {isMobile && (
+            <div className={styles.mobileSort}>
+              <label htmlFor="team-summary-sort">Sort by</label>
+              <select
+                id="team-summary-sort"
+                value={sortKey ?? 'Lifter'}
+                onChange={(event) => toggleSort(event.target.value)}
+              >
+                {sortableColumns.map((column) => (
+                  <option key={column.header} value={column.header}>
+                    {column.header}
+                  </option>
                 ))}
-              </TableHeadRow>
-              <tbody>
-                {sortedRows.map((row) => (
-                  <TableRow key={row.lifterName}>
+              </select>
+              <button type="button" onClick={() => sortKey && toggleSort(sortKey)}>
+                {direction === 'desc' ? 'Descending' : 'Ascending'}
+              </button>
+            </div>
+          )}
+          {!isMobile && (
+            <div className={styles.desktopTable}>
+              <TableCard>
+                <Table>
+                  <TableHeadRow>
                     {columns.map((col) => (
                       <TableCell
                         key={col.header}
+                        as="th"
                         variant={col.variant ?? 'mono'}
-                        className={clsx(
-                          typeof col.cellClassName === 'function'
-                            ? col.cellClassName(row)
-                            : col.cellClassName
-                        )}
+                        className={col.headerClassName}
+                        {...sortProps(col)}
                       >
-                        {col.render(row)}
+                        {col.header}
                       </TableCell>
                     ))}
-                  </TableRow>
-                ))}
-              </tbody>
-            </Table>
-          </TableCard>
+                  </TableHeadRow>
+                  <tbody>
+                    {sortedRows.map((row) => (
+                      <TableRow key={row.lifterName}>
+                        {columns.map((col) => (
+                          <TableCell
+                            key={col.header}
+                            variant={col.variant ?? 'mono'}
+                            className={clsx(
+                              typeof col.cellClassName === 'function'
+                                ? col.cellClassName(row)
+                                : col.cellClassName
+                            )}
+                          >
+                            {col.render(row)}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    ))}
+                  </tbody>
+                </Table>
+              </TableCard>
+            </div>
+          )}
+          {isMobile && (
+            <div className={styles.mobileCards} aria-label="Team summary cards">
+              {sortedRows.map((row) => {
+                const expanded = expandedLifter === row.lifterName;
+                return (
+                  <article key={row.lifterName} className={styles.summaryCard}>
+                    <button
+                      type="button"
+                      className={styles.cardHeader}
+                      aria-expanded={expanded}
+                      aria-controls={`team-summary-${row.lifterName}`}
+                      aria-label={`${expanded ? 'Hide' : 'Show'} details for ${row.lifterName}`}
+                      onClick={() => setExpandedLifter(expanded ? null : row.lifterName)}
+                    >
+                      <span>
+                        <strong>{row.lifterName}</strong>
+                        <small>
+                          {row.dateDisplay === '—'
+                            ? 'No recent session'
+                            : `Last trained ${row.dateDisplay}`}
+                        </small>
+                      </span>
+                      <span className={styles.cardTotal}>
+                        <small>Total</small>
+                        <strong>{row.totalDisplay}</strong>
+                      </span>
+                      <span aria-hidden="true">{expanded ? '−' : '+'}</span>
+                    </button>
+                    {expanded && (
+                      <div id={`team-summary-${row.lifterName}`} className={styles.cardDetails}>
+                        {[
+                          ['Squat', row.squatDisplay],
+                          ['Bench', row.benchDisplay],
+                          ['Deadlift', row.deadliftDisplay],
+                          ['Sessions', String(row.sessionCount)],
+                        ].map(([label, value]) => (
+                          <div key={label}>
+                            <small>{label}</small>
+                            <strong>{value}</strong>
+                          </div>
+                        ))}
+                        <div className={styles.lastSet}>
+                          <small>Last set</small>
+                          <strong>{row.lastSetDisplay}</strong>
+                        </div>
+                        {row.url && (
+                          <a
+                            href={`${siteRootPath()}?sheet=${encodeURIComponent(row.url)}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            Open lifter ↗
+                          </a>
+                        )}
+                      </div>
+                    )}
+                  </article>
+                );
+              })}
+            </div>
+          )}
           {erroredLifterCount > 0 && (
             <p className={styles.errorNote}>
               {erroredLifterCount} lifter{erroredLifterCount === 1 ? '' : 's'} could not be loaded
