@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { SheetUrlPanel } from './SheetUrlPanel';
 
 vi.mock('../index-page/useIndexData', () => ({
@@ -25,11 +25,22 @@ const props = (overrides: Record<string, unknown> = {}) => ({
   ...overrides,
 });
 
+let mobileMatches = true;
+let mediaListeners = new Set<() => void>();
+
 describe('SheetUrlPanel mobile settings', () => {
   beforeEach(() => {
+    mobileMatches = true;
+    mediaListeners = new Set();
     Object.defineProperty(window, 'matchMedia', {
       configurable: true,
-      value: vi.fn().mockReturnValue({ matches: true }),
+      value: vi.fn().mockImplementation(() => ({
+        get matches() {
+          return mobileMatches;
+        },
+        addEventListener: (_: string, listener: () => void) => mediaListeners.add(listener),
+        removeEventListener: (_: string, listener: () => void) => mediaListeners.delete(listener),
+      })),
     });
     HTMLDialogElement.prototype.showModal = vi.fn(function (this: HTMLDialogElement) {
       this.setAttribute('open', '');
@@ -86,5 +97,20 @@ describe('SheetUrlPanel mobile settings', () => {
 
     expect(screen.getByText('No data source')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Add source' })).toBeTruthy();
+  });
+
+  it('switches between one mobile and desktop settings tree when the viewport changes', () => {
+    render(<SheetUrlPanel {...props({ showUrlPanel: true })} />);
+
+    expect(screen.getAllByLabelText('Sheet URL:')).toHaveLength(1);
+    expect(screen.getByRole('dialog').hasAttribute('open')).toBe(true);
+
+    act(() => {
+      mobileMatches = false;
+      mediaListeners.forEach((listener) => listener());
+    });
+
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(screen.getAllByLabelText('Sheet URL:')).toHaveLength(1);
   });
 });

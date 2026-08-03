@@ -3,6 +3,7 @@ import { useIndexData } from '../index-page/useIndexData';
 import { EXAMPLE_SHEET_URL, EXAMPLE_VISUALIZER_URL } from './sheetRef';
 import type { InputMode } from '../../app/appTabs';
 import { InputModeToggle } from './InputModeToggle';
+import { MOBILE_LAYOUT_QUERY, useMediaQuery } from '../../shared/hooks';
 import styles from './SheetUrlPanel.module.css';
 
 interface SettingsContentProps {
@@ -163,6 +164,7 @@ export function SheetUrlPanel({
   const [prevText, setPrevText] = useState(text);
   const [mobileOpen, setMobileOpen] = useState(showUrlPanel);
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const mobile = useMediaQuery(MOBILE_LAYOUT_QUERY);
 
   if (text !== prevText) {
     setPrevText(text);
@@ -194,18 +196,25 @@ export function SheetUrlPanel({
     onDraftChange: setDraft,
     onTextChange,
   };
+  const settingsContent = (
+    <SettingsContent
+      idPrefix={mobile ? 'mobile' : 'desktop'}
+      autoFocus={!mobile && loaded}
+      {...settingsProps}
+    />
+  );
 
   useEffect(() => {
     const dialog = dialogRef.current;
-    if (!dialog || typeof window.matchMedia !== 'function') {
+    if (!dialog) {
       return;
     }
-    if (mobileOpen && window.matchMedia('(max-width: 640px)').matches && !dialog.open) {
+    if (mobileOpen && mobile && !dialog.open) {
       dialog.showModal();
-    } else if ((!mobileOpen || !window.matchMedia('(max-width: 640px)').matches) && dialog.open) {
+    } else if ((!mobileOpen || !mobile) && dialog.open) {
       dialog.close();
     }
-  }, [mobileOpen]);
+  }, [mobile, mobileOpen]);
 
   const openSettings = () => {
     onForceOpen();
@@ -219,98 +228,104 @@ export function SheetUrlPanel({
 
   return (
     <header className={styles.wrapper}>
-      <div className={styles.mobileHeader}>
-        <div className={styles.mobileIdentity}>
-          <span className={styles.mobileWordmark}>DYEL</span>
-          <span className={styles.mobileSource} title={sourceLabel}>
-            {sourceLabel}
-          </span>
+      {mobile && (
+        <div className={styles.mobileHeader}>
+          <div className={styles.mobileIdentity}>
+            <span className={styles.mobileWordmark}>DYEL</span>
+            <span className={styles.mobileSource} title={sourceLabel}>
+              {sourceLabel}
+            </span>
+          </div>
+          <button
+            type="button"
+            className={styles.settingsButton}
+            onClick={openSettings}
+            aria-haspopup="dialog"
+            aria-controls="data-source-settings"
+          >
+            <span aria-hidden="true">⚙</span>
+            <span>{loaded ? 'Settings' : 'Add source'}</span>
+          </button>
         </div>
-        <button
-          type="button"
-          className={styles.settingsButton}
-          onClick={openSettings}
-          aria-haspopup="dialog"
-          aria-controls="data-source-settings"
-        >
-          <span aria-hidden="true">⚙</span>
-          <span>{loaded ? 'Settings' : 'Add source'}</span>
-        </button>
-      </div>
+      )}
 
-      <div className={styles.desktopPanel}>
-        <h1>DYEL Visualizer</h1>
-        {!showUrlPanel ? (
-          <p className={styles.subtitle}>
-            <button onClick={onForceOpen} className={styles.linkButton}>
-              Change data source
-            </button>{' '}
-            ·{' '}
-            <button
-              onClick={onRefresh}
-              className={styles.refreshButton}
-              aria-label="Reload data from sheet"
-              title="Reload data from sheet"
-            >
-              ↻
-            </button>{' '}
-            · <a href="?page=conjugate">What is the conjugate method?</a> ·{' '}
-            <a href="?page=team">View team</a>
-          </p>
-        ) : (
-          <div className={styles.desktopSettings}>
+      {!mobile && (
+        <div className={styles.desktopPanel}>
+          <h1>DYEL Visualizer</h1>
+          {!showUrlPanel ? (
             <p className={styles.subtitle}>
-              {loaded ? (
-                <button onClick={onCancel} className={styles.linkButton}>
-                  Cancel
-                </button>
-              ) : (
-                <a href="?page=conjugate">What is the conjugate method?</a>
-              )}{' '}
-              · <a href={valUrl}>See if your training log is compatible</a> ·{' '}
+              <button onClick={onForceOpen} className={styles.linkButton}>
+                Change data source
+              </button>{' '}
+              ·{' '}
+              <button
+                onClick={onRefresh}
+                className={styles.refreshButton}
+                aria-label="Reload data from sheet"
+                title="Reload data from sheet"
+              >
+                ↻
+              </button>{' '}
+              · <a href="?page=conjugate">What is the conjugate method?</a> ·{' '}
               <a href="?page=team">View team</a>
             </p>
-            <SettingsContent idPrefix="desktop" autoFocus={loaded} {...settingsProps} />
-          </div>
-        )}
-      </div>
-
-      <dialog
-        id="data-source-settings"
-        ref={dialogRef}
-        className={styles.settingsDialog}
-        aria-labelledby="data-source-settings-title"
-        onCancel={(event) => {
-          event.preventDefault();
-          closeSettings();
-        }}
-        onClose={() => setMobileOpen(false)}
-      >
-        <div className={styles.dialogHeader}>
-          <div>
-            <p className={styles.dialogEyebrow}>Current source · {sourceLabel}</p>
-            <h2 id="data-source-settings-title">Data settings</h2>
-          </div>
-          <button type="button" className={styles.closeButton} onClick={closeSettings}>
-            <span aria-hidden="true">×</span>
-            <span className={styles.srOnly}>Close data settings</span>
-          </button>
-        </div>
-        <div className={styles.dialogBody}>
-          <SettingsContent idPrefix="mobile" autoFocus={false} {...settingsProps} />
-          {loaded && mode === 'url' && (
-            <button type="button" className={styles.refreshAction} onClick={onRefresh}>
-              <span aria-hidden="true">↻</span> Refresh sheet data
-            </button>
+          ) : (
+            <div className={styles.desktopSettings}>
+              <p className={styles.subtitle}>
+                {loaded ? (
+                  <button onClick={onCancel} className={styles.linkButton}>
+                    Cancel
+                  </button>
+                ) : (
+                  <a href="?page=conjugate">What is the conjugate method?</a>
+                )}{' '}
+                · <a href={valUrl}>See if your training log is compatible</a> ·{' '}
+                <a href="?page=team">View team</a>
+              </p>
+              {settingsContent}
+            </div>
           )}
-          <SettingsLinks valUrl={valUrl} />
         </div>
-        <div className={styles.dialogFooter}>
-          <button type="button" className={styles.doneButton} onClick={closeSettings}>
-            Done
-          </button>
-        </div>
-      </dialog>
+      )}
+
+      {mobile && (
+        <dialog
+          id="data-source-settings"
+          ref={dialogRef}
+          className={styles.settingsDialog}
+          aria-labelledby="data-source-settings-title"
+          onCancel={(event) => {
+            event.preventDefault();
+            closeSettings();
+          }}
+          onClose={() => setMobileOpen(false)}
+        >
+          <div className={styles.dialogHeader}>
+            <div>
+              <p className={styles.dialogEyebrow}>Current source · {sourceLabel}</p>
+              <h2 id="data-source-settings-title">Data settings</h2>
+            </div>
+            <button type="button" className={styles.closeButton} onClick={closeSettings}>
+              <span aria-hidden="true">×</span>
+              <span className={styles.srOnly}>Close data settings</span>
+            </button>
+          </div>
+          <div className={styles.dialogBody}>
+            {settingsContent}
+            {loaded && mode === 'url' && (
+              <button type="button" className={styles.refreshAction} onClick={onRefresh}>
+                <span aria-hidden="true">↻</span> Refresh sheet data
+              </button>
+            )}
+            <SettingsLinks valUrl={valUrl} />
+          </div>
+          <div className={styles.dialogFooter}>
+            <button type="button" className={styles.doneButton} onClick={closeSettings}>
+              Done
+            </button>
+          </div>
+        </dialog>
+      )}
     </header>
   );
 }
