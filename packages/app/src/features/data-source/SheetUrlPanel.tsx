@@ -251,23 +251,41 @@ export function SheetUrlPanel({
 
       {!mobile && (
         <div className={styles.desktopPanel}>
-          <h1>DYEL Visualizer</h1>
+          <div className={styles.desktopHeaderRow}>
+            <div className={styles.productIdentity}>
+              <h1>DYEL Visualizer</h1>
+              <p>Training analysis workspace</p>
+            </div>
+            <div className={styles.dataSummary} aria-label="Training data">
+              <div className={styles.sourceIdentity}>
+                <span className={styles.sourceEyebrow}>Training data</span>
+                <strong title={sourceLabel}>{sourceLabel}</strong>
+                <span className={styles.sourceStatus}>
+                  <span
+                    className={loaded ? styles.statusReady : styles.statusNeeded}
+                    aria-hidden="true"
+                  />
+                  {loaded ? 'Ready' : 'Source needed'}
+                </span>
+              </div>
+              <div className={styles.utilityActions}>
+                <button onClick={onForceOpen} className={styles.utilityButton}>
+                  Change source
+                </button>
+                {loaded && mode === 'url' && (
+                  <button onClick={onRefresh} className={styles.utilityButton}>
+                    <span aria-hidden="true">↻</span> Reload
+                  </button>
+                )}
+                <a href="?page=team" className={styles.utilityButton}>
+                  View team
+                </a>
+              </div>
+            </div>
+          </div>
           {!showUrlPanel ? (
-            <p className={styles.subtitle}>
-              <button onClick={onForceOpen} className={styles.linkButton}>
-                Change data source
-              </button>{' '}
-              ·{' '}
-              <button
-                onClick={onRefresh}
-                className={styles.refreshButton}
-                aria-label="Reload data from sheet"
-                title="Reload data from sheet"
-              >
-                ↻
-              </button>{' '}
-              · <a href="?page=conjugate">What is the conjugate method?</a> ·{' '}
-              <a href="?page=team">View team</a>
+            <p className={styles.helpLinks}>
+              <a href="?page=conjugate">Help &amp; conjugate method</a>
             </p>
           ) : (
             <div className={styles.desktopSettings}>

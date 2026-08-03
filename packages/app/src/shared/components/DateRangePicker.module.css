@@ -135,6 +135,11 @@
   display: none;
 }
 
+.mobileGroup,
+.mobileScopeLabel {
+  display: none;
+}
+
 @media (max-width: 640px) {
   .outerWrapper {
     min-width: 0;
@@ -163,6 +168,19 @@
     font-size: 0.72rem;
     font-weight: 600;
     white-space: nowrap;
+  }
+
+  .mobileGroup {
+    display: grid;
+    gap: 0.2rem;
+    min-width: 0;
+  }
+
+  .mobileScopeLabel {
+    display: block;
+    color: var(--text);
+    font-size: 0.68rem;
+    line-height: 1.2;
   }
 
   .mobileTrigger span:nth-child(2) {

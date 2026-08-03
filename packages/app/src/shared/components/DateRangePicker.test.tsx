@@ -19,6 +19,14 @@ describe('DateRangePicker', () => {
     }));
   });
 
+  const useDesktopLayout = () =>
+    vi.stubGlobal('matchMedia', (query: string) => ({
+      matches: false,
+      media: query,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }));
+
   it('exposes the current preset through the compact mobile control', () => {
     const latest = new Date(2026, 6, 20);
 
@@ -31,6 +39,19 @@ describe('DateRangePicker', () => {
     );
 
     expect(screen.getByRole('button', { name: 'Date range: 2 WKS' })).toBeDefined();
+  });
+
+  it('shows the global date scope beside the compact mobile control', () => {
+    render(
+      <DateRangePicker
+        value={{}}
+        onChange={vi.fn()}
+        scopeLabel="Applies to all visualization tabs"
+      />
+    );
+
+    expect(screen.getByRole('group', { name: 'Date range' })).toBeDefined();
+    expect(screen.getByText('Applies to all visualization tabs')).toBeDefined();
   });
 
   it('selects a preset from the compact date-range panel', () => {
@@ -72,5 +93,46 @@ describe('DateRangePicker', () => {
     fireEvent.mouseDown(within(panel).getByRole('grid'));
 
     expect(screen.getByLabelText('Choose date range')).toBeDefined();
+  });
+
+  it('keeps the desktop date presets in one compact control group', () => {
+    useDesktopLayout();
+    const latest = new Date(2026, 6, 20);
+
+    render(
+      <DateRangePicker
+        value={{ from: new Date(2026, 6, 6), to: latest }}
+        onChange={vi.fn()}
+        sessionDates={[latest]}
+      />
+    );
+
+    const presets = screen.getByLabelText('Date range presets');
+    expect(within(presets).getByRole('button', { name: '2 WKS' }).getAttribute('aria-pressed')).toBe(
+      'true'
+    );
+    expect(within(presets).getByRole('button', { name: 'Custom' })).toBeDefined();
+  });
+
+  it('opens custom date inputs from the compact desktop Custom control', () => {
+    useDesktopLayout();
+    const latest = new Date(2026, 6, 20);
+
+    render(
+      <DateRangePicker
+        value={{ from: new Date(2026, 6, 6), to: latest }}
+        onChange={vi.fn()}
+        sessionDates={[latest]}
+      />
+    );
+
+    const trigger = screen.getByRole('button', { name: 'Custom' });
+    trigger.focus();
+    fireEvent.click(trigger);
+
+    expect(document.activeElement).toBe(trigger);
+    expect(screen.getByLabelText('Start date')).toBeDefined();
+    expect(screen.getByLabelText('End date')).toBeDefined();
+    expect(trigger.getAttribute('aria-expanded')).toBe('true');
   });
 });

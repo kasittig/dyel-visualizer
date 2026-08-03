@@ -112,12 +112,60 @@ try {
     }
     await context.close();
   }
+
+  for (const width of [641, 768, 900, 1024]) {
+    const context = await browser.newContext({
+      viewport: { width, height: 667 },
+      reducedMotion: 'reduce',
+    });
+    const page = await context.newPage();
+    await page.goto(`${baseUrl}${pages[0][1]}`, { waitUntil: 'networkidle' });
+    const toolbar = page.locator('[role="toolbar"][aria-labelledby="training-period-label"]');
+    const viewNav = page.locator('nav[aria-label="Visualization views"]');
+    const stickyControls = toolbar.locator('..');
+    const toolbarCount = await toolbar.count();
+    const mobileNavDisplay = await page
+      .locator('nav[aria-label="Primary navigation"]')
+      .evaluate((element) => getComputedStyle(element).display);
+    if (toolbarCount !== 1) {
+      failures.push(`visualizer at ${width}px: sticky controls toolbar is missing`);
+    } else {
+      const before = await stickyControls.evaluate((element) => ({
+        position: getComputedStyle(element).position,
+        top: element.getBoundingClientRect().top,
+        height: element.getBoundingClientRect().height,
+        viewport: document.documentElement.clientWidth,
+        document: document.documentElement.scrollWidth,
+      }));
+      await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+      await page.waitForTimeout(50);
+      const afterTop = await stickyControls.evaluate(
+        (element) => element.getBoundingClientRect().top
+      );
+      if (before.position !== 'sticky' || Math.abs(afterTop) > 1) {
+        failures.push(
+          `visualizer at ${width}px: toolbar did not remain sticky (${JSON.stringify({ before, afterTop })})`
+        );
+      }
+      if (before.document > before.viewport) {
+        failures.push(`visualizer at ${width}px: sticky toolbar causes horizontal overflow`);
+      }
+    }
+    if ((await viewNav.count()) !== 1) {
+      failures.push(`visualizer at ${width}px: visualization navigation landmark is missing`);
+    }
+    if (mobileNavDisplay !== 'none') {
+      failures.push(`visualizer at ${width}px: mobile bottom navigation remains visible`);
+    }
+    await page.close();
+    await context.close();
+  }
   await browser.close();
 
   if (failures.length) {
     throw new Error(`Horizontal overflow detected:\n${failures.join('\n')}`);
   }
-  console.log('Mobile viewport checks passed at 320, 375, 390, and 430px.');
+  console.log('Responsive viewport checks passed from 320px through 1024px.');
 } finally {
   stop();
 }

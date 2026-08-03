@@ -18,10 +18,12 @@ export function DateRangePicker({
   value,
   onChange,
   sessionDates,
+  scopeLabel,
 }: {
   value: DateRange;
   onChange: (r: DateRange) => void;
   sessionDates?: Date[];
+  scopeLabel?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [startText, setStartText] = useState(() => formatDate(value.from));
@@ -118,7 +120,9 @@ export function DateRangePicker({
   return (
     <div ref={outerRef} className={styles.outerWrapper}>
       {mobile && (
-        <Popover.Root open={open} onOpenChange={setOpen}>
+        <div className={styles.mobileGroup} role="group" aria-label="Date range">
+          {scopeLabel && <span className={styles.mobileScopeLabel}>{scopeLabel}</span>}
+          <Popover.Root open={open} onOpenChange={setOpen}>
           <Popover.Trigger asChild>
             <button
               type="button"
@@ -183,19 +187,18 @@ export function DateRangePicker({
               <Popover.Close className={styles.mobileDone}>Done</Popover.Close>
             </Popover.Content>
           </Popover.Portal>
-        </Popover.Root>
+          </Popover.Root>
+        </div>
       )}
       {!mobile && showPresets && (
-        <div className={styles.presets}>
+        <div className={styles.presets} aria-label="Date range presets">
           {PRESETS.map((p) => (
             <button
               key={p.label}
               type="button"
               aria-pressed={currentPreset === p.presetId}
               className={`${styles.preset} ${currentPreset === p.presetId ? styles.presetActive : ''}`}
-              onClick={() => {
-                selectPreset(p.presetId);
-              }}
+              onClick={() => selectPreset(p.presetId)}
             >
               {p.label}
             </button>
@@ -205,12 +208,12 @@ export function DateRangePicker({
             aria-pressed={currentPreset === null}
             className={`${styles.preset} ${currentPreset === null ? styles.presetActive : ''}`}
             onClick={() => {
-              setShowCustomPicker((v) => !v);
+              setShowCustomPicker((shown) => !shown);
               setOpen(true);
             }}
             aria-expanded={showCustomPicker}
           >
-            CUSTOM
+            Custom
           </button>
         </div>
       )}

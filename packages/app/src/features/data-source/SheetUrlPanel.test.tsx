@@ -113,4 +113,18 @@ describe('SheetUrlPanel mobile settings', () => {
     expect(screen.queryByRole('dialog')).toBeNull();
     expect(screen.getAllByLabelText('Sheet URL:')).toHaveLength(1);
   });
+
+  it('separates product identity, data status, and desktop utility actions', () => {
+    mobileMatches = false;
+    const input = props();
+    render(<SheetUrlPanel {...input} />);
+
+    expect(screen.getByRole('heading', { name: 'DYEL Visualizer' })).toBeTruthy();
+    expect(screen.getByLabelText('Training data').textContent).toContain('Casey');
+    expect(screen.getByLabelText('Training data').textContent).toContain('Ready');
+    expect(screen.getByRole('button', { name: 'Change source' })).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: /Reload/ }));
+    expect(input.onRefresh).toHaveBeenCalledOnce();
+    expect(screen.getByRole('link', { name: 'View team' })).toBeTruthy();
+  });
 });
