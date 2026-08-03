@@ -51,7 +51,7 @@ export function RepCalculator({
   } = usePipelineRepCalculator(tabRows, baselineNames);
 
   return (
-    <CollapsibleSection label="Rep Calculator">
+    <CollapsibleSection label="Rep Calculator" persistenceId="visualizer:calculator:rep">
       <div className={styles.card}>
         <div className={styles.leftCol}>
           <span className={styles.sectionLabel}>Rep Calculator</span>

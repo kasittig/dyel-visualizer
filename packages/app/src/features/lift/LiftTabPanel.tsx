@@ -30,6 +30,7 @@ export function LiftTabPanel({
     <>
       <CollapsibleSection
         label={`${liftType.charAt(0).toUpperCase() + liftType.slice(1)} performance`}
+        persistenceId={`visualizer:${liftType}:performance`}
         trailing={<EditableDateChip dateRange={dateRange} onDateRangeChange={onDateRangeChange} />}
       >
         <ConjugateCharts

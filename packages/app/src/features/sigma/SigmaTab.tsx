@@ -23,12 +23,13 @@ export function SigmaTab({
     <>
       <CollapsibleSection
         label="Overview"
+        persistenceId="visualizer:sigma:overview"
         trailing={<EditableDateChip dateRange={dateRange} onDateRangeChange={onDateRangeChange} />}
       >
         <TotalChart chartData={chartData} unit={unit} />
       </CollapsibleSection>
       <SigmaChart chartData={chartData} unit={unit} />
-      <CollapsibleSection label="Total Volume">
+      <CollapsibleSection label="Total Volume" persistenceId="visualizer:sigma:total-volume">
         <SessionBarChart chartData={chartData} unit={unit} />
       </CollapsibleSection>
     </>

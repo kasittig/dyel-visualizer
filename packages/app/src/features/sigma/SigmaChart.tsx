@@ -30,6 +30,7 @@ export function SigmaChart({ chartData, unit }: { chartData: ChartPoint[]; unit:
   return (
     <CollapsibleSection
       label={data.length < 3 ? 'Combined Total' : 'Current e1RM by lift (normalized)'}
+      persistenceId="visualizer:sigma:lift-balance"
     >
       <div className={styles.card}>
         <span className={styles.sectionLabel}>Lift Balance</span>

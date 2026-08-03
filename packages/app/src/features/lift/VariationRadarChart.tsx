@@ -26,7 +26,10 @@ export function VariationRadarChart({
 
   return (
     <div className={styles.section}>
-      <CollapsibleSection label="Normalized e1RM by variation">
+      <CollapsibleSection
+        label="Normalized e1RM by variation"
+        persistenceId={`visualizer:${liftType}:variation-radar`}
+      >
         <div className={styles.card}>
           <span className={styles.sectionLabel}>Variation Breakdown</span>
           <BaseRadarChart

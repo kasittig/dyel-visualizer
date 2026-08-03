@@ -1,15 +1,47 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { CollapsibleSection } from './CollapsibleSection';
 
-afterEach(cleanup);
+const storageKey = 'dyel:collapsibleSection:test:section';
+
+const renderSection = () =>
+  render(
+    <CollapsibleSection label="Test section" persistenceId="test:section">
+      <div>Section contents</div>
+    </CollapsibleSection>
+  );
 
 describe('CollapsibleSection', () => {
-  it('associates its expanded trigger and visible region', () => {
-    render(<CollapsibleSection label="Diagnostics">Details</CollapsibleSection>);
+  beforeEach(() => {
+    const values = new Map<string, string>();
+    vi.stubGlobal('localStorage', {
+      clear: () => values.clear(),
+      getItem: (key: string) => values.get(key) ?? null,
+      setItem: (key: string, value: string) => values.set(key, value),
+    });
+  });
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+  });
 
-    const trigger = screen.getByRole('button', { name: 'Diagnostics' });
-    const region = screen.getByRole('region', { name: 'Diagnostics' });
+  it('defaults to expanded and persists the collapsed state', () => {
+    renderSection();
+
+    const toggle = screen.getByRole('button', { name: /test section/i });
+    expect(toggle.getAttribute('aria-expanded')).toBe('true');
+    fireEvent.click(toggle);
+
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    expect(screen.getByText('Section contents').parentElement?.hidden).toBe(true);
+    expect(localStorage.getItem(storageKey)).toBe('false');
+  });
+
+  it('associates its expanded trigger and visible region', () => {
+    renderSection();
+
+    const trigger = screen.getByRole('button', { name: 'Test section' });
+    const region = screen.getByRole('region', { name: 'Test section' });
     expect(trigger.getAttribute('aria-expanded')).toBe('true');
     expect(trigger.getAttribute('aria-controls')).toBe(region.id);
     expect(region.getAttribute('aria-labelledby')).toBe(trigger.id);
@@ -17,8 +49,8 @@ describe('CollapsibleSection', () => {
   });
 
   it('exposes the collapsed state and hides the controlled region', () => {
-    render(<CollapsibleSection label="Diagnostics">Details</CollapsibleSection>);
-    const trigger = screen.getByRole('button', { name: 'Diagnostics' });
+    renderSection();
+    const trigger = screen.getByRole('button', { name: 'Test section' });
 
     fireEvent.click(trigger);
 
@@ -26,4 +58,38 @@ describe('CollapsibleSection', () => {
     const region = document.getElementById(trigger.getAttribute('aria-controls')!);
     expect(region?.hidden).toBe(true);
   });
+
+  it('restores a persisted collapsed state', () => {
+    localStorage.setItem(storageKey, 'false');
+    renderSection();
+
+    expect(screen.getByText('Section contents').parentElement?.hidden).toBe(true);
+    expect(
+      screen.getByRole('button', { name: /test section/i }).getAttribute('aria-expanded')
+    ).toBe('false');
+  });
+
+  it('isolates state between section identifiers', () => {
+    localStorage.setItem(storageKey, 'false');
+    render(
+      <CollapsibleSection label="Other section" persistenceId="other-page:section">
+        <div>Other contents</div>
+      </CollapsibleSection>
+    );
+
+    expect(screen.getByText('Other contents')).toBeTruthy();
+  });
+
+  it.each(['not-json', 'null', '"false"', '{}'])(
+    'falls back to expanded for invalid stored value %s',
+    (storedValue) => {
+      localStorage.setItem(storageKey, storedValue);
+      renderSection();
+
+      expect(screen.getByText('Section contents')).toBeTruthy();
+      expect(
+        screen.getByRole('button', { name: /test section/i }).getAttribute('aria-expanded')
+      ).toBe('true');
+    }
+  );
 });
