@@ -1,4 +1,4 @@
-import { useState, type CSSProperties } from 'react';
+import { useMemo, useState, type CSSProperties } from 'react';
 import { usePipelineDiagnostics } from './usePipelineDiagnostics';
 import { formatEffect, formatAddlWtOffset } from '@dyel/api/display';
 import type { DisplayUnit, DiagnosticVariant } from '@dyel/api';
@@ -18,7 +18,9 @@ const LABELS = {
   overperforming: ['Above range', 'var(--warning)'],
   weakness: ['Below range', 'var(--danger)'],
   stale: ['Outdated', 'var(--muted)'],
-};
+} satisfies Record<DiagnosticVariant['status'], readonly [string, string]>;
+
+type DiagnosticRow = DiagnosticVariant & { formattedEffects: string };
 
 type SortColumn = 'variation' | 'effects' | 'evidence' | 'diagnostic';
 
@@ -35,22 +37,26 @@ export function DiagnosticsPanel({
 }) {
   const [activeEffect, setActiveEffect] = useState<string | null>(null);
   const { variants, weakEffects, overtrainedEffects } = usePipelineDiagnostics(liftType);
-  const { sortedRows, sortKey, direction, toggleSort } = useSortableRows<
-    DiagnosticVariant,
-    SortColumn
-  >(
-    variants,
-    {
-      variation: (r) => r.displayName,
-      effects: (r) =>
-        [
-          ...r.effects.map(formatEffect),
-          ...(r.addlWtOffset !== undefined
-            ? [formatAddlWtOffset(r.addlWtOffset.offsetKg, unit)]
+  const rows = useMemo(
+    () =>
+      variants.map((variant) => ({
+        ...variant,
+        formattedEffects: [
+          ...variant.effects.map(formatEffect),
+          ...(variant.addlWtOffset !== undefined
+            ? [formatAddlWtOffset(variant.addlWtOffset.offsetKg, unit)]
             : []),
         ].join(', '),
+      })),
+    [variants, unit]
+  );
+  const { sortedRows, sortKey, direction, toggleSort } = useSortableRows<DiagnosticRow, SortColumn>(
+    rows,
+    {
+      variation: (r) => r.displayName,
+      effects: (r) => r.formattedEffects,
       evidence: (r) => r.averageIndex ?? -Infinity,
-      diagnostic: (r) => (LABELS[r.status as keyof typeof LABELS] ?? ['Outdated'])[0] as string,
+      diagnostic: (r) => LABELS[r.status][0],
     },
     (r) => r.displayName
   );
@@ -130,10 +136,7 @@ export function DiagnosticsPanel({
             </TableHeadRow>
             <tbody>
               {sortedRows.map((r) => {
-                const [lbl, color] = LABELS[r.status as keyof typeof LABELS] ?? [
-                  'Outdated',
-                  'var(--muted)',
-                ];
+                const [lbl, color] = LABELS[r.status];
                 const isHigh =
                   r.displayName === highlightedVariation ||
                   (activeEffect !== null && r.effects.includes(activeEffect));
@@ -154,14 +157,7 @@ export function DiagnosticsPanel({
                         </span>
                       )}
                     </TableCell>
-                    <TableCell variant="text">
-                      {[
-                        ...r.effects.map(formatEffect),
-                        ...(r.addlWtOffset !== undefined
-                          ? [formatAddlWtOffset(r.addlWtOffset.offsetKg, unit)]
-                          : []),
-                      ].join(', ')}
-                    </TableCell>
+                    <TableCell variant="text">{r.formattedEffects}</TableCell>
                     <TableCell variant="mono">
                       {r.averageIndex?.toFixed(1) ?? '-'}% vs{' '}
                       {r.expectedBaseline ?? 'range unavailable'}
