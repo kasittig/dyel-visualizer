@@ -27,6 +27,8 @@ export function App() {
     setRefreshToken,
     activeTab,
     setActiveTab,
+    lastLiftTab,
+    setLastLiftTab,
     shownResetToken,
     athleteBase,
     dateRange,
@@ -62,6 +64,16 @@ export function App() {
       : activeTab;
   const liftTab =
     effActiveTab !== 'calculator' && effActiveTab !== 'sigma' ? (effActiveTab as LiftType) : null;
+  const availableLastLift = visibleLiftIds.has(lastLiftTab)
+    ? lastLiftTab
+    : (tabs[0]?.id ?? 'squat');
+  const mobileDestination =
+    effActiveTab === 'sigma' ? 'overview' : effActiveTab === 'calculator' ? 'calculator' : 'lifts';
+
+  const selectLift = (lift: LiftType) => {
+    setLastLiftTab(lift);
+    setActiveTab(lift);
+  };
 
   useEffect(() => {
     if (!lastSessionDate) {
@@ -116,6 +128,7 @@ export function App() {
                     key={id}
                     onClick={() => setActiveTab(id)}
                     className={clsx(styles.tab, effActiveTab === id && styles.tabActive)}
+                    aria-current={effActiveTab === id ? 'page' : undefined}
                   >
                     {label}
                   </button>
@@ -128,6 +141,41 @@ export function App() {
                     sessionDates={allSessionDates}
                   />
                 </div>
+              </div>
+              <div className={styles.mobileTopControls}>
+                <div className={styles.mobileScreenHeader}>
+                  <span className={styles.mobileEyebrow}>
+                    {mobileDestination === 'overview'
+                      ? 'Σ Overview'
+                      : mobileDestination === 'calculator'
+                        ? 'Calculator'
+                        : 'Lifts'}
+                  </span>
+                  <DateRangePicker
+                    value={dateRange}
+                    onChange={setDateRange}
+                    sessionDates={allSessionDates}
+                  />
+                </div>
+                {mobileDestination === 'lifts' && (
+                  <div className={styles.liftSelector} role="tablist" aria-label="Choose lift">
+                    {tabs.map(({ id, label }) => (
+                      <button
+                        key={id}
+                        type="button"
+                        role="tab"
+                        aria-selected={effActiveTab === id}
+                        className={clsx(
+                          styles.liftSelectorTab,
+                          effActiveTab === id && styles.liftSelectorTabActive
+                        )}
+                        onClick={() => selectLift(id)}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
               {effActiveTab === 'calculator' ? (
                 <div className={styles.calculatorRow}>
@@ -155,6 +203,50 @@ export function App() {
                   unit={dataUnit}
                 />
               ) : null}
+              <nav className={styles.mobileNav} aria-label="Primary navigation">
+                <button
+                  type="button"
+                  className={clsx(
+                    styles.mobileNavItem,
+                    mobileDestination === 'overview' && styles.mobileNavItemActive
+                  )}
+                  aria-current={mobileDestination === 'overview' ? 'page' : undefined}
+                  onClick={() => setActiveTab('sigma')}
+                >
+                  <span className={styles.mobileNavSymbol} aria-hidden="true">
+                    Σ
+                  </span>
+                  <span>Overview</span>
+                </button>
+                <button
+                  type="button"
+                  className={clsx(
+                    styles.mobileNavItem,
+                    mobileDestination === 'lifts' && styles.mobileNavItemActive
+                  )}
+                  aria-current={mobileDestination === 'lifts' ? 'page' : undefined}
+                  onClick={() => selectLift(availableLastLift)}
+                >
+                  <span className={styles.mobileNavSymbol} aria-hidden="true">
+                    ↟
+                  </span>
+                  <span>Lifts</span>
+                </button>
+                <button
+                  type="button"
+                  className={clsx(
+                    styles.mobileNavItem,
+                    mobileDestination === 'calculator' && styles.mobileNavItemActive
+                  )}
+                  aria-current={mobileDestination === 'calculator' ? 'page' : undefined}
+                  onClick={() => setActiveTab('calculator')}
+                >
+                  <span className={styles.mobileNavSymbol} aria-hidden="true">
+                    ±
+                  </span>
+                  <span>Calculator</span>
+                </button>
+              </nav>
             </>
           )}
         </div>

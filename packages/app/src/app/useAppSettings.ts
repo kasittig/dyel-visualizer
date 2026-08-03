@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import type { DateRange } from 'react-day-picker';
 import { useLocalStorageState } from '../shared/hooks/useLocalStorageState';
 import type { InputMode, PageTab } from './appTabs';
+import type { LiftType } from '@dyel/api';
 
 export function useAppSettings() {
   useState(() => {
@@ -31,6 +32,7 @@ export function useAppSettings() {
   const [panelForcedOpen, setPanelForcedOpen] = useState(false);
   const [refreshToken, setRefreshToken] = useState(0);
   const [activeTab, setActiveTab] = useLocalStorageState<PageTab>('dyel:activeTab', 'sigma');
+  const [lastLiftTab, setLastLiftTab] = useLocalStorageState<LiftType>('dyel:lastLiftTab', 'squat');
   const [shownResetToken, setShownResetToken] = useState(0);
   const [dateRange, setDateRange] = useState<DateRange>({ from: undefined, to: undefined });
   const athleteBase = useMemo(() => ({ sex: 'M' as const, bodyweight: 80 }), []);
@@ -77,6 +79,8 @@ export function useAppSettings() {
     setRefreshToken,
     activeTab,
     setActiveTab,
+    lastLiftTab,
+    setLastLiftTab,
     shownResetToken,
     setShownResetToken,
     athleteBase,
