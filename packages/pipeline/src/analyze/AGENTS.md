@@ -24,8 +24,9 @@ run and NEVER stored on identity types.
   expected %-range per canonical for the independent fitted, long-term signal. When a range
   exists, `VariantAssessment.expectedBaseline` is populated and `fittedStatus` compares the
   fitted variant factor against it; without a range, `fittedStatus` is `null`.
-- `VariantAssessment.ratio` = actual / expected (actual = latest e1rm point,
-  pre-normalization). `status` is the current-readiness signal and always compares this ratio
+- `VariantAssessment.ratio` = actual / expected (actual = latest e1rm point; the pipeline
+  supplies its weight-space offset-adjusted point for chain/band variants). `status` is the
+  current-readiness signal and always compares this ratio
   against `opts.tolerance`. Possible values:
   - `'optimal'` — current ratio within tolerance.
   - `'weakness'` — current ratio below tolerance.

@@ -29,32 +29,41 @@ describe('pipeline orchestration', () => {
     expect(model.model.variantFactor['bench-dumbbell']?.factor).toBeGreaterThan(0);
   });
 
-  it('produces distinct adjusted vs non-adjusted point maps for offset-adjusted records', () => {
-    const log = `2023-12-31 Bench 110kg x3 @9\n2023-12-31 Bench (chains) 90kg x3 @9\n2024-01-01 Bench 100kg x5 @8\n2024-01-01 Bench (chains) 80kg x5\n2024-01-05 Bench 105kg x5 @8\n2024-01-05 Bench (chains) 85kg x5`;
-    const model = runPipelineModel([{ name: 'log.txt', content: log }], ath()) as PipelineModel;
+  it.each(['chains', 'bands'])(
+    'uses %s-adjusted e1RM points in diagnostics exactly once',
+    (modifier) => {
+      const log = `2023-12-31 Bench 110kg x3 @9\n2023-12-31 Bench (${modifier}) 90kg x3 @9\n2024-01-01 Bench 100kg x5 @8\n2024-01-01 Bench (${modifier}) 80kg x5\n2024-01-05 Bench 105kg x5 @8\n2024-01-05 Bench (${modifier}) 85kg x5`;
+      const model = runPipelineModel([{ name: 'log.txt', content: log }], ath()) as PipelineModel;
 
-    const chainVariant = Object.keys(model.model.addlWtOffset).find((k) =>
-      k.toLowerCase().includes('chain')
-    );
-    if (!chainVariant) {
-      throw new Error('Expected chains variant with offset');
+      const adjustedVariant = Object.keys(model.model.addlWtOffset).find((k) =>
+        k.toLowerCase().includes(modifier)
+      );
+      if (!adjustedVariant) {
+        throw new Error(`Expected ${modifier} variant with offset`);
+      }
+      expect(model.model.addlWtOffset[adjustedVariant].offsetKg).toBeGreaterThan(0);
+
+      const unadj = model.points.get('e1rm').filter((p) => p.series === adjustedVariant);
+      const adj = model.points
+        .get('e1rm', { adjusted: true })
+        .filter((p) => p.series === adjustedVariant);
+
+      expect(unadj.length).toBeGreaterThan(0);
+      expect(adj.length).toBeGreaterThan(0);
+      expect(
+        adj.some((a) => {
+          const u = unadj.find((p) => p.t === a.t);
+          return u && Math.abs(a.v - u.v) > 0.01 && a.v > u.v;
+        })
+      ).toBe(true);
+
+      const latestUnadjusted = unadj.reduce((a, b) => (b.t > a.t ? b : a));
+      const latestAdjusted = adj.reduce((a, b) => (b.t > a.t ? b : a));
+      const diagnostic = model.diagnostics.variants.find((v) => v.canonical === adjustedVariant)!;
+      expect(diagnostic.actualE1rmKg).toBeCloseTo(latestAdjusted.v);
+      expect(diagnostic.actualE1rmKg).not.toBeCloseTo(latestUnadjusted.v);
     }
-    expect(model.model.addlWtOffset[chainVariant].offsetKg).toBeGreaterThan(0);
-
-    const unadj = model.points.get('e1rm').filter((p) => p.series === chainVariant);
-    const adj = model.points
-      .get('e1rm', { adjusted: true })
-      .filter((p) => p.series === chainVariant);
-
-    expect(unadj.length).toBeGreaterThan(0);
-    expect(adj.length).toBeGreaterThan(0);
-    expect(
-      adj.some((a) => {
-        const u = unadj.find((p) => p.t === a.t);
-        return u && Math.abs(a.v - u.v) > 0.01 && a.v > u.v;
-      })
-    ).toBe(true);
-  });
+  );
 
   it.each([
     ['single-set records (effort)', `2024-01-01 Bench 100kg x5 @8\n2024-01-05 Bench 105kg x5 @8`],
