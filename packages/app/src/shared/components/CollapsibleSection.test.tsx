@@ -80,6 +80,33 @@ describe('CollapsibleSection', () => {
     expect(screen.getByText('Other contents')).toBeTruthy();
   });
 
+  it('restores each section when its identifier changes without a parent remount', () => {
+    const view = render(
+      <CollapsibleSection label="Squat performance" persistenceId="visualizer:squat:performance">
+        Squat contents
+      </CollapsibleSection>
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Squat performance' }));
+
+    view.rerender(
+      <CollapsibleSection label="Bench performance" persistenceId="visualizer:bench:performance">
+        Bench contents
+      </CollapsibleSection>
+    );
+    expect(
+      screen.getByRole('button', { name: 'Bench performance' }).getAttribute('aria-expanded')
+    ).toBe('true');
+
+    view.rerender(
+      <CollapsibleSection label="Squat performance" persistenceId="visualizer:squat:performance">
+        Squat contents
+      </CollapsibleSection>
+    );
+    expect(
+      screen.getByRole('button', { name: 'Squat performance' }).getAttribute('aria-expanded')
+    ).toBe('false');
+  });
+
   it.each([
     ['lift tabs', 'visualizer:squat:performance', 'visualizer:bench:performance'],
     ['lift panels', 'visualizer:squat:diagnostics', 'visualizer:squat:variation-radar'],

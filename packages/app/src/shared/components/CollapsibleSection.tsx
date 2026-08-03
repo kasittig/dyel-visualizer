@@ -10,17 +10,23 @@ const deserializeExpanded = (raw: string) => {
   return value;
 };
 
-export function CollapsibleSection({
-  label,
-  children,
-  trailing,
-  persistenceId,
-}: {
+interface CollapsibleSectionProps {
   label: string;
   children: React.ReactNode;
   trailing?: React.ReactNode;
   persistenceId: string;
-}) {
+}
+
+export function CollapsibleSection(props: CollapsibleSectionProps) {
+  return <PersistedCollapsibleSection key={props.persistenceId} {...props} />;
+}
+
+function PersistedCollapsibleSection({
+  label,
+  children,
+  trailing,
+  persistenceId,
+}: CollapsibleSectionProps) {
   const [isExpanded, setIsExpanded] = useLocalStorageState(
     `dyel:collapsibleSection:${persistenceId}`,
     true,
