@@ -8,9 +8,9 @@ import 'react-day-picker/style.css';
 import styles from './DateRangePicker.module.css';
 
 const PRESETS: { label: string; presetId: PresetId }[] = [
-  { label: '2 WKS', presetId: '2w' },
-  { label: '1 MO', presetId: '1m' },
-  { label: '3 MO', presetId: '3m' },
+  { label: '2 weeks', presetId: '2w' },
+  { label: '1 month', presetId: '1m' },
+  { label: '3 months', presetId: '3m' },
   { label: 'All time', presetId: 'all' },
 ];
 

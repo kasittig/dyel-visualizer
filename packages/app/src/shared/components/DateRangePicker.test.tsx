@@ -38,7 +38,7 @@ describe('DateRangePicker', () => {
       />
     );
 
-    expect(screen.getByRole('button', { name: 'Date range: 2 WKS' })).toBeDefined();
+    expect(screen.getByRole('button', { name: 'Date range: 2 weeks' })).toBeDefined();
   });
 
   it('shows the global date scope beside the compact mobile control', () => {
@@ -68,7 +68,7 @@ describe('DateRangePicker', () => {
 
     fireEvent.click(screen.getByLabelText('Date range: All time'));
     const panel = screen.getByLabelText('Choose date range');
-    fireEvent.click(within(panel).getByRole('button', { name: '1 MO' }));
+    fireEvent.click(within(panel).getByRole('button', { name: '1 month' }));
 
     expect(onChange).toHaveBeenCalledWith({
       from: new Date(2026, 5, 20),
