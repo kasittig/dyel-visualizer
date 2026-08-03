@@ -1,0 +1,108 @@
+.guideShell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.4rem;
+  margin-bottom: 0.75rem;
+}
+
+.guideToggle,
+.dismiss {
+  min-height: var(--touch-target);
+  border: 1px solid var(--accent-border);
+  border-radius: 6px;
+  background: var(--accent-bg);
+  color: var(--accent);
+  cursor: pointer;
+  font-family: var(--heading);
+  font-weight: 600;
+}
+
+.guideToggle {
+  padding: 0.45rem 0.75rem;
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.guide {
+  width: 100%;
+  padding: 1rem;
+  border: 1px solid var(--accent-border);
+  border-radius: 8px;
+  background: var(--code-bg);
+  box-shadow: var(--shadow);
+}
+
+.guideHeading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.8rem;
+}
+
+.eyebrow {
+  color: var(--accent);
+  font-family: var(--heading);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.title {
+  margin: 0.1rem 0 0;
+  font-size: 1.05rem;
+}
+
+.dismiss {
+  flex: 0 0 auto;
+  padding: 0.4rem 0.7rem;
+  font-size: 0.78rem;
+}
+
+.terms {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  margin: 0;
+}
+
+.terms > div {
+  min-width: 0;
+}
+
+.terms dt {
+  color: var(--text-h);
+  font-family: var(--heading);
+  font-weight: 700;
+}
+
+.terms dd {
+  margin: 0.2rem 0 0;
+  color: var(--text);
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+@media (max-width: 800px) {
+  .terms {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.65rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .guideShell {
+    align-items: stretch;
+  }
+
+  .guideToggle {
+    align-self: flex-end;
+  }
+
+  .guide {
+    padding: 0.8rem;
+  }
+}
