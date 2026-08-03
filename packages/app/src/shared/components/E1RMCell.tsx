@@ -52,6 +52,7 @@ export function E1RMCell({
       role="button"
       tabIndex={0}
       title={title}
+      aria-label={`${showProjected ? 'Projected' : 'Actual'} e1RM ${displayValue}. Activate to show ${showProjected ? 'actual' : 'projected'} value${title ? `. ${title}` : ''}`}
       onClick={toggle}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
@@ -62,7 +63,11 @@ export function E1RMCell({
     >
       {showBoth ? (
         <span className={styles.stack}>
-          <span className={styles.compBadge} title="Projected from competition lift">
+          <span
+            className={styles.compBadge}
+            title="Projected from competition lift"
+            aria-label="Projected from competition lift"
+          >
             🏆
           </span>
           <span className={styles.stackValue} title={sourceLabel ?? undefined}>

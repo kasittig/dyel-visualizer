@@ -133,9 +133,9 @@ export function DateRangePicker({
             </button>
           </Popover.Trigger>
           <Popover.Portal>
-          <Popover.Content
-            ref={popoverContentRef}
-            sideOffset={8}
+            <Popover.Content
+              ref={popoverContentRef}
+              sideOffset={8}
               align="end"
               className={styles.mobileSheet}
               aria-label="Choose date range"
@@ -208,6 +208,7 @@ export function DateRangePicker({
               setShowCustomPicker((v) => !v);
               setOpen(true);
             }}
+            aria-expanded={showCustomPicker}
           >
             CUSTOM
           </button>
@@ -247,6 +248,8 @@ export function DateRangePicker({
                 value={startText}
                 placeholder="M/D/YYYY"
                 className={styles.input}
+                aria-label="Start date"
+                inputMode="numeric"
                 onBlur={() => handleBlur('start', startText)}
                 onChange={(e) => {
                   setStartText(e.target.value);
@@ -269,6 +272,8 @@ export function DateRangePicker({
                 value={endText}
                 placeholder="M/D/YYYY"
                 className={styles.input}
+                aria-label="End date"
+                inputMode="numeric"
                 onBlur={() => handleBlur('end', endText)}
                 onChange={(e) => {
                   setEndText(e.target.value);
@@ -295,6 +300,7 @@ export function DateRangePicker({
               onInteractOutside={(e) => e.preventDefault()}
               onFocusOutside={(e) => e.preventDefault()}
               className={styles.popover}
+              aria-label="Choose date range"
             >
               <DayPicker
                 mode="range"

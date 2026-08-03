@@ -95,6 +95,39 @@
   border-radius: 0.5rem;
   box-shadow: var(--shadow);
   z-index: 50;
+  max-width: min(calc(100vw - var(--safe-left) - var(--safe-right) - 1rem), 24rem);
+  max-height: min(var(--radix-popover-content-available-height, 80dvh), 80dvh);
+  overflow: auto;
+}
+
+@media (max-width: 640px) {
+  .outerWrapper,
+  .presets {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .presets {
+    overflow-x: auto;
+    padding-block: 0.25rem;
+    scrollbar-width: thin;
+  }
+
+  .preset {
+    min-height: 44px;
+    flex: 0 0 auto;
+  }
+
+  .container {
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .input {
+    width: 50%;
+    min-width: 0;
+    min-height: 44px;
+  }
 }
 
 .mobileTrigger,

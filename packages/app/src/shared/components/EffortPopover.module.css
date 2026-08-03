@@ -88,6 +88,9 @@
   z-index: 1000;
   animation: effortPopoverIn 0.12s ease-out;
   transform-origin: var(--radix-popover-content-transform-origin);
+  max-width: calc(100vw - var(--safe-left) - var(--safe-right) - 1rem);
+  max-height: min(var(--radix-popover-content-available-height, 70dvh), 70dvh);
+  overflow: auto;
 }
 
 .popover[data-state='closed'] {
@@ -130,4 +133,12 @@
   fill: var(--code-bg);
   stroke: var(--accent-border);
   stroke-width: 1px;
+}
+
+@media (max-width: 640px) {
+  .repsInput {
+    min-width: 44px;
+    min-height: 44px;
+    font-size: 16px;
+  }
 }

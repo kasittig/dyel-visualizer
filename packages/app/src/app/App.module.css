@@ -1,5 +1,6 @@
 .main {
-  padding: var(--page-gutter);
+  padding: max(var(--page-gutter), var(--safe-top)) max(var(--page-gutter), var(--safe-right))
+    max(var(--page-gutter), var(--safe-bottom)) max(var(--page-gutter), var(--safe-left));
   text-align: left;
   min-width: 0;
 }
@@ -71,7 +72,10 @@
 
 @media (max-width: 640px) {
   .main {
-    padding-bottom: calc(5.5rem + env(safe-area-inset-bottom));
+    padding-top: max(var(--page-gutter), var(--safe-top));
+    padding-right: max(var(--page-gutter), var(--safe-right));
+    padding-bottom: calc(5.5rem + var(--safe-bottom));
+    padding-left: max(var(--page-gutter), var(--safe-left));
   }
 
   .content {

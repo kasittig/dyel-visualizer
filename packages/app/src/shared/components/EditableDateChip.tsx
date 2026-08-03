@@ -59,6 +59,7 @@ export function EditableDateChip({
         className="tab-title-date"
         style={{ cursor: 'text' }}
         title="Click to edit date range"
+        aria-label={`Edit date range, ${shortDate(dateRange.from)} to ${shortDate(dateRange.to)}`}
         role="button"
         tabIndex={0}
         onClick={(e) => {

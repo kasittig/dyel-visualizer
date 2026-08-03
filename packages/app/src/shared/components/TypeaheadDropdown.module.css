@@ -122,4 +122,8 @@
   .toggleButton {
     min-width: var(--touch-target);
   }
+
+  .popover {
+    max-height: min(var(--radix-popover-content-available-height, 50dvh), 50dvh);
+  }
 }

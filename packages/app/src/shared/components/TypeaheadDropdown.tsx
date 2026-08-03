@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useId, useRef } from 'react';
 import * as Popover from '@radix-ui/react-popover';
 import styles from './TypeaheadDropdown.module.css';
 
@@ -25,6 +25,7 @@ export function TypeaheadDropdown({
 
   const outerRef = useRef<HTMLDivElement>(null);
   const popoverContentRef = useRef<HTMLDivElement>(null);
+  const listId = useId();
 
   const visibleOptions = showFullList
     ? options
@@ -126,11 +127,21 @@ export function TypeaheadDropdown({
                 setFocused(false);
               }}
               className={styles.input}
+              role="combobox"
+              aria-autocomplete="list"
+              aria-expanded={open}
+              aria-controls={listId}
+              aria-activedescendant={
+                open && highlightedIndex !== null && highlightedIndex < visibleOptions.length
+                  ? `${listId}-option-${highlightedIndex}`
+                  : undefined
+              }
             />
             <button
               className={styles.toggleButton}
               onClick={handleToggleClick}
               aria-label="Toggle dropdown"
+              aria-expanded={open}
               type="button"
             >
               <svg
@@ -156,6 +167,7 @@ export function TypeaheadDropdown({
             ref={popoverContentRef}
             sideOffset={6}
             className={styles.popover}
+            aria-label="Search suggestions"
             onOpenAutoFocus={(e) => {
               e.preventDefault();
             }}
@@ -166,11 +178,12 @@ export function TypeaheadDropdown({
               e.preventDefault();
             }}
           >
-            <div className={styles.list}>
+            <div id={listId} className={styles.list} role="listbox">
               {visibleOptions.length > 0 ? (
                 visibleOptions.map((option, idx) => (
                   <button
                     key={option}
+                    id={`${listId}-option-${idx}`}
                     type="button"
                     onMouseDown={(e) => {
                       e.preventDefault();
@@ -179,6 +192,8 @@ export function TypeaheadDropdown({
                       selectOption(option);
                     }}
                     className={`${styles.option} ${idx === highlightedIndex ? styles.optionHighlighted : ''}`}
+                    aria-selected={idx === highlightedIndex}
+                    role="option"
                   >
                     {option}
                   </button>

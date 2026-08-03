@@ -4,7 +4,7 @@ import { TypeaheadDropdown } from './TypeaheadDropdown';
 
 const opts = ['Apple', 'Banana', 'Cherry', 'Apricot', 'Avocado'];
 const wait = () => new Promise((r) => setTimeout(r, 100));
-const getOpts = () => screen.queryAllByRole('button').filter((b) => !b.hasAttribute('aria-label'));
+const getOpts = () => screen.queryAllByRole('option');
 
 afterEach(cleanup);
 
@@ -110,6 +110,7 @@ describe('TypeaheadDropdown', () => {
     fireEvent.keyDown(input, { key: 'ArrowDown' });
     await wait();
     expect(getOpts()[0].className).toContain('optionHighlighted');
+    expect(input.getAttribute('aria-activedescendant')).toBe(getOpts()[0].id);
     fireEvent.keyDown(input, { key: 'Enter' });
     expect(cb).toHaveBeenCalledWith('Apple');
   });
