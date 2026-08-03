@@ -120,7 +120,7 @@ export function App() {
             <>
               <div className={styles.tabNav}>
                 {[
-                  { id: 'sigma' as const, label: 'Σ' },
+                  { id: 'sigma' as const, label: 'Overview' },
                   ...tabs,
                   { id: 'calculator' as const, label: 'Calculator' },
                 ].map(({ id, label }) => (
@@ -131,6 +131,11 @@ export function App() {
                     aria-current={effActiveTab === id ? 'page' : undefined}
                     aria-pressed={effActiveTab === id}
                   >
+                    {id === 'sigma' && (
+                      <span className={styles.overviewSymbol} aria-hidden="true">
+                        Σ
+                      </span>
+                    )}
                     {label}
                   </button>
                 ))}

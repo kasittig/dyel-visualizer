@@ -17,6 +17,7 @@
 
 .tabNav {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 0.5rem;
   margin-bottom: 0.5rem;
@@ -38,6 +39,10 @@
     background 0.15s,
     color 0.15s;
 }
+.overviewSymbol {
+  margin-right: 0.35rem;
+  font-family: var(--mono);
+}
 .tab:hover {
   border-color: var(--border);
 }
@@ -54,6 +59,18 @@
 
 .datePickerWrap {
   align-self: center;
+  margin-left: auto;
+}
+
+@media (min-width: 641px) and (max-width: 1024px) {
+  .tabNav {
+    gap: 0.35rem;
+  }
+
+  .tab {
+    padding-inline: 0.65rem;
+    font-size: 0.85rem;
+  }
 }
 
 .calculatorRow {
