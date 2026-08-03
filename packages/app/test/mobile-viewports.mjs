@@ -94,6 +94,20 @@ try {
       ) {
         failures.push(`${name} at ${width}px: ${JSON.stringify(overflow)}`);
       }
+      const fixedNav = await page.locator('nav[aria-label="Primary navigation"]').count();
+      if (fixedNav === 1) {
+        const spacing = await page.evaluate(() => {
+          const main = document.querySelector('main');
+          const nav = document.querySelector('nav[aria-label="Primary navigation"]');
+          return {
+            bottomPadding: Number.parseFloat(getComputedStyle(main).paddingBottom),
+            navHeight: nav.getBoundingClientRect().height,
+          };
+        });
+        if (spacing.bottomPadding < spacing.navHeight) {
+          failures.push(`${name} at ${width}px: fixed navigation overlaps page content`);
+        }
+      }
       await page.close();
     }
     await context.close();
