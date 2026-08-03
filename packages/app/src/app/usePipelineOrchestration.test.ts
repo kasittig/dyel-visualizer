@@ -10,7 +10,7 @@ const mockRes = vi.mocked(useResolvedRawInput.useResolvedRawInput);
 const athleteBase: Pick<AthleteContext, 'sex' | 'bodyweight'> = { sex: 'M', bodyweight: 80 };
 
 // Default mock
-mockRes.mockReturnValue({ status: 'idle', raw: [] });
+mockRes.mockReturnValue({ status: 'idle', raw: [], lastUpdatedAt: null });
 
 const testRawInput: RawInput[] = [
   {
@@ -25,37 +25,40 @@ const run = () =>
 describe('usePipelineOrchestration', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    if (typeof localStorage !== 'undefined') {
-      localStorage.clear();
+    if (typeof localStorage === 'undefined') {
+      const values = new Map<string, string>();
+      vi.stubGlobal('localStorage', {
+        getItem: (key: string) => values.get(key) ?? null,
+        setItem: (key: string, value: string) => values.set(key, value),
+        removeItem: (key: string) => values.delete(key),
+        clear: () => values.clear(),
+      });
     }
+    localStorage.clear();
   });
   afterEach(() => {
     vi.restoreAllMocks();
     if (typeof localStorage !== 'undefined') {
       localStorage.clear();
     }
+    vi.unstubAllGlobals();
   });
 
   it('builds a model from raw input on success', () => {
-    mockRes.mockReturnValue({ status: 'success', raw: testRawInput });
+    mockRes.mockReturnValue({ status: 'success', raw: testRawInput, lastUpdatedAt: new Date() });
     const { result } = run();
     expect(result.current.status).toBe('success');
     expect(result.current.model).toBeTruthy();
   });
 
   it('passes through loading and error states', () => {
-    mockRes.mockReturnValue({ status: 'loading', raw: [] });
+    mockRes.mockReturnValue({ status: 'loading', raw: [], lastUpdatedAt: null });
     expect(run().result.current.status).toBe('loading');
-    mockRes.mockReturnValue({ status: 'error', raw: [] });
+    mockRes.mockReturnValue({ status: 'error', raw: [], lastUpdatedAt: null });
     expect(run().result.current.status).toBe('error');
   });
 
   it('shows cached model while loading (stale-while-revalidate)', () => {
-    if (typeof localStorage === 'undefined') {
-      // Skip this test if localStorage is not available in the test environment
-      return;
-    }
-
     const cachedRaw: RawInput[] = [
       {
         name: 'cached.csv',
@@ -71,12 +74,27 @@ describe('usePipelineOrchestration', () => {
     localStorage.setItem('dyel:sheetDataCache', cacheData);
 
     // Mock useResolvedRawInput to return loading status with empty data (refetch in flight)
-    mockRes.mockReturnValue({ status: 'loading', raw: [] });
+    mockRes.mockReturnValue({ status: 'loading', raw: [], lastUpdatedAt: null });
 
     const { result } = run();
 
     // While loading with cached data available, should show success status and cached model (stale-while-revalidate)
     expect(result.current.status).toBe('success');
+    expect(result.current.model).toBeTruthy();
+    expect(result.current.requestStatus).toBe('loading');
+  });
+
+  it('keeps the cached model visible when a refresh fails', () => {
+    localStorage.setItem(
+      'dyel:sheetDataCache',
+      serializeSheetCache({ sheetKey: 'https://example.com', raw: testRawInput })
+    );
+    mockRes.mockReturnValue({ status: 'error', raw: [], lastUpdatedAt: null });
+
+    const { result } = run();
+
+    expect(result.current.status).toBe('success');
+    expect(result.current.requestStatus).toBe('error');
     expect(result.current.model).toBeTruthy();
   });
 });

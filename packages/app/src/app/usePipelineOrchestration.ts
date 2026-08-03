@@ -13,6 +13,8 @@ import { useLocalStorageState } from '../shared/hooks/useLocalStorageState';
 
 export interface PipelineOrchestrationReturn {
   status: 'idle' | 'loading' | 'success' | 'error';
+  requestStatus: 'idle' | 'loading' | 'success' | 'error';
+  lastUpdatedAt: Date | null;
   model: PipelineModel | null;
   invalidUrl: boolean;
   textValidation: { hasText: boolean; isValid: boolean };
@@ -26,7 +28,11 @@ export function usePipelineOrchestration(
   athleteBase: Pick<AthleteContext, 'sex' | 'bodyweight'>
 ): PipelineOrchestrationReturn {
   const ref = useMemo(() => extractSheetRef(url), [url]);
-  const { status: rawStatus, raw } = useResolvedRawInput(inputMode, url, pastedText, refreshToken);
+  const {
+    status: rawStatus,
+    raw,
+    lastUpdatedAt,
+  } = useResolvedRawInput(inputMode, url, pastedText, refreshToken);
   const [cache, setCache] = useLocalStorageState<CachedSheetData | null>(
     'dyel:sheetDataCache',
     null,
@@ -70,7 +76,7 @@ export function usePipelineOrchestration(
     if (pStatus === 'success') {
       return model;
     }
-    if (['idle', 'loading'].includes(rawStatus) && effRaw !== raw && effRaw.length) {
+    if (['idle', 'loading', 'error'].includes(rawStatus) && effRaw !== raw && effRaw.length) {
       try {
         return buildPipelineModel(effRaw, athleteBase);
       } catch {
@@ -82,6 +88,8 @@ export function usePipelineOrchestration(
 
   return {
     status: pStatus === 'success' || effModel !== null ? 'success' : pStatus,
+    requestStatus: rawStatus,
+    lastUpdatedAt,
     model: effModel,
     invalidUrl: url.length > 0 && !ref,
     textValidation: useMemo(() => {

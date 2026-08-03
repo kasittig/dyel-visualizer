@@ -10,9 +10,14 @@ export function useResolvedRawInput(
   url: string,
   pastedText: string,
   refreshToken: number
-): { status: 'idle' | 'loading' | 'success' | 'error'; raw: RawInput[] } {
+): {
+  status: 'idle' | 'loading' | 'success' | 'error';
+  raw: RawInput[];
+  lastUpdatedAt: Date | null;
+} {
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [raw, setRaw] = useState<RawInput[]>([]);
+  const [lastUpdate, setLastUpdate] = useState<{ sheetKey: string; at: Date } | null>(null);
 
   useEffect(() => {
     if (inputMode === 'text') {
@@ -46,6 +51,7 @@ export function useResolvedRawInput(
     fetchSheetCsv(sheetCsvUrl(ref, '0'), controller.signal)
       .then((csv) => {
         setRaw([buildRawInput('url', csv)]);
+        setLastUpdate({ sheetKey: url, at: new Date() });
         setStatus('success');
       })
       .catch((err: unknown) => {
@@ -59,5 +65,9 @@ export function useResolvedRawInput(
     return () => controller.abort();
   }, [inputMode, url, pastedText, refreshToken]);
 
-  return { status, raw };
+  return {
+    status,
+    raw,
+    lastUpdatedAt: lastUpdate?.sheetKey === url ? lastUpdate.at : null,
+  };
 }
