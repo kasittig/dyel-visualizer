@@ -4,6 +4,7 @@ import type { ChartPoint } from '@dyel/api';
 import { LINE_COLORS } from '@dyel/api/display';
 import { DateLineChart } from './DateLineChart';
 import { ChartTooltip, type TooltipLine } from './TooltipCard';
+import { MOBILE_LAYOUT_QUERY, useMediaQuery } from '../hooks';
 
 export interface MultiSeriesLineChartProps {
   data: ChartPoint[];
@@ -15,6 +16,7 @@ export interface MultiSeriesLineChartProps {
   extraChildren?: React.ReactNode;
   yAxisWidth?: number;
   height?: number;
+  summary?: string;
 }
 
 export function MultiSeriesLineChart({
@@ -27,7 +29,9 @@ export function MultiSeriesLineChart({
   extraChildren,
   yAxisWidth,
   height,
+  summary,
 }: MultiSeriesLineChartProps) {
+  const mobile = useMediaQuery(MOBILE_LAYOUT_QUERY);
   const tooltipContent = useCallback(
     ({
       active,
@@ -60,8 +64,14 @@ export function MultiSeriesLineChart({
   );
 
   return (
-    <DateLineChart data={data} unit={unit} yAxisWidth={yAxisWidth} height={height}>
-      <Tooltip content={tooltipContent} />
+    <DateLineChart
+      data={data}
+      unit={unit}
+      yAxisWidth={yAxisWidth}
+      height={height}
+      summary={summary}
+    >
+      <Tooltip content={tooltipContent} trigger={mobile ? 'click' : 'hover'} />
       {extraChildren}
       {seriesKeys.map((key, i) => {
         const isHigh = highlightedKey === key;

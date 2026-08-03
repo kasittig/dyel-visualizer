@@ -2,6 +2,8 @@ import { Line, Tooltip } from 'recharts';
 import type { ChartPoint } from '@dyel/api';
 import { DateLineChart, ChartEmpty } from '../../shared/charts/DateLineChart';
 import { ChartTooltip } from '../../shared/charts/TooltipCard';
+import { ChartLegend } from '../../shared/charts/ChartLegend';
+import { MOBILE_LAYOUT_QUERY, useMediaQuery } from '../../shared/hooks';
 import styles from './TotalChart.module.css';
 import {
   SQUAT_COLOR,
@@ -12,6 +14,7 @@ import {
 } from '../../shared/charts/colors.ts';
 
 export function TotalChart({ chartData, unit }: { chartData: ChartPoint[]; unit: string }) {
+  const mobile = useMediaQuery(MOBILE_LAYOUT_QUERY);
   if (chartData.length === 0) {
     return <ChartEmpty />;
   }
@@ -19,8 +22,23 @@ export function TotalChart({ chartData, unit }: { chartData: ChartPoint[]; unit:
   return (
     <div className={styles.card}>
       <span className={styles.sectionLabel}>e1RM Over Time</span>
-      <DateLineChart data={chartData} unit={unit} yAxisWidth={55}>
+      <ChartLegend
+        items={[
+          { key: 'squat', label: 'Squat', color: SQUAT_COLOR, dash: 'short' },
+          { key: 'bench', label: 'Bench', color: BENCH_COLOR },
+          { key: 'deadlift', label: 'Deadlift', color: DEADLIFT_COLOR, dash: 'long' },
+          { key: 'pushPull', label: 'Push/Pull', color: PUSH_PULL_COLOR, dash: 'long' },
+          { key: 'total', label: 'Est. total', color: TOTAL_COLOR, dash: 'short' },
+        ]}
+      />
+      <DateLineChart
+        data={chartData}
+        unit={unit}
+        yAxisWidth={55}
+        summary={`Estimated one-rep max trends across ${chartData.length} training dates. Lines show squat, bench, deadlift, push/pull, and estimated total in ${unit}.`}
+      >
         <Tooltip
+          trigger={mobile ? 'click' : 'hover'}
           content={({ active, payload, label }) => {
             if (!active || !payload?.length) {
               return null;

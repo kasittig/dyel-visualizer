@@ -1,0 +1,31 @@
+.legend {
+  display: flex;
+  gap: 0.45rem;
+  overflow-x: auto;
+  padding: 0.5rem 0.75rem 0.15rem;
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+}
+
+.item {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--text);
+  font-size: 0.72rem;
+  white-space: nowrap;
+}
+
+.swatch {
+  width: 1.35rem;
+  border-top: 3px solid var(--legend-color);
+}
+
+.short {
+  border-top-style: dotted;
+}
+
+.long {
+  border-top-style: dashed;
+}

@@ -36,6 +36,7 @@ export function VariationRadarChart({
             chartKey={targetName}
             overlayDataKey={hasRing ? 'targetE1rm' : undefined}
             onClick={onVariationClick}
+            summary={`Normalized one-rep max comparison for ${data.length} ${liftType} variations in ${unit}. Tap a variation to inspect its latest result.`}
             tooltip={{
               content: ({ payload }) => {
                 const item = payload?.find((p) => p.dataKey === 'e1rm');

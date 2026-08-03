@@ -11,6 +11,7 @@ import {
   Text,
 } from 'recharts';
 import styles from './BaseRadarChart.module.css';
+import { MOBILE_LAYOUT_QUERY, useMediaQuery } from '../hooks';
 
 interface CustomAxisTickProps {
   x: number;
@@ -48,6 +49,7 @@ export function BaseRadarChart({
   onClick,
   chartKey,
   overlayDataKey,
+  summary,
 }: {
   label?: string;
   data: object[];
@@ -57,12 +59,18 @@ export function BaseRadarChart({
   onClick?: (label: string) => void;
   chartKey?: string | number;
   overlayDataKey?: string;
+  summary?: string;
 }) {
+  const mobile = useMediaQuery(MOBILE_LAYOUT_QUERY);
   return (
-    <section className={styles.section}>
+    <section
+      className={styles.section}
+      role={summary ? 'img' : undefined}
+      aria-label={summary || undefined}
+    >
       {label && <p className={styles.label}>{label}</p>}
       <div className={styles.chartWrapper}>
-        <ResponsiveContainer width="100%" height={340}>
+        <ResponsiveContainer width="100%" height={mobile ? 280 : 340}>
           <RadarChart
             key={chartKey}
             data={data}
@@ -106,7 +114,7 @@ export function BaseRadarChart({
                 dot={false}
               />
             )}
-            <Tooltip {...tooltip} />
+            <Tooltip {...tooltip} trigger={mobile ? 'click' : 'hover'} />
           </RadarChart>
         </ResponsiveContainer>
       </div>
