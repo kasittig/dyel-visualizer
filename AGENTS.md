@@ -44,6 +44,11 @@
 - Base your feature branches off of `main` unless told otherwise.
 - Keep your branch in sync with `git rebase main`
 - Submit any changes as a new PR. If you are given a Github issue number, make sure your PR includes the phrase "closes #issue".
+- In managed macOS Codex environments, a sandboxed `gh auth status` may falsely report an invalid
+  token because it cannot access credentials stored in the system keychain. If the user has logged
+  in—or the app terminal shows a successful login—retry the GitHub CLI command with approved
+  elevated access before asking the user to authenticate again. Never treat the sandboxed result
+  alone as proof that authentication failed.
 
 ## Code Style & Architectural Patterns
 
