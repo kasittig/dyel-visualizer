@@ -110,8 +110,8 @@ describe('CollapsibleSection', () => {
       </>
     );
 
-    expect(screen.queryByText('First contents')).toBeNull();
-    expect(screen.getByText('Second contents')).toBeTruthy();
+    expect(screen.getByText('First contents').parentElement?.hidden).toBe(true);
+    expect(screen.getByText('Second contents').parentElement?.hidden).toBe(false);
   });
 
   it.each(['not-json', 'null', '"false"', '{}'])(
