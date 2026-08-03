@@ -67,14 +67,14 @@ describe('DiagnosticsPanel', () => {
   it('describes every status and presents actual-versus-expected evidence with recency', () => {
     const { container } = render(<DiagnosticsPanel liftType="squat" unit="lbs" />);
 
-    ['Below expected', 'On target', 'Above expected', 'Needs retest'].forEach((label) =>
+    ['Below expected', 'On target', 'Above expected', 'Outdated'].forEach((label) =>
       expect(screen.getByText(label)).toBeDefined()
     );
     [
       'weakness: Below expected. Expand diagnostic',
       'optimal: On target. Expand diagnostic',
       'overperforming: Above expected. Expand diagnostic',
-      'stale: Needs retest. Expand diagnostic',
+      'stale: Outdated, last tested 117 days ago. Expand diagnostic',
     ].forEach((name) => fireEvent.click(screen.getByRole('button', { name })));
     const weaknessDetails = within(container.querySelector('#diagnostic-weakness-details')!);
     expect(weaknessDetails.getByText('82 lb')).toBeDefined();
@@ -88,6 +88,7 @@ describe('DiagnosticsPanel', () => {
       within(container.querySelector('#diagnostic-stale-details')!).getByText(/Tested 117 days ago/)
     ).toBeDefined();
     expect(screen.getByText(/Retest recommended/)).toBeDefined();
+    expect(screen.getByText('Last tested 117 days ago')).toBeDefined();
     expect(screen.getByText('Paused, +20 lb')).toBeDefined();
     expect(screen.getAllByText('Recent trend')).toHaveLength(4);
     expect(screen.getAllByText('+2.0% vs prior observation')).toHaveLength(4);

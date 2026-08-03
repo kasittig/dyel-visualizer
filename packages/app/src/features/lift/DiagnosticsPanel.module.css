@@ -188,6 +188,12 @@
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
+.staleAge {
+  flex: 0 1 auto;
+  color: color-mix(in srgb, var(--text) 68%, transparent);
+  font-size: 0.75rem;
+  line-height: 1.3;
+}
 .collapseIcon {
   flex: 0 0 1.1rem;
   color: color-mix(in srgb, var(--text) 72%, transparent);
