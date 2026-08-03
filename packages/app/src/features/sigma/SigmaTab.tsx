@@ -26,7 +26,9 @@ export function SigmaTab({
       : 'No data in range';
   let volumeSessions = 0;
   for (const { squat, bench, deadlift, volume } of chartData) {
-    if (squat || bench || deadlift || volume) volumeSessions += 1;
+    if (squat || bench || deadlift || volume) {
+      volumeSessions += 1;
+    }
   }
 
   return (
