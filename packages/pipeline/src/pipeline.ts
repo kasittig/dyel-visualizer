@@ -275,7 +275,7 @@ export function runPipelineModel(
   );
 
   const diagnostics = diagnose(
-    pointsByDeriverAdjusted.get('e1rm')!,
+    pointsByDeriver.get('e1rm')!,
     model,
     effectsByCanonical,
     { tolerance: 0.05, staleDays: 90 },

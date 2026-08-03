@@ -77,7 +77,8 @@ export function diagnose(
       continue;
     }
 
-    const expectedE1rmKg = factor * baseLatest.v;
+    const addlWt = model.addlWtOffset[canonical];
+    const expectedE1rmKg = Math.max(0, factor * baseLatest.v - (addlWt?.offsetKg ?? 0));
     const ratio = latest.v / expectedE1rmKg;
     const averageIndex = factor * 100;
     const range = baselineRangeByCanonical.get(canonical);
@@ -98,8 +99,6 @@ export function diagnose(
 
     const status: VariantAssessment['status'] =
       timestamp - latest.t > opts.staleDays * DAY_MS ? 'stale' : normalStatus;
-    const addlWt = model.addlWtOffset[canonical];
-
     const v: VariantAssessment = {
       canonical,
       displayName: displayNameByCanonical.get(canonical) ?? canonical,
