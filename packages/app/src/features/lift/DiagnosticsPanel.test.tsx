@@ -50,13 +50,11 @@ describe('DiagnosticsPanel', () => {
     ['Below range', 'In range', 'Above range', 'Needs retest'].forEach((label) =>
       expect(screen.getByText(label)).toBeDefined()
     );
-    expect(screen.getByText('82 lb')).toBeDefined();
-    expect(screen.getAllByText('100 lb')).toHaveLength(5);
-    ['-18.0% below', '0.0% at expectation', '+18.0% above', '-5.0% below'].forEach((text) =>
-      expect(screen.getByText(text)).toBeDefined()
-    );
-    expect(screen.getAllByText('Tested 3 days ago')).toHaveLength(3);
-    expect(screen.getByText(/Tested 117 days ago/)).toBeDefined();
+    expect(screen.getByText('82.0%')).toBeDefined();
+    expect(screen.getAllByText('90-110%')).toHaveLength(4);
+    expect(screen.getAllByText('strength index')).toHaveLength(4);
+    expect(screen.getByText(/Latest e1RM 82 lb · Tested 3 days ago/)).toBeDefined();
+    expect(screen.getByText(/Latest e1RM 95 lb · Tested 117 days ago/)).toBeDefined();
     expect(screen.getByText(/Retest recommended/)).toBeDefined();
     expect(screen.getByText('Paused, +20 lb')).toBeDefined();
     expect(screen.queryByText('Overtrained')).toBeNull();

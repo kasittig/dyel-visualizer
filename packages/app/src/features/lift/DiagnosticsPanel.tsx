@@ -34,7 +34,7 @@ export function DiagnosticsPanel({
     {
       variation: (r) => r.displayName,
       effects: (r) => r.effectsDisplay,
-      evidence: (r) => r.deltaPercent,
+      evidence: (r) => r.averageIndex,
       diagnostic: (r) => LABELS[r.status][0],
     },
     (r) => r.displayName
@@ -100,7 +100,7 @@ export function DiagnosticsPanel({
             {(
               [
                 ['diagnostic', 'Status'],
-                ['evidence', 'Difference'],
+                ['evidence', 'Index'],
                 ['variation', 'Variation'],
               ] as const
             ).map(([column, label]) => (
@@ -147,24 +147,23 @@ export function DiagnosticsPanel({
                     <span className={styles.status}>{lbl}</span>
                   </span>
                   <span className={styles.comparison}>
-                    <span className={styles.actual}>{r.actualE1rmDisplay}</span>
+                    <span className={styles.actual}>
+                      {r.expectedBaseline ? `${r.averageIndex.toFixed(1)}%` : r.deltaDisplay}
+                      <small>{r.expectedBaseline ? 'strength index' : 'vs fitted trend'}</small>
+                    </span>
                     <span className={styles.arrow} aria-hidden="true">
                       →
                     </span>
                     <span className={styles.expected}>
-                      <small>expected</small>
-                      {r.expectedE1rmDisplay}
-                    </span>
-                    <span className={styles.delta}>
-                      {r.deltaPercent === 0
-                        ? `${r.deltaDisplay} at expectation`
-                        : `${r.deltaDisplay} ${r.deltaPercent > 0 ? 'above' : 'below'}`}
+                      <small>{r.expectedBaseline ? 'target range' : 'target'}</small>
+                      {r.expectedBaseline ?? 'within ±5%'}
                     </span>
                   </span>
                   <span className={styles.findingFooter}>
                     <span className={styles.effects}>{r.effectsDisplay}</span>
                     <span className={styles.recency}>
-                      Tested {r.ageDisplay === 'Today' ? 'today' : r.ageDisplay}
+                      Latest e1RM {r.actualE1rmDisplay} · Tested{' '}
+                      {r.ageDisplay === 'Today' ? 'today' : r.ageDisplay}
                       {r.status === 'stale' && <strong> · Retest recommended</strong>}
                     </span>
                   </span>

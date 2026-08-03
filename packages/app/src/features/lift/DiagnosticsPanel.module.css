@@ -71,7 +71,7 @@
   padding: 10px 18px;
   border-top: 1px solid var(--border);
   border-bottom: 1px solid var(--border);
-  color: var(--muted);
+  color: color-mix(in srgb, var(--text) 70%, transparent);
   font-family: var(--heading);
   font-size: 0.68rem;
   letter-spacing: 0.08em;
@@ -83,7 +83,7 @@
   border-radius: 4px;
   padding: 0.3rem 0.5rem;
   background: transparent;
-  color: var(--muted);
+  color: color-mix(in srgb, var(--text) 70%, transparent);
   font: inherit;
   cursor: pointer;
 }
@@ -149,15 +149,25 @@
 .comparison {
   grid-area: comparison;
   display: grid;
-  grid-template-columns: auto auto auto 1fr;
+  grid-template-columns: auto auto auto;
   align-items: center;
   gap: 0.65rem;
   font-family: var(--mono);
 }
 .actual {
+  display: grid;
+  gap: 0.08rem;
   color: var(--text);
   font-size: 1.35rem;
   font-weight: 700;
+}
+.actual small,
+.expected small {
+  font-family: var(--heading);
+  font-size: 0.58rem;
+  font-weight: 500;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
 }
 .arrow {
   color: var(--muted);
@@ -166,28 +176,15 @@
 .expected {
   display: grid;
   gap: 0.05rem;
-  color: var(--muted);
+  color: color-mix(in srgb, var(--text) 72%, transparent);
   font-size: 0.92rem;
-}
-.expected small {
-  font-family: var(--heading);
-  font-size: 0.58rem;
-  letter-spacing: 0.07em;
-  text-transform: uppercase;
-}
-.delta {
-  justify-self: end;
-  color: var(--diagnostic-color);
-  font-size: 0.78rem;
-  font-weight: 650;
-  white-space: nowrap;
 }
 .findingFooter {
   grid-area: footer;
   display: flex;
   flex-wrap: wrap;
   gap: 0.35rem 0.8rem;
-  color: var(--muted);
+  color: color-mix(in srgb, var(--text) 72%, transparent);
   font-size: 0.75rem;
   line-height: 1.35;
 }
@@ -211,10 +208,6 @@
   }
   .comparison {
     grid-template-columns: auto auto auto;
-  }
-  .delta {
-    grid-column: 1 / -1;
-    justify-self: start;
   }
   .sortBar {
     overflow-x: auto;
