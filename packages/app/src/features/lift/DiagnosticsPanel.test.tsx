@@ -43,10 +43,10 @@ describe('DiagnosticsPanel', () => {
     ['Below range', 'In range', 'Above range', 'Outdated'].forEach((label) =>
       expect(screen.getByText(label)).toBeDefined()
     );
-    ['82.0% vs 90-110%', '100.0% vs 90-110%', '118.0% vs 90-110%', '95.0% vs 90-110%'].forEach(
+    ['82.0% (90-110%)', '100.0% (90-110%)', '118.0% (90-110%)', '95.0% (90-110%)'].forEach(
       (evidence) => expect(screen.getByText(evidence)).toBeDefined()
     );
     expect(screen.queryByText('Overtrained')).toBeNull();
-    expect(screen.getByText('Performance vs expected')).toBeDefined();
+    expect(screen.getByText('Performance (expected)')).toBeDefined();
   });
 });

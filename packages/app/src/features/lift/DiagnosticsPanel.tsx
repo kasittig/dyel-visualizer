@@ -128,7 +128,7 @@ export function DiagnosticsPanel({
                 Effects
               </TableCell>
               <TableCell as="th" variant="mono" {...headerSort('evidence')}>
-                Performance vs expected
+                Performance (expected)
               </TableCell>
               <TableCell as="th" variant="left" {...headerSort('diagnostic')}>
                 Diagnostic
@@ -159,8 +159,8 @@ export function DiagnosticsPanel({
                     </TableCell>
                     <TableCell variant="text">{r.formattedEffects}</TableCell>
                     <TableCell variant="mono">
-                      {r.averageIndex?.toFixed(1) ?? '-'}% vs{' '}
-                      {r.expectedBaseline ?? 'range unavailable'}
+                      {r.averageIndex?.toFixed(1) ?? '-'}% (
+                      {r.expectedBaseline ?? 'range unavailable'})
                     </TableCell>
                     <TableCell
                       variant="diagnostic"
