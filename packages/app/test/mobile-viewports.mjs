@@ -112,12 +112,40 @@ try {
     }
     await context.close();
   }
+
+  // A 1280px-wide tablet at 200% zoom exposes roughly a 640px CSS viewport. Check the
+  // boundary immediately above the mobile layout as well as a common portrait-tablet width.
+  for (const width of [641, 768]) {
+    const context = await browser.newContext({ viewport: { width, height: 900 } });
+    const page = await context.newPage();
+    await page.goto(`${baseUrl}${pages[0][1]}`, { waitUntil: 'networkidle' });
+    const overflow = await page.evaluate(() => ({
+      viewport: document.documentElement.clientWidth,
+      document: document.documentElement.scrollWidth,
+      body: document.body.scrollWidth,
+      widest: [...document.querySelectorAll('body *')]
+        .map((element) => ({
+          tag: element.tagName.toLowerCase(),
+          className: typeof element.className === 'string' ? element.className : '',
+          right: Math.round(element.getBoundingClientRect().right),
+          scrollWidth: element.scrollWidth,
+        }))
+        .filter(({ right }) => right > document.documentElement.clientWidth + 1)
+        .slice(0, 5),
+    }));
+    if (overflow.document > overflow.viewport || overflow.body > overflow.viewport) {
+      failures.push(
+        `visualizer at ${width}px (narrow tablet / 200% zoom boundary): ${JSON.stringify(overflow)}`
+      );
+    }
+    await context.close();
+  }
   await browser.close();
 
   if (failures.length) {
     throw new Error(`Horizontal overflow detected:\n${failures.join('\n')}`);
   }
-  console.log('Mobile viewport checks passed at 320, 375, 390, and 430px.');
+  console.log('Viewport checks passed for mobile, narrow tablet, and the 200% zoom boundary.');
 } finally {
   stop();
 }

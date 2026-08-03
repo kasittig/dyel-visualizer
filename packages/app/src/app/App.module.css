@@ -70,6 +70,20 @@
   display: none;
 }
 
+@media (min-width: 641px) and (max-width: 800px) {
+  .tabNav {
+    flex-wrap: wrap;
+  }
+
+  .tabSpacer {
+    display: none;
+  }
+
+  .datePickerWrap {
+    flex: 1 1 100%;
+  }
+}
+
 @media (max-width: 640px) {
   .main {
     padding-top: max(var(--page-gutter), var(--safe-top));

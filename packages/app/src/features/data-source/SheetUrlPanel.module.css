@@ -16,6 +16,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 1.5rem;
+  flex-wrap: wrap;
   text-align: left;
 }
 
@@ -36,7 +37,8 @@
   justify-content: flex-end;
   min-width: 0;
   margin: 0;
-  white-space: nowrap;
+  flex-wrap: wrap;
+  gap: 0.25rem;
 }
 
 .desktopPanel a,
@@ -86,6 +88,8 @@
   }
 
   .desktopPanelCompact .subtitle {
+    flex: 1 1 100%;
+    justify-content: flex-start;
     font-size: 0.76rem;
   }
 }
