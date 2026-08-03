@@ -277,7 +277,7 @@ export function runPipelineModel(
   );
 
   const diagnostics = diagnose(
-    pointsByDeriver.get('e1rm')!,
+    pointsByDeriver.get('e1rm-max-effort')!,
     model,
     effectsByCanonical,
     { tolerance: 0.05, staleDays: 90 },

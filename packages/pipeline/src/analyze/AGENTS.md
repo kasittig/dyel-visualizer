@@ -25,6 +25,8 @@ run and NEVER stored on identity types.
   exists, `VariantAssessment.expectedBaseline` is populated and `fittedStatus` compares the
   fitted variant factor against it; without a range, `fittedStatus` is `null`.
 - `VariantAssessment.ratio` = actual / expected. Actual is the latest bar-weight e1RM point.
+  The pipeline supplies max-effort-only points, excluding dynamic-effort volume days from
+  both the actual and baseline observations used by diagnostics.
   For chain/band variants, expected bar-weight e1RM is the fitted total-resistance expectation
   minus the model's estimated additional-weight offset. `status` is the current-readiness signal
   and always compares this ratio
