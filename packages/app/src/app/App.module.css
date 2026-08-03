@@ -106,8 +106,16 @@
   margin-right: 0.35rem;
   font-family: var(--mono);
 }
-.tab:hover {
+.tab:hover:not(:disabled):not(.tabActive) {
   border-color: var(--border);
+  background: var(--code-bg);
+}
+.tab:active:not(:disabled) {
+  transform: translateY(1px);
+}
+.tab:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
 }
 .tabActive {
   border-color: var(--accent-border);
