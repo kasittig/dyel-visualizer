@@ -17,6 +17,12 @@ export interface VariantAssessment {
   lift: string;
   expectedE1rmKg: number;
   actualE1rmKg: number;
+  baselineE1rmKg: number;
+  expectedFactor: number;
+  latestAt: number;
+  previousE1rmKg: number | null;
+  observationCount: number;
+  comparisonCount: number;
   ratio: number;
   status: PerformanceStatus | 'stale';
   fittedStatus: PerformanceStatus | null;
@@ -46,18 +52,21 @@ export function diagnose(
   baselineRangeByCanonical: ReadonlyMap<string, BaselineRange> = new Map()
 ): DiagnosticsReport {
   const timestamp = now ?? Date.now();
-  const latestBySeries = new Map(
-    Array.from(
-      Map.groupBy(points, (p) => p.series),
-      ([s, p]) => [s, latestOf(p)]
-    )
-  );
+  const pointsBySeries = Map.groupBy(points, (p) => p.series);
+  const latestBySeries = new Map(Array.from(pointsBySeries, ([s, p]) => [s, latestOf(p)]));
 
   const variants: VariantAssessment[] = [];
   const unassessed: UnassessedVariant[] = [];
   const votes = new Map<Quality, { score: number; evidence: string[] }>();
 
   for (const [canonical, latest] of latestBySeries) {
+    const observations = pointsBySeries.get(canonical)!;
+    let previous: Point | null = null;
+    for (const point of observations) {
+      if (point.t < latest.t && (!previous || point.t > previous.t)) {
+        previous = point;
+      }
+    }
     const lift = Array.from(latest.tags).find((t) => t.startsWith('lift:'));
     if (!lift || lift === 'lift:accessory') {
       continue;
@@ -104,6 +113,12 @@ export function diagnose(
       displayName: displayNameByCanonical.get(canonical) ?? canonical,
       lift,
       expectedE1rmKg,
+      baselineE1rmKg: baseLatest.v,
+      expectedFactor: factor,
+      latestAt: latest.t,
+      previousE1rmKg: previous?.v ?? null,
+      observationCount: observations.length,
+      comparisonCount: model.variantFactor[canonical]?.n ?? observations.length,
       ratio,
       status,
       fittedStatus,

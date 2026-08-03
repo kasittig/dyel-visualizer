@@ -143,7 +143,12 @@ describe('usePipelineDiagnostics', () => {
               effects: ['speed-strength', 'mid-range'],
               actualE1rmKg: 100,
               expectedE1rmKg: 110,
+              baselineE1rmKg: 120,
+              expectedFactor: 0.95,
+              latestAt: Date.UTC(2026, 0, 10),
+              previousE1rmKg: 95,
               ratio: 0.9,
+              status: 'weakness',
               staleDays: 3.9,
             }),
           ],
@@ -163,6 +168,14 @@ describe('usePipelineDiagnostics', () => {
       deltaDisplay: '-10.0%',
       ageDays: 3,
       ageDisplay: '3 days ago',
+      latestDateDisplay: 'Jan 10, 2026',
+      trendDisplay: '+5.3% vs prior observation',
+      observationDisplay: '4 observations · 3 comparisons',
+      calculationDisplay:
+        unit === 'lbs'
+          ? '265 lbs baseline × 95.0% − 11 lbs added resistance = 243 lbs expected'
+          : '120 kg baseline × 95.0% − 5 kg added resistance = 110 kg expected',
+      rationaleDisplay: 'The latest e1RM is 10.0% below its expected value.',
     });
   });
 

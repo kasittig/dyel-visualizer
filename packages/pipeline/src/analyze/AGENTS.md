@@ -48,6 +48,10 @@ run and NEVER stored on identity types.
   Diagnostic display strings are the app's job; emit structured fields only. Consistent with
   the outputs-computed-fresh-every-run boundary: never stored on identity types, always
   derived from normalized model state.
+- Drill-down provenance stays structured on each `VariantAssessment`: `baselineE1rmKg` and
+  `expectedFactor` reproduce the expected-value calculation; `latestAt` and
+  `previousE1rmKg` support recency/trend display; `observationCount` counts the variation's
+  e1RM observations and `comparisonCount` reports the fitted relationship's sample count.
 - Weakness aggregation is a SIGNED VOTE COUNT per quality: each non-stale 'weakness'
   variant with the quality → +1, each non-stale 'overperforming' variant → −1,
   'optimal' → 0, 'stale' → 0 (no votes). Report qualities with score > 0; evidence

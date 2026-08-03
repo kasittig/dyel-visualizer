@@ -33,7 +33,7 @@ export function DiagnosticsPanel({
   unit: DisplayUnit;
 }) {
   const [activeEffect, setActiveEffect] = useState<string | null>(null);
-  const [collapsedRows, setCollapsedRows] = useState<Set<string>>(() => new Set());
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(() => new Set());
   const { variants, weakEffects, overtrainedEffects, needsData } = usePipelineDiagnostics(
     liftType,
     unit
@@ -60,7 +60,7 @@ export function DiagnosticsPanel({
   };
 
   const toggleRow = (canonical: string) => {
-    setCollapsedRows((current) => {
+    setExpandedRows((current) => {
       const next = new Set(current);
       if (next.has(canonical)) {
         next.delete(canonical);
@@ -155,7 +155,7 @@ export function DiagnosticsPanel({
             <div className={styles.findings} role="list">
               {sortedRows.map((r) => {
                 const [lbl, color] = LABELS[r.status];
-                const isCollapsed = collapsedRows.has(r.canonical);
+                const isCollapsed = !expandedRows.has(r.canonical);
                 const detailId = `diagnostic-${r.canonical}-details`;
                 const isHigh =
                   r.displayName === highlightedVariation ||
@@ -222,6 +222,28 @@ export function DiagnosticsPanel({
                           <span className={styles.recency}>
                             Tested {r.ageDisplay === 'Today' ? 'today' : r.ageDisplay}
                             {r.status === 'stale' && <strong> · Retest recommended</strong>}
+                          </span>
+                        </span>
+                        <span className={styles.provenance}>
+                          <span>
+                            <strong>Latest</strong>
+                            {r.latestDateDisplay} · {r.actualE1rmDisplay}
+                          </span>
+                          <span>
+                            <strong>Recent trend</strong>
+                            {r.trendDisplay}
+                          </span>
+                          <span>
+                            <strong>Evidence</strong>
+                            {r.observationDisplay}
+                          </span>
+                          <span className={styles.provenanceWide}>
+                            <strong>Expected calculation</strong>
+                            {r.calculationDisplay}
+                          </span>
+                          <span className={styles.provenanceWide}>
+                            <strong>Why this status</strong>
+                            {r.rationaleDisplay}
                           </span>
                         </span>
                       </button>
