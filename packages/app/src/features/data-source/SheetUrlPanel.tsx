@@ -28,10 +28,12 @@ type RefreshStatus = 'idle' | 'loading' | 'success' | 'error';
 function RefreshFeedback({
   status,
   lastUpdatedAt,
+  isUsingCachedData,
   onRefresh,
 }: {
   status: RefreshStatus;
   lastUpdatedAt: Date | null;
+  isUsingCachedData: boolean;
   onRefresh: () => void;
 }) {
   if (status === 'idle' && !lastUpdatedAt) {
@@ -45,10 +47,15 @@ function RefreshFeedback({
       aria-live={status === 'error' ? 'assertive' : 'polite'}
     >
       {status === 'loading' ? (
-        <span>Refreshing sheet data…</span>
+        <span>
+          Refreshing sheet data…{isUsingCachedData ? ' Showing cached data meanwhile.' : ''}
+        </span>
       ) : status === 'error' ? (
         <>
-          <span>Refresh failed. Check your connection and try again.</span>
+          <span>
+            Refresh failed. {isUsingCachedData ? 'Showing cached data. ' : ''}Check your connection
+            and try again.
+          </span>
           <button type="button" className={styles.retryButton} onClick={onRefresh}>
             Try again
           </button>
@@ -180,6 +187,7 @@ export function SheetUrlPanel({
   loaded,
   refreshStatus,
   lastUpdatedAt,
+  isUsingCachedData,
   invalidUrl,
   onUrlChange,
   onForceOpen,
@@ -195,6 +203,7 @@ export function SheetUrlPanel({
   loaded: boolean;
   refreshStatus: RefreshStatus;
   lastUpdatedAt: Date | null;
+  isUsingCachedData: boolean;
   invalidUrl: boolean;
   onUrlChange: (v: string) => void;
   onForceOpen: () => void;
@@ -341,6 +350,7 @@ export function SheetUrlPanel({
                   <RefreshFeedback
                     status={refreshStatus}
                     lastUpdatedAt={lastUpdatedAt}
+                    isUsingCachedData={isUsingCachedData}
                     onRefresh={onRefresh}
                   />
                   <span aria-hidden="true"> · </span>
@@ -366,6 +376,7 @@ export function SheetUrlPanel({
                 <RefreshFeedback
                   status={refreshStatus}
                   lastUpdatedAt={lastUpdatedAt}
+                  isUsingCachedData={isUsingCachedData}
                   onRefresh={onRefresh}
                 />
               )}
@@ -413,6 +424,7 @@ export function SheetUrlPanel({
               <RefreshFeedback
                 status={refreshStatus}
                 lastUpdatedAt={lastUpdatedAt}
+                isUsingCachedData={isUsingCachedData}
                 onRefresh={onRefresh}
               />
             )}

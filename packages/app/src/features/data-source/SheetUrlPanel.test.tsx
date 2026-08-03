@@ -15,6 +15,7 @@ const props = (overrides: Record<string, unknown> = {}) => ({
   loaded: true,
   refreshStatus: 'success' as const,
   lastUpdatedAt: new Date('2026-08-02T14:30:00Z'),
+  isUsingCachedData: false,
   invalidUrl: false,
   onUrlChange: vi.fn(),
   onForceOpen: vi.fn(),
@@ -103,6 +104,17 @@ describe('SheetUrlPanel mobile settings', () => {
     expect(within(dialog).getByRole('alert').textContent).toContain('Refresh failed');
     fireEvent.click(within(dialog).getByRole('button', { name: 'Try again' }));
     expect(input.onRefresh).toHaveBeenCalledOnce();
+  });
+
+  it.each([
+    ['loading', 'Refreshing sheet data… Showing cached data meanwhile.'],
+    ['error', 'Refresh failed. Showing cached data.'],
+  ] as const)('labels cached data while refresh is %s', (refreshStatus, message) => {
+    render(
+      <SheetUrlPanel {...props({ showUrlPanel: true, refreshStatus, isUsingCachedData: true })} />
+    );
+
+    expect(within(screen.getByRole('dialog')).getByText(new RegExp(message))).toBeTruthy();
   });
 
   it('reports the last successful update time', () => {

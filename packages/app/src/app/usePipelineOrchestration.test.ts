@@ -70,6 +70,7 @@ describe('usePipelineOrchestration', () => {
     const cacheData = serializeSheetCache({
       sheetKey: 'https://example.com',
       raw: cachedRaw,
+      updatedAt: '2026-08-02T14:30:00.000Z',
     });
     localStorage.setItem('dyel:sheetDataCache', cacheData);
 
@@ -82,6 +83,8 @@ describe('usePipelineOrchestration', () => {
     expect(result.current.status).toBe('success');
     expect(result.current.model).toBeTruthy();
     expect(result.current.requestStatus).toBe('loading');
+    expect(result.current.isUsingCachedData).toBe(true);
+    expect(result.current.lastUpdatedAt?.toISOString()).toBe('2026-08-02T14:30:00.000Z');
   });
 
   it('keeps the cached model visible when a refresh fails', () => {

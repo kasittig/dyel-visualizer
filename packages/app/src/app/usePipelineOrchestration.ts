@@ -15,6 +15,7 @@ export interface PipelineOrchestrationReturn {
   status: 'idle' | 'loading' | 'success' | 'error';
   requestStatus: 'idle' | 'loading' | 'success' | 'error';
   lastUpdatedAt: Date | null;
+  isUsingCachedData: boolean;
   model: PipelineModel | null;
   invalidUrl: boolean;
   textValidation: { hasText: boolean; isValid: boolean };
@@ -58,9 +59,9 @@ export function usePipelineOrchestration(
 
   useEffect(() => {
     if (pStatus === 'success' && raw.length && ref && inputMode === 'url') {
-      setCache({ sheetKey: url, raw });
+      setCache({ sheetKey: url, raw, updatedAt: lastUpdatedAt?.toISOString() });
     }
-  }, [pStatus, raw, ref, url, inputMode, setCache]);
+  }, [pStatus, raw, ref, url, inputMode, lastUpdatedAt, setCache]);
 
   const effRaw = useMemo(
     () =>
@@ -85,11 +86,14 @@ export function usePipelineOrchestration(
     }
     return null;
   }, [pStatus, model, rawStatus, effRaw, raw, athleteBase]);
+  const isUsingCachedData = effRaw !== raw && effModel !== null;
 
   return {
     status: pStatus === 'success' || effModel !== null ? 'success' : pStatus,
     requestStatus: rawStatus,
-    lastUpdatedAt,
+    lastUpdatedAt:
+      lastUpdatedAt ?? (isUsingCachedData && cache?.updatedAt ? new Date(cache.updatedAt) : null),
+    isUsingCachedData,
     model: effModel,
     invalidUrl: url.length > 0 && !ref,
     textValidation: useMemo(() => {
