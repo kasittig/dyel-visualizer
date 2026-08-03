@@ -22,6 +22,10 @@
   margin-bottom: 0.5rem;
   max-width: 100%;
 }
+.tabList {
+  display: flex;
+  gap: 0.5rem;
+}
 .tab {
   background: none;
   border: 1px solid transparent;

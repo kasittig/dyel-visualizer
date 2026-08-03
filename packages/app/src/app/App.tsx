@@ -14,6 +14,8 @@ import { MAIN_TABS, type PageTab } from './appTabs';
 import { useAppSettings } from './useAppSettings';
 import { usePipelineOrchestration } from './usePipelineOrchestration';
 import { useVisualizerData } from './useVisualizerData';
+import { PrimaryTabs } from './PrimaryTabs';
+import { PRIMARY_TABPANEL_ID, primaryTabId } from './appTabA11y';
 import styles from './App.module.css';
 
 export function App() {
@@ -69,6 +71,11 @@ export function App() {
     : (tabs[0]?.id ?? 'squat');
   const mobileDestination =
     effActiveTab === 'sigma' ? 'overview' : effActiveTab === 'calculator' ? 'calculator' : 'lifts';
+  const primaryTabs = [
+    { id: 'sigma' as const, label: 'Σ', accessibleLabel: 'Overview' },
+    ...tabs,
+    { id: 'calculator' as const, label: 'Calculator' },
+  ];
 
   const selectLift = (lift: LiftType) => {
     setLastLiftTab(lift);
@@ -118,31 +125,23 @@ export function App() {
           )}
           {effStatus === 'success' && (
             <>
-              <div className={styles.tabNav}>
-                {[
-                  { id: 'sigma' as const, label: 'Σ' },
-                  ...tabs,
-                  { id: 'calculator' as const, label: 'Calculator' },
-                ].map(({ id, label }) => (
-                  <button
-                    key={id}
-                    onClick={() => setActiveTab(id)}
-                    className={clsx(styles.tab, effActiveTab === id && styles.tabActive)}
-                    aria-current={effActiveTab === id ? 'page' : undefined}
-                    aria-pressed={effActiveTab === id}
-                  >
-                    {label}
-                  </button>
-                ))}
-                <div className={styles.tabSpacer} />
-                <div className={styles.datePickerWrap}>
-                  <DateRangePicker
-                    value={dateRange}
-                    onChange={setDateRange}
-                    sessionDates={allSessionDates}
-                  />
-                </div>
-              </div>
+              <PrimaryTabs
+                tabs={primaryTabs}
+                activeTab={effActiveTab}
+                onSelect={setActiveTab}
+                trailing={
+                  <>
+                    <div className={styles.tabSpacer} />
+                    <div className={styles.datePickerWrap}>
+                      <DateRangePicker
+                        value={dateRange}
+                        onChange={setDateRange}
+                        sessionDates={allSessionDates}
+                      />
+                    </div>
+                  </>
+                }
+              />
               <div className={styles.mobileTopControls}>
                 <div className={styles.mobileScreenHeader}>
                   <span className={styles.mobileEyebrow}>
@@ -178,32 +177,39 @@ export function App() {
                   </div>
                 )}
               </div>
-              {effActiveTab === 'calculator' ? (
-                <div className={styles.calculatorRow}>
-                  <div>
-                    <RepCalculator tabRows={tabRows} baselineNames={defaultCanonicals} />
+              <div
+                id={PRIMARY_TABPANEL_ID}
+                role="tabpanel"
+                aria-labelledby={primaryTabId(effActiveTab)}
+                tabIndex={0}
+              >
+                {effActiveTab === 'calculator' ? (
+                  <div className={styles.calculatorRow}>
+                    <div>
+                      <RepCalculator tabRows={tabRows} baselineNames={defaultCanonicals} />
+                    </div>
+                    <div>
+                      <StrengthScoreCalculator dateRange={dateRange} unit={dataUnit} />
+                    </div>
                   </div>
-                  <div>
-                    <StrengthScoreCalculator dateRange={dateRange} unit={dataUnit} />
-                  </div>
-                </div>
-              ) : effActiveTab === 'sigma' ? (
-                <SigmaTab
-                  dateRange={dateRange}
-                  onDateRangeChange={setDateRange}
-                  unit={dataUnit}
-                  volumeByDate={volumeByDate}
-                />
-              ) : liftTab !== null ? (
-                <LiftTabPanel
-                  key={shownResetToken}
-                  liftType={liftTab}
-                  targetName={defaultCanonicals[liftTab]!}
-                  dateRange={dateRange}
-                  onDateRangeChange={setDateRange}
-                  unit={dataUnit}
-                />
-              ) : null}
+                ) : effActiveTab === 'sigma' ? (
+                  <SigmaTab
+                    dateRange={dateRange}
+                    onDateRangeChange={setDateRange}
+                    unit={dataUnit}
+                    volumeByDate={volumeByDate}
+                  />
+                ) : liftTab !== null ? (
+                  <LiftTabPanel
+                    key={shownResetToken}
+                    liftType={liftTab}
+                    targetName={defaultCanonicals[liftTab]!}
+                    dateRange={dateRange}
+                    onDateRangeChange={setDateRange}
+                    unit={dataUnit}
+                  />
+                ) : null}
+              </div>
               <nav className={styles.mobileNav} aria-label="Primary navigation">
                 <button
                   type="button"
