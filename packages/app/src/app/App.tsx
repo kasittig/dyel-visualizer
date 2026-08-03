@@ -16,10 +16,12 @@ import { usePipelineOrchestration } from './usePipelineOrchestration';
 import { useVisualizerData } from './useVisualizerData';
 import { PrimaryTabs } from './PrimaryTabs';
 import { PRIMARY_TABPANEL_ID, primaryTabId } from './appTabA11y';
+import { FirstUseGuide } from './FirstUseGuide';
 import styles from './App.module.css';
 
 export function App() {
   const {
+    isFirstUse,
     url,
     inputMode,
     pastedText,
@@ -125,6 +127,7 @@ export function App() {
           )}
           {effStatus === 'success' && (
             <>
+              <FirstUseGuide isFirstUse={isFirstUse} />
               <div className={styles.controlDock}>
                 <PrimaryTabs tabs={primaryTabs} activeTab={effActiveTab} onSelect={setActiveTab} />
                 <section
