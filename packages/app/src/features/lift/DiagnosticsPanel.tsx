@@ -2,14 +2,7 @@ import { useState, type CSSProperties } from 'react';
 import { usePipelineDiagnostics, type DiagnosticRow } from './usePipelineDiagnostics';
 import { formatEffect } from '@dyel/api/display';
 import type { DisplayUnit, DiagnosticVariant } from '@dyel/api';
-import {
-  CollapsibleSection,
-  TableCard,
-  Table,
-  TableHeadRow,
-  TableRow,
-  TableCell,
-} from '../../shared/components';
+import { CollapsibleSection, TableCard } from '../../shared/components';
 import { useSortableRows } from '../../shared/hooks';
 import styles from './DiagnosticsPanel.module.css';
 
@@ -50,11 +43,6 @@ export function DiagnosticsPanel({
   if (variants.length === 0) {
     return null;
   }
-
-  const headerSort = (column: SortColumn) => ({
-    onSort: () => toggleSort(column),
-    sortDirection: sortKey === column ? direction : null,
-  });
 
   const handleEffectClick = (e: string) => {
     setActiveEffect((prev) => (prev === e ? null : e));
@@ -107,71 +95,83 @@ export function DiagnosticsPanel({
               </div>
             )}
           </div>
-          <Table>
-            <TableHeadRow>
-              <TableCell as="th" variant="left" {...headerSort('variation')}>
-                Variation
-              </TableCell>
-              <TableCell as="th" variant="left" {...headerSort('effects')}>
-                Effects
-              </TableCell>
-              <TableCell as="th" variant="mono" {...headerSort('evidence')}>
-                Latest e1RM vs expected
-              </TableCell>
-              <TableCell as="th" variant="left" {...headerSort('diagnostic')}>
-                Diagnostic
-              </TableCell>
-            </TableHeadRow>
-            <tbody>
-              {sortedRows.map((r) => {
-                const [lbl, color] = LABELS[r.status];
-                const isHigh =
-                  r.displayName === highlightedVariation ||
-                  (activeEffect !== null && r.effects.includes(activeEffect));
-                return (
-                  <TableRow
-                    key={r.displayName}
-                    selected={isHigh}
-                    onClick={() => {
-                      setActiveEffect(null);
-                      onVariationClick?.(r.displayName);
-                    }}
-                  >
-                    <TableCell>
+          <div className={styles.sortBar} aria-label="Sort diagnostics">
+            <span>Sort by</span>
+            {(
+              [
+                ['diagnostic', 'Status'],
+                ['evidence', 'Difference'],
+                ['variation', 'Variation'],
+              ] as const
+            ).map(([column, label]) => (
+              <button
+                type="button"
+                key={column}
+                className={`${styles.sortButton} ${sortKey === column ? styles.sortButtonActive : ''}`}
+                onClick={() => toggleSort(column)}
+              >
+                {label}
+                {sortKey === column && (
+                  <span aria-hidden="true"> {direction === 'asc' ? '↑' : '↓'}</span>
+                )}
+              </button>
+            ))}
+          </div>
+          <div className={styles.findings} role="list">
+            {sortedRows.map((r) => {
+              const [lbl, color] = LABELS[r.status];
+              const isHigh =
+                r.displayName === highlightedVariation ||
+                (activeEffect !== null && r.effects.includes(activeEffect));
+              return (
+                <button
+                  type="button"
+                  role="listitem"
+                  key={r.displayName}
+                  className={`${styles.finding} ${isHigh ? styles.findingSelected : ''}`}
+                  onClick={() => {
+                    setActiveEffect(null);
+                    onVariationClick?.(r.displayName);
+                  }}
+                  style={{ '--diagnostic-color': color } as CSSProperties}
+                >
+                  <span className={styles.findingHeader}>
+                    <span className={styles.variationName}>
                       {r.displayName}
                       {r.isCompLift && (
                         <span className={styles.compBadge} title="Competition variant">
                           🏆
                         </span>
                       )}
-                    </TableCell>
-                    <TableCell variant="text">{r.effectsDisplay}</TableCell>
-                    <TableCell variant="mono" className={styles.evidence}>
-                      <span className={styles.evidenceValues}>
-                        {r.actualE1rmDisplay} vs {r.expectedE1rmDisplay} expected
-                      </span>
-                      <span className={styles.evidenceContext}>
-                        {r.deltaPercent === 0
-                          ? `${r.deltaDisplay} at expectation`
-                          : `${r.deltaDisplay} ${r.deltaPercent > 0 ? 'above' : 'below'} expectation`}
-                        {' · '}
-                        Tested {r.ageDisplay === 'Today' ? 'today' : r.ageDisplay}
-                        {r.status === 'stale' && (
-                          <strong className={styles.retest}> · Retest recommended</strong>
-                        )}
-                      </span>
-                    </TableCell>
-                    <TableCell
-                      variant="diagnostic"
-                      style={{ '--diagnostic-color': color } as CSSProperties}
-                    >
-                      {lbl}
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </tbody>
-          </Table>
+                    </span>
+                    <span className={styles.status}>{lbl}</span>
+                  </span>
+                  <span className={styles.comparison}>
+                    <span className={styles.actual}>{r.actualE1rmDisplay}</span>
+                    <span className={styles.arrow} aria-hidden="true">
+                      →
+                    </span>
+                    <span className={styles.expected}>
+                      <small>expected</small>
+                      {r.expectedE1rmDisplay}
+                    </span>
+                    <span className={styles.delta}>
+                      {r.deltaPercent === 0
+                        ? `${r.deltaDisplay} at expectation`
+                        : `${r.deltaDisplay} ${r.deltaPercent > 0 ? 'above' : 'below'}`}
+                    </span>
+                  </span>
+                  <span className={styles.findingFooter}>
+                    <span className={styles.effects}>{r.effectsDisplay}</span>
+                    <span className={styles.recency}>
+                      Tested {r.ageDisplay === 'Today' ? 'today' : r.ageDisplay}
+                      {r.status === 'stale' && <strong> · Retest recommended</strong>}
+                    </span>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
         </TableCard>
       </CollapsibleSection>
     </div>

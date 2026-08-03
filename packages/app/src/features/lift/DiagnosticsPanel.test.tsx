@@ -50,15 +50,17 @@ describe('DiagnosticsPanel', () => {
     ['Below range', 'In range', 'Above range', 'Needs retest'].forEach((label) =>
       expect(screen.getByText(label)).toBeDefined()
     );
-    expect(screen.getByText('82 lb vs 100 lb expected')).toBeDefined();
-    expect(screen.getByText(/-18\.0% below expectation · Tested 3 days ago/)).toBeDefined();
-    expect(screen.getByText(/0\.0% at expectation · Tested 3 days ago/)).toBeDefined();
-    expect(screen.getByText(/\+18\.0% above expectation · Tested 3 days ago/)).toBeDefined();
-    expect(screen.getByText(/-5\.0% below expectation · Tested 117 days ago/)).toBeDefined();
+    expect(screen.getByText('82 lb')).toBeDefined();
+    expect(screen.getAllByText('100 lb')).toHaveLength(5);
+    ['-18.0% below', '0.0% at expectation', '+18.0% above', '-5.0% below'].forEach((text) =>
+      expect(screen.getByText(text)).toBeDefined()
+    );
+    expect(screen.getAllByText('Tested 3 days ago')).toHaveLength(3);
+    expect(screen.getByText(/Tested 117 days ago/)).toBeDefined();
     expect(screen.getByText(/Retest recommended/)).toBeDefined();
     expect(screen.getByText('Paused, +20 lb')).toBeDefined();
     expect(screen.queryByText('Overtrained')).toBeNull();
-    expect(screen.getByText('Latest e1RM vs expected')).toBeDefined();
+    expect(screen.getByText('Sort by')).toBeDefined();
   });
 
   it('renders effect filters as toggle buttons', () => {
