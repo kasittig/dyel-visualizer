@@ -15,6 +15,7 @@ export {
   classifyExerciseName,
   classifyAccessorySubtypes,
   buildAccessoryTaggedRecords,
+  tagRecordsByPrimaryEvidence,
 } from './tag/tag';
 export type {
   ConjugateBar,

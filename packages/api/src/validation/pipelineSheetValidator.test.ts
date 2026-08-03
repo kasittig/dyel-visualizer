@@ -43,6 +43,28 @@ describe('validateSheetCsv (pipeline-native)', () => {
     ).toBe('lbs');
   });
 
+  it('promotes all rows for a variation only when its history contains a qualifying RM', () => {
+    const csv = `date,exercise,weight (lbs),reps,rpe
+2024-01-01,Incline Bench,185,8,8
+2024-01-08,Incline Bench,225,2,9
+2024-01-01,Squat,315,3,8
+2024-01-01,Face Pull,40,12,`;
+
+    expect(validateSheetCsv(csv).rows.liftTypes).toEqual({
+      squat: 0,
+      bench: 2,
+      deadlift: 0,
+      accessory: 2,
+    });
+  });
+
+  it('does not treat multi-set speed work without RPE as rep-max evidence', () => {
+    expect(
+      validateSheetCsv('date,exercise,weight (lbs),reps,sets\n2024-01-01,Bench,185,3,9').rows
+        .liftTypes
+    ).toEqual({ squat: 0, bench: 0, deadlift: 0, accessory: 1 });
+  });
+
   it('enforces validation rules and warning conditions', () => {
     const noDate = validateSheetCsv('exercise,weight (lbs),reps\nSquat,315,5');
     expect(noDate.verdict).toBe('warning');
@@ -58,7 +80,7 @@ describe('validateSheetCsv (pipeline-native)', () => {
     const accOnly = validateSheetCsv(
       'date,exercise,weight (lbs),reps\n2024-01-01,bicep curl,30,10'
     );
-    expect(accOnly.warnings.some((w) => w.includes('only accessories'))).toBe(true);
+    expect(accOnly.warnings.some((w) => w.includes('qualifying 1–3 rep-max history'))).toBe(true);
   });
 
   it('validates row variables independently', () => {

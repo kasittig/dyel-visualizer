@@ -116,17 +116,24 @@ substring matching) to prevent incidental collisions.
 
 For a step-by-step guide to adding a new effect category, see `ADDING_EFFECTS.md` in this directory.
 
-## Unknown heuristic
+## Primary-lift promotion and unknown validation
 
-A record is unknown when `parseExercise(raw)` yields `type === 'accessory'` with
-null bar/stance/equipment and empty `addlWts` — i.e. every accessory lift, since the
-parser always nulls those fields for accessories. This is an accepted, imperfect
-limitation: a genuine accessory lift and an unrecognized/mistyped comp-lift variant are
-indistinguishable by this heuristic; both land in `unknown` for offline review.
+`tagRecordsByPrimaryEvidence` treats the parser's squat/bench/deadlift result as a candidate
+family. A canonical variation is promoted into that family only when its history contains an
+exact 1-, 2-, or 3-rep set whose RPE is at least 9, or a single set with no RPE. Multi-set
+no-RPE speed work never qualifies. Promotion applies to every record
+with that canonical, including aliases and records earlier than the qualifying set. Recognized
+variations without evidence keep their candidate canonical but receive `lift:accessory`,
+accessory effects, and no baseline range.
+
+Unknown validation is independent of promotion. A name is reported unknown only when
+`parseExercise(raw)` falls back to `accessory`; recognized-but-unpromoted candidates are not
+validation errors. Because the parser has no positive accessory dictionary, genuine accessories
+and unrecognized/mistyped primary-lift names remain indistinguishable in the unknown report.
 
 ## Accessory subtype classification
 
-`classifyAccessorySubtypes` runs after `tagRecords`, not inside `buildTagsAndEffects`, because
+`classifyAccessorySubtypes` runs after history-aware tagging, not inside `buildTagsAndEffects`, because
 determining upper vs. lower subtype requires knowing what OTHER exercises were logged on the
 same calendar day (`r.date`) — context unavailable when tagging a single record in isolation.
 It groups all tagged records by `date` once (via `Map.groupBy`), then for each record already
@@ -140,7 +147,7 @@ tagged `lift:accessory`:
   `lift:squat`/`lift:deadlift`: bench-only day → `accessory:upper`; squat/deadlift-only day →
   `accessory:lower`.
 - If the day has BOTH bench and squat/deadlift, or NEITHER, the record remains tagged
-  `lift:accessory` with no subtype — an accepted imperfect limitation (see "Unknown heuristic").
+  `lift:accessory` with no subtype — an accepted imperfect limitation.
   This treats ambiguity analogously to the existing heuristic: accept no-context cases rather
   than guess.
 

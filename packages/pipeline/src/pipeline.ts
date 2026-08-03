@@ -4,12 +4,7 @@ import { ParseError, ParserRegistry } from './parse/parser';
 import { csvParser } from './parse/csv';
 import { freeformParser } from './parse/freeform/parser';
 import type { TaggedSetRecord } from './tag/tag';
-import {
-  resolveCanonicalNames,
-  tagRecords,
-  classifyAccessorySubtypes,
-  buildAccessoryTaggedRecords,
-} from './tag/tag';
+import { classifyAccessorySubtypes, tagRecordsByPrimaryEvidence } from './tag/tag';
 import { parseExercise } from './tag/detect/parseExercise';
 import { derivers } from './derive/derivers';
 import type { NormalizationModel } from './derive/normalize';
@@ -182,8 +177,11 @@ export function runPipelineModel(
     parseErrors.push(...parsed.errors);
   }
 
-  const { resolved, unknown: unkAliases } = resolveCanonicalNames(records);
-  const { tagged: rawCompTagged, unknown: unkCanonicals } = tagRecords(resolved);
+  const {
+    tagged: historyTagged,
+    primaryTagged: rawCompTagged,
+    unknown: unknownExercises,
+  } = tagRecordsByPrimaryEvidence(records);
   // The athlete's stronger deadlift stance (sumo vs. conventional) is derived automatically
   // from their own e1RM data, projected forward to `now` so a stale PR in one stance can't
   // outrank current strength in the other, never supplied externally — see
@@ -191,14 +189,12 @@ export function runPipelineModel(
   // (fitNormalizationModel, tagged, point store, etc.) must see the patched tags, so this
   // runs before any of them.
   const compTagged = tagCompetitionDeadliftStance(rawCompTagged, timestamp);
-  const unknownExercises = [...new Set([...unkAliases, ...unkCanonicals])];
-  // Accessory exercises are always filtered into `unknownExercises` above (see tag/CLAUDE.md's
-  // "Unknown heuristic") — resolveCanonicalNames/tagRecords never tag them. Build real tagged
-  // records for them separately so they still show up in PipelineModel.tagged (and can be
-  // subtype-classified below), without affecting normalization/points/diagnostics, which stay
-  // scoped to comp-lift records only (compTagged).
-  const accessoryTagged = buildAccessoryTaggedRecords(records, unknownExercises);
-  const tagged = classifyAccessorySubtypes([...compTagged, ...accessoryTagged]);
+  let primaryIndex = 0;
+  const tagged = classifyAccessorySubtypes(
+    historyTagged.map((record) =>
+      record.tags.has('lift:accessory') ? record : compTagged[primaryIndex++]
+    )
+  );
 
   const model = fitNormalizationModel(compTagged, { minSamples: 1 });
   const allDeriverIds = Object.keys(derivers);

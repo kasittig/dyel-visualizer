@@ -21,7 +21,7 @@ describe('pipeline orchestration', () => {
   });
 
   it('fits normalization model on full tagged set including speed-work records', () => {
-    const log = `units: kg\n2024-01-01 Bench 100 x5 @8\n2024-01-02 Bench 105 x5 @8\n2024-01-03 Bench 110 x5 @8\n2024-01-04 Bench 115 x5 @8\n2024-01-02 Dumbbell Bench 3x5 @ 45\n2024-01-07 Dumbbell Bench 3x5 @ 50`;
+    const log = `units: kg\n2023-12-31 Bench 120 x3 @9\n2023-12-31 Dumbbell Bench 55 x3 @9\n2024-01-01 Bench 100 x5 @8\n2024-01-02 Bench 105 x5 @8\n2024-01-03 Bench 110 x5 @8\n2024-01-04 Bench 115 x5 @8\n2024-01-02 Dumbbell Bench 3x5 @ 45\n2024-01-07 Dumbbell Bench 3x5 @ 50`;
     const model = runPipelineModel([{ name: 'log.txt', content: log }], ath()) as PipelineModel;
 
     expect(model.model.baseline['lift:bench']).toBe('bench');
@@ -30,7 +30,7 @@ describe('pipeline orchestration', () => {
   });
 
   it('produces distinct adjusted vs non-adjusted point maps for offset-adjusted records', () => {
-    const log = `2024-01-01 Bench 100kg x5 @8\n2024-01-01 Bench (chains) 80kg x5\n2024-01-05 Bench 105kg x5 @8\n2024-01-05 Bench (chains) 85kg x5`;
+    const log = `2023-12-31 Bench 110kg x3 @9\n2023-12-31 Bench (chains) 90kg x3 @9\n2024-01-01 Bench 100kg x5 @8\n2024-01-01 Bench (chains) 80kg x5\n2024-01-05 Bench 105kg x5 @8\n2024-01-05 Bench (chains) 85kg x5`;
     const model = runPipelineModel([{ name: 'log.txt', content: log }], ath()) as PipelineModel;
 
     const chainVariant = Object.keys(model.model.addlWtOffset).find((k) =>
@@ -73,7 +73,7 @@ describe('pipeline orchestration', () => {
       [
         {
           name: 'log.txt',
-          content: `units: kg\n2024-01-01 Bench 100 x5 @8\n2024-01-02 Bench 105 x5 @8`,
+          content: `units: kg\n2024-01-01 Bench 100 x3 @9\n2024-01-02 Bench 105 x5 @8`,
         },
       ],
       ath()
@@ -88,7 +88,7 @@ describe('pipeline orchestration', () => {
   });
 
   it('includes canonical and label-grouped accessory points so app charts render', () => {
-    const log = `units: kg\n2024-01-01 Squat 100 x5 @8\n2024-01-01 Bench 80 x5 @8\n2024-01-01 Bicep Curl 15 x10 @8`;
+    const log = `units: kg\n2024-01-01 Squat 100 x3 @9\n2024-01-01 Bench 80 x3 @9\n2024-01-01 Bicep Curl 15 x10 @8`;
     const model = runPipelineModel([{ name: 'log.txt', content: log }], ath());
     const acc = model.tagged.filter((r) => r.tags.has('lift:accessory'));
 
@@ -105,22 +105,22 @@ describe('pipeline orchestration', () => {
     it.each([
       [
         'sumo strictly higher e1RM',
-        `2024-01-01 Sumo Deadlift 150kg x5 @8\n2024-01-01 Deadlift 100kg x5 @8`,
+        `2024-01-01 Sumo Deadlift 150kg x3 @9\n2024-01-01 Deadlift 100kg x3 @9`,
         'sumo',
       ],
       [
         'conventional strictly higher e1RM',
-        `2024-01-01 Sumo Deadlift 100kg x5 @8\n2024-01-01 Deadlift 150kg x5 @8`,
+        `2024-01-01 Sumo Deadlift 100kg x3 @9\n2024-01-01 Deadlift 150kg x3 @9`,
         'conventional',
       ],
       [
         'tied e1RM defaults to conventional',
-        `2024-01-01 Sumo Deadlift 100kg x5 @8\n2024-01-01 Deadlift 100kg x5 @8`,
+        `2024-01-01 Sumo Deadlift 100kg x3 @9\n2024-01-01 Deadlift 100kg x3 @9`,
         'conventional',
       ],
       [
         'no sumo data at all defaults to conventional',
-        `2024-01-01 Deadlift 100kg x5 @8`,
+        `2024-01-01 Deadlift 100kg x3 @9`,
         'conventional',
       ],
     ])('tags "competition" on the %s deadlift stance only', (_, log, winner) => {
@@ -136,9 +136,9 @@ describe('pipeline orchestration', () => {
 
     it('projects each stance forward to `now` rather than comparing raw all-time-best e1RM, so a stale PR does not outrank a currently-improving stance', () => {
       const log = [
-        '2024-01-01 Sumo Deadlift 150kg x5 @8',
-        '2024-01-01 Deadlift 100kg x5 @8',
-        '2024-01-08 Deadlift 130kg x5 @8',
+        '2024-01-01 Sumo Deadlift 150kg x3 @9',
+        '2024-01-01 Deadlift 100kg x3 @9',
+        '2024-01-08 Deadlift 130kg x3 @9',
       ].join('\n');
       const now = new Date('2024-02-01').getTime();
       const model = runPipelineModel(
@@ -160,8 +160,8 @@ describe('pipeline orchestration', () => {
 
     it('always tags bare Squat and Bench as "competition", independent of deadlift data', () => {
       const logs = [
-        `2024-01-01 Squat 100kg x5 @8\n2024-01-01 Bench 80kg x5 @8\n2024-01-01 Sumo Deadlift 150kg x5 @8\n2024-01-01 Deadlift 100kg x5 @8`,
-        `2024-01-01 Squat 100kg x5 @8\n2024-01-01 Bench 80kg x5 @8`,
+        `2024-01-01 Squat 100kg x3 @9\n2024-01-01 Bench 80kg x3 @9\n2024-01-01 Sumo Deadlift 150kg x3 @9\n2024-01-01 Deadlift 100kg x3 @9`,
+        `2024-01-01 Squat 100kg x3 @9\n2024-01-01 Bench 80kg x3 @9`,
       ];
 
       logs.forEach((log) => {

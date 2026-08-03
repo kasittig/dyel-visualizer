@@ -3,7 +3,8 @@ import { parseExercise } from './detect/parseExercise';
 import { buildCanonical, buildTagsAndEffects } from './detect/canonical';
 import type { BaselineRange } from './detect/canonical';
 import type { ParsedExercise, LiftType } from './detect/conjugate-types';
-import { isCoreExercise } from './detect/detectors';
+import { classifyAccessoryEffects, isCoreExercise } from './detect/detectors';
+import { isSpeedWork } from '../derive/derivers';
 
 export type TaggedSetRecord = SetRecord & {
   canonical: string;
@@ -105,6 +106,73 @@ export function buildAccessoryTaggedRecords(
         meta: { ...r.meta, rawExercise: r.exercise },
       };
     });
+}
+
+/**
+ * Classifies records using both the parsed exercise family and the athlete's history.
+ * A squat/bench/deadlift candidate is promoted only when the same canonical variation
+ * has at least one 1-3 rep set at RPE 9+ (or with no RPE recorded). All other records
+ * remain available as accessories. Unknown names are reported independently from that
+ * promotion decision so a recognized-but-unpromoted variation is not a validation error.
+ */
+export function tagRecordsByPrimaryEvidence(records: SetRecord[]): {
+  tagged: TaggedSetRecord[];
+  primaryTagged: TaggedSetRecord[];
+  unknown: string[];
+} {
+  const candidates = records.map((record) => {
+    const parsed = parseExercise(record.exercise);
+    return {
+      record,
+      parsed,
+      canonical: buildCanonical(parsed, record.exercise),
+    };
+  });
+  const primaryCanonicals = new Set<string>();
+  const unknown = new Set<string>();
+
+  for (const { record, parsed, canonical } of candidates) {
+    if (isUnknown(parsed)) {
+      unknown.add(record.exercise);
+    } else if (
+      (record.reps === 1 || record.reps === 2 || record.reps === 3) &&
+      (record.rpe === undefined || record.rpe >= 9) &&
+      !isSpeedWork(record)
+    ) {
+      primaryCanonicals.add(canonical);
+    }
+  }
+
+  const tagged = candidates.map(({ record, parsed, canonical }) => {
+    const rawExercise = record.exercise;
+    if (parsed.type !== 'accessory' && primaryCanonicals.has(canonical)) {
+      const { tags, effects, range } = buildTagsAndEffects(rawExercise);
+      return {
+        ...record,
+        exercise: canonical,
+        canonical,
+        tags,
+        effects,
+        baselineRange: range,
+        meta: { ...record.meta, rawExercise },
+      };
+    }
+    return {
+      ...record,
+      exercise: canonical,
+      canonical,
+      tags: new Set(['lift:accessory']),
+      effects: classifyAccessoryEffects(rawExercise),
+      baselineRange: null,
+      meta: { ...record.meta, rawExercise },
+    };
+  });
+
+  return {
+    tagged,
+    primaryTagged: tagged.filter((record) => !record.tags.has('lift:accessory')),
+    unknown: [...unknown],
+  };
 }
 
 export function classifyAccessorySubtypes(tagged: TaggedSetRecord[]): TaggedSetRecord[] {

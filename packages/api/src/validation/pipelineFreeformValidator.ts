@@ -1,5 +1,5 @@
-import { classifyExerciseName } from './classifyExerciseName';
 import { parseFreeformTextResult } from '@dyel/pipeline';
+import { countHistoryAwareLiftTypes, emptyLiftTypeCounts } from './historyAwareLiftTypes';
 
 export interface TextValidationIssue {
   row: number;
@@ -19,8 +19,6 @@ export interface TextValidationResult {
 }
 
 const MAX_ERRS = 10;
-const emptyTypes = () => ({ squat: 0, bench: 0, deadlift: 0, accessory: 0 });
-
 export function validateTextData(text: string): TextValidationResult {
   const lines = text
     .split('\n')
@@ -30,21 +28,15 @@ export function validateTextData(text: string): TextValidationResult {
   if (!lines.length) {
     return {
       verdict: 'error',
-      rows: { total: 0, parsed: 0, liftTypes: emptyTypes() },
+      rows: { total: 0, parsed: 0, liftTypes: emptyLiftTypeCounts() },
       warnings: [],
       rowIssues: [],
       issues: ['No text provided. Add one exercise per line, e.g. "comp squat 405lbs x2".'],
     };
   }
 
-  const liftTypes = emptyTypes();
   const parsedResult = parseFreeformTextResult(text, { fallback: 'lbs' });
-  for (const record of parsedResult.records) {
-    const classified = classifyExerciseName(record.exercise);
-    if (!classified.isUnknown) {
-      liftTypes[classified.type] += 1;
-    }
-  }
+  const liftTypes = countHistoryAwareLiftTypes(parsedResult.records);
 
   const total = lines.length;
   const failed = parsedResult.errors.length;
@@ -72,7 +64,7 @@ export function validateTextData(text: string): TextValidationResult {
 
   if (parsed > 0 && !liftTypes.squat && !liftTypes.bench && !liftTypes.deadlift) {
     warnings.push(
-      'No squat, bench, or deadlift exercises were recognized — only accessories. Check exercise naming rules in the onboarding guide.'
+      'No variation has qualifying 1–3 rep-max history. Log a 1–3 rep set at RPE 9+ or a single set without RPE to classify it as squat, bench, or deadlift.'
     );
   }
 

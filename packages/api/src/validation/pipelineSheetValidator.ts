@@ -1,5 +1,6 @@
 import Papa from 'papaparse';
-import { classifyExerciseName } from './classifyExerciseName';
+import type { SetRecord } from '@dyel/pipeline';
+import { countHistoryAwareLiftTypes, emptyLiftTypeCounts } from './historyAwareLiftTypes';
 
 export interface SheetValidationIssue {
   row: number;
@@ -37,8 +38,6 @@ const emptyCols = (): ColumnInfo => ({
   hasSets: false,
   weightUnit: null,
 });
-const emptyLifts = () => ({ squat: 0, bench: 0, deadlift: 0, accessory: 0 });
-
 function findHeaderLineIndex(lines: string[]): number {
   return lines.findIndex(
     (l) => l.trim() && l.split(',').some((c) => c.trim().toLowerCase().startsWith('exercise'))
@@ -58,7 +57,7 @@ export function validateSheetCsv(csv: string): SheetValidationResult {
       verdict: 'error',
       headerRow: null,
       columns: emptyCols(),
-      rows: { total: 0, parsed: 0, liftTypes: emptyLifts() },
+      rows: { total: 0, parsed: 0, liftTypes: emptyLiftTypeCounts() },
       issues: [
         "No header row found. Add a row with an 'exercise' column (and 'date', 'weight', 'reps').",
       ],
@@ -72,7 +71,7 @@ export function validateSheetCsv(csv: string): SheetValidationResult {
       verdict: 'error',
       headerRow: null,
       columns: emptyCols(),
-      rows: { total: 0, parsed: 0, liftTypes: emptyLifts() },
+      rows: { total: 0, parsed: 0, liftTypes: emptyLiftTypeCounts() },
       issues: ['No data rows found. Add at least one row of exercise data.'],
       warnings: [],
       rowIssues: [],
@@ -122,7 +121,7 @@ export function validateSheetCsv(csv: string): SheetValidationResult {
       verdict: 'error',
       headerRow,
       columns,
-      rows: { total: 0, parsed: 0, liftTypes: emptyLifts() },
+      rows: { total: 0, parsed: 0, liftTypes: emptyLiftTypeCounts() },
       issues,
       warnings,
       rowIssues: [],
@@ -134,7 +133,7 @@ export function validateSheetCsv(csv: string): SheetValidationResult {
     );
   }
 
-  const liftTypes = emptyLifts(),
+  const validRecords: SetRecord[] = [],
     rowIssues: SheetValidationIssue[] = [];
   let parsed = 0,
     failed = 0;
@@ -144,7 +143,8 @@ export function validateSheetCsv(csv: string): SheetValidationResult {
       wtStr = row[wtKey!]?.trim() || '',
       rpStr = row[rpKey!]?.trim() || '',
       dtStr = row[dtKey!]?.trim() || '',
-      rpeStr = row[rpeKey!]?.trim() || '';
+      rpeStr = row[rpeKey!]?.trim() || '',
+      stStr = row[stKey!]?.trim() || '';
     const bad: string[] = [],
       warn: string[] = [];
 
@@ -177,6 +177,12 @@ export function validateSheetCsv(csv: string): SheetValidationResult {
         warn.push(`Invalid RPE: "${rpeStr}" (must be a number between 1 and 10)`);
       }
     }
+    if (stStr) {
+      const sets = parseFloat(stStr);
+      if (isNaN(sets) || !Number.isInteger(sets) || sets <= 0) {
+        bad.push(`Invalid sets: "${stStr}" (must be a positive whole number)`);
+      }
+    }
 
     if (bad.length) {
       failed++;
@@ -188,14 +194,19 @@ export function validateSheetCsv(csv: string): SheetValidationResult {
         rowIssues.push({ row: i + 1, exercise: name, issues: warn });
       }
       parsed++;
-      const cl = classifyExerciseName(name);
-      if (!cl.isUnknown) {
-        liftTypes[cl.type as keyof typeof liftTypes]++;
-      }
+      validRecords.push({
+        date: dtStr ? new Date(dtStr).getTime() : 0,
+        exercise: name,
+        weight: parseFloat(wtStr),
+        reps: rpStr ? parseInt(rpStr, 10) : 1,
+        ...(rpeStr ? { rpe: parseFloat(rpeStr) } : {}),
+        ...(stStr ? { sets: parseInt(stStr, 10) } : {}),
+      });
     }
   });
 
   const total = data.length;
+  const liftTypes = countHistoryAwareLiftTypes(validRecords);
   if (!parsed && total) {
     issues.push(
       `None of the ${total} data row${total === 1 ? '' : 's'} could be parsed. See row issues below.`
@@ -210,7 +221,7 @@ export function validateSheetCsv(csv: string): SheetValidationResult {
   }
   if (parsed && !liftTypes.squat && !liftTypes.bench && !liftTypes.deadlift) {
     warnings.push(
-      'No squat, bench, or deadlift exercises were recognized — only accessories. Check exercise naming rules in the onboarding guide.'
+      'No variation has qualifying 1–3 rep-max history. Log a 1–3 rep set at RPE 9+ or a single set without RPE to classify it as squat, bench, or deadlift.'
     );
   }
 
