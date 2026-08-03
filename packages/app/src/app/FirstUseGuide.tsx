@@ -1,11 +1,13 @@
+import { useState } from 'react';
 import { useLocalStorageState } from '../shared/hooks';
 import styles from './FirstUseGuide.module.css';
 
 const GUIDE_ID = 'metric-guide';
 
-export function FirstUseGuide() {
+export function FirstUseGuide({ isFirstUse }: { isFirstUse: boolean }) {
   const [dismissed, setDismissed] = useLocalStorageState('dyel:metricGuideDismissed', false);
-  const open = !dismissed;
+  const [manuallyOpened, setManuallyOpened] = useState(false);
+  const open = manuallyOpened || (isFirstUse && !dismissed);
 
   return (
     <div className={styles.guideShell}>
@@ -14,7 +16,14 @@ export function FirstUseGuide() {
         className={styles.guideToggle}
         aria-expanded={open}
         aria-controls={GUIDE_ID}
-        onClick={() => setDismissed(open)}
+        onClick={() => {
+          if (open) {
+            setDismissed(true);
+            setManuallyOpened(false);
+          } else {
+            setManuallyOpened(true);
+          }
+        }}
       >
         {open ? 'Hide metric guide' : 'Metric guide'}
       </button>
@@ -31,7 +40,10 @@ export function FirstUseGuide() {
               type="button"
               className={styles.dismiss}
               aria-label="Dismiss metric guide"
-              onClick={() => setDismissed(true)}
+              onClick={() => {
+                setDismissed(true);
+                setManuallyOpened(false);
+              }}
             >
               Dismiss
             </button>

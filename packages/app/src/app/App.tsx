@@ -21,6 +21,7 @@ import styles from './App.module.css';
 
 export function App() {
   const {
+    isFirstUse,
     url,
     inputMode,
     pastedText,
@@ -126,7 +127,7 @@ export function App() {
           )}
           {effStatus === 'success' && (
             <>
-              <FirstUseGuide />
+              <FirstUseGuide isFirstUse={isFirstUse} />
               <div className={styles.controlDock}>
                 <PrimaryTabs tabs={primaryTabs} activeTab={effActiveTab} onSelect={setActiveTab} />
                 <section

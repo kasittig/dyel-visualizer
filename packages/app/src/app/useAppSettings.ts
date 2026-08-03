@@ -5,7 +5,9 @@ import type { InputMode, PageTab } from './appTabs';
 import type { LiftType } from '@dyel/api';
 
 export function useAppSettings() {
-  useState(() => {
+  const [isFirstUse] = useState(() => {
+    const hasSavedSource =
+      localStorage.getItem('dyel:url') !== null || localStorage.getItem('dyel:pastedText') !== null;
     const p = new URLSearchParams(window.location.search),
       u = p.get('sheet'),
       m = p.get('mode'),
@@ -21,6 +23,7 @@ export function useAppSettings() {
     if (t !== null) {
       localStorage.setItem('dyel:pastedText', JSON.stringify(t));
     }
+    return !hasSavedSource;
   });
 
   const [url, setUrl] = useLocalStorageState<string>(
@@ -67,6 +70,7 @@ export function useAppSettings() {
   };
 
   return {
+    isFirstUse,
     url,
     setUrl,
     inputMode,
