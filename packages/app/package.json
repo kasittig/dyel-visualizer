@@ -10,7 +10,8 @@
     "format": "prettier --write .",
     "preview": "vite preview",
     "test": "vitest run --passWithNoTests",
-    "test:mobile": "node test/mobile-viewports.mjs"
+    "test:mobile": "node test/mobile-viewports.mjs",
+    "test:overview-tab": "node test/overview-tab-viewports.mjs"
   },
   "dependencies": {
     "@dyel/api": "*",

@@ -72,7 +72,7 @@ export function App() {
   const mobileDestination =
     effActiveTab === 'sigma' ? 'overview' : effActiveTab === 'calculator' ? 'calculator' : 'lifts';
   const primaryTabs = [
-    { id: 'sigma' as const, label: 'Σ', accessibleLabel: 'Overview' },
+    { id: 'sigma' as const, label: 'Σ Overview', accessibleLabel: 'Overview' },
     ...tabs,
     { id: 'calculator' as const, label: 'Calculator' },
   ];
