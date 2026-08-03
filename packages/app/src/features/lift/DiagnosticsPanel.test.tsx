@@ -105,6 +105,7 @@ describe('DiagnosticsPanel', () => {
     mockUsePipelineDiagnostics.mockReturnValue({
       variants: [
         { ...variant('weakness', 82), effects: ['paused'] },
+        { ...variant('overperforming', 118), effects: ['paused'] },
         { ...variant('optimal', 100), effects: ['paused'] },
         { ...variant('stale', 95), effects: ['paused'] },
       ],
@@ -129,6 +130,11 @@ describe('DiagnosticsPanel', () => {
     expect(
       screen
         .getByRole('button', { name: 'weakness: Below expected. Expand diagnostic' })
+        .closest('[role="listitem"]')?.className
+    ).toContain('findingSelected');
+    expect(
+      screen
+        .getByRole('button', { name: 'overperforming: Above expected. Expand diagnostic' })
         .closest('[role="listitem"]')?.className
     ).toContain('findingSelected');
     for (const name of [

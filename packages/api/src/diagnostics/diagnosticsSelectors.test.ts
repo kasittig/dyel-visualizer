@@ -7,6 +7,7 @@ import {
   summarizeEffects,
   summarizeDiagnosticAttention,
   summarizeDiagnosticEffectEvidence,
+  summarizeDiagnosticEvidence,
 } from './diagnosticsSelectors';
 
 const baseVariant = (overrides?: Partial<VariantAssessment>): VariantAssessment => ({
@@ -236,6 +237,29 @@ describe('summarizeDiagnosticAttention', () => {
     ],
   ])('%s', (_, variants, expected) => {
     expect(summarizeDiagnosticAttention(variants)).toEqual(expected);
+  });
+});
+
+describe('summarizeDiagnosticEvidence', () => {
+  it('is the authoritative ordered summary for current and conflicting evidence', () => {
+    expect(
+      summarizeDiagnosticEvidence([
+        baseVariant({ status: 'weakness', effects: ['strength', 'power'] }),
+        baseVariant({ status: 'weakness', effects: ['power'] }),
+        baseVariant({ status: 'overperforming', effects: ['power', 'speed'] }),
+        baseVariant({ status: 'stale', effects: ['power'] }),
+        baseVariant({ status: 'optimal', effects: ['power'] }),
+      ])
+    ).toEqual({
+      belowCount: 2,
+      aboveCount: 1,
+      leadingBelowEffect: { effect: 'power', count: 2 },
+      effects: [
+        { effect: 'power', belowCount: 2, aboveCount: 1 },
+        { effect: 'speed', belowCount: 0, aboveCount: 1 },
+        { effect: 'strength', belowCount: 1, aboveCount: 0 },
+      ],
+    });
   });
 });
 
