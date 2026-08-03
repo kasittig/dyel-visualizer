@@ -106,14 +106,23 @@
   margin-right: 0.35rem;
   font-family: var(--mono);
 }
-.tab:hover {
+.tab:hover:not(:disabled):not(.tabActive) {
   border-color: var(--border);
+  background: var(--code-bg);
+}
+.tab:active:not(:disabled) {
+  transform: translateY(1px);
+}
+.tab:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
 }
 .tabActive {
-  border-color: var(--accent-border);
-  background: var(--accent-bg);
-  color: var(--accent);
-  font-weight: 600;
+  border-color: var(--accent);
+  background: var(--accent);
+  box-shadow: inset 0 -3px 0 var(--text-h);
+  color: var(--on-accent);
+  font-weight: 700;
 }
 
 .tab:focus-visible {
