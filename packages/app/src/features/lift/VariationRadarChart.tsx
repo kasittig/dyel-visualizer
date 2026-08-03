@@ -29,6 +29,7 @@ export function VariationRadarChart({
       <CollapsibleSection
         label="Normalized e1RM by variation"
         persistenceId={`visualizer:${liftType}:variation-radar`}
+        summary={`${data.length} variations compared`}
       >
         <div className={styles.card}>
           <span className={styles.sectionLabel}>Variation Breakdown</span>

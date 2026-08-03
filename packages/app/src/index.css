@@ -276,6 +276,12 @@ button.tab-title {
   transition: background 0.12s;
 }
 
+@media (max-width: 1024px) {
+  button.tab-title {
+    min-height: var(--touch-target);
+  }
+}
+
 @media (max-width: 640px) {
   :root {
     --page-gutter: 1rem;
@@ -321,6 +327,21 @@ button.tab-title:hover {
   color: var(--text-h);
   text-transform: uppercase;
   letter-spacing: 0.07em;
+  flex-shrink: 0;
+}
+
+.tab-title-summary {
+  min-width: 0;
+  margin-left: auto;
+  overflow: hidden;
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-overflow: ellipsis;
+  text-transform: none;
+  white-space: nowrap;
 }
 
 .tab-title-date {

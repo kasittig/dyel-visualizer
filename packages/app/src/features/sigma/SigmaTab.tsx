@@ -18,18 +18,32 @@ export function SigmaTab({
   volumeByDate: Map<string, number>;
 }) {
   const chartData = useSigmaChartData(dateRange, unit, volumeByDate);
+  const latest = chartData.at(-1);
+  const overviewSummary = latest?.total
+    ? `Latest total: ${latest.total} ${unit} · ${chartData.length} dates`
+    : chartData.length
+      ? `${chartData.length} dates in range`
+      : 'No data in range';
+  const volumeSessions = chartData.filter(
+    ({ squat, bench, deadlift, volume }) => squat || bench || deadlift || volume
+  ).length;
 
   return (
     <>
       <CollapsibleSection
         label="Overview"
         persistenceId="visualizer:sigma:overview"
+        summary={overviewSummary}
         trailing={<EditableDateChip dateRange={dateRange} onDateRangeChange={onDateRangeChange} />}
       >
         <TotalChart chartData={chartData} unit={unit} />
       </CollapsibleSection>
       <SigmaChart chartData={chartData} unit={unit} />
-      <CollapsibleSection label="Total Volume" persistenceId="visualizer:sigma:total-volume">
+      <CollapsibleSection
+        label="Total Volume"
+        persistenceId="visualizer:sigma:total-volume"
+        summary={volumeSessions ? `${volumeSessions} sessions in range` : 'No data in range'}
+      >
         <SessionBarChart chartData={chartData} unit={unit} />
       </CollapsibleSection>
     </>

@@ -153,4 +153,19 @@ describe('CollapsibleSection', () => {
       ).toBe('true');
     }
   );
+
+  it.each(['Latest: 405 lbs', 'No data in range'])(
+    'shows the %s summary only when collapsed',
+    (summary) => {
+      render(
+        <CollapsibleSection label="Performance" persistenceId="test:summary" summary={summary}>
+          <p>Chart content</p>
+        </CollapsibleSection>
+      );
+      const button = screen.getByRole('button', { name: /performance/i });
+      expect(screen.queryByText(summary)).toBeNull();
+      fireEvent.click(button);
+      expect(screen.getByText(summary)).toBeTruthy();
+    }
+  );
 });

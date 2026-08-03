@@ -15,6 +15,7 @@ interface CollapsibleSectionProps {
   children: React.ReactNode;
   trailing?: React.ReactNode;
   persistenceId: string;
+  summary?: React.ReactNode;
 }
 
 export function CollapsibleSection(props: CollapsibleSectionProps) {
@@ -26,6 +27,7 @@ function PersistedCollapsibleSection({
   children,
   trailing,
   persistenceId,
+  summary,
 }: CollapsibleSectionProps) {
   const [isExpanded, setIsExpanded] = useLocalStorageState(
     `dyel:collapsibleSection:${persistenceId}`,
@@ -49,6 +51,7 @@ function PersistedCollapsibleSection({
           {isExpanded ? '▾' : '▸'}
         </span>
         <span className="tab-title-label">{label}</span>
+        {!isExpanded && summary != null && <span className="tab-title-summary">{summary}</span>}
         {trailing}
       </button>
       <div id={regionId} role="region" aria-labelledby={triggerId} hidden={!isExpanded}>

@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { ConjugateCharts } from './ConjugateCharts';
+import { usePipelineConjugateChartData } from './usePipelineConjugateChartData';
 import { DiagnosticsPanel } from './DiagnosticsPanel';
 import { VariationRadarChart } from './VariationRadarChart';
 import { AccessoryTable } from './AccessoryTable';
-import { CollapsibleSection } from '../../shared/components/CollapsibleSection';
-import { EditableDateChip } from '../../shared/components/EditableDateChip';
+import { CollapsibleSection, EditableDateChip } from '../../shared/components';
 import type { DateRange } from 'react-day-picker';
 
 export function LiftTabPanel({
@@ -21,6 +21,7 @@ export function LiftTabPanel({
   unit: 'lbs' | 'kg';
 }) {
   const [selectedVariation, setSelectedVariation] = useState<string | null>(null);
+  const chartData = usePipelineConjugateChartData(liftType, dateRange, unit);
 
   const handleVariationClick = (variation: string | null) => {
     setSelectedVariation((v) => (variation === null || v === variation ? null : variation));
@@ -31,11 +32,12 @@ export function LiftTabPanel({
       <CollapsibleSection
         label={`${liftType.charAt(0).toUpperCase() + liftType.slice(1)} performance`}
         persistenceId={`visualizer:${liftType}:performance`}
+        summary="e1RM history by variation"
         trailing={<EditableDateChip dateRange={dateRange} onDateRangeChange={onDateRangeChange} />}
       >
         <ConjugateCharts
           liftType={liftType}
-          dateRange={dateRange}
+          chartData={chartData}
           unit={unit}
           highlightedVariation={selectedVariation}
           onVariationClick={handleVariationClick}
