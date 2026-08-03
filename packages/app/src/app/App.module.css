@@ -27,6 +27,48 @@
   display: flex;
   gap: 0.5rem;
 }
+
+@media (min-width: 641px) {
+  .tabNav {
+    position: sticky;
+    z-index: 40;
+    top: var(--safe-top);
+    margin-inline: calc(var(--page-gutter) * -0.5);
+    padding: 0.5rem max(calc(var(--page-gutter) * 0.5), var(--safe-right)) 0.5rem
+      max(calc(var(--page-gutter) * 0.5), var(--safe-left));
+    border-bottom: 1px solid var(--border);
+    background: color-mix(in srgb, var(--bg) 94%, transparent);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+    backdrop-filter: blur(14px);
+  }
+
+  .tabList {
+    display: contents;
+  }
+}
+
+@media (min-width: 641px) and (max-width: 900px) {
+  .tabNav {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 0.35rem;
+  }
+
+  .tab {
+    min-width: 0;
+    padding-inline: 0.45rem;
+  }
+
+  .tabSpacer {
+    display: none;
+  }
+
+  .datePickerWrap {
+    grid-column: 1 / -1;
+    justify-self: end;
+    min-width: 0;
+  }
+}
 .tab {
   background: none;
   border: 1px solid transparent;
