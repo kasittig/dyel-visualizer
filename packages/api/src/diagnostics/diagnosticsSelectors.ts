@@ -17,7 +17,7 @@ export interface DiagnosticVariant {
   latestAt: number;
   previousE1rmKg: number | null;
   observationCount: number;
-  comparisonCount: number;
+  comparisonCount: number | null;
   staleDays: number;
   averageIndex: number;
   expectedBaseline: string | null;

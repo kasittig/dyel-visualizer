@@ -131,9 +131,9 @@ describe('usePipelineDiagnostics', () => {
   });
 
   it.each([
-    ['lbs', '220 lbs', '243 lbs', 'Speed-Strength, Mid-Range, +11.0lbs'],
-    ['kg', '100 kg', '110 kg', 'Speed-Strength, Mid-Range, +5.0kg'],
-  ] as const)('formats diagnostic rows in %s', (unit, actual, expected, effectsDisplay) => {
+    ['lbs', '220 lbs', 'Speed-Strength, Mid-Range, +11.0lbs'],
+    ['kg', '100 kg', 'Speed-Strength, Mid-Range, +5.0kg'],
+  ] as const)('formats diagnostic rows in %s', (unit, actual, effectsDisplay) => {
     mockUsePipelineModel.mockReturnValue({
       status: 'success',
       model: pipelineModelMock({
@@ -142,11 +142,12 @@ describe('usePipelineDiagnostics', () => {
             variantAssessmentMock({
               effects: ['speed-strength', 'mid-range'],
               actualE1rmKg: 100,
-              expectedE1rmKg: 110,
+              expectedE1rmKg: 109,
               baselineE1rmKg: 120,
               expectedFactor: 0.95,
               latestAt: Date.UTC(2026, 0, 10),
               previousE1rmKg: 95,
+              comparisonCount: 3,
               ratio: 0.9,
               status: 'weakness',
               staleDays: 3.9,
@@ -163,18 +164,18 @@ describe('usePipelineDiagnostics', () => {
     ).toMatchObject({
       effectsDisplay,
       actualE1rmDisplay: actual,
-      expectedE1rmDisplay: expected,
+      expectedE1rmDisplay: unit === 'lbs' ? '240 lbs' : '109 kg',
       deltaPercent: expect.closeTo(-10),
       deltaDisplay: '-10.0%',
       ageDays: 3,
       ageDisplay: '3 days ago',
       latestDateDisplay: 'Jan 10, 2026',
       trendDisplay: '+5.3% vs prior observation',
-      observationDisplay: '4 observations · 3 comparisons',
+      observationDisplay: '4 observations · 3 fitted comparisons',
       calculationDisplay:
         unit === 'lbs'
-          ? '265 lbs baseline × 95.0% − 11 lbs added resistance = 243 lbs expected'
-          : '120 kg baseline × 95.0% − 5 kg added resistance = 110 kg expected',
+          ? '264.6 lbs baseline × 95.0% − 11.0 lbs added resistance = 240.4 lbs expected'
+          : '120.0 kg baseline × 95.0% − 5.0 kg added resistance = 109.0 kg expected',
       rationaleDisplay: 'The latest e1RM is 10.0% below its expected value.',
     });
   });

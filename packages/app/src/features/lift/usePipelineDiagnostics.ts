@@ -4,6 +4,7 @@ import {
   formatAddlWtOffset,
   formatEffect,
   formatWeight,
+  convertWeight,
   selectDiagnosticVariants,
   selectUnassessedDiagnostics,
   summarizeEffects,
@@ -59,6 +60,12 @@ export function usePipelineDiagnostics(
       const trendPercent = variant.previousE1rmKg
         ? (variant.actualE1rmKg / variant.previousE1rmKg - 1) * 100
         : null;
+      const baselineOperand = Number(convertWeight(variant.baselineE1rmKg, unit).toFixed(1));
+      const factorOperand = Number((variant.expectedFactor * 100).toFixed(1)) / 100;
+      const offsetOperand = variant.addlWtOffset
+        ? Number(convertWeight(variant.addlWtOffset.offsetKg, unit).toFixed(1))
+        : 0;
+      const expectedOperand = baselineOperand * factorOperand - offsetOperand;
       const effectsDisplay = [
         ...variant.effects.map(formatEffect),
         ...(variant.addlWtOffset ? [formatAddlWtOffset(variant.addlWtOffset.offsetKg, unit)] : []),
@@ -82,8 +89,8 @@ export function usePipelineDiagnostics(
           trendPercent === null
             ? 'No prior observation'
             : `${trendPercent > 0 ? '+' : ''}${trendPercent.toFixed(1)}% vs prior observation`,
-        observationDisplay: `${variant.observationCount} observation${variant.observationCount === 1 ? '' : 's'} · ${variant.comparisonCount} comparison${variant.comparisonCount === 1 ? '' : 's'}`,
-        calculationDisplay: `${formatWeight(variant.baselineE1rmKg, unit)} baseline × ${(variant.expectedFactor * 100).toFixed(1)}%${variant.addlWtOffset ? ` − ${formatWeight(variant.addlWtOffset.offsetKg, unit)} added resistance` : ''} = ${formatWeight(variant.expectedE1rmKg, unit)} expected`,
+        observationDisplay: `${variant.observationCount} observation${variant.observationCount === 1 ? '' : 's'} · ${variant.comparisonCount === null ? 'no fitted comparison' : `${variant.comparisonCount} fitted comparison${variant.comparisonCount === 1 ? '' : 's'}`}`,
+        calculationDisplay: `${baselineOperand.toFixed(1)} ${unit} baseline × ${(factorOperand * 100).toFixed(1)}%${variant.addlWtOffset ? ` − ${offsetOperand.toFixed(1)} ${unit} added resistance` : ''} = ${expectedOperand.toFixed(1)} ${unit} expected`,
         rationaleDisplay:
           variant.status === 'stale'
             ? `The latest observation is ${ageDays} days old, so a retest is needed before interpreting the result.`

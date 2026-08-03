@@ -18,7 +18,7 @@ const baseVariant = (overrides?: Partial<VariantAssessment>): VariantAssessment 
   latestAt: 1000,
   previousE1rmKg: 98,
   observationCount: 4,
-  comparisonCount: 3,
+  comparisonCount: null,
   ratio: 1.02,
   status: 'optimal',
   fittedStatus: 'optimal',

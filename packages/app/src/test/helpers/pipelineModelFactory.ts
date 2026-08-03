@@ -19,7 +19,7 @@ export const variantAssessmentMock = (
   latestAt: Date.UTC(2026, 0, 10),
   previousE1rmKg: 100,
   observationCount: 4,
-  comparisonCount: 3,
+  comparisonCount: null,
   ratio: 1.02,
   status: 'optimal',
   fittedStatus: 'optimal',

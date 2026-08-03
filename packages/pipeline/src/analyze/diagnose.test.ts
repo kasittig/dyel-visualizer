@@ -39,6 +39,8 @@ describe('diagnose evaluations', () => {
       ratio: 1,
       status: 'optimal',
       fittedStatus: null,
+      observationCount: 1,
+      comparisonCount: null,
     });
 
     const checks = [

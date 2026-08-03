@@ -36,8 +36,8 @@ const variant = (status: DiagnosticVariant['status'], averageIndex: number) => (
   ageDisplay: status === 'stale' ? '117 days ago' : '3 days ago',
   latestDateDisplay: 'Jan 10, 2026',
   trendDisplay: '+2.0% vs prior observation',
-  observationDisplay: '4 observations · 3 comparisons',
-  calculationDisplay: '110 lb baseline × 91.0% = 100 lb expected',
+  observationDisplay: '4 observations · 3 fitted comparisons',
+  calculationDisplay: '110.0 lb baseline × 91.0% = 100.1 lb expected',
   rationaleDisplay: 'The latest e1RM is 18.0% below its expected value.',
 });
 
@@ -84,7 +84,7 @@ describe('DiagnosticsPanel', () => {
     expect(screen.getByText('Paused, +20 lb')).toBeDefined();
     expect(screen.getAllByText('Recent trend')).toHaveLength(4);
     expect(screen.getAllByText('+2.0% vs prior observation')).toHaveLength(4);
-    expect(screen.getAllByText('4 observations · 3 comparisons')).toHaveLength(4);
+    expect(screen.getAllByText('4 observations · 3 fitted comparisons')).toHaveLength(4);
     expect(screen.getAllByText('Expected calculation')).toHaveLength(4);
     expect(screen.getAllByText('Why this status')).toHaveLength(4);
     expect(screen.queryByText('Overtrained')).toBeNull();

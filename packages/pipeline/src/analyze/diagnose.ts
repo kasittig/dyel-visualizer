@@ -22,7 +22,7 @@ export interface VariantAssessment {
   latestAt: number;
   previousE1rmKg: number | null;
   observationCount: number;
-  comparisonCount: number;
+  comparisonCount: number | null;
   ratio: number;
   status: PerformanceStatus | 'stale';
   fittedStatus: PerformanceStatus | null;
@@ -118,7 +118,7 @@ export function diagnose(
       latestAt: latest.t,
       previousE1rmKg: previous?.v ?? null,
       observationCount: observations.length,
-      comparisonCount: model.variantFactor[canonical]?.n ?? observations.length,
+      comparisonCount: model.variantFactor[canonical]?.n ?? null,
       ratio,
       status,
       fittedStatus,
