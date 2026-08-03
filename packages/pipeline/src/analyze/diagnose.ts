@@ -59,20 +59,20 @@ export function diagnose(
 
   for (const [canonical, latest] of latestBySeries) {
     const lift = Array.from(latest.tags).find((t) => t.startsWith('lift:'));
-    if (lift === 'lift:accessory') {
+    if (!lift || lift === 'lift:accessory') {
       continue;
     }
     const factor = Object.values(model.baseline).includes(canonical)
       ? 1
       : model.variantFactor[canonical]?.factor;
-    const baseLatest = lift ? latestBySeries.get(model.baseline[lift]) : null;
+    const baseLatest = latestBySeries.get(model.baseline[lift]);
 
-    if (!lift || !factor || !baseLatest) {
+    if (!factor || !baseLatest) {
       unassessed.push({
         canonical,
         displayName: displayNameByCanonical.get(canonical) ?? canonical,
-        lift: lift ?? null,
-        reason: !lift ? 'missing-lift' : !factor ? 'missing-factor' : 'missing-baseline',
+        lift,
+        reason: !factor ? 'missing-factor' : 'missing-baseline',
       });
       continue;
     }

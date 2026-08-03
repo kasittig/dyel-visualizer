@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook } from '@testing-library/react';
+import { buildPipelineModel } from '@dyel/api';
 import { usePipelineDiagnostics } from './usePipelineDiagnostics';
 import { variantAssessmentMock, pipelineModelMock } from '../../test/helpers/pipelineModelFactory';
 
@@ -107,6 +108,26 @@ describe('usePipelineDiagnostics', () => {
         actionDisplay: 'Log a recent competition-lift set for this lift.',
       }),
     ]);
+  });
+
+  it('renders production unknown-exercise findings in the accessory scope', () => {
+    mockUsePipelineModel.mockReturnValue({
+      status: 'success',
+      model: buildPipelineModel(
+        [{ name: 'log.txt', content: '2024-01-01 Mystery Press 50kg x5 @8' }],
+        { sex: 'M', bodyweight: 90 }
+      ),
+    });
+
+    expect(renderHook(() => usePipelineDiagnostics('accessory')).result.current.needsData).toEqual([
+      expect.objectContaining({
+        displayName: 'Mystery Press',
+        lift: null,
+        reason: 'missing-lift',
+        reasonDisplay: 'Lift not recognized',
+      }),
+    ]);
+    expect(renderHook(() => usePipelineDiagnostics('bench')).result.current.needsData).toEqual([]);
   });
 
   it.each([

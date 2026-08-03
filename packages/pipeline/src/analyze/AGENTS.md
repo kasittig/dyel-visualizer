@@ -52,8 +52,12 @@ run and NEVER stored on identity types.
   variant with the quality → +1, each non-stale 'overperforming' variant → −1,
   'optimal' → 0, 'stale' → 0 (no votes). Report qualities with score > 0; evidence
   lists contributing canonicals from BOTH non-stale signs.
-- Unassessed lift variations are structured as canonical/display name/lift/reason, with reason
-  codes `missing-lift`, `missing-factor`, or `missing-baseline`. Accessory-only records are outside
+- Unassessed lift variations are structured as canonical/display name/lift/reason. `diagnose`
+  emits missing-factor and missing-baseline findings for classified primary lifts; the pipeline
+  appends missing-lift findings from `unknownExercises`, since unknown records have already been
+  classified as accessories before points reach `diagnose`. Missing-lift findings deliberately
+  remain unscoped (`lift: null`) so consumers can distinguish recognition failures. Reason codes
+  are `missing-lift`, `missing-factor`, or `missing-baseline`. Accessory-only records are outside
   lift normalization and omitted rather than mislabeled as needing comparison history. Staleness alone no
   longer routes to `unassessed`; instead, stale variants appear in `variants` with
   `status: 'stale'`.

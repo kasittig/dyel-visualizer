@@ -84,13 +84,6 @@ describe('diagnose evaluations', () => {
 
   it.each([
     [
-      'missing lift tag',
-      [{ ...pt('unknown', 70, day(20)), tags: new Set<string>() }],
-      model,
-      'missing-lift',
-      null,
-    ],
-    [
       'missing normalization factor',
       [basePt, pt('bench-bands', 70, day(20))],
       model,

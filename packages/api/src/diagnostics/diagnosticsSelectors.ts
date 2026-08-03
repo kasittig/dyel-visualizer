@@ -54,7 +54,10 @@ export function selectUnassessedDiagnostics(
   liftType?: string
 ): UnassessedVariant[] {
   return liftType
-    ? model.diagnostics.unassessed.filter((item) => item.lift === `lift:${liftType}`)
+    ? model.diagnostics.unassessed.filter(
+        (item) =>
+          item.lift === `lift:${liftType}` || (liftType === 'accessory' && item.lift === null)
+      )
     : model.diagnostics.unassessed;
 }
 

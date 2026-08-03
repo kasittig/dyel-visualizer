@@ -59,6 +59,7 @@ describe('selectUnassessedDiagnostics', () => {
   it('returns all items without a lift scope and matching items with one', () => {
     expect(selectUnassessedDiagnostics(baseModel([], items))).toEqual(items);
     expect(selectUnassessedDiagnostics(baseModel([], items), 'bench')).toEqual([items[1]]);
+    expect(selectUnassessedDiagnostics(baseModel([], items), 'accessory')).toEqual([items[2]]);
   });
 });
 

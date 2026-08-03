@@ -104,7 +104,7 @@ describe('pipeline orchestration', () => {
     });
   });
 
-  it('includes canonical and label-grouped accessory points so app charts render', () => {
+  it('includes accessory chart points while surfacing unknown names for recognition', () => {
     const log = `units: kg\n2024-01-01 Squat 100 x3 @9\n2024-01-01 Bench 80 x3 @9\n2024-01-01 Bicep Curl 15 x10 @8`;
     const model = runPipelineModel([{ name: 'log.txt', content: log }], ath());
     const acc = model.tagged.filter((r) => r.tags.has('lift:accessory'));
@@ -116,9 +116,27 @@ describe('pipeline orchestration', () => {
     ).toBe(true);
     expect(Object.values(model.model.baseline)).not.toContain(acc[0].canonical);
     expect(model.model.variantFactor[acc[0].canonical]).toBeUndefined();
-    expect(model.diagnostics.unassessed.some((item) => item.canonical === acc[0].canonical)).toBe(
-      false
+    expect(model.diagnostics.unassessed).toContainEqual({
+      canonical: acc[0].canonical,
+      displayName: 'Bicep Curl',
+      lift: null,
+      reason: 'missing-lift',
+    });
+  });
+
+  it('sources missing-lift diagnostics from unknown exercise classifications', () => {
+    const model = runPipelineModel(
+      [{ name: 'log.txt', content: '2024-01-01 Mystery Press 50kg x5 @8' }],
+      ath()
     );
+
+    expect(model.unknownExercises).toEqual(['Mystery Press']);
+    expect(model.diagnostics.unassessed).toContainEqual({
+      canonical: model.tagged[0].canonical,
+      displayName: 'Mystery Press',
+      lift: null,
+      reason: 'missing-lift',
+    });
   });
 
   describe('automatic competition deadlift-stance derivation', () => {
