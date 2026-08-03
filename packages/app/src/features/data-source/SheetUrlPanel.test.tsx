@@ -113,4 +113,15 @@ describe('SheetUrlPanel mobile settings', () => {
     expect(screen.queryByRole('dialog')).toBeNull();
     expect(screen.getAllByLabelText('Sheet URL:')).toHaveLength(1);
   });
+
+  it('uses concise utility labels in the loaded desktop header', () => {
+    mobileMatches = false;
+    render(<SheetUrlPanel {...props()} />);
+
+    expect(screen.getByRole('heading', { name: 'DYEL Visualizer' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Data source' })).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Help' })).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Team' })).toBeTruthy();
+    expect(screen.queryByText('What is the conjugate method?')).toBeNull();
+  });
 });
