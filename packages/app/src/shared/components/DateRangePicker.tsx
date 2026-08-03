@@ -3,6 +3,7 @@ import * as Popover from '@radix-ui/react-popover';
 import { DayPicker, type DateRange } from 'react-day-picker';
 import { presetDateRange, activePreset, type PresetId } from '@dyel/api/display';
 import { formatDate, parseDate } from '../dateUtils';
+import { MOBILE_LAYOUT_QUERY, useMediaQuery } from '../hooks';
 import 'react-day-picker/style.css';
 import styles from './DateRangePicker.module.css';
 
@@ -27,6 +28,7 @@ export function DateRangePicker({
   const [endText, setEndText] = useState(() => formatDate(value.to));
   const [focused, setFocused] = useState<'start' | 'end' | null>(null);
   const [calendarMonth, setCalendarMonth] = useState<Date>(() => value.from ?? new Date());
+  const mobile = useMediaQuery(MOBILE_LAYOUT_QUERY);
 
   const outerRef = useRef<HTMLDivElement>(null);
   const popoverContentRef = useRef<HTMLDivElement>(null);
@@ -86,6 +88,21 @@ export function DateRangePicker({
 
   const currentPreset = activePreset(value.from, value.to, latestDate);
   const showPresets = sessionDates && sessionDates.length > 0;
+  const currentLabel = currentPreset
+    ? (PRESETS.find(({ presetId }) => presetId === currentPreset)?.label ?? 'DATE RANGE')
+    : value.from || value.to
+      ? `${formatDate(value.from) || 'Start'} – ${formatDate(value.to) || 'Today'}`
+      : 'DATE RANGE';
+
+  const selectPreset = (presetId: PresetId) => {
+    onChange(
+      presetId === 'all'
+        ? { from: undefined, to: latestDate }
+        : presetDateRange(presetId, latestDate)
+    );
+    setShowCustomPicker(false);
+    setOpen(false);
+  };
 
   const handleBlur = (field: 'start' | 'end', text: string) => {
     setFocused(null);
@@ -100,25 +117,92 @@ export function DateRangePicker({
 
   return (
     <div ref={outerRef} className={styles.outerWrapper}>
-      {showPresets && (
+      {mobile && (
+        <Popover.Root open={open} onOpenChange={setOpen}>
+          <Popover.Trigger asChild>
+            <button
+              type="button"
+              className={styles.mobileTrigger}
+              aria-label={`Date range: ${currentLabel}`}
+            >
+              <span className={styles.mobileTriggerIcon} aria-hidden="true">
+                ▦
+              </span>
+              <span>{currentLabel}</span>
+              <span aria-hidden="true">⌄</span>
+            </button>
+          </Popover.Trigger>
+          <Popover.Portal>
+          <Popover.Content
+            ref={popoverContentRef}
+            sideOffset={8}
+              align="end"
+              className={styles.mobileSheet}
+              aria-label="Choose date range"
+            >
+              <div className={styles.mobileSheetHandle} aria-hidden="true" />
+              <div className={styles.mobileSheetHeading}>Date range</div>
+              {showPresets && (
+                <div className={styles.mobilePresetGrid}>
+                  {PRESETS.map(({ label, presetId }) => (
+                    <button
+                      key={presetId}
+                      type="button"
+                      aria-pressed={currentPreset === presetId}
+                      className={`${styles.mobilePreset} ${currentPreset === presetId ? styles.presetActive : ''}`}
+                      onClick={() => selectPreset(presetId)}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    aria-pressed={currentPreset === null}
+                    className={`${styles.mobilePreset} ${currentPreset === null ? styles.presetActive : ''}`}
+                    onClick={() => setShowCustomPicker((shown) => !shown)}
+                  >
+                    CUSTOM
+                  </button>
+                </div>
+              )}
+              {(!showPresets || showCustomPicker) && (
+                <div className={styles.mobileCustom}>
+                  <DayPicker
+                    mode="range"
+                    selected={value}
+                    onSelect={(r) => onChange(r ?? { from: undefined, to: undefined })}
+                    month={calendarMonth}
+                    onMonthChange={setCalendarMonth}
+                    disabled={{ after: new Date() }}
+                    numberOfMonths={1}
+                    modifiers={{ hasSession: sessionDates ?? [] }}
+                    modifiersStyles={{ hasSession: { fontWeight: 'bold', color: 'var(--accent)' } }}
+                  />
+                </div>
+              )}
+              <Popover.Close className={styles.mobileDone}>Done</Popover.Close>
+            </Popover.Content>
+          </Popover.Portal>
+        </Popover.Root>
+      )}
+      {!mobile && showPresets && (
         <div className={styles.presets}>
           {PRESETS.map((p) => (
             <button
               key={p.label}
+              type="button"
+              aria-pressed={currentPreset === p.presetId}
               className={`${styles.preset} ${currentPreset === p.presetId ? styles.presetActive : ''}`}
               onClick={() => {
-                onChange(
-                  p.presetId === 'all'
-                    ? { from: undefined, to: latestDate }
-                    : presetDateRange(p.presetId, latestDate)
-                );
-                setShowCustomPicker(false);
+                selectPreset(p.presetId);
               }}
             >
               {p.label}
             </button>
           ))}
           <button
+            type="button"
+            aria-pressed={currentPreset === null}
             className={`${styles.preset} ${currentPreset === null ? styles.presetActive : ''}`}
             onClick={() => {
               setShowCustomPicker((v) => !v);
@@ -129,7 +213,7 @@ export function DateRangePicker({
           </button>
         </div>
       )}
-      {(!showPresets || showCustomPicker) && (
+      {!mobile && (!showPresets || showCustomPicker) && (
         <Popover.Root open={open} onOpenChange={setOpen}>
           <Popover.Anchor asChild>
             <div className={styles.container}>
