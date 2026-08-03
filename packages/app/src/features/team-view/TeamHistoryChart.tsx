@@ -57,7 +57,13 @@ export function TeamHistoryChart({
       {lifters.length === 0 ? (
         <ChartEmpty />
       ) : (
-        <MultiSeriesLineChart data={data} unit={unit} seriesKeys={lifters} tooltip={tooltip} />
+        <MultiSeriesLineChart
+          data={data}
+          unit={unit}
+          seriesKeys={lifters}
+          tooltip={tooltip}
+          summary={`Estimated one-rep max history for ${lifters.length} lifters across ${data.length} training dates in ${unit}.`}
+        />
       )}
     </div>
   );

@@ -51,8 +51,10 @@ const mockLifterResult = (
 
 const mockRow = (overrides?: Partial<TeamViewRow>): TeamViewRow =>
   ({
-    lifterName: 'John Doe',
-    url: 'https://example.com/john-doe',
+    lifterName: overrides?.lifterName ?? 'John Doe',
+    url:
+      overrides?.url ??
+      `https://example.com/${encodeURIComponent(overrides?.lifterName ?? 'John Doe')}`,
     e1rmDisplay: '225 lbs',
     e1rmProjectedDisplay: null,
     e1rmSourceLabel: null,
@@ -770,7 +772,7 @@ describe('TeamViewPage', () => {
     render(<TeamViewPage />);
 
     fireEvent.change(screen.getByRole('combobox', { name: 'Lifter' }), {
-      target: { value: 'Bob' },
+      target: { value: 'https://example.com/Bob' },
     });
     const focusedEditor = screen.getByRole('region', {
       name: 'Focused lifter programming',

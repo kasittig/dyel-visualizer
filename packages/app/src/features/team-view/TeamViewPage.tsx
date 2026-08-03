@@ -1,11 +1,11 @@
 import clsx from 'clsx';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import type { ReactNode } from 'react';
 import { useTeamViewData } from './useTeamViewData';
 import { useTeamViewSelection } from './useTeamViewSelection';
 import { TeamHistoryChart } from './TeamHistoryChart';
 import type { TeamViewRow } from './useTeamViewSelection';
-import { useSortableRows } from '../../shared/hooks';
+import { MOBILE_LAYOUT_QUERY, useMediaQuery, useSortableRows } from '../../shared/hooks';
 import { LIFT_TYPE_LABELS } from '../../shared/liftTypeLabels';
 import { siteRootPath } from '../../shared/pageRouting';
 import {
@@ -27,26 +27,6 @@ interface TeamViewColumn {
   variant?: 'left' | 'mono';
   render: (row: TeamViewRow) => ReactNode;
   sortValue?: (row: TeamViewRow) => string | number;
-}
-
-const MOBILE_QUERY = '(max-width: 640px)';
-
-function useMobileLayout() {
-  const [isMobile, setIsMobile] = useState(
-    () => typeof window.matchMedia === 'function' && window.matchMedia(MOBILE_QUERY).matches
-  );
-
-  useEffect(() => {
-    if (typeof window.matchMedia !== 'function') {
-      return;
-    }
-    const query = window.matchMedia(MOBILE_QUERY);
-    const update = () => setIsMobile(query.matches);
-    query.addEventListener('change', update);
-    return () => query.removeEventListener('change', update);
-  }, []);
-
-  return isMobile;
 }
 
 export function TeamViewPage() {
@@ -88,8 +68,8 @@ export function TeamViewPage() {
   } = useTeamViewSelection(dataState.status === 'success' ? dataState.data : []);
 
   const [showHistoryChart, setShowHistoryChart] = useState(false);
-  const [mobileLifter, setMobileLifter] = useState('');
-  const isMobile = useMobileLayout();
+  const [mobileLifterUrl, setMobileLifterUrl] = useState('');
+  const isMobile = useMediaQuery(MOBILE_LAYOUT_QUERY);
 
   const columns: TeamViewColumn[] = [
     {
@@ -214,7 +194,7 @@ export function TeamViewPage() {
   const { sortedRows, sortKey, direction, toggleSort } = useSortableRows<TeamViewRow, string>(
     rows,
     sortAccessors,
-    (row) => row.lifterName
+    (row) => row.url
   );
 
   const sortProps = (col: TeamViewColumn) =>
@@ -224,7 +204,7 @@ export function TeamViewPage() {
           sortDirection: sortKey === col.header ? direction : null,
         }
       : {};
-  const focusedRow = sortedRows.find((row) => row.lifterName === mobileLifter) ?? sortedRows[0];
+  const focusedRow = sortedRows.find((row) => row.url === mobileLifterUrl) ?? sortedRows[0];
 
   if (dataState.status === 'loading') {
     return (
@@ -394,7 +374,7 @@ export function TeamViewPage() {
                         </TableHeadRow>
                         <tbody>
                           {sortedRows.map((row) => (
-                            <TableRow key={row.lifterName}>
+                            <TableRow key={row.url}>
                               {columns.map((col) => (
                                 <TableCell
                                   key={col.header}
@@ -420,11 +400,13 @@ export function TeamViewPage() {
                     <label htmlFor="mobile-lifter">Lifter</label>
                     <select
                       id="mobile-lifter"
-                      value={focusedRow?.lifterName ?? ''}
-                      onChange={(event) => setMobileLifter(event.target.value)}
+                      value={focusedRow?.url ?? ''}
+                      onChange={(event) => setMobileLifterUrl(event.target.value)}
                     >
                       {sortedRows.map((row) => (
-                        <option key={row.lifterName}>{row.lifterName}</option>
+                        <option key={row.url} value={row.url}>
+                          {row.lifterName}
+                        </option>
                       ))}
                     </select>
                     {focusedRow && (

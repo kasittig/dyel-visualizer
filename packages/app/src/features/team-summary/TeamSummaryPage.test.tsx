@@ -17,8 +17,10 @@ afterEach(() => {
 });
 
 const mockRow = (overrides?: Partial<TeamSummaryRow>): TeamSummaryRow => ({
-  lifterName: 'John Doe',
-  url: 'https://example.com/john-doe',
+  lifterName: overrides?.lifterName ?? 'John Doe',
+  url:
+    overrides?.url ??
+    `https://example.com/${encodeURIComponent(overrides?.lifterName ?? 'John Doe')}`,
   hasData: true,
   squatDisplay: '300 lbs',
   benchDisplay: '225 lbs',
@@ -338,5 +340,26 @@ describe('TeamSummaryPage', () => {
     expect(
       screen.getByLabelText('Team summary cards').querySelector('article:first-child')?.textContent
     ).toContain('Bob');
+  });
+
+  it('keeps duplicate lifter names independently identified by source URL', () => {
+    useMobileViewport();
+    vi.mocked(useTeamViewData).mockReturnValue({ status: 'success', data: [] });
+    vi.mocked(useTeamSummaryData).mockReturnValue(
+      mockSummaryData({
+        rows: [
+          mockRow({ lifterName: 'Alex', url: 'https://example.com/alex-a' }),
+          mockRow({ lifterName: 'Alex', url: 'https://example.com/alex-b' }),
+        ],
+      })
+    );
+
+    render(<TeamSummaryPage />);
+
+    const toggles = screen.getAllByRole('button', { name: 'Show details for Alex' });
+    expect(toggles).toHaveLength(2);
+    expect(toggles[0].getAttribute('aria-controls')).not.toBe(
+      toggles[1].getAttribute('aria-controls')
+    );
   });
 });

@@ -1,10 +1,10 @@
 import clsx from 'clsx';
-import { useEffect, useState } from 'react';
+import { useId, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useTeamViewData } from '../team-view';
 import { useTeamSummaryData } from './useTeamSummaryData';
 import type { TeamSummaryRow } from './useTeamSummaryData';
-import { useSortableRows } from '../../shared/hooks';
+import { MOBILE_LAYOUT_QUERY, useMediaQuery, useSortableRows } from '../../shared/hooks';
 import { siteRootPath } from '../../shared/pageRouting';
 import {
   EditableDateChip,
@@ -25,24 +25,69 @@ interface TeamViewColumn {
   sortValue?: (row: TeamSummaryRow) => string | number;
 }
 
-const MOBILE_QUERY = '(max-width: 640px)';
+function MobileSummaryCard({
+  row,
+  expanded,
+  onToggle,
+}: {
+  row: TeamSummaryRow;
+  expanded: boolean;
+  onToggle: () => void;
+}) {
+  const detailsId = useId();
 
-function useMobileLayout() {
-  const [isMobile, setIsMobile] = useState(
-    () => typeof window.matchMedia === 'function' && window.matchMedia(MOBILE_QUERY).matches
+  return (
+    <article className={styles.summaryCard}>
+      <button
+        type="button"
+        className={styles.cardHeader}
+        aria-expanded={expanded}
+        aria-controls={detailsId}
+        aria-label={`${expanded ? 'Hide' : 'Show'} details for ${row.lifterName}`}
+        onClick={onToggle}
+      >
+        <span>
+          <strong>{row.lifterName}</strong>
+          <small>
+            {row.dateDisplay === '—' ? 'No recent session' : `Last trained ${row.dateDisplay}`}
+          </small>
+        </span>
+        <span className={styles.cardTotal}>
+          <small>Total</small>
+          <strong>{row.totalDisplay}</strong>
+        </span>
+        <span aria-hidden="true">{expanded ? '−' : '+'}</span>
+      </button>
+      {expanded && (
+        <div id={detailsId} className={styles.cardDetails}>
+          {[
+            ['Squat', row.squatDisplay],
+            ['Bench', row.benchDisplay],
+            ['Deadlift', row.deadliftDisplay],
+            ['Sessions', String(row.sessionCount)],
+          ].map(([label, value]) => (
+            <div key={label}>
+              <small>{label}</small>
+              <strong>{value}</strong>
+            </div>
+          ))}
+          <div className={styles.lastSet}>
+            <small>Last set</small>
+            <strong>{row.lastSetDisplay}</strong>
+          </div>
+          {row.url && (
+            <a
+              href={`${siteRootPath()}?sheet=${encodeURIComponent(row.url)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Open lifter ↗
+            </a>
+          )}
+        </div>
+      )}
+    </article>
   );
-
-  useEffect(() => {
-    if (typeof window.matchMedia !== 'function') {
-      return;
-    }
-    const query = window.matchMedia(MOBILE_QUERY);
-    const update = () => setIsMobile(query.matches);
-    query.addEventListener('change', update);
-    return () => query.removeEventListener('change', update);
-  }, []);
-
-  return isMobile;
 }
 
 export function TeamSummaryPage() {
@@ -130,10 +175,10 @@ export function TeamSummaryPage() {
   const { sortedRows, sortKey, direction, toggleSort } = useSortableRows<TeamSummaryRow, string>(
     rows,
     sortAccessors,
-    (row) => row.lifterName
+    (row) => row.url
   );
-  const [expandedLifter, setExpandedLifter] = useState<string | null>(null);
-  const isMobile = useMobileLayout();
+  const [expandedLifterUrl, setExpandedLifterUrl] = useState<string | null>(null);
+  const isMobile = useMediaQuery(MOBILE_LAYOUT_QUERY);
 
   const sortProps = (col: TeamViewColumn) =>
     col.sortValue
@@ -225,7 +270,7 @@ export function TeamSummaryPage() {
                   </TableHeadRow>
                   <tbody>
                     {sortedRows.map((row) => (
-                      <TableRow key={row.lifterName}>
+                      <TableRow key={row.url}>
                         {columns.map((col) => (
                           <TableCell
                             key={col.header}
@@ -248,63 +293,16 @@ export function TeamSummaryPage() {
           )}
           {isMobile && (
             <div className={styles.mobileCards} aria-label="Team summary cards">
-              {sortedRows.map((row) => {
-                const expanded = expandedLifter === row.lifterName;
-                return (
-                  <article key={row.lifterName} className={styles.summaryCard}>
-                    <button
-                      type="button"
-                      className={styles.cardHeader}
-                      aria-expanded={expanded}
-                      aria-controls={`team-summary-${row.lifterName}`}
-                      aria-label={`${expanded ? 'Hide' : 'Show'} details for ${row.lifterName}`}
-                      onClick={() => setExpandedLifter(expanded ? null : row.lifterName)}
-                    >
-                      <span>
-                        <strong>{row.lifterName}</strong>
-                        <small>
-                          {row.dateDisplay === '—'
-                            ? 'No recent session'
-                            : `Last trained ${row.dateDisplay}`}
-                        </small>
-                      </span>
-                      <span className={styles.cardTotal}>
-                        <small>Total</small>
-                        <strong>{row.totalDisplay}</strong>
-                      </span>
-                      <span aria-hidden="true">{expanded ? '−' : '+'}</span>
-                    </button>
-                    {expanded && (
-                      <div id={`team-summary-${row.lifterName}`} className={styles.cardDetails}>
-                        {[
-                          ['Squat', row.squatDisplay],
-                          ['Bench', row.benchDisplay],
-                          ['Deadlift', row.deadliftDisplay],
-                          ['Sessions', String(row.sessionCount)],
-                        ].map(([label, value]) => (
-                          <div key={label}>
-                            <small>{label}</small>
-                            <strong>{value}</strong>
-                          </div>
-                        ))}
-                        <div className={styles.lastSet}>
-                          <small>Last set</small>
-                          <strong>{row.lastSetDisplay}</strong>
-                        </div>
-                        {row.url && (
-                          <a
-                            href={`${siteRootPath()}?sheet=${encodeURIComponent(row.url)}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
-                            Open lifter ↗
-                          </a>
-                        )}
-                      </div>
-                    )}
-                  </article>
-                );
-              })}
+              {sortedRows.map((row) => (
+                <MobileSummaryCard
+                  key={row.url}
+                  row={row}
+                  expanded={expandedLifterUrl === row.url}
+                  onToggle={() =>
+                    setExpandedLifterUrl(expandedLifterUrl === row.url ? null : row.url)
+                  }
+                />
+              ))}
             </div>
           )}
           {erroredLifterCount > 0 && (
