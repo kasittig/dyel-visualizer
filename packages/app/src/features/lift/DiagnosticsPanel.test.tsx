@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { DiagnosticVariant } from '@dyel/api';
 import { DiagnosticsPanel } from './DiagnosticsPanel';
@@ -75,5 +75,24 @@ describe('DiagnosticsPanel', () => {
       'false'
     );
     expect(screen.getByText('Effects on below-range variations:')).toBeDefined();
+  });
+
+  it('collapses and expands individual diagnostic rows', () => {
+    const { container } = render(<DiagnosticsPanel liftType="squat" unit="lbs" />);
+
+    const collapse = container.querySelector<HTMLButtonElement>(
+      '[aria-controls="diagnostic-weakness-details"]'
+    )!;
+    expect(collapse.getAttribute('aria-expanded')).toBe('true');
+    expect(container.querySelector('#diagnostic-weakness-details')).not.toBeNull();
+    fireEvent.click(collapse);
+
+    expect(container.querySelector('#diagnostic-weakness-details')).toBeNull();
+    const expand = container.querySelector<HTMLButtonElement>(
+      '[aria-controls="diagnostic-weakness-details"]'
+    )!;
+    expect(expand.getAttribute('aria-expanded')).toBe('false');
+    fireEvent.click(expand);
+    expect(container.querySelector('#diagnostic-weakness-details')).not.toBeNull();
   });
 });

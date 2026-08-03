@@ -27,6 +27,7 @@ export function DiagnosticsPanel({
   unit: DisplayUnit;
 }) {
   const [activeEffect, setActiveEffect] = useState<string | null>(null);
+  const [collapsedRows, setCollapsedRows] = useState<Set<string>>(() => new Set());
   const { variants, weakEffects, overtrainedEffects } = usePipelineDiagnostics(liftType, unit);
   const rows = variants;
   const { sortedRows, sortKey, direction, toggleSort } = useSortableRows<DiagnosticRow, SortColumn>(
@@ -47,6 +48,18 @@ export function DiagnosticsPanel({
   const handleEffectClick = (e: string) => {
     setActiveEffect((prev) => (prev === e ? null : e));
     onVariationClick?.(null);
+  };
+
+  const toggleRow = (canonical: string) => {
+    setCollapsedRows((current) => {
+      const next = new Set(current);
+      if (next.has(canonical)) {
+        next.delete(canonical);
+      } else {
+        next.add(canonical);
+      }
+      return next;
+    });
   };
 
   return (
@@ -120,22 +133,26 @@ export function DiagnosticsPanel({
           <div className={styles.findings} role="list">
             {sortedRows.map((r) => {
               const [lbl, color] = LABELS[r.status];
+              const isCollapsed = collapsedRows.has(r.canonical);
+              const detailId = `diagnostic-${r.canonical}-details`;
               const isHigh =
                 r.displayName === highlightedVariation ||
                 (activeEffect !== null && r.effects.includes(activeEffect));
               return (
-                <button
-                  type="button"
+                <div
                   role="listitem"
                   key={r.displayName}
                   className={`${styles.finding} ${isHigh ? styles.findingSelected : ''}`}
-                  onClick={() => {
-                    setActiveEffect(null);
-                    onVariationClick?.(r.displayName);
-                  }}
                   style={{ '--diagnostic-color': color } as CSSProperties}
                 >
-                  <span className={styles.findingHeader}>
+                  <button
+                    type="button"
+                    className={styles.findingToggle}
+                    aria-expanded={!isCollapsed}
+                    aria-controls={detailId}
+                    aria-label={`${r.displayName}: ${lbl}. ${isCollapsed ? 'Expand' : 'Collapse'} diagnostic`}
+                    onClick={() => toggleRow(r.canonical)}
+                  >
                     <span className={styles.variationName}>
                       {r.displayName}
                       {r.isCompLift && (
@@ -145,29 +162,44 @@ export function DiagnosticsPanel({
                       )}
                     </span>
                     <span className={styles.status}>{lbl}</span>
-                  </span>
-                  <span className={styles.comparison}>
-                    <span className={styles.actual}>
-                      {r.expectedBaseline ? `${r.averageIndex.toFixed(1)}%` : r.deltaDisplay}
-                      <small>{r.expectedBaseline ? 'strength index' : 'vs fitted trend'}</small>
+                    <span className={styles.collapseIcon} aria-hidden="true">
+                      {isCollapsed ? '＋' : '−'}
                     </span>
-                    <span className={styles.arrow} aria-hidden="true">
-                      →
-                    </span>
-                    <span className={styles.expected}>
-                      <small>{r.expectedBaseline ? 'target range' : 'target'}</small>
-                      {r.expectedBaseline ?? 'within ±5%'}
-                    </span>
-                  </span>
-                  <span className={styles.findingFooter}>
-                    <span className={styles.effects}>{r.effectsDisplay}</span>
-                    <span className={styles.recency}>
-                      Latest e1RM {r.actualE1rmDisplay} · Tested{' '}
-                      {r.ageDisplay === 'Today' ? 'today' : r.ageDisplay}
-                      {r.status === 'stale' && <strong> · Retest recommended</strong>}
-                    </span>
-                  </span>
-                </button>
+                  </button>
+                  {!isCollapsed && (
+                    <button
+                      type="button"
+                      id={detailId}
+                      className={styles.findingDetails}
+                      onClick={() => {
+                        setActiveEffect(null);
+                        onVariationClick?.(r.displayName);
+                      }}
+                    >
+                      <span className={styles.comparison}>
+                        <span className={styles.actual}>
+                          {r.expectedBaseline ? `${r.averageIndex.toFixed(1)}%` : r.deltaDisplay}
+                          <small>{r.expectedBaseline ? 'strength index' : 'vs fitted trend'}</small>
+                        </span>
+                        <span className={styles.arrow} aria-hidden="true">
+                          →
+                        </span>
+                        <span className={styles.expected}>
+                          <small>{r.expectedBaseline ? 'target range' : 'target'}</small>
+                          {r.expectedBaseline ?? 'within ±5%'}
+                        </span>
+                      </span>
+                      <span className={styles.findingFooter}>
+                        <span className={styles.effects}>{r.effectsDisplay}</span>
+                        <span className={styles.recency}>
+                          Latest e1RM {r.actualE1rmDisplay} · Tested{' '}
+                          {r.ageDisplay === 'Today' ? 'today' : r.ageDisplay}
+                          {r.status === 'stale' && <strong> · Retest recommended</strong>}
+                        </span>
+                      </span>
+                    </button>
+                  )}
+                </div>
               );
             })}
           </div>
