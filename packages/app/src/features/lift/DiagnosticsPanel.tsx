@@ -100,7 +100,11 @@ export function DiagnosticsPanel({
           )}
           {effectEvidence.length > 0 && (
             <div className={styles.cardPadded}>
-              <div className={styles.summary} role="group" aria-label="Filter by effect evidence">
+              <div
+                className={styles.summary}
+                role="group"
+                aria-label="Highlight by effect evidence"
+              >
                 <span className={styles.summaryLabel}>Effect evidence</span>
                 <div className={styles.summaryRow}>
                   {effectEvidence.map((item) => (
@@ -119,6 +123,11 @@ export function DiagnosticsPanel({
                   ))}
                 </div>
               </div>
+              <span className={styles.srOnly} aria-live="polite">
+                {activeEffect
+                  ? `${effectEvidence.find((item) => item.effect === activeEffect)?.label} highlights ${effectEvidence.find((item) => item.effect === activeEffect)?.belowCount ?? 0} below-expected and ${effectEvidence.find((item) => item.effect === activeEffect)?.aboveCount ?? 0} above-expected variations.`
+                  : 'No effect highlighted.'}
+              </span>
             </div>
           )}
           {variants.length > 0 && (
@@ -159,7 +168,9 @@ export function DiagnosticsPanel({
                 const detailId = `diagnostic-${r.canonical}-details`;
                 const isHigh =
                   r.displayName === highlightedVariation ||
-                  (activeEffect !== null && r.effects.includes(activeEffect));
+                  (activeEffect !== null &&
+                    (r.status === 'weakness' || r.status === 'overperforming') &&
+                    r.effects.includes(activeEffect));
                 return (
                   <div
                     role="listitem"

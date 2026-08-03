@@ -103,7 +103,11 @@ describe('DiagnosticsPanel', () => {
 
   it('renders effect filters as toggle buttons', () => {
     mockUsePipelineDiagnostics.mockReturnValue({
-      variants: [variant('weakness', 82)],
+      variants: [
+        { ...variant('weakness', 82), effects: ['paused'] },
+        { ...variant('optimal', 100), effects: ['paused'] },
+        { ...variant('stale', 95), effects: ['paused'] },
+      ],
       hasDeadlift: false,
       effectEvidence: [{ effect: 'paused', label: 'Paused', belowCount: 1, aboveCount: 1 }],
       needsData: [],
@@ -115,10 +119,26 @@ describe('DiagnosticsPanel', () => {
 
     const chip = screen.getByRole('button', { name: 'Paused 1 below · 1 above' });
     expect(chip.getAttribute('aria-pressed')).toBe('false');
-    expect(screen.getByRole('group', { name: 'Filter by effect evidence' })).toBeDefined();
+    expect(screen.getByRole('group', { name: 'Highlight by effect evidence' })).toBeDefined();
     fireEvent.click(chip);
     expect(chip.getAttribute('aria-pressed')).toBe('true');
     expect(onVariationClick).toHaveBeenCalledWith(null);
+    expect(
+      screen.getByText('Paused highlights 1 below-expected and 1 above-expected variations.')
+    ).toBeDefined();
+    expect(
+      screen
+        .getByRole('button', { name: 'weakness: Below expected. Expand diagnostic' })
+        .closest('[role="listitem"]')?.className
+    ).toContain('findingSelected');
+    for (const name of [
+      'optimal: On target. Expand diagnostic',
+      'stale: Outdated, last tested 117 days ago. Expand diagnostic',
+    ]) {
+      expect(
+        screen.getByRole('button', { name }).closest('[role="listitem"]')?.className
+      ).not.toContain('findingSelected');
+    }
     fireEvent.click(chip);
     expect(chip.getAttribute('aria-pressed')).toBe('false');
   });

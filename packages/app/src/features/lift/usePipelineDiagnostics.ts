@@ -7,8 +7,7 @@ import {
   convertWeight,
   selectDiagnosticVariants,
   selectUnassessedDiagnostics,
-  summarizeDiagnosticEffectEvidence,
-  summarizeDiagnosticAttention,
+  summarizeDiagnosticEvidence,
   type DiagnosticVariant,
   type DisplayUnit,
   type UnassessedVariant,
@@ -141,17 +140,18 @@ export function usePipelineDiagnostics(
   }, [model, liftType]);
 
   const hasDeadlift = variants.some((v) => v.lift.includes('deadlift'));
+  const evidence = useMemo(() => summarizeDiagnosticEvidence(variants), [variants]);
   const effectEvidence = useMemo(
     () =>
-      summarizeDiagnosticEffectEvidence(variants).map((item) => ({
+      evidence.effects.map((item) => ({
         ...item,
         label: formatEffect(item.effect),
       })),
-    [variants]
+    [evidence]
   );
 
   const attentionSummary = useMemo(() => {
-    const summary = summarizeDiagnosticAttention(variants);
+    const summary = evidence;
     return {
       belowCount: summary.belowCount,
       aboveCount: summary.aboveCount,
@@ -160,7 +160,7 @@ export function usePipelineDiagnostics(
         : null,
       leadingBelowEffectCount: summary.leadingBelowEffect?.count ?? 0,
     };
-  }, [variants]);
+  }, [evidence]);
 
   return {
     variants,

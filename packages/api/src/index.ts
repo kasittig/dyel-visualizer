@@ -141,11 +141,13 @@ export {
   selectUnassessedDiagnostics,
   summarizeEffects,
   summarizeDiagnosticEffectEvidence,
+  summarizeDiagnosticEvidence,
   summarizeDiagnosticAttention,
   type DiagnosticVariant,
   type UnassessedVariant,
   type EffectSummary,
   type DiagnosticEffectEvidence,
+  type DiagnosticEvidenceSummary,
   type DiagnosticAttentionSummary,
 } from './diagnostics/diagnosticsSelectors';
 export { formatEffect, formatAddlWtOffset } from './diagnostics/diagnosticsUtils';

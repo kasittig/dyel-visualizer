@@ -43,6 +43,47 @@ export interface DiagnosticAttentionSummary {
   leadingBelowEffect: { effect: string; count: number } | null;
 }
 
+export interface DiagnosticEvidenceSummary extends DiagnosticAttentionSummary {
+  effects: DiagnosticEffectEvidence[];
+}
+
+export function summarizeDiagnosticEvidence(
+  variants: DiagnosticVariant[]
+): DiagnosticEvidenceSummary {
+  let belowCount = 0;
+  let aboveCount = 0;
+  const evidence = new Map<string, { belowCount: number; aboveCount: number }>();
+  for (const variant of variants) {
+    if (variant.status !== 'weakness' && variant.status !== 'overperforming') {
+      continue;
+    }
+    if (variant.status === 'weakness') {
+      belowCount += 1;
+    } else {
+      aboveCount += 1;
+    }
+    for (const effect of variant.effects) {
+      const counts = evidence.get(effect) ?? { belowCount: 0, aboveCount: 0 };
+      counts[variant.status === 'weakness' ? 'belowCount' : 'aboveCount'] += 1;
+      evidence.set(effect, counts);
+    }
+  }
+  const effects = Array.from(evidence, ([effect, counts]) => ({ effect, ...counts })).sort(
+    (a, b) =>
+      b.belowCount + b.aboveCount - (a.belowCount + a.aboveCount) ||
+      a.effect.localeCompare(b.effect)
+  );
+  const leading = effects
+    .filter((effect) => effect.belowCount > 0)
+    .sort((a, b) => b.belowCount - a.belowCount || a.effect.localeCompare(b.effect))[0];
+  return {
+    belowCount,
+    aboveCount,
+    leadingBelowEffect: leading ? { effect: leading.effect, count: leading.belowCount } : null,
+    effects,
+  };
+}
+
 export function selectDiagnosticVariants(
   model: PipelineModel,
   liftType?: string
