@@ -13,6 +13,7 @@ const variant = (status: DiagnosticVariant['status'], averageIndex: number) => (
   lift: 'lift:squat',
   effects: [],
   status,
+  fittedStatus: averageIndex < 90 ? 'weakness' : averageIndex > 110 ? 'overperforming' : 'optimal',
   ratio: averageIndex / 100,
   actualE1rmKg: averageIndex,
   expectedE1rmKg: 100,
@@ -47,14 +48,15 @@ describe('DiagnosticsPanel', () => {
   it('describes every status and presents actual-versus-expected evidence with recency', () => {
     const { container } = render(<DiagnosticsPanel liftType="squat" unit="lbs" />);
 
-    ['Below range', 'In range', 'Above range', 'Needs retest'].forEach((label) =>
+    ['Below expected', 'On target', 'Above expected', 'Needs retest'].forEach((label) =>
       expect(screen.getByText(label)).toBeDefined()
     );
     const weaknessDetails = within(container.querySelector('#diagnostic-weakness-details')!);
     expect(weaknessDetails.getByText('82 lb')).toBeDefined();
     expect(weaknessDetails.getByText('100 lb')).toBeDefined();
     expect(weaknessDetails.getByText('-18.0%')).toBeDefined();
-    expect(weaknessDetails.getByText('Strength index 82.0%')).toBeDefined();
+    expect(weaknessDetails.getByText('Fitted index 82.0%')).toBeDefined();
+    expect(weaknessDetails.getByText('Below target range')).toBeDefined();
     expect(screen.getAllByText('Target range 90-110%')).toHaveLength(4);
     expect(weaknessDetails.getByText(/Tested 3 days ago/)).toBeDefined();
     expect(
@@ -79,7 +81,35 @@ describe('DiagnosticsPanel', () => {
     expect(screen.getByRole('button', { name: 'Paused' }).getAttribute('aria-pressed')).toBe(
       'false'
     );
-    expect(screen.getByText('Effects on below-range variations:')).toBeDefined();
+    expect(screen.getByText('Effects on below-expected variations:')).toBeDefined();
+  });
+
+  it('labels current and fitted signals independently when they disagree', () => {
+    mockUsePipelineDiagnostics.mockReturnValue({
+      variants: [
+        {
+          ...variant('weakness', 118),
+          actualE1rmKg: 93,
+          actualE1rmDisplay: '205 lb',
+          expectedE1rmDisplay: '220 lb',
+          ratio: 0.93,
+          deltaPercent: -7,
+          deltaDisplay: '-7.0%',
+        },
+      ],
+      hasDeadlift: false,
+      weakEffects: [],
+      overtrainedEffects: [],
+    });
+
+    const { container } = render(<DiagnosticsPanel liftType="squat" unit="lbs" />);
+    const details = within(container.querySelector('#diagnostic-weakness-details')!);
+    expect(within(container).getByText('Below expected')).toBeDefined();
+    expect(details.getByText('205 lb')).toBeDefined();
+    expect(details.getByText('220 lb')).toBeDefined();
+    expect(details.getByText('-7.0%')).toBeDefined();
+    expect(details.getByText('Fitted index 118.0%')).toBeDefined();
+    expect(details.getByText('Above target range')).toBeDefined();
   });
 
   it('collapses and expands individual diagnostic rows', () => {

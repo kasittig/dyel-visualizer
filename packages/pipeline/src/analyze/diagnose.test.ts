@@ -34,7 +34,12 @@ const model: NormalizationModel = {
 describe('diagnose evaluations', () => {
   it('assesses baseline optimal bounds and variant metrics correctly', () => {
     const report = diagnose([basePt], model, map, opts, undefined);
-    expect(report.variants[0]).toMatchObject({ canonical: 'bench', ratio: 1, status: 'optimal' });
+    expect(report.variants[0]).toMatchObject({
+      canonical: 'bench',
+      ratio: 1,
+      status: 'optimal',
+      fittedStatus: null,
+    });
 
     const checks = [
       [70, 'weakness', 0.875],
@@ -166,6 +171,27 @@ describe('diagnose evaluations', () => {
       unmapped.variants.find((v) => v.canonical === 'bench-board-4')?.expectedBaseline
     ).toBeNull();
   });
+
+  it.each([
+    ['agreement', 0.8, 70, { min: 90, max: 110 }, 'weakness', 'weakness'],
+    ['disagreement', 1.2, 105, { min: 90, max: 110 }, 'weakness', 'overperforming'],
+    ['current high, fitted in range', 1, 110, { min: 90, max: 110 }, 'overperforming', 'optimal'],
+  ] as const)(
+    'separates current and fitted status: %s',
+    (_, factor, actual, range, status, fittedStatus) => {
+      expect(
+        diagnose(
+          [basePt, pt('bench-chains', actual, day(20))],
+          { ...model, variantFactor: { 'bench-chains': { factor, n: 5 } } },
+          map,
+          opts,
+          undefined,
+          new Map(),
+          new Map([['bench-chains', range]])
+        ).variants.find((v) => v.canonical === 'bench-chains')
+      ).toMatchObject({ status, fittedStatus });
+    }
+  );
 
   it('tracks isCompLift tag correctly', () => {
     const compReport = diagnose(

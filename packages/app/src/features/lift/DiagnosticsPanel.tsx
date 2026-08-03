@@ -7,11 +7,17 @@ import { useSortableRows } from '../../shared/hooks';
 import styles from './DiagnosticsPanel.module.css';
 
 const LABELS = {
-  optimal: ['In range', 'var(--success)'],
-  overperforming: ['Above range', 'var(--warning)'],
-  weakness: ['Below range', 'var(--danger)'],
+  optimal: ['On target', 'var(--success)'],
+  overperforming: ['Above expected', 'var(--warning)'],
+  weakness: ['Below expected', 'var(--danger)'],
   stale: ['Needs retest', 'var(--muted)'],
 } satisfies Record<DiagnosticVariant['status'], readonly [string, string]>;
+
+const FITTED_LABELS = {
+  optimal: 'Within target range',
+  overperforming: 'Above target range',
+  weakness: 'Below target range',
+} satisfies Record<NonNullable<DiagnosticVariant['fittedStatus']>, string>;
 
 type SortColumn = 'variation' | 'effects' | 'evidence' | 'diagnostic';
 
@@ -67,7 +73,7 @@ export function DiagnosticsPanel({
       <CollapsibleSection
         label="Diagnostics"
         persistenceId={`visualizer:${liftType}:diagnostics`}
-        summary={`${variants.length} variation${variants.length === 1 ? '' : 's'} · ${weakEffects.length} below range · ${overtrainedEffects.length} above range`}
+        summary={`${variants.length} variation${variants.length === 1 ? '' : 's'} · ${weakEffects.length} below expected · ${overtrainedEffects.length} above expected`}
       >
         <TableCard>
           {(weakEffects.length > 0 || overtrainedEffects.length > 0) && (
@@ -75,7 +81,9 @@ export function DiagnosticsPanel({
               <div className={styles.summary}>
                 {weakEffects.length > 0 && (
                   <div className={styles.summaryRow}>
-                    <span className={styles.summaryLabel}>Effects on below-range variations:</span>
+                    <span className={styles.summaryLabel}>
+                      Effects on below-expected variations:
+                    </span>
                     {weakEffects.map((e) => (
                       <button
                         type="button"
@@ -91,7 +99,9 @@ export function DiagnosticsPanel({
                 )}
                 {overtrainedEffects.length > 0 && (
                   <div className={styles.summaryRow}>
-                    <span className={styles.summaryLabel}>Effects on above-range variations:</span>
+                    <span className={styles.summaryLabel}>
+                      Effects on above-expected variations:
+                    </span>
                     {overtrainedEffects.map((e) => (
                       <button
                         type="button"
@@ -196,8 +206,9 @@ export function DiagnosticsPanel({
                         </span>
                         <span className={styles.comparisonContext}>
                           <strong>{r.deltaDisplay}</strong>
-                          <span>Strength index {r.averageIndex.toFixed(1)}%</span>
+                          <span>Fitted index {r.averageIndex.toFixed(1)}%</span>
                           <span>Target range {r.expectedBaseline ?? 'within ±5%'}</span>
+                          {r.fittedStatus && <span>{FITTED_LABELS[r.fittedStatus]}</span>}
                         </span>
                       </span>
                       <span className={styles.findingFooter}>
