@@ -118,7 +118,7 @@ export function App() {
           )}
           {effStatus === 'success' && (
             <>
-              <div className={styles.tabNav}>
+              <nav className={styles.tabNav} aria-label="Visualization and date controls">
                 {[
                   { id: 'sigma' as const, label: 'Σ' },
                   ...tabs,
@@ -142,7 +142,7 @@ export function App() {
                     sessionDates={allSessionDates}
                   />
                 </div>
-              </div>
+              </nav>
               <div className={styles.mobileTopControls}>
                 <div className={styles.mobileScreenHeader}>
                   <span className={styles.mobileEyebrow}>
