@@ -133,9 +133,9 @@ export function DateRangePicker({
             </button>
           </Popover.Trigger>
           <Popover.Portal>
-          <Popover.Content
-            ref={popoverContentRef}
-            sideOffset={8}
+            <Popover.Content
+              ref={popoverContentRef}
+              sideOffset={8}
               align="end"
               className={styles.mobileSheet}
               aria-label="Choose date range"
@@ -196,7 +196,6 @@ export function DateRangePicker({
               onClick={() => {
                 selectPreset(p.presetId);
               }}
-              aria-pressed={currentPreset === p.presetId}
             >
               {p.label}
             </button>

@@ -556,7 +556,7 @@ describe('TeamViewPage', () => {
     expect(onToggleProjected).toHaveBeenCalled();
   });
 
-  it('double-clicking a reps input opens the effort popover', () => {
+  it('clicking a reps input opens the effort popover', () => {
     vi.mocked(useTeamViewData).mockReturnValue({
       status: 'success',
       data: [mockLifterResult('Lifter 1')],
@@ -572,9 +572,9 @@ describe('TeamViewPage', () => {
 
     const spinbuttons = screen.getAllByRole('spinbutton') as HTMLInputElement[];
     // index 0 is the top-level reps input; index 1 is Alice's row
-    fireEvent.doubleClick(spinbuttons[1]);
+    fireEvent.click(spinbuttons[1]);
 
-    // After double-click, the popover content should appear in the DOM
+    // After click, the popover content should appear in the DOM
     // EffortInput renders with RPE/% chip buttons
     expect(screen.getAllByRole('button', { name: 'RPE' }).length).toBeGreaterThan(0);
     expect(screen.getAllByRole('button', { name: '%' }).length).toBeGreaterThan(0);
@@ -597,11 +597,11 @@ describe('TeamViewPage', () => {
 
     const spinbuttons = screen.getAllByRole('spinbutton') as HTMLInputElement[];
     // index 1 is Alice's reps input
-    fireEvent.doubleClick(spinbuttons[1]);
+    fireEvent.click(spinbuttons[1]);
 
     // Find the effort value input (inside the popover)
     const effortInputs = screen.getAllByRole('spinbutton') as HTMLInputElement[];
-    // After double-click, we should have an extra spinbutton for the effort value
+    // After click, we should have an extra spinbutton for the effort value
     const effortValueInput = effortInputs[effortInputs.length - 1];
     fireEvent.change(effortValueInput, { target: { value: '8' } });
 
@@ -628,7 +628,7 @@ describe('TeamViewPage', () => {
 
     const spinbuttons = screen.getAllByRole('spinbutton') as HTMLInputElement[];
     // index 0 is the top-level reps input
-    fireEvent.doubleClick(spinbuttons[0]);
+    fireEvent.click(spinbuttons[0]);
 
     // Find the effort value input (inside the popover)
     const effortInputs = screen.getAllByRole('spinbutton') as HTMLInputElement[];
