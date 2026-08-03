@@ -34,6 +34,15 @@ export function MultiSeriesLineChart({
 }: MultiSeriesLineChartProps) {
   const touch = useMediaQuery(TOUCH_EXPLORATION_QUERY);
   const [hiddenKeys, setHiddenKeys] = useState<Set<string>>(() => new Set());
+  const visibleKeys = seriesKeys.filter((key) => !hiddenKeys.has(key));
+  const accessibleSummary = [
+    summary,
+    visibleKeys.length
+      ? `Visible series: ${visibleKeys.join(', ')}.`
+      : 'All series are hidden.',
+  ]
+    .filter(Boolean)
+    .join(' ');
   const toggleKey = useCallback((key: string) => {
     setHiddenKeys((current) => {
       const next = new Set(current);
@@ -92,7 +101,7 @@ export function MultiSeriesLineChart({
         unit={unit}
         yAxisWidth={yAxisWidth}
         height={height}
-        summary={summary}
+        summary={accessibleSummary}
       >
         <Tooltip content={tooltipContent} trigger={touch ? 'click' : 'hover'} />
         {extraChildren}
