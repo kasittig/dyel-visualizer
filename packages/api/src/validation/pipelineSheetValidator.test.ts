@@ -58,6 +58,13 @@ describe('validateSheetCsv (pipeline-native)', () => {
     });
   });
 
+  it('does not treat multi-set speed work without RPE as rep-max evidence', () => {
+    expect(
+      validateSheetCsv('date,exercise,weight (lbs),reps,sets\n2024-01-01,Bench,185,3,9').rows
+        .liftTypes
+    ).toEqual({ squat: 0, bench: 0, deadlift: 0, accessory: 1 });
+  });
+
   it('enforces validation rules and warning conditions', () => {
     const noDate = validateSheetCsv('exercise,weight (lbs),reps\nSquat,315,5');
     expect(noDate.verdict).toBe('warning');
@@ -73,7 +80,7 @@ describe('validateSheetCsv (pipeline-native)', () => {
     const accOnly = validateSheetCsv(
       'date,exercise,weight (lbs),reps\n2024-01-01,bicep curl,30,10'
     );
-    expect(accOnly.warnings.some((w) => w.includes('only accessories'))).toBe(true);
+    expect(accOnly.warnings.some((w) => w.includes('qualifying 1–3 rep-max history'))).toBe(true);
   });
 
   it('validates row variables independently', () => {

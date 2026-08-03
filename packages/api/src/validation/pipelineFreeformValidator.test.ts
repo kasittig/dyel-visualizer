@@ -36,7 +36,7 @@ describe('validateTextData (pipeline-native freeform)', () => {
     expect(r.rows.liftTypes).toEqual({ squat: 1, bench: 1, deadlift: 1, accessory: 0 });
 
     const acc = validateTextData('2024-11-04 bicep curl 30lbs x10');
-    expect(acc.warnings.some((w) => w.includes('only accessories'))).toBe(true);
+    expect(acc.warnings.some((w) => w.includes('qualifying 1–3 rep-max history'))).toBe(true);
 
     const noDate = validateTextData('comp squat 405lbs x2');
     expect(noDate.verdict).toBe('ok');

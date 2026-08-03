@@ -1,4 +1,5 @@
 import type { TaggedSetRecord } from '../tag/tag';
+import type { SetRecord } from '../types';
 import { calcE1RM } from './e1rm';
 
 export interface SeriesDeriver {
@@ -13,8 +14,8 @@ export interface SeriesDeriver {
 // speed-work sets.
 const SPEED_WORK_SET_THRESHOLD = 2;
 const MAX_EFFORT_REPS = 5;
-export const isSpeedWork = (s: TaggedSetRecord) =>
-  s.rpe === undefined && Number(s.meta?.sets ?? 1) >= SPEED_WORK_SET_THRESHOLD;
+export const isSpeedWork = (s: Pick<SetRecord, 'rpe' | 'sets' | 'meta'>) =>
+  s.rpe === undefined && Number(s.sets ?? s.meta?.sets ?? 1) >= SPEED_WORK_SET_THRESHOLD;
 
 export const derivers: Record<string, SeriesDeriver> = {
   e1rm: {

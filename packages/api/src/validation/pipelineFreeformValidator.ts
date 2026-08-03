@@ -64,7 +64,7 @@ export function validateTextData(text: string): TextValidationResult {
 
   if (parsed > 0 && !liftTypes.squat && !liftTypes.bench && !liftTypes.deadlift) {
     warnings.push(
-      'No squat, bench, or deadlift exercises were recognized — only accessories. Check exercise naming rules in the onboarding guide.'
+      'No variation has qualifying 1–3 rep-max history. Log a 1–3 rep set at RPE 9+ or a single set without RPE to classify it as squat, bench, or deadlift.'
     );
   }
 

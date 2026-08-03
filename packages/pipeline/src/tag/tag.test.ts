@@ -178,12 +178,13 @@ describe('classifyExerciseName', () => {
 });
 
 describe('tagRecordsByPrimaryEvidence', () => {
-  const record = (exercise: string, reps: number, rpe?: number): SetRecord => ({
+  const record = (exercise: string, reps: number, rpe?: number, sets?: number): SetRecord => ({
     date: 1706745600000,
     exercise,
     weight: 100,
     reps,
     ...(rpe === undefined ? {} : { rpe }),
+    ...(sets === undefined ? {} : { sets }),
   });
 
   it.each([
@@ -196,6 +197,15 @@ describe('tagRecordsByPrimaryEvidence', () => {
     expect(
       tagRecordsByPrimaryEvidence([record('Incline Bench', reps, rpe)]).tagged[0].tags
     ).toContain(expectedTag);
+  });
+
+  it('does not promote multi-set speed work without RPE', () => {
+    expect(
+      tagRecordsByPrimaryEvidence([record('Bench', 3, undefined, 9)]).tagged[0].tags
+    ).toContain('lift:accessory');
+    expect(tagRecordsByPrimaryEvidence([record('Bench', 3, 9, 9)]).tagged[0].tags).toContain(
+      'lift:bench'
+    );
   });
 
   it('promotes every record for a canonical variation when any record qualifies', () => {

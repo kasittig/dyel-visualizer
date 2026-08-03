@@ -143,7 +143,8 @@ export function validateSheetCsv(csv: string): SheetValidationResult {
       wtStr = row[wtKey!]?.trim() || '',
       rpStr = row[rpKey!]?.trim() || '',
       dtStr = row[dtKey!]?.trim() || '',
-      rpeStr = row[rpeKey!]?.trim() || '';
+      rpeStr = row[rpeKey!]?.trim() || '',
+      stStr = row[stKey!]?.trim() || '';
     const bad: string[] = [],
       warn: string[] = [];
 
@@ -176,6 +177,12 @@ export function validateSheetCsv(csv: string): SheetValidationResult {
         warn.push(`Invalid RPE: "${rpeStr}" (must be a number between 1 and 10)`);
       }
     }
+    if (stStr) {
+      const sets = parseFloat(stStr);
+      if (isNaN(sets) || !Number.isInteger(sets) || sets <= 0) {
+        bad.push(`Invalid sets: "${stStr}" (must be a positive whole number)`);
+      }
+    }
 
     if (bad.length) {
       failed++;
@@ -193,6 +200,7 @@ export function validateSheetCsv(csv: string): SheetValidationResult {
         weight: parseFloat(wtStr),
         reps: rpStr ? parseInt(rpStr, 10) : 1,
         ...(rpeStr ? { rpe: parseFloat(rpeStr) } : {}),
+        ...(stStr ? { sets: parseInt(stStr, 10) } : {}),
       });
     }
   });
@@ -213,7 +221,7 @@ export function validateSheetCsv(csv: string): SheetValidationResult {
   }
   if (parsed && !liftTypes.squat && !liftTypes.bench && !liftTypes.deadlift) {
     warnings.push(
-      'No squat, bench, or deadlift exercises were recognized — only accessories. Check exercise naming rules in the onboarding guide.'
+      'No variation has qualifying 1–3 rep-max history. Log a 1–3 rep set at RPE 9+ or a single set without RPE to classify it as squat, bench, or deadlift.'
     );
   }
 

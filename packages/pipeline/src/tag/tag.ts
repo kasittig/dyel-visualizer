@@ -4,6 +4,7 @@ import { buildCanonical, buildTagsAndEffects } from './detect/canonical';
 import type { BaselineRange } from './detect/canonical';
 import type { ParsedExercise, LiftType } from './detect/conjugate-types';
 import { classifyAccessoryEffects, isCoreExercise } from './detect/detectors';
+import { isSpeedWork } from '../derive/derivers';
 
 export type TaggedSetRecord = SetRecord & {
   canonical: string;
@@ -135,7 +136,8 @@ export function tagRecordsByPrimaryEvidence(records: SetRecord[]): {
       unknown.add(record.exercise);
     } else if (
       (record.reps === 1 || record.reps === 2 || record.reps === 3) &&
-      (record.rpe === undefined || record.rpe >= 9)
+      (record.rpe === undefined || record.rpe >= 9) &&
+      !isSpeedWork(record)
     ) {
       primaryCanonicals.add(canonical);
     }

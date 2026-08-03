@@ -120,7 +120,8 @@ For a step-by-step guide to adding a new effect category, see `ADDING_EFFECTS.md
 
 `tagRecordsByPrimaryEvidence` treats the parser's squat/bench/deadlift result as a candidate
 family. A canonical variation is promoted into that family only when its history contains an
-exact 1-, 2-, or 3-rep set whose RPE is absent or at least 9. Promotion applies to every record
+exact 1-, 2-, or 3-rep set whose RPE is at least 9, or a single set with no RPE. Multi-set
+no-RPE speed work never qualifies. Promotion applies to every record
 with that canonical, including aliases and records earlier than the qualifying set. Recognized
 variations without evidence keep their candidate canonical but receive `lift:accessory`,
 accessory effects, and no baseline range.
