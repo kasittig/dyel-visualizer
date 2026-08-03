@@ -26,6 +26,7 @@ const variant = (status: DiagnosticVariant['status'], averageIndex: number) => (
   baselineE1rmKg: 110,
   expectedFactor: 0.91,
   latestAt: Date.UTC(2026, 0, 10),
+  latestSet: { weight: 82, reps: 3, rpe: 9 },
   previousE1rmKg: averageIndex - 2,
   observationCount: 4,
   comparisonCount: 3,
@@ -41,6 +42,7 @@ const variant = (status: DiagnosticVariant['status'], averageIndex: number) => (
   ageDays: status === 'stale' ? 117 : 3,
   ageDisplay: status === 'stale' ? '117 days ago' : '3 days ago',
   latestDateDisplay: 'Jan 10, 2026',
+  latestSetDisplay: `${averageIndex} lb × 3 @9`,
   trendDisplay: '+2.0% vs prior observation',
   observationDisplay: '4 observations · 3 fitted comparisons',
   calculationDisplay: '110.0 lb baseline × 91.0% = 100.1 lb expected',
@@ -91,6 +93,7 @@ describe('DiagnosticsPanel', () => {
     expect(screen.getByText('Last tested 117 days ago')).toBeDefined();
     expect(screen.getByText('Paused, +20 lb')).toBeDefined();
     expect(screen.getAllByText('Recent trend')).toHaveLength(4);
+    expect(weaknessDetails.getByText('Jan 10, 2026 · 82 lb × 3 @9 · 82 lb e1RM')).toBeDefined();
     expect(screen.getAllByText('+2.0% vs prior observation')).toHaveLength(4);
     expect(screen.getAllByText('4 observations · 3 fitted comparisons')).toHaveLength(4);
     expect(screen.getAllByText('Expected calculation')).toHaveLength(4);

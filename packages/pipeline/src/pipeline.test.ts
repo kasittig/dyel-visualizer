@@ -97,6 +97,7 @@ describe('pipeline orchestration', () => {
       actualE1rmKg: 255,
       expectedE1rmKg: 255,
       latestAt: Date.UTC(2026, 4, 11),
+      latestSet: { weight: 255, reps: 1, sets: 1 },
       observationCount: 1,
       status: 'optimal',
     });

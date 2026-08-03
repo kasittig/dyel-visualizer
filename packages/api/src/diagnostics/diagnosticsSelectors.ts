@@ -15,6 +15,7 @@ export interface DiagnosticVariant {
   baselineE1rmKg: number;
   expectedFactor: number;
   latestAt: number;
+  latestSet: { weight: number; reps: number; rpe?: number; sets?: number } | null;
   previousE1rmKg: number | null;
   observationCount: number;
   comparisonCount: number | null;
@@ -54,6 +55,7 @@ export function selectDiagnosticVariants(
     baselineE1rmKg: v.baselineE1rmKg,
     expectedFactor: v.expectedFactor,
     latestAt: v.latestAt,
+    latestSet: v.latestSet,
     previousE1rmKg: v.previousE1rmKg,
     observationCount: v.observationCount,
     comparisonCount: v.comparisonCount,

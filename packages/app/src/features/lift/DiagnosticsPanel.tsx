@@ -248,7 +248,8 @@ export function DiagnosticsPanel({
                         <span className={styles.provenance}>
                           <span>
                             <strong>Latest</strong>
-                            {r.latestDateDisplay} · {r.actualE1rmDisplay}
+                            {r.latestDateDisplay} · {r.latestSetDisplay} · {r.actualE1rmDisplay}{' '}
+                            e1RM
                           </span>
                           <span>
                             <strong>Recent trend</strong>
