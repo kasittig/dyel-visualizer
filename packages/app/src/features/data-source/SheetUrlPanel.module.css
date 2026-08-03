@@ -233,6 +233,12 @@
   margin-top: 0.75rem;
 }
 
+@media (min-width: 641px) and (max-width: 1024px) {
+  .refreshButton {
+    margin-inline: 0.25rem;
+  }
+}
+
 .urlRow {
   display: flex;
   align-items: center;

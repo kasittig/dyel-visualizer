@@ -25,6 +25,14 @@
   color: var(--accent);
 }
 
+@media (min-width: 641px) and (max-width: 1024px) {
+  .toggleable {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
 .stack {
   display: inline-grid;
   grid-template-columns: auto auto;
