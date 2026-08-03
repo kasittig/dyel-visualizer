@@ -4,7 +4,7 @@ import type { ChartPoint } from '@dyel/api';
 import { LINE_COLORS } from '@dyel/api/display';
 import { DateLineChart } from './DateLineChart';
 import { ChartTooltip, type TooltipLine } from './TooltipCard';
-import { useMobileChart } from './useMobileChart';
+import { MOBILE_LAYOUT_QUERY, useMediaQuery } from '../hooks';
 
 export interface MultiSeriesLineChartProps {
   data: ChartPoint[];
@@ -31,7 +31,7 @@ export function MultiSeriesLineChart({
   height,
   summary,
 }: MultiSeriesLineChartProps) {
-  const mobile = useMobileChart();
+  const mobile = useMediaQuery(MOBILE_LAYOUT_QUERY);
   const tooltipContent = useCallback(
     ({
       active,

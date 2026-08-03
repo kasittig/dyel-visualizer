@@ -3,7 +3,8 @@ import { CartesianGrid, LineChart, ResponsiveContainer, XAxis, YAxis } from 'rec
 import type { ChartPoint } from '@dyel/api';
 import { formatChartDate } from '@dyel/api/display';
 import styles from './DateLineChart.module.css';
-import { formatMobileChartDate, useMobileChart } from './useMobileChart';
+import { MOBILE_LAYOUT_QUERY, useMediaQuery } from '../hooks';
+import { formatMobileChartDate } from './chartResponsive';
 
 export function ChartEmpty() {
   return (
@@ -28,9 +29,13 @@ export function DateLineChart({
   children: React.ReactNode;
   summary?: string;
 }) {
-  const mobile = useMobileChart();
+  const mobile = useMediaQuery(MOBILE_LAYOUT_QUERY);
   return (
-    <div className={styles.chartWrapper} role="img" aria-label={summary}>
+    <div
+      className={styles.chartWrapper}
+      role={summary ? 'img' : undefined}
+      aria-label={summary || undefined}
+    >
       <ResponsiveContainer width="100%" height={mobile ? Math.min(height, 260) : height}>
         <LineChart
           data={data}

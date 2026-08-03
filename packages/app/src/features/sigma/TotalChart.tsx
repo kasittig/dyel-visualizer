@@ -3,7 +3,7 @@ import type { ChartPoint } from '@dyel/api';
 import { DateLineChart, ChartEmpty } from '../../shared/charts/DateLineChart';
 import { ChartTooltip } from '../../shared/charts/TooltipCard';
 import { ChartLegend } from '../../shared/charts/ChartLegend';
-import { useMobileChart } from '../../shared/charts/useMobileChart';
+import { MOBILE_LAYOUT_QUERY, useMediaQuery } from '../../shared/hooks';
 import styles from './TotalChart.module.css';
 import {
   SQUAT_COLOR,
@@ -14,7 +14,7 @@ import {
 } from '../../shared/charts/colors.ts';
 
 export function TotalChart({ chartData, unit }: { chartData: ChartPoint[]; unit: string }) {
-  const mobile = useMobileChart();
+  const mobile = useMediaQuery(MOBILE_LAYOUT_QUERY);
   if (chartData.length === 0) {
     return <ChartEmpty />;
   }

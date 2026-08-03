@@ -11,7 +11,7 @@ import {
   Text,
 } from 'recharts';
 import styles from './BaseRadarChart.module.css';
-import { useMobileChart } from './useMobileChart';
+import { MOBILE_LAYOUT_QUERY, useMediaQuery } from '../hooks';
 
 interface CustomAxisTickProps {
   x: number;
@@ -61,9 +61,13 @@ export function BaseRadarChart({
   overlayDataKey?: string;
   summary?: string;
 }) {
-  const mobile = useMobileChart();
+  const mobile = useMediaQuery(MOBILE_LAYOUT_QUERY);
   return (
-    <section className={styles.section} role="img" aria-label={summary}>
+    <section
+      className={styles.section}
+      role={summary ? 'img' : undefined}
+      aria-label={summary || undefined}
+    >
       {label && <p className={styles.label}>{label}</p>}
       <div className={styles.chartWrapper}>
         <ResponsiveContainer width="100%" height={mobile ? 280 : 340}>

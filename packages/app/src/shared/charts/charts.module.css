@@ -3,7 +3,7 @@
   margin: 0 auto;
 }
 
-@media (max-width: 639px) {
+@media (max-width: 640px) {
   .chartWrapper {
     width: 100%;
   }

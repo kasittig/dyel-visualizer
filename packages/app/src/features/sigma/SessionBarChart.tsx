@@ -11,10 +11,11 @@ import {
   PUSH_PULL_COLOR,
 } from '../../shared/charts/colors.ts';
 import { ChartLegend } from '../../shared/charts/ChartLegend';
-import { formatMobileChartDate, useMobileChart } from '../../shared/charts/useMobileChart';
+import { formatMobileChartDate } from '../../shared/charts/chartResponsive';
+import { MOBILE_LAYOUT_QUERY, useMediaQuery } from '../../shared/hooks';
 
 export function SessionBarChart({ chartData, unit }: { chartData: ChartPoint[]; unit: string }) {
-  const mobile = useMobileChart();
+  const mobile = useMediaQuery(MOBILE_LAYOUT_QUERY);
   if (chartData.length === 0) {
     return <ChartEmpty />;
   }

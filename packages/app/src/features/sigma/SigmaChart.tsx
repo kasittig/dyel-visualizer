@@ -6,7 +6,7 @@ import { BaseRadarChart } from '../../shared/charts/BaseRadarChart';
 import { ChartTooltip } from '../../shared/charts/TooltipCard';
 import { SQUAT_COLOR, BENCH_COLOR, DEADLIFT_COLOR } from '../../shared/charts/colors';
 import styles from './SigmaChart.module.css';
-import { useMobileChart } from '../../shared/charts/useMobileChart';
+import { MOBILE_LAYOUT_QUERY, useMediaQuery } from '../../shared/hooks';
 
 const LIFT_COLORS: Record<string, string> = {
   Squat: SQUAT_COLOR,
@@ -15,7 +15,7 @@ const LIFT_COLORS: Record<string, string> = {
 };
 
 export function SigmaChart({ chartData, unit }: { chartData: ChartPoint[]; unit: string }) {
-  const mobile = useMobileChart();
+  const mobile = useMediaQuery(MOBILE_LAYOUT_QUERY);
   const latest = useLatestLiftE1RMs(chartData);
   const data = [
     latest.squat !== undefined ? { lift: 'Squat', e1rm: latest.squat } : null,
