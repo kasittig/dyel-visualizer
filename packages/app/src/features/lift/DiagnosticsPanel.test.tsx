@@ -27,6 +27,7 @@ const variant = (status: DiagnosticVariant['status'], averageIndex: number) => (
   deltaDisplay: `${averageIndex > 100 ? '+' : ''}${(averageIndex - 100).toFixed(1)}%`,
   ageDays: status === 'stale' ? 117 : 3,
   ageDisplay: status === 'stale' ? '117 days ago' : '3 days ago',
+  targetRangeDisplay: '90.0–110.0%',
 });
 
 describe('DiagnosticsPanel', () => {
@@ -51,7 +52,7 @@ describe('DiagnosticsPanel', () => {
       expect(screen.getByText(label)).toBeDefined()
     );
     expect(screen.getByText('82.0%')).toBeDefined();
-    expect(screen.getAllByText('90-110%')).toHaveLength(4);
+    expect(screen.getAllByText('90.0–110.0%')).toHaveLength(4);
     expect(screen.getAllByText('strength index')).toHaveLength(4);
     expect(screen.getByText(/Latest e1RM 82 lb · Tested 3 days ago/)).toBeDefined();
     expect(screen.getByText(/Latest e1RM 95 lb · Tested 117 days ago/)).toBeDefined();

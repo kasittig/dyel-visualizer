@@ -186,7 +186,7 @@ export function DiagnosticsPanel({
                         </span>
                         <span className={styles.expected}>
                           <small>{r.expectedBaseline ? 'target range' : 'target'}</small>
-                          {r.expectedBaseline ?? 'within ±5%'}
+                          {r.targetRangeDisplay}
                         </span>
                       </span>
                       <span className={styles.findingFooter}>

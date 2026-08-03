@@ -20,6 +20,7 @@ export interface DiagnosticRow extends DiagnosticVariant {
   deltaDisplay: string;
   ageDays: number;
   ageDisplay: string;
+  targetRangeDisplay: string;
 }
 
 export interface DiagnosticResult {
@@ -47,6 +48,11 @@ export function usePipelineDiagnostics(
         ...variant.effects.map(formatEffect),
         ...(variant.addlWtOffset ? [formatAddlWtOffset(variant.addlWtOffset.offsetKg, unit)] : []),
       ].join(', ');
+      const targetRangeDisplay =
+        variant.expectedBaseline?.replace(
+          /^(-?\d+(?:\.\d+)?)-(-?\d+(?:\.\d+)?)%$/,
+          (_, min, max) => `${Number(min).toFixed(1)}–${Number(max).toFixed(1)}%`
+        ) ?? 'within ±5.0%';
       return {
         ...variant,
         effectsDisplay: effectsDisplay || '—',
@@ -56,6 +62,7 @@ export function usePipelineDiagnostics(
         deltaDisplay: `${deltaPercent > 0 ? '+' : ''}${deltaPercent.toFixed(1)}%`,
         ageDays,
         ageDisplay: ageDays === 0 ? 'Today' : ageDays === 1 ? '1 day ago' : `${ageDays} days ago`,
+        targetRangeDisplay,
       };
     });
   }, [model, liftType, unit]);

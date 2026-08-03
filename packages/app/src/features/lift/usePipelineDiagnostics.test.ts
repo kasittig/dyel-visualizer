@@ -107,6 +107,7 @@ describe('usePipelineDiagnostics', () => {
       deltaDisplay: '-10.0%',
       ageDays: 3,
       ageDisplay: '3 days ago',
+      targetRangeDisplay: '90.0–110.0%',
     });
   });
 
@@ -132,6 +133,7 @@ describe('usePipelineDiagnostics', () => {
         deltaDisplay: display,
         ageDays: Math.floor(staleDays),
         ageDisplay,
+        targetRangeDisplay: '90.0–110.0%',
       });
     }
   );
