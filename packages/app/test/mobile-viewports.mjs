@@ -120,7 +120,9 @@ try {
     });
     const page = await context.newPage();
     await page.goto(`${baseUrl}${pages[0][1]}`, { waitUntil: 'networkidle' });
-    const toolbar = page.locator('nav[aria-label="Visualization and date controls"]');
+    const toolbar = page.locator('[role="toolbar"][aria-label="Date filters"]');
+    const viewNav = page.locator('nav[aria-label="Visualization views"]');
+    const stickyControls = toolbar.locator('..');
     const toolbarCount = await toolbar.count();
     const mobileNavDisplay = await page
       .locator('nav[aria-label="Primary navigation"]')
@@ -128,7 +130,7 @@ try {
     if (toolbarCount !== 1) {
       failures.push(`visualizer at ${width}px: sticky controls toolbar is missing`);
     } else {
-      const before = await toolbar.evaluate((element) => ({
+      const before = await stickyControls.evaluate((element) => ({
         position: getComputedStyle(element).position,
         top: element.getBoundingClientRect().top,
         height: element.getBoundingClientRect().height,
@@ -137,7 +139,7 @@ try {
       }));
       await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
       await page.waitForTimeout(50);
-      const afterTop = await toolbar.evaluate((element) => element.getBoundingClientRect().top);
+      const afterTop = await stickyControls.evaluate((element) => element.getBoundingClientRect().top);
       if (before.position !== 'sticky' || Math.abs(afterTop) > 1) {
         failures.push(
           `visualizer at ${width}px: toolbar did not remain sticky (${JSON.stringify({ before, afterTop })})`
@@ -146,6 +148,9 @@ try {
       if (before.document > before.viewport) {
         failures.push(`visualizer at ${width}px: sticky toolbar causes horizontal overflow`);
       }
+    }
+    if ((await viewNav.count()) !== 1) {
+      failures.push(`visualizer at ${width}px: visualization navigation landmark is missing`);
     }
     if (mobileNavDisplay !== 'none') {
       failures.push(`visualizer at ${width}px: mobile bottom navigation remains visible`);

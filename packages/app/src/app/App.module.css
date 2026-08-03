@@ -28,6 +28,12 @@
   gap: 0.5rem;
 }
 
+.viewNav {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 @media (min-width: 641px) {
   .tabNav {
     position: sticky;

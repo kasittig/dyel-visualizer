@@ -132,7 +132,7 @@ export function App() {
                 trailing={
                   <>
                     <div className={styles.tabSpacer} />
-                    <div className={styles.datePickerWrap}>
+                    <div className={styles.datePickerWrap} role="toolbar" aria-label="Date filters">
                       <DateRangePicker
                         value={dateRange}
                         onChange={setDateRange}
