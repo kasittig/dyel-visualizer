@@ -90,7 +90,7 @@ export function usePipelineDiagnostics(
             ? 'No prior observation'
             : `${trendPercent > 0 ? '+' : ''}${trendPercent.toFixed(1)}% vs prior observation`,
         observationDisplay: `${variant.observationCount} observation${variant.observationCount === 1 ? '' : 's'} · ${variant.comparisonCount === null ? 'no fitted comparison' : `${variant.comparisonCount} fitted comparison${variant.comparisonCount === 1 ? '' : 's'}`}`,
-        calculationDisplay: `${baselineOperand.toFixed(1)} ${unit} baseline × ${(factorOperand * 100).toFixed(1)}%${variant.addlWtOffset ? ` − ${offsetOperand.toFixed(1)} ${unit} added resistance` : ''} = ${expectedOperand.toFixed(1)} ${unit} expected`,
+        calculationDisplay: `${baselineOperand.toFixed(1)} ${unit} baseline × ${(factorOperand * 100).toFixed(1)}%${variant.addlWtOffset ? (offsetOperand < 0 ? ` + ${Math.abs(offsetOperand).toFixed(1)} ${unit} band assistance` : ` − ${offsetOperand.toFixed(1)} ${unit} added resistance`) : ''} = ${expectedOperand.toFixed(1)} ${unit} expected`,
         rationaleDisplay:
           variant.status === 'stale'
             ? `The latest observation is ${ageDays} days old, so a retest is needed before interpreting the result.`

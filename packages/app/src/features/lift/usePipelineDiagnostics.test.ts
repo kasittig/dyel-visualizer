@@ -180,6 +180,32 @@ describe('usePipelineDiagnostics', () => {
     });
   });
 
+  it('renders reverse-band offsets as added assistance', () => {
+    mockUsePipelineModel.mockReturnValue({
+      status: 'success',
+      model: pipelineModelMock({
+        diagnostics: {
+          variants: [
+            variantAssessmentMock({
+              actualE1rmKg: 105,
+              expectedE1rmKg: 105,
+              baselineE1rmKg: 100,
+              expectedFactor: 1,
+              addlWtOffset: { offsetKg: -5, n: 1 },
+            }),
+          ],
+          weaknesses: [],
+          unassessed: [],
+        },
+      }),
+    });
+
+    expect(
+      renderHook(() => usePipelineDiagnostics('squat', 'kg')).result.current.variants[0]
+        .calculationDisplay
+    ).toBe('100.0 kg baseline × 100.0% + 5.0 kg band assistance = 105.0 kg expected');
+  });
+
   it.each([
     [1.025, 0, 2.5, '+2.5%', 'Today'],
     [1, 1.8, 0, '0.0%', '1 day ago'],

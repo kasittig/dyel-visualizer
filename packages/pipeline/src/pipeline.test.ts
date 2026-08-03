@@ -73,6 +73,35 @@ describe('pipeline orchestration', () => {
     }
   );
 
+  it('keeps newer dynamic-effort volume from replacing the latest max-effort diagnostic', () => {
+    const model = runPipelineModel(
+      [
+        {
+          name: 'log.csv',
+          content:
+            'Date,Exercise,Sets,Reps,Weight (kg)\n2026-05-11,Sumo Deadlift,1,1,255\n2026-06-05,Sumo Deadlift,4,3,165',
+        },
+      ],
+      ath(),
+      Date.UTC(2026, 7, 3)
+    );
+    const baseline = model.model.baseline['lift:deadlift'];
+    const generalLatest = model.points
+      .get('e1rm')
+      .filter((point) => point.series === baseline)
+      .reduce((a, b) => (b.t > a.t ? b : a));
+    const diagnostic = model.diagnostics.variants.find((variant) => variant.canonical === baseline);
+
+    expect(generalLatest.v).toBeCloseTo(181.5);
+    expect(diagnostic).toMatchObject({
+      actualE1rmKg: 255,
+      expectedE1rmKg: 255,
+      latestAt: Date.UTC(2026, 4, 11),
+      observationCount: 1,
+      status: 'optimal',
+    });
+  });
+
   it.each([
     ['single-set records (effort)', `2024-01-01 Bench 100kg x5 @8\n2024-01-05 Bench 105kg x5 @8`],
     [
