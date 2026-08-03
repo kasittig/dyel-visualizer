@@ -16,6 +16,7 @@ export const variantAssessmentMock = (
   actualE1rmKg: 102,
   ratio: 1.02,
   status: 'optimal',
+  fittedStatus: 'optimal',
   averageIndex: 100,
   expectedBaseline: '90-110%',
   staleDays: 3,

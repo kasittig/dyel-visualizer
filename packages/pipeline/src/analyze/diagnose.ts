@@ -3,6 +3,7 @@ import type { NormalizationModel } from '../derive/normalize';
 import type { BaselineRange } from '../tag/detect/canonical';
 
 export type Quality = string;
+export type PerformanceStatus = 'optimal' | 'weakness' | 'overperforming';
 export interface VariantAssessment {
   canonical: string;
   displayName: string;
@@ -10,7 +11,8 @@ export interface VariantAssessment {
   expectedE1rmKg: number;
   actualE1rmKg: number;
   ratio: number;
-  status: 'optimal' | 'weakness' | 'overperforming' | 'stale';
+  status: PerformanceStatus | 'stale';
+  fittedStatus: PerformanceStatus | null;
   averageIndex: number;
   expectedBaseline: string | null;
   staleDays: number;
@@ -65,17 +67,19 @@ export function diagnose(
     const averageIndex = factor * 100;
     const range = baselineRangeByCanonical.get(canonical);
 
-    const normalStatus: VariantAssessment['status'] = range
+    const normalStatus: PerformanceStatus =
+      Math.abs(ratio - 1) <= opts.tolerance
+        ? 'optimal'
+        : ratio < 1 - opts.tolerance
+          ? 'weakness'
+          : 'overperforming';
+    const fittedStatus: PerformanceStatus | null = range
       ? averageIndex < range.min
         ? 'weakness'
         : averageIndex > range.max
           ? 'overperforming'
           : 'optimal'
-      : Math.abs(ratio - 1) <= opts.tolerance
-        ? 'optimal'
-        : ratio < 1 - opts.tolerance
-          ? 'weakness'
-          : 'overperforming';
+      : null;
 
     const status: VariantAssessment['status'] =
       timestamp - latest.t > opts.staleDays * DAY_MS ? 'stale' : normalStatus;
@@ -88,6 +92,7 @@ export function diagnose(
       expectedE1rmKg,
       ratio,
       status,
+      fittedStatus,
       averageIndex,
       expectedBaseline: range ? `${range.min}-${range.max}%` : null,
       actualE1rmKg: latest.v,

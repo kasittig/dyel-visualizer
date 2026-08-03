@@ -21,20 +21,25 @@ run and NEVER stored on identity types.
   exercise name per canonical id. When a display name is available, it's copied into
   `VariantAssessment.displayName`; otherwise falls back to canonical.
 - `baselineRangeByCanonical` (optional, defaults to empty map): supplies modifier-derived
-  expected %-range per canonical for status classification. When a range exists for a
-  canonical, `VariantAssessment.expectedBaseline` is populated and drives `status`
-  determination; when absent, status falls back to flat-tolerance `ratio` comparison.
-- `VariantAssessment.ratio` = actual / expected (actual = latest e1rm point,
-  pre-normalization). `status` classification is determined by comparing ratio or
-  fitted variant-factor strength against tolerance/range bands. Possible values:
-  - `'optimal'` — ratio/fitted strength within tolerance/range.
-  - `'weakness'` — ratio/fitted strength below tolerance/range minimum.
-  - `'overperforming'` — ratio/fitted strength above tolerance/range maximum.
+  expected %-range per canonical for the independent fitted, long-term signal. When a range
+  exists, `VariantAssessment.expectedBaseline` is populated and `fittedStatus` compares the
+  fitted variant factor against it; without a range, `fittedStatus` is `null`.
+- `VariantAssessment.ratio` = actual / expected (actual = latest e1rm point; the pipeline
+  supplies its weight-space offset-adjusted point for chain/band variants). `status` is the
+  current-readiness signal and always compares this ratio
+  against `opts.tolerance`. Possible values:
+  - `'optimal'` — current ratio within tolerance.
+  - `'weakness'` — current ratio below tolerance.
+  - `'overperforming'` — current ratio above tolerance.
   - `'stale'` — latest point is older than `staleDays`. Staleness takes priority
     and overrides any normal range/tolerance classification, so a stale variant is
     always marked `'stale'` regardless of underlying ratio. Stale variants still
     compute `ratio`, `averageIndex`, and `expectedBaseline` normally (useful for
     display), but do not contribute votes to weakness aggregation.
+- `VariantAssessment.fittedStatus` is the separately named long-term signal. It compares
+  `averageIndex` (the fitted factor as a percentage) with `expectedBaseline`, returning
+  `'optimal'`, `'weakness'`, or `'overperforming'`; it is `null` when no fitted target range
+  exists. It never changes the current `status`, so disagreement remains explicit.
 - `VariantAssessment.isCompLift` — mirrors the record's `'comp-lift'` tag; true only for
   the bare squat/bench/deadlift competition lifts, never for variants or accessories.
 - `VariantAssessment.addlWtOffset` (optional, only present when sample count > 0):

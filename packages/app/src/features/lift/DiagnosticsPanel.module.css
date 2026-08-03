@@ -3,14 +3,15 @@
 }
 
 .cardPadded {
-  padding: 12px 16px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
 }
 
 .summary {
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
-  margin-bottom: 1rem;
+  margin: 0;
   font-size: 0.85rem;
 }
 .summaryRow {
@@ -26,12 +27,23 @@
 }
 .chip {
   display: inline-block;
+  appearance: none;
+  border: 1px solid transparent;
   padding: 0.15rem 0.55rem;
   border-radius: 999px;
   font-size: 0.8rem;
   font-weight: 500;
   background-color: var(--chip-bg);
   color: var(--chip-color);
+  font-family: inherit;
+  cursor: pointer;
+}
+.chip:hover {
+  border-color: currentColor;
+}
+.chip:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 .chipDanger {
   --chip-bg: color-mix(in srgb, var(--danger) 15%, transparent);
@@ -53,7 +65,185 @@
   cursor: help;
 }
 
-.evidence span {
-  display: inline-block;
-  white-space: nowrap;
+.sortBar {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 10px 18px;
+  border-bottom: 1px solid var(--border);
+  color: color-mix(in srgb, var(--text) 70%, transparent);
+  font-family: var(--heading);
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.sortButton {
+  appearance: none;
+  border: 0;
+  border-radius: 4px;
+  padding: 0.3rem 0.5rem;
+  background: transparent;
+  color: color-mix(in srgb, var(--text) 70%, transparent);
+  font: inherit;
+  cursor: pointer;
+}
+.sortButton:hover,
+.sortButtonActive {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: var(--accent);
+}
+.sortButton:focus-visible,
+.findingToggle:focus-visible,
+.findingDetails:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+.findings {
+  display: grid;
+}
+.finding {
+  border-bottom: 1px solid var(--border);
+}
+.findingToggle {
+  appearance: none;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  border: 0;
+  padding: 13px 18px 9px;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+.findingDetails {
+  appearance: none;
+  display: grid;
+  grid-template-columns: minmax(13rem, 1fr) minmax(20rem, 1.35fr);
+  grid-template-areas: 'footer comparison';
+  gap: 0.45rem 1.5rem;
+  width: 100%;
+  border: 0;
+  padding: 0 18px 14px;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+.finding:hover,
+.findingSelected {
+  background: color-mix(in srgb, var(--accent) 7%, transparent);
+}
+.variationName {
+  flex: 1;
+  font-family: var(--heading);
+  font-size: 0.95rem;
+  font-weight: 650;
+  line-height: 1.35;
+}
+.status {
+  flex: 0 0 auto;
+  border: 1px solid color-mix(in srgb, var(--diagnostic-color) 45%, transparent);
+  border-radius: 999px;
+  padding: 0.18rem 0.48rem;
+  color: var(--diagnostic-color);
+  font-family: var(--heading);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.collapseIcon {
+  flex: 0 0 1.1rem;
+  color: color-mix(in srgb, var(--text) 72%, transparent);
+  font-family: var(--mono);
+  font-size: 0.9rem;
+  text-align: center;
+}
+.comparison {
+  grid-area: comparison;
+  display: grid;
+  grid-template-columns: max-content 1.4rem max-content;
+  align-items: center;
+  justify-content: start;
+  gap: 0.4rem;
+  font-family: var(--mono);
+}
+.actual {
+  display: grid;
+  gap: 0.08rem;
+  color: var(--text);
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+.actual small,
+.expected small {
+  color: color-mix(in srgb, var(--text) 82%, transparent);
+  font-family: var(--heading);
+  font-size: 0.62rem;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+.arrow {
+  color: var(--accent);
+  font-size: 1.35rem;
+  font-weight: 800;
+  line-height: 1;
+  text-align: center;
+}
+.expected {
+  display: grid;
+  gap: 0.05rem;
+  color: color-mix(in srgb, var(--text) 72%, transparent);
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+.comparisonContext {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.65rem;
+  color: color-mix(in srgb, var(--text) 72%, transparent);
+  font-family: var(--heading);
+  font-size: 0.72rem;
+  line-height: 1.35;
+}
+.comparisonContext strong {
+  color: var(--text);
+}
+.findingFooter {
+  grid-area: footer;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.8rem;
+  color: color-mix(in srgb, var(--text) 72%, transparent);
+  font-size: 0.75rem;
+  line-height: 1.35;
+}
+.effects::before {
+  content: 'Trains · ';
+  color: var(--text);
+  font-weight: 600;
+}
+.recency strong {
+  color: var(--text);
+}
+
+@media (max-width: 760px) {
+  .findingDetails {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      'comparison'
+      'footer';
+    gap: 0.8rem;
+  }
+  .comparison {
+    grid-template-columns: auto auto auto;
+  }
+  .sortBar {
+    overflow-x: auto;
+  }
 }

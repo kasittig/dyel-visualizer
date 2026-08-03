@@ -10,5 +10,9 @@ export {
   usePipelineVariationRadarData,
   type PipelineVariationRadarData,
 } from './usePipelineVariationRadarData';
-export { usePipelineDiagnostics, type DiagnosticResult } from './usePipelineDiagnostics';
+export {
+  usePipelineDiagnostics,
+  type DiagnosticResult,
+  type DiagnosticRow,
+} from './usePipelineDiagnostics';
 export type { DiagnosticVariant } from '@dyel/api';

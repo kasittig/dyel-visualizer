@@ -6,6 +6,7 @@ export interface DiagnosticVariant {
   lift: string;
   effects: string[];
   status: 'optimal' | 'weakness' | 'overperforming' | 'stale';
+  fittedStatus: 'optimal' | 'weakness' | 'overperforming' | null;
   ratio: number;
   actualE1rmKg: number;
   expectedE1rmKg: number;
@@ -32,6 +33,7 @@ export function selectDiagnosticVariants(
     lift: v.lift,
     effects: v.effects,
     status: v.status,
+    fittedStatus: v.fittedStatus,
     ratio: v.ratio,
     actualE1rmKg: v.actualE1rmKg,
     expectedE1rmKg: v.expectedE1rmKg,
