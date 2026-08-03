@@ -11,11 +11,16 @@ vi.mock('./useTeamSummaryData', () => ({ useTeamSummaryData: vi.fn() }));
 const { useTeamViewData } = await import('../team-view');
 const { useTeamSummaryData } = await import('./useTeamSummaryData');
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
+});
 
 const mockRow = (overrides?: Partial<TeamSummaryRow>): TeamSummaryRow => ({
-  lifterName: 'John Doe',
-  url: 'https://example.com/john-doe',
+  lifterName: overrides?.lifterName ?? 'John Doe',
+  url:
+    overrides?.url ??
+    `https://example.com/${encodeURIComponent(overrides?.lifterName ?? 'John Doe')}`,
   hasData: true,
   squatDisplay: '300 lbs',
   benchDisplay: '225 lbs',
@@ -41,6 +46,13 @@ const mockSummaryData = (overrides?: Partial<SummaryData>): SummaryData => ({
   setDateRange: vi.fn(),
   ...overrides,
 });
+
+const useMobileViewport = () =>
+  vi.stubGlobal('matchMedia', () => ({
+    matches: true,
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+  }));
 
 describe('TeamSummaryPage', () => {
   beforeEach(() => {
@@ -287,5 +299,67 @@ describe('TeamSummaryPage', () => {
     const sortedRows = screen.getAllByRole('row');
     expect(sortedRows[1].textContent).toContain('Zoe');
     expect(sortedRows[2].textContent).toContain('Alice');
+  });
+
+  it('expands one mobile summary card at a time', () => {
+    useMobileViewport();
+    vi.mocked(useTeamViewData).mockReturnValue({ status: 'success', data: [] });
+    vi.mocked(useTeamSummaryData).mockReturnValue(
+      mockSummaryData({
+        rows: [
+          mockRow({ lifterName: 'Alice', lastSetDisplay: 'Alice last set' }),
+          mockRow({ lifterName: 'Bob', lastSetDisplay: 'Bob last set' }),
+        ],
+      })
+    );
+    render(<TeamSummaryPage />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Show details for Alice' }));
+    expect(screen.getByText('Alice last set')).toBeDefined();
+    expect(screen.getByRole('button', { name: 'Hide details for Alice' })).toBeDefined();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Show details for Bob' }));
+    expect(screen.queryByText('Alice last set')).toBeNull();
+    expect(screen.getByText('Bob last set')).toBeDefined();
+  });
+
+  it('sorts the mobile cards from the compact sort control', () => {
+    useMobileViewport();
+    vi.mocked(useTeamViewData).mockReturnValue({ status: 'success', data: [] });
+    vi.mocked(useTeamSummaryData).mockReturnValue(
+      mockSummaryData({
+        rows: [
+          mockRow({ lifterName: 'Alice', total: 900 }),
+          mockRow({ lifterName: 'Bob', total: 800 }),
+        ],
+      })
+    );
+    render(<TeamSummaryPage />);
+
+    fireEvent.change(screen.getByLabelText('Sort by'), { target: { value: 'Total' } });
+    expect(
+      screen.getByLabelText('Team summary cards').querySelector('article:first-child')?.textContent
+    ).toContain('Bob');
+  });
+
+  it('keeps duplicate lifter names independently identified by source URL', () => {
+    useMobileViewport();
+    vi.mocked(useTeamViewData).mockReturnValue({ status: 'success', data: [] });
+    vi.mocked(useTeamSummaryData).mockReturnValue(
+      mockSummaryData({
+        rows: [
+          mockRow({ lifterName: 'Alex', url: 'https://example.com/alex-a' }),
+          mockRow({ lifterName: 'Alex', url: 'https://example.com/alex-b' }),
+        ],
+      })
+    );
+
+    render(<TeamSummaryPage />);
+
+    const toggles = screen.getAllByRole('button', { name: 'Show details for Alex' });
+    expect(toggles).toHaveLength(2);
+    expect(toggles[0].getAttribute('aria-controls')).not.toBe(
+      toggles[1].getAttribute('aria-controls')
+    );
   });
 });

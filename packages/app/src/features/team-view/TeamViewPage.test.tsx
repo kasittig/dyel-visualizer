@@ -13,7 +13,10 @@ vi.mock('./useTeamViewSelection', () => ({ useTeamViewSelection: vi.fn() }));
 const { useTeamViewData } = await import('./useTeamViewData');
 const { useTeamViewSelection } = await import('./useTeamViewSelection');
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
+});
 
 const mockAthlete: AthleteContext = { sex: 'M', bodyweight: 90 };
 const mockPipelineModel = (overrides?: Partial<PipelineModel>): PipelineModel => ({
@@ -48,8 +51,10 @@ const mockLifterResult = (
 
 const mockRow = (overrides?: Partial<TeamViewRow>): TeamViewRow =>
   ({
-    lifterName: 'John Doe',
-    url: 'https://example.com/john-doe',
+    lifterName: overrides?.lifterName ?? 'John Doe',
+    url:
+      overrides?.url ??
+      `https://example.com/${encodeURIComponent(overrides?.lifterName ?? 'John Doe')}`,
     e1rmDisplay: '225 lbs',
     e1rmProjectedDisplay: null,
     e1rmSourceLabel: null,
@@ -117,6 +122,13 @@ const mockSelection = (overrides?: Partial<SelectionState>): SelectionState => (
   historySessionDates: [],
   ...overrides,
 });
+
+const useMobileViewport = () =>
+  vi.stubGlobal('matchMedia', () => ({
+    matches: true,
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+  }));
 
 describe('TeamViewPage', () => {
   beforeEach(() => {
@@ -739,5 +751,37 @@ describe('TeamViewPage', () => {
 
     // Chart should be hidden
     expect(screen.queryByText('History Across Lifters')).toBeNull();
+  });
+
+  it('focuses mobile editing on the selected lifter', () => {
+    useMobileViewport();
+    vi.mocked(useTeamViewData).mockReturnValue({
+      status: 'success',
+      data: [mockLifterResult('Alice'), mockLifterResult('Bob')],
+    });
+    vi.mocked(useTeamViewSelection).mockReturnValue(
+      mockSelection({
+        selectedCanonical: 'bench-classic',
+        selectedDisplayName: 'Bench Press',
+        rows: [
+          mockRow({ lifterName: 'Alice' }),
+          mockRow({ lifterName: 'Bob', effectiveDisplayName: 'Squat' }),
+        ],
+      })
+    );
+    render(<TeamViewPage />);
+
+    fireEvent.change(screen.getByRole('combobox', { name: 'Lifter' }), {
+      target: { value: 'https://example.com/Bob' },
+    });
+    const focusedEditor = screen.getByRole('region', {
+      name: 'Focused lifter programming',
+    });
+    expect(focusedEditor.querySelector('article')?.textContent).toContain('Bob');
+    expect(focusedEditor.querySelector('article')?.textContent).not.toContain('Alice');
+    expect(
+      (focusedEditor.querySelector('input[placeholder="Search exercise..."]') as HTMLInputElement)
+        .value
+    ).toBe('Squat');
   });
 });
