@@ -56,6 +56,7 @@ describe('derivers logic suites', () => {
   it('evaluates specific e1rm-max-effort speed-work exceptions and null boundaries', () => {
     const meCases: [string, TaggedSetRecord[], number][] = [
       ['returns effort alongside speed-work', [mockSet(100, 1, 1), mockSet(85, 3, 9)], 100],
+      ['ignores sets above five reps', [mockSet(100, 5), mockSet(110, 6)], 100 * (1 + 5 / 30)],
       [
         'trusts explicit RPE at 2+ sets',
         [mockSet(85, 3, 9), mockSet(120, 1, 3, 9)],
@@ -67,6 +68,7 @@ describe('derivers logic suites', () => {
     );
 
     expect(derivers['e1rm-max-effort'].derive([mockSet(85, 3, 9), mockSet(90, 3, 10)])).toBeNull();
+    expect(derivers['e1rm-max-effort'].derive([mockSet(100, 6, 1, 10)])).toBeNull();
     expect(derivers['e1rm-max-effort'].derive([])).toBeNull();
   });
 });

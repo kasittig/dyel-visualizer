@@ -12,6 +12,7 @@ export interface SeriesDeriver {
 // set count. Exclude everything else from e1rm derivation unless a day has nothing but
 // speed-work sets.
 const SPEED_WORK_SET_THRESHOLD = 2;
+const MAX_EFFORT_REPS = 5;
 export const isSpeedWork = (s: TaggedSetRecord) =>
   s.rpe === undefined && Number(s.meta?.sets ?? 1) >= SPEED_WORK_SET_THRESHOLD;
 
@@ -27,7 +28,7 @@ export const derivers: Record<string, SeriesDeriver> = {
   'e1rm-max-effort': {
     id: 'e1rm-max-effort',
     derive: (sets) => {
-      const effortSets = sets.filter((s) => !isSpeedWork(s));
+      const effortSets = sets.filter((s) => s.reps <= MAX_EFFORT_REPS && !isSpeedWork(s));
       return effortSets.length
         ? Math.max(...effortSets.map((s) => calcE1RM(s.weight, s.reps, s.rpe)))
         : null;
