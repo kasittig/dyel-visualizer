@@ -210,12 +210,12 @@ a {
 /* The desktop-style interface remains active on tablets. Give its interactive controls the
    same minimum hit area as the mobile interface without changing either breakpoint's layout. */
 @media (min-width: 641px) and (max-width: 1024px) {
-  :where(button, [role='button'], input, select, textarea) {
+  :where(button, [role='button'], a[href], input, select, textarea) {
     min-width: var(--touch-target);
     min-height: var(--touch-target);
   }
 
-  :where([role='button']:not(button)) {
+  :where([role='button']:not(button), a[href]) {
     display: inline-flex;
     align-items: center;
     justify-content: center;

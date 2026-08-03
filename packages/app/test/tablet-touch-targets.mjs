@@ -55,7 +55,7 @@ try {
       const page = await context.newPage();
       await page.goto(`${baseUrl}${path}`, { waitUntil: 'networkidle' });
       const undersized = await page.evaluate(() =>
-        [...document.querySelectorAll("button, [role='button'], input, select, textarea")]
+        [...document.querySelectorAll("button, [role='button'], a[href], input, select, textarea")]
           .filter((element) => {
             const style = getComputedStyle(element);
             return (
