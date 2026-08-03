@@ -24,10 +24,9 @@ repository's real training-log fixture.
 - **No sessions:** returns `null`.
 - **Floor:** all predictions are clamped to a minimum of 0.
 
-`projectE1RMToDateBayesian` is an experimental log-space local-level state-space model. It returns
-a posterior estimate, 95% credible interval, standard deviation, and sample count. It improved on
-linear extrapolation in the fixture backtest, but did not beat carrying the latest observation
-forward, so it is not the production default.
+The backtest also contains a private Bayesian local-level candidate. It improved on linear
+extrapolation but did not beat carrying the latest observation forward, so it is deliberately not
+part of the production or public API.
 
 Each session's e1RM is the best (highest) e1RM across all sets on that date, computed with the Epley formula (`weight × (1 + reps / 30)`, RPE-adjusted when present — see `derive/e1rm.ts`'s `calcE1RM`). `projectE1RMToDate(points, targetDate)` (`packages/pipeline/src/derive/normalize.ts`) takes already-derived `{t, v}` points (e.g. from the pipeline's `e1rm` deriver) rather than raw sessions directly, but is otherwise an unchanged, pure port of legacy's algorithm — same edge-extrapolation behavior, same interpolation.
 

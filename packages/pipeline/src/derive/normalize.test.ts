@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { fitNormalizationModel, projectE1RMToDateBayesian } from './normalize';
+import { fitNormalizationModel } from './normalize';
 import type { TaggedSetRecord } from '../tag/tag';
 
 const d = (n: number) => Date.UTC(2024, 0, n);
@@ -37,33 +37,6 @@ const hist = [
     r(d(n), 'squat-chains', 140 + n, ['lift:squat', 'addl:chains', 'variation']),
   ]),
 ];
-
-describe('projectE1RMToDateBayesian', () => {
-  it('smooths noisy sessions and widens uncertainty with time', () => {
-    const points = [
-      { t: d(1), v: 100 },
-      { t: d(8), v: 110 },
-      { t: d(15), v: 101 },
-    ];
-    const current = projectE1RMToDateBayesian(points, d(15))!;
-    const stale = projectE1RMToDateBayesian(points, d(45))!;
-
-    expect(current.value).toBeGreaterThan(101);
-    expect(current.value).toBeLessThan(110);
-    expect(current.lower).toBeLessThan(current.value);
-    expect(current.upper).toBeGreaterThan(current.value);
-    expect(stale.value).toBeCloseTo(current.value);
-    expect(stale.upper - stale.lower).toBeGreaterThan(current.upper - current.lower);
-    expect(current.sampleCount).toBe(3);
-  });
-
-  it.each([
-    ['empty', [], null],
-    ['ignores future evidence', [{ t: d(2), v: 100 }], null],
-  ])('%s history', (_, points, expected) => {
-    expect(projectE1RMToDateBayesian(points, d(1))).toBe(expected);
-  });
-});
 
 describe('fitNormalizationModel core & preferences', () => {
   it('handles core modeling constraints', () => {

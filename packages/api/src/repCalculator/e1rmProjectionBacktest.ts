@@ -1,12 +1,32 @@
 import type { Point, TaggedSetRecord } from '@dyel/pipeline';
-import {
-  derivers,
-  fitNormalizationModel,
-  projectE1RMToDate,
-  projectE1RMToDateBayesian,
-} from '@dyel/pipeline';
+import { derivers, fitNormalizationModel, projectE1RMToDate } from '@dyel/pipeline';
 import { resolveE1RMEstimate, resolveFamilyRecentE1RMEstimate } from './repCalculatorUtils';
 import { canonicalLiftType } from '../exerciseUtils';
+
+// Backtest-only Bayesian local-level model. Keep candidate estimators private until they beat
+// the production baseline and have a user-facing uncertainty design.
+const projectBayesian = (points: Point[], targetDate: number): number | null => {
+  const grid = points
+    .filter((point) => point.v > 0 && point.t <= targetDate)
+    .sort((a, b) => a.t - b.t);
+  if (!grid.length) {
+    return null;
+  }
+  const observationVariance = 0.04 ** 2;
+  const dailyProcessVariance = 0.0025 ** 2;
+  let mean = Math.log(grid[0].v);
+  let variance = observationVariance;
+  let previousDate = grid[0].t;
+  for (let i = 1; i < grid.length; i += 1) {
+    const point = grid[i];
+    variance += Math.max(0, (point.t - previousDate) / 86_400_000) * dailyProcessVariance;
+    const gain = variance / (variance + observationVariance);
+    mean += gain * (Math.log(point.v) - mean);
+    variance *= 1 - gain;
+    previousDate = point.t;
+  }
+  return Math.exp(mean);
+};
 
 export interface BacktestEvent {
   canonical: string;
@@ -87,7 +107,7 @@ export function runE1RMProjectionBacktest(
       ? ownPoints.reduce((latest, point) => (point.t > latest.t ? point : latest)).v
       : null;
     const predictedLinear = projectE1RMToDate(ownPoints, date);
-    const predictedBayesian = projectE1RMToDateBayesian(ownPoints, date)?.value ?? null;
+    const predictedBayesian = projectBayesian(ownPoints, date);
 
     const predictedBaseline = canProject
       ? (resolveE1RMEstimate({
