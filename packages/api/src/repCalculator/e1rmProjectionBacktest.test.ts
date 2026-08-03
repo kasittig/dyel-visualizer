@@ -29,9 +29,14 @@ describe('runE1RMProjectionBacktest', () => {
     expect(summary.maeBaseline).toBeGreaterThanOrEqual(0);
     expect(Number.isFinite(summary.maeFamilyRecent)).toBe(true);
     expect(summary.maeFamilyRecent).toBeGreaterThanOrEqual(0);
+    expect(summary.maeLatest).toBeLessThan(summary.maeLinear);
+    expect(summary.maeBayesian).toBeLessThan(summary.maeLinear);
 
     // Print readable summary table
     console.table({
+      'MAE (Latest)': summary.maeLatest.toFixed(2),
+      'MAE (Linear)': summary.maeLinear.toFixed(2),
+      'MAE (Bayesian)': summary.maeBayesian.toFixed(2),
       'MAE (Baseline)': summary.maeBaseline.toFixed(2),
       'MAE (Family Recent)': summary.maeFamilyRecent.toFixed(2),
       'Wins (Baseline)': summary.winsBaseline,

@@ -1,5 +1,5 @@
 import type { Point, NormalizationModel } from '@dyel/pipeline';
-import { invertE1RM, projectE1RMToDate } from '@dyel/pipeline';
+import { invertE1RM } from '@dyel/pipeline';
 import { convertWeight } from '../weightUnit';
 import { canonicalLiftType } from '../exerciseUtils';
 
@@ -30,12 +30,10 @@ export function findBestE1RMFromPipeline(
   if (!baselineSourceName || !baselineE1RMPoints.length) {
     return null;
   }
-  const compE1RM = projectE1RMToDate(baselineE1RMPoints, today.getTime());
-  if (compE1RM === null) {
-    return null;
-  }
-
   const lastPoint = baselineE1RMPoints.reduce((acc, p) => (p.t > acc.t ? p : acc));
+  // Walk-forward validation shows that carrying the latest valid observation forward is
+  // materially more accurate than extending the slope of the last two noisy sessions.
+  const compE1RM = lastPoint.v;
   const sourceDate = new Date(lastPoint.t);
   const daysForward = Math.max(
     0,
@@ -101,13 +99,8 @@ export function findMostRecentFamilyE1RM(
     return null;
   }
 
-  const sourcePoints = byCanonical.get(mostRecentCanonical)!;
-  const projectedE1RM = projectE1RMToDate(sourcePoints, today.getTime());
-  if (projectedE1RM === null) {
-    return null;
-  }
-
   const sourceDate = new Date(mostRecentPoint.t);
+  const projectedE1RM = mostRecentPoint.v;
   const daysForward = Math.max(
     0,
     Math.round((today.getTime() - sourceDate.getTime()) / 86_400_000)

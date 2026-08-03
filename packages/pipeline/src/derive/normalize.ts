@@ -22,6 +22,14 @@ interface GridPoint {
   v: number;
 }
 
+export interface E1RMProjection {
+  value: number;
+  lower: number;
+  upper: number;
+  standardDeviation: number;
+  sampleCount: number;
+}
+
 const mean = (xs: number[]): number => xs.reduce((a, b) => a + b, 0) / xs.length;
 
 const buildSessionGrid = (recs: TaggedSetRecord[]): GridPoint[] => {
@@ -239,3 +247,42 @@ export const projectE1RMToDate = (
   points: { t: number; v: number }[],
   targetDate: number
 ): number | null => interpolateGrid(buildGridFromPoints(points), targetDate);
+
+// A local-level Bayesian state-space model in log-strength space. Each session is noisy
+// evidence of latent strength; uncertainty grows between sessions and contracts when new
+// evidence arrives. Log space keeps estimates positive and makes noise proportional to strength.
+export const projectE1RMToDateBayesian = (
+  points: { t: number; v: number }[],
+  targetDate: number,
+  opts?: { observationSigma?: number; dailyProcessSigma?: number }
+): E1RMProjection | null => {
+  const grid = buildGridFromPoints(points).filter((point) => point.v > 0 && point.t <= targetDate);
+  if (!grid.length) {
+    return null;
+  }
+
+  const observationVariance = (opts?.observationSigma ?? 0.04) ** 2;
+  const dailyProcessVariance = (opts?.dailyProcessSigma ?? 0.0025) ** 2;
+  let mean = Math.log(grid[0].v);
+  let variance = observationVariance;
+  let previousDate = grid[0].t;
+
+  for (let i = 1; i < grid.length; i += 1) {
+    const point = grid[i];
+    variance += Math.max(0, (point.t - previousDate) / 86_400_000) * dailyProcessVariance;
+    const gain = variance / (variance + observationVariance);
+    mean += gain * (Math.log(point.v) - mean);
+    variance *= 1 - gain;
+    previousDate = point.t;
+  }
+
+  variance += Math.max(0, (targetDate - previousDate) / 86_400_000) * dailyProcessVariance;
+  const standardDeviation = Math.sqrt(variance);
+  return {
+    value: Math.exp(mean),
+    lower: Math.exp(mean - 1.96 * standardDeviation),
+    upper: Math.exp(mean + 1.96 * standardDeviation),
+    standardDeviation: Math.exp(mean) * standardDeviation,
+    sampleCount: grid.length,
+  };
+};

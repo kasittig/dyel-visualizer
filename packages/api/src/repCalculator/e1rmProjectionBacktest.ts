@@ -1,5 +1,10 @@
 import type { Point, TaggedSetRecord } from '@dyel/pipeline';
-import { derivers, fitNormalizationModel } from '@dyel/pipeline';
+import {
+  derivers,
+  fitNormalizationModel,
+  projectE1RMToDate,
+  projectE1RMToDateBayesian,
+} from '@dyel/pipeline';
 import { resolveE1RMEstimate, resolveFamilyRecentE1RMEstimate } from './repCalculatorUtils';
 import { canonicalLiftType } from '../exerciseUtils';
 
@@ -7,12 +12,18 @@ export interface BacktestEvent {
   canonical: string;
   date: number;
   actualE1RM: number;
+  predictedLatest: number | null;
+  predictedLinear: number | null;
+  predictedBayesian: number | null;
   predictedBaseline: number | null;
   predictedFamilyRecent: number | null;
 }
 
 export interface BacktestSummary {
   events: BacktestEvent[];
+  maeLatest: number;
+  maeLinear: number;
+  maeBayesian: number;
   maeBaseline: number;
   maeFamilyRecent: number;
   winsBaseline: number;
@@ -27,6 +38,10 @@ export function runE1RMProjectionBacktest(
 ): BacktestSummary {
   const minLookbackRecords = opts?.minLookbackRecords ?? 5;
   const events: BacktestEvent[] = [];
+  let latestErrorSum = 0;
+  let linearErrorSum = 0;
+  let bayesianErrorSum = 0;
+  let ownPredictionCount = 0;
   let baselineErrorSum = 0;
   let baselineErrorCount = 0;
   let familyErrorSum = 0;
@@ -50,16 +65,14 @@ export function runE1RMProjectionBacktest(
     // Refit model with truncated data
     const truncatedModel = fitNormalizationModel(truncatedTagged, { minSamples: 1 });
 
-    // Re-derive truncated e1rm-max-effort points from truncated data
-    const dayGroups = Map.groupBy(
-      truncatedTagged.filter((r) => r.canonical === canonical),
-      (r) => r.date
-    );
+    // Re-derive every historical family point. The former harness filtered to the target
+    // canonical here, which made the family-recent strategy incapable of seeing its family.
+    const dayGroups = Map.groupBy(truncatedTagged, (r) => `${r.canonical}:${r.date}`);
     const truncatedE1RMPoints: Point[] = Array.from(dayGroups.values())
       .map((daySets) => {
         const v = derivers['e1rm-max-effort'].derive(daySets);
         return v !== null
-          ? { t: daySets[0].date, v, series: canonical, tags: daySets[0].tags }
+          ? { t: daySets[0].date, v, series: daySets[0].canonical, tags: daySets[0].tags }
           : null;
       })
       .filter((p): p is Point => p !== null);
@@ -67,8 +80,14 @@ export function runE1RMProjectionBacktest(
     // Derive the target canonical's own lift-type family directly from its name, rather than
     // sampling an arbitrary record's tags (which may belong to an unrelated lift entirely).
     const liftTypeValue = canonicalLiftType(canonical);
-    const canProject = truncatedE1RMPoints.length > 0 && liftTypeValue !== 'accessory';
+    const ownPoints = truncatedE1RMPoints.filter((point) => point.series === canonical);
+    const canProject = ownPoints.length > 0 && liftTypeValue !== 'accessory';
     const today = new Date(date);
+    const predictedLatest = ownPoints.length
+      ? ownPoints.reduce((latest, point) => (point.t > latest.t ? point : latest)).v
+      : null;
+    const predictedLinear = projectE1RMToDate(ownPoints, date);
+    const predictedBayesian = projectE1RMToDateBayesian(ownPoints, date)?.value ?? null;
 
     const predictedBaseline = canProject
       ? (resolveE1RMEstimate({
@@ -91,7 +110,23 @@ export function runE1RMProjectionBacktest(
         )?.e1rm ?? null)
       : null;
 
-    events.push({ canonical, date, actualE1RM, predictedBaseline, predictedFamilyRecent });
+    events.push({
+      canonical,
+      date,
+      actualE1RM,
+      predictedLatest,
+      predictedLinear,
+      predictedBayesian,
+      predictedBaseline,
+      predictedFamilyRecent,
+    });
+
+    if (predictedLatest !== null && predictedLinear !== null && predictedBayesian !== null) {
+      latestErrorSum += Math.abs(predictedLatest - actualE1RM);
+      linearErrorSum += Math.abs(predictedLinear - actualE1RM);
+      bayesianErrorSum += Math.abs(predictedBayesian - actualE1RM);
+      ownPredictionCount += 1;
+    }
 
     // Accumulate errors and, when both predictions are available, tally which one won.
     if (predictedBaseline !== null) {
@@ -121,6 +156,9 @@ export function runE1RMProjectionBacktest(
 
   return {
     events,
+    maeLatest: ownPredictionCount > 0 ? latestErrorSum / ownPredictionCount : 0,
+    maeLinear: ownPredictionCount > 0 ? linearErrorSum / ownPredictionCount : 0,
+    maeBayesian: ownPredictionCount > 0 ? bayesianErrorSum / ownPredictionCount : 0,
     maeBaseline,
     maeFamilyRecent,
     winsBaseline,

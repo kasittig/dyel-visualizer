@@ -26,7 +26,7 @@ export type {
 export type { SeriesDeriver } from './derive/derivers';
 export { derivers, isSpeedWork } from './derive/derivers';
 export { calcE1RM, invertE1RM } from './derive/e1rm';
-export type { NormalizationModel } from './derive/normalize';
+export type { E1RMProjection, NormalizationModel } from './derive/normalize';
 export {
   fitNormalizationModel,
   normalizeE1rm,
@@ -34,6 +34,7 @@ export {
   offsetAdjustRecords,
   buildGridFromPoints,
   projectE1RMToDate,
+  projectE1RMToDateBayesian,
 } from './derive/normalize';
 export type { AthleteContext } from './derive/athlete';
 export { wilks, dots } from './derive/athlete';
