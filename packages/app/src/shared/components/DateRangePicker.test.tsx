@@ -108,7 +108,7 @@ describe('DateRangePicker', () => {
     );
 
     const presets = screen.getByLabelText('Date range presets');
-    expect(within(presets).getByRole('button', { name: '2 WKS' }).getAttribute('aria-pressed')).toBe(
+    expect(within(presets).getByRole('button', { name: '2 weeks' }).getAttribute('aria-pressed')).toBe(
       'true'
     );
     expect(within(presets).getByRole('button', { name: 'Custom' })).toBeDefined();
