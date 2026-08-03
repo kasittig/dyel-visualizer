@@ -3,6 +3,7 @@ import type { RawInput } from '@dyel/api';
 export interface CachedSheetData {
   sheetKey: string;
   raw: RawInput[];
+  updatedAt?: string;
 }
 
 export function serializeSheetCache(data: CachedSheetData): string {

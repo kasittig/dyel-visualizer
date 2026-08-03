@@ -13,6 +13,9 @@ const props = (overrides: Record<string, unknown> = {}) => ({
   showUrlPanel: false,
   url: 'https://docs.google.com/spreadsheets/d/casey/pubhtml',
   loaded: true,
+  refreshStatus: 'success' as const,
+  lastUpdatedAt: new Date('2026-08-02T14:30:00Z'),
+  isUsingCachedData: false,
   invalidUrl: false,
   onUrlChange: vi.fn(),
   onForceOpen: vi.fn(),
@@ -76,6 +79,50 @@ describe('SheetUrlPanel mobile settings', () => {
     expect(within(dialog).getByRole('link', { name: 'Validate training log' })).toBeTruthy();
     expect(within(dialog).getByRole('link', { name: 'View team' })).toBeTruthy();
     expect(within(dialog).getByRole('link', { name: 'Help & conjugate method' })).toBeTruthy();
+  });
+
+  it('prevents duplicate refresh requests and announces progress', () => {
+    const input = props({ showUrlPanel: true, refreshStatus: 'loading', lastUpdatedAt: null });
+    render(<SheetUrlPanel {...input} />);
+    const refresh = within(screen.getByRole('dialog')).getByRole('button', {
+      name: 'Refreshing sheet data…',
+    });
+
+    expect((refresh as HTMLButtonElement).disabled).toBe(true);
+    expect(within(screen.getByRole('dialog')).getByRole('status').textContent).toContain(
+      'Refreshing sheet data…'
+    );
+    fireEvent.click(refresh);
+    expect(input.onRefresh).not.toHaveBeenCalled();
+  });
+
+  it('shows a nearby refresh error with a retry action', () => {
+    const input = props({ showUrlPanel: true, refreshStatus: 'error' });
+    render(<SheetUrlPanel {...input} />);
+    const dialog = screen.getByRole('dialog');
+
+    expect(within(dialog).getByRole('alert').textContent).toContain('Refresh failed');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Try again' }));
+    expect(input.onRefresh).toHaveBeenCalledOnce();
+  });
+
+  it.each([
+    ['loading', 'Refreshing sheet data… Showing cached data meanwhile.'],
+    ['error', 'Refresh failed. Showing cached data.'],
+  ] as const)('labels cached data while refresh is %s', (refreshStatus, message) => {
+    render(
+      <SheetUrlPanel {...props({ showUrlPanel: true, refreshStatus, isUsingCachedData: true })} />
+    );
+
+    expect(within(screen.getByRole('dialog')).getByText(new RegExp(message))).toBeTruthy();
+  });
+
+  it('reports the last successful update time', () => {
+    render(<SheetUrlPanel {...props({ showUrlPanel: true })} />);
+
+    const status = within(screen.getByRole('dialog')).getByRole('status');
+    expect(status.textContent).toContain('Updated');
+    expect(status.querySelector('time')?.dateTime).toBe('2026-08-02T14:30:00.000Z');
   });
 
   it('closes without navigating and restores control to the working screen', () => {

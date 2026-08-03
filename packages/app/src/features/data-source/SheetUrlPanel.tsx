@@ -23,6 +23,55 @@ interface SettingsContentProps {
   onTextChange: (v: string) => void;
 }
 
+type RefreshStatus = 'idle' | 'loading' | 'success' | 'error';
+
+function RefreshFeedback({
+  status,
+  lastUpdatedAt,
+  isUsingCachedData,
+  onRefresh,
+}: {
+  status: RefreshStatus;
+  lastUpdatedAt: Date | null;
+  isUsingCachedData: boolean;
+  onRefresh: () => void;
+}) {
+  if (status === 'idle' && !lastUpdatedAt) {
+    return null;
+  }
+
+  return (
+    <span
+      className={`${styles.refreshFeedback} ${status === 'error' ? styles.refreshError : ''}`}
+      role={status === 'error' ? 'alert' : 'status'}
+      aria-live={status === 'error' ? 'assertive' : 'polite'}
+    >
+      {status === 'loading' ? (
+        <span>
+          Refreshing sheet data…{isUsingCachedData ? ' Showing cached data meanwhile.' : ''}
+        </span>
+      ) : status === 'error' ? (
+        <>
+          <span>
+            Refresh failed. {isUsingCachedData ? 'Showing cached data. ' : ''}Check your connection
+            and try again.
+          </span>
+          <button type="button" className={styles.retryButton} onClick={onRefresh}>
+            Try again
+          </button>
+        </>
+      ) : lastUpdatedAt ? (
+        <span>
+          Updated{' '}
+          <time dateTime={lastUpdatedAt.toISOString()}>
+            {lastUpdatedAt.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+          </time>
+        </span>
+      ) : null}
+    </span>
+  );
+}
+
 function SettingsContent({
   idPrefix,
   autoFocus,
@@ -136,6 +185,9 @@ export function SheetUrlPanel({
   showUrlPanel,
   url,
   loaded,
+  refreshStatus,
+  lastUpdatedAt,
+  isUsingCachedData,
   invalidUrl,
   onUrlChange,
   onForceOpen,
@@ -149,6 +201,9 @@ export function SheetUrlPanel({
   showUrlPanel: boolean;
   url: string;
   loaded: boolean;
+  refreshStatus: RefreshStatus;
+  lastUpdatedAt: Date | null;
+  isUsingCachedData: boolean;
   invalidUrl: boolean;
   onUrlChange: (v: string) => void;
   onForceOpen: () => void;
@@ -203,6 +258,7 @@ export function SheetUrlPanel({
       {...settingsProps}
     />
   );
+  const refreshing = refreshStatus === 'loading';
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -273,8 +329,12 @@ export function SheetUrlPanel({
                   Change source
                 </button>
                 {loaded && mode === 'url' && (
-                  <button onClick={onRefresh} className={styles.utilityButton}>
-                    <span aria-hidden="true">↻</span> Reload
+                  <button
+                    onClick={onRefresh}
+                    className={styles.utilityButton}
+                    disabled={refreshing}
+                  >
+                    <span aria-hidden="true">↻</span> {refreshing ? 'Refreshing…' : 'Reload'}
                   </button>
                 )}
                 <a href="?page=team" className={styles.utilityButton}>
@@ -285,6 +345,17 @@ export function SheetUrlPanel({
           </div>
           {!showUrlPanel ? (
             <p className={styles.helpLinks}>
+              {loaded && mode === 'url' && (
+                <>
+                  <RefreshFeedback
+                    status={refreshStatus}
+                    lastUpdatedAt={lastUpdatedAt}
+                    isUsingCachedData={isUsingCachedData}
+                    onRefresh={onRefresh}
+                  />
+                  <span aria-hidden="true"> · </span>
+                </>
+              )}
               <a href="?page=conjugate">Help &amp; conjugate method</a>
             </p>
           ) : (
@@ -301,6 +372,14 @@ export function SheetUrlPanel({
                 <a href="?page=team">View team</a>
               </p>
               {settingsContent}
+              {mode === 'url' && (
+                <RefreshFeedback
+                  status={refreshStatus}
+                  lastUpdatedAt={lastUpdatedAt}
+                  isUsingCachedData={isUsingCachedData}
+                  onRefresh={onRefresh}
+                />
+              )}
             </div>
           )}
         </div>
@@ -331,9 +410,23 @@ export function SheetUrlPanel({
           <div className={styles.dialogBody}>
             {settingsContent}
             {loaded && mode === 'url' && (
-              <button type="button" className={styles.refreshAction} onClick={onRefresh}>
-                <span aria-hidden="true">↻</span> Refresh sheet data
+              <button
+                type="button"
+                className={styles.refreshAction}
+                onClick={onRefresh}
+                disabled={refreshing}
+              >
+                <span aria-hidden="true">↻</span>{' '}
+                {refreshing ? 'Refreshing sheet data…' : 'Refresh sheet data'}
               </button>
+            )}
+            {mode === 'url' && (
+              <RefreshFeedback
+                status={refreshStatus}
+                lastUpdatedAt={lastUpdatedAt}
+                isUsingCachedData={isUsingCachedData}
+                onRefresh={onRefresh}
+              />
             )}
             <SettingsLinks valUrl={valUrl} />
           </div>

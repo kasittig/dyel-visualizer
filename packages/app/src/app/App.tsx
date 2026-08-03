@@ -44,6 +44,9 @@ export function App() {
 
   const {
     status: effStatus,
+    requestStatus,
+    lastUpdatedAt,
+    isUsingCachedData,
     model: effModel,
     invalidUrl,
     textValidation,
@@ -97,6 +100,9 @@ export function App() {
         showUrlPanel={showUrlPanel}
         url={url}
         loaded={effStatus === 'success'}
+        refreshStatus={requestStatus}
+        lastUpdatedAt={lastUpdatedAt}
+        isUsingCachedData={isUsingCachedData}
         invalidUrl={invalidUrl}
         onUrlChange={handleUrlChange}
         onForceOpen={() => setPanelForcedOpen(true)}

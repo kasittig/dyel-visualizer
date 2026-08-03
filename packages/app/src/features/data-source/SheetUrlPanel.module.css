@@ -185,10 +185,52 @@
 }
 
 .refreshButton {
-  padding: 0 2px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
   font-size: 1.35rem;
   line-height: 1;
   vertical-align: -0.2em;
+}
+
+.refreshButton:disabled,
+.refreshAction:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.refreshFeedback {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0.25rem;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.refreshError {
+  color: var(--danger);
+}
+
+.retryButton {
+  min-height: 44px;
+  padding: 0 0.65rem;
+  border: 1px solid currentColor;
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+}
+
+.desktopSettings .refreshFeedback {
+  display: flex;
+  justify-content: center;
+  margin-top: 0.75rem;
 }
 
 .urlRow {
@@ -424,6 +466,12 @@
     border: 1px solid var(--accent-border);
     background: var(--accent-bg);
     color: var(--accent);
+  }
+
+  .dialogBody .refreshFeedback {
+    display: flex;
+    justify-content: space-between;
+    margin: 0.75rem 0 0;
   }
 
   .dialogFooter {
