@@ -168,6 +168,8 @@ describe('diagnose evaluations', () => {
       undefined
     ).variants.find((v) => v.canonical === 'bench-chains');
     expect(activeWt?.addlWtOffset?.offsetKg).toBe(11.34);
+    expect(activeWt?.actualE1rmKg).toBe(80);
+    expect(activeWt?.expectedE1rmKg).toBeCloseTo(68.66);
 
     const emptyWt = diagnose(
       [basePt, pt('bench-chains', 80, day(20))],

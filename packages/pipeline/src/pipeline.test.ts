@@ -30,7 +30,7 @@ describe('pipeline orchestration', () => {
   });
 
   it.each(['chains', 'bands'])(
-    'uses %s-adjusted e1RM points in diagnostics exactly once',
+    'compares %s bar-weight e1RM with an offset-adjusted bar-weight expectation',
     (modifier) => {
       const log = `2023-12-31 Bench 110kg x3 @9\n2023-12-31 Bench (${modifier}) 90kg x3 @9\n2024-01-01 Bench 100kg x5 @8\n2024-01-01 Bench (${modifier}) 80kg x5\n2024-01-05 Bench 105kg x5 @8\n2024-01-05 Bench (${modifier}) 85kg x5`;
       const model = runPipelineModel([{ name: 'log.txt', content: log }], ath()) as PipelineModel;
@@ -60,8 +60,16 @@ describe('pipeline orchestration', () => {
       const latestUnadjusted = unadj.reduce((a, b) => (b.t > a.t ? b : a));
       const latestAdjusted = adj.reduce((a, b) => (b.t > a.t ? b : a));
       const diagnostic = model.diagnostics.variants.find((v) => v.canonical === adjustedVariant)!;
-      expect(diagnostic.actualE1rmKg).toBeCloseTo(latestAdjusted.v);
-      expect(diagnostic.actualE1rmKg).not.toBeCloseTo(latestUnadjusted.v);
+      const baselineLatest = model.points
+        .get('e1rm')
+        .filter((p) => p.series === model.model.baseline['lift:bench'])
+        .reduce((a, b) => (b.t > a.t ? b : a));
+      expect(diagnostic.actualE1rmKg).toBeCloseTo(latestUnadjusted.v);
+      expect(diagnostic.actualE1rmKg).not.toBeCloseTo(latestAdjusted.v);
+      expect(diagnostic.expectedE1rmKg).toBeCloseTo(
+        model.model.variantFactor[adjustedVariant].factor * baselineLatest.v -
+          model.model.addlWtOffset[adjustedVariant].offsetKg
+      );
     }
   );
 
