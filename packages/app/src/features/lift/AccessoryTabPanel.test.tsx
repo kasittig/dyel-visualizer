@@ -4,6 +4,11 @@ import { AccessoryTabPanel } from './AccessoryTabPanel';
 import { useAccessoryTable } from './useAccessoryTable';
 
 vi.mock('./useAccessoryTable');
+vi.mock('./AccessoryHistoryChart', () => ({
+  AccessoryHistoryChart: ({ exerciseLabel }: { exerciseLabel: string }) => (
+    <div role="status">Selected: {exerciseLabel}</div>
+  ),
+}));
 vi.mock('../../shared/components', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../shared/components')>();
   return {
@@ -28,6 +33,7 @@ describe('AccessoryTabPanel', () => {
         label: 'Upper',
         rows: [
           {
+            id: 'canonical:chest-supported-row',
             label: 'Chest-supported row',
             effects: [],
             effectsDisplay: '—',
@@ -72,9 +78,10 @@ describe('AccessoryTabPanel', () => {
     expect(screen.queryByText(/e1RM history by variation/)).toBeNull();
   });
 
-  it('keeps the selected accessory available for detail views', () => {
+  it('selects the first in-range accessory initially and synchronizes table clicks', () => {
     render(<AccessoryTabPanel dateRange={dateRange} onDateRangeChange={vi.fn()} unit="lbs" />);
 
+    expect(screen.getByRole('status').textContent).toContain('Selected: Chest-supported row');
     fireEvent.click(screen.getByRole('cell', { name: 'Chest-supported row' }));
     expect(screen.getByRole('status').textContent).toContain('Selected: Chest-supported row');
   });
@@ -93,6 +100,7 @@ describe('AccessoryTabPanel', () => {
         label: 'Upper',
         rows: [
           {
+            id: 'canonical:chest-supported-row',
             label: 'Chest-supported row',
             effects: [],
             effectsDisplay: '—',
@@ -136,11 +144,11 @@ describe('AccessoryTabPanel', () => {
         unit="lbs"
       />
     );
-    expect(screen.queryByRole('status')).toBeNull();
+    expect(screen.getByRole('status').textContent).toContain('Selected: Chest-supported row');
 
     view.rerender(
       <AccessoryTabPanel dateRange={dateRange} onDateRangeChange={vi.fn()} unit="lbs" />
     );
-    expect(screen.queryByRole('status')).toBeNull();
+    expect(screen.getByRole('status').textContent).toContain('Selected: Chest-supported row');
   });
 });

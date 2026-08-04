@@ -1,5 +1,6 @@
 export { LiftTabPanel } from './LiftTabPanel';
 export { AccessoryTabPanel } from './AccessoryTabPanel';
+export { AccessoryHistoryChart } from './AccessoryHistoryChart';
 export { ConjugateCharts } from './ConjugateCharts';
 export { VariationRadarChart } from './VariationRadarChart';
 export { DiagnosticsPanel } from './DiagnosticsPanel';

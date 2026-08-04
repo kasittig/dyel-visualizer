@@ -73,7 +73,7 @@ function SubtypeTable({
             <TableCell as="th" variant="left" {...sortProps('label')}>
               Exercise
             </TableCell>
-            <TableCell as="th" {...sortProps('effects')}>
+            <TableCell as="th" className={styles.effectsHeader} {...sortProps('effects')}>
               Effects
             </TableCell>
             <TableCell as="th" {...sortProps('progress')}>
@@ -92,6 +92,7 @@ function SubtypeTable({
           <tbody>
             {sortedRows.map(
               ({
+                id,
                 label: rLabel,
                 effectsDisplay,
                 progressDisplay,
@@ -102,8 +103,8 @@ function SubtypeTable({
               }) => (
                 <TableRow
                   key={rLabel}
-                  selected={rLabel === highlightedVariation}
-                  onClick={() => onVariationClick?.(rLabel)}
+                  selected={id === highlightedVariation}
+                  onClick={() => onVariationClick?.(id)}
                 >
                   <TableCell variant="left">{rLabel}</TableCell>
                   <TableCell>{effectsDisplay}</TableCell>
