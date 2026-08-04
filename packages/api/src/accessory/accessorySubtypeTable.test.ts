@@ -132,6 +132,17 @@ describe('buildAccessoryTableRows', () => {
         row('Lat Pulldown (Wide Grip)', 'upper', '2026-01-15', 1, 8, 90, 7),
       ],
     ],
+    [
+      'keeps distinct non-ASCII names separate when canonical identity is empty',
+      [
+        rec(d0, '', 10, 20, 7, 'upper', undefined, [], '腕立て伏せ'),
+        rec(d0, '', 12, 30, 8, 'upper', undefined, [], '划船'),
+      ],
+      [
+        row('划船', 'upper', '2026-01-15', 1, 12, 30, 8),
+        row('腕立て伏せ', 'upper', '2026-01-15', 1, 10, 20, 7),
+      ],
+    ],
   ])('%s', (_, input, expected) => {
     // Sort logic inherently verified via grouped assertions
     const result = buildAccessoryTableRows(input);

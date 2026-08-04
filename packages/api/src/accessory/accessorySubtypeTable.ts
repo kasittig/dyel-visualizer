@@ -21,7 +21,11 @@ export function buildAccessoryTableRows(
 ): AccessoryTableRow[] {
   const filtered = tagged.filter((r) => matches(r.tags, { all: ['lift:accessory'] }));
 
-  return Array.from(Map.groupBy(filtered, (r) => r.canonical))
+  return Array.from(
+    Map.groupBy(filtered, (r) =>
+      r.canonical ? `canonical:${r.canonical}` : `raw:${r.meta?.rawExercise ?? r.exercise}`
+    )
+  )
     .reduce<AccessoryTableRow[]>((acc, [, records]) => {
       const lastSession = buildMostRecentSessionDetail(records);
       if (!lastSession) {
