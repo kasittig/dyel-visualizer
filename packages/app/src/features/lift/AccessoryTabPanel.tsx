@@ -55,35 +55,29 @@ function AccessoryTabContent({
   const [selectedAccessory, setSelectedAccessory] = useState<string | null>(null);
 
   return (
-    <section className={styles.panel} aria-labelledby="accessory-work-heading">
-      <header className={styles.intro}>
-        <p className={styles.eyebrow}>Training inventory</p>
-        <h2 id="accessory-work-heading">Accessory work</h2>
+    <section className={styles.panel} aria-labelledby="accessory-inventory-heading">
+      <header className={styles.inventoryHeader}>
+        <div>
+          <h2 id="accessory-inventory-heading">Accessory inventory</h2>
+          <p>
+            {exerciseCount
+              ? `${exerciseCount} exercises · ${sessionCount} sessions in range`
+              : 'No accessory sessions in this range'}
+          </p>
+        </div>
+        <EditableDateChip dateRange={dateRange} onDateRangeChange={onDateRangeChange} />
       </header>
-      <section className={styles.inventory} aria-labelledby="accessory-inventory-heading">
-        <header className={styles.inventoryHeader}>
-          <div>
-            <h3 id="accessory-inventory-heading">Accessory inventory</h3>
-            <p>
-              {exerciseCount
-                ? `${exerciseCount} exercises · ${sessionCount} sessions in range`
-                : 'No accessory sessions in this range'}
-            </p>
-          </div>
-          <EditableDateChip dateRange={dateRange} onDateRangeChange={onDateRangeChange} />
-        </header>
-        <p className={styles.inventoryDescription}>
-          Review what you are training, when you last trained it, and what you want to inspect next.
-        </p>
-        <AccessoryTable
-          groups={groups}
-          hasSessionsInRange={sessionCount > 0}
-          highlightedVariation={selectedAccessory}
-          onVariationClick={(accessory) =>
-            setSelectedAccessory((current) => (current === accessory ? null : accessory))
-          }
-        />
-      </section>
+      <p className={styles.inventoryDescription}>
+        Review what you are training, when you last trained it, and what you want to inspect next.
+      </p>
+      <AccessoryTable
+        groups={groups}
+        hasSessionsInRange={sessionCount > 0}
+        highlightedVariation={selectedAccessory}
+        onVariationClick={(accessory) =>
+          setSelectedAccessory((current) => (current === accessory ? null : accessory))
+        }
+      />
       {exerciseCount === 1 && (
         <p className={styles.lowData}>
           Only one accessory appears in this range. Widen the date range to review more training.
