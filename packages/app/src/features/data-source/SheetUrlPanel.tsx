@@ -20,7 +20,8 @@ interface SettingsContentProps {
   onUrlChange: (v: string) => void;
   onModeChange: (m: InputMode) => void;
   onDraftChange: (v: string) => void;
-  onTextChange: (v: string) => void;
+  onTextChange: (v: string, closePanel?: boolean) => void;
+  isInternalPointerDown: () => boolean;
 }
 
 type RefreshStatus = 'idle' | 'loading' | 'success' | 'error';
@@ -87,6 +88,7 @@ function SettingsContent({
   onModeChange,
   onDraftChange,
   onTextChange,
+  isInternalPointerDown,
 }: SettingsContentProps) {
   const lifterId = `${idPrefix}-sheet-index`;
   const urlId = `${idPrefix}-sheet-url`;
@@ -154,7 +156,16 @@ function SettingsContent({
             id={textId}
             value={draft}
             onChange={(event) => onDraftChange(event.target.value)}
-            onBlur={() => onTextChange(draft)}
+            onBlur={(event) =>
+              onTextChange(
+                draft,
+                !isInternalPointerDown() &&
+                  (!event.relatedTarget ||
+                    !event.currentTarget
+                      .closest('[data-source-settings]')
+                      ?.contains(event.relatedTarget))
+              )
+            }
             placeholder={'comp squat 1rm 300lbs\ncomp bench 1rm 200lbs'}
             className={styles.textArea}
             rows={6}
@@ -212,13 +223,14 @@ export function SheetUrlPanel({
   mode: InputMode;
   onModeChange: (m: InputMode) => void;
   text: string;
-  onTextChange: (v: string) => void;
+  onTextChange: (v: string, closePanel?: boolean) => void;
 }) {
   const indexData = useIndexData();
   const [draft, setDraft] = useState(text);
   const [prevText, setPrevText] = useState(text);
   const [mobileOpen, setMobileOpen] = useState(showUrlPanel);
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const internalPointerDownRef = useRef(false);
   const mobile = useMediaQuery(MOBILE_LAYOUT_QUERY);
 
   if (text !== prevText) {
@@ -250,6 +262,7 @@ export function SheetUrlPanel({
     onModeChange,
     onDraftChange: setDraft,
     onTextChange,
+    isInternalPointerDown: () => internalPointerDownRef.current,
   };
   const settingsContent = (
     <SettingsContent
@@ -259,6 +272,17 @@ export function SheetUrlPanel({
     />
   );
   const refreshing = refreshStatus === 'loading';
+  const internalPointerProps = {
+    onPointerDownCapture: () => {
+      internalPointerDownRef.current = true;
+    },
+    onPointerUpCapture: () => {
+      internalPointerDownRef.current = false;
+    },
+    onPointerCancelCapture: () => {
+      internalPointerDownRef.current = false;
+    },
+  };
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -359,7 +383,7 @@ export function SheetUrlPanel({
               <a href="?page=conjugate">Help &amp; conjugate method</a>
             </p>
           ) : (
-            <div className={styles.desktopSettings}>
+            <div className={styles.desktopSettings} data-source-settings {...internalPointerProps}>
               <p className={styles.subtitle}>
                 {loaded ? (
                   <button onClick={onCancel} className={styles.linkButton}>
@@ -407,7 +431,7 @@ export function SheetUrlPanel({
               <span className={styles.srOnly}>Close data settings</span>
             </button>
           </div>
-          <div className={styles.dialogBody}>
+          <div className={styles.dialogBody} data-source-settings {...internalPointerProps}>
             {settingsContent}
             {loaded && mode === 'url' && (
               <button

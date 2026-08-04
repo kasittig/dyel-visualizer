@@ -174,4 +174,43 @@ describe('SheetUrlPanel mobile settings', () => {
     expect(input.onRefresh).toHaveBeenCalledOnce();
     expect(screen.getByRole('link', { name: 'View team' })).toBeTruthy();
   });
+
+  it.each([
+    ['desktop', false],
+    ['mobile dialog', true],
+  ])('keeps %s settings open when a focused text draft switches to Sheet URL', (_, mobile) => {
+    mobileMatches = mobile;
+    const onTextChange = vi.fn();
+    const onModeChange = vi.fn();
+    render(
+      <SheetUrlPanel
+        {...props({
+          showUrlPanel: true,
+          mode: 'text',
+          text: 'comp squat 1rm 300lbs',
+          onTextChange,
+          onModeChange,
+        })}
+      />
+    );
+    const settings = mobile ? screen.getByRole('dialog') : screen.getByRole('banner');
+    const textarea = within(settings).getByLabelText('Paste exercises (one per line):');
+    const sheetUrlTab = within(settings).getByRole('tab', { name: 'Sheet URL' });
+
+    fireEvent.focus(textarea);
+    fireEvent.pointerDown(sheetUrlTab);
+    fireEvent.blur(textarea, { relatedTarget: null });
+    fireEvent.click(sheetUrlTab);
+    fireEvent.pointerUp(sheetUrlTab);
+
+    expect(onTextChange).toHaveBeenCalledWith('comp squat 1rm 300lbs', false);
+    expect(onModeChange).toHaveBeenCalledWith('url');
+    if (mobile) {
+      expect(screen.getByRole('dialog').hasAttribute('open')).toBe(true);
+    }
+
+    fireEvent.focus(textarea);
+    fireEvent.blur(textarea, { relatedTarget: null });
+    expect(onTextChange).toHaveBeenLastCalledWith('comp squat 1rm 300lbs', true);
+  });
 });

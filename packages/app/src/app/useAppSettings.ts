@@ -94,9 +94,9 @@ export function useAppSettings() {
       setUrl(u);
       tok(true);
     },
-    handleTextChange: (t: string) => {
+    handleTextChange: (t: string, closePanel = true) => {
       setPastedText(t);
-      tok(true);
+      tok(closePanel);
     },
     handleModeChange: (m: InputMode) => {
       setInputMode(m);
