@@ -53,6 +53,7 @@ describe('AccessoryTabPanel', () => {
 
     expect(screen.getByRole('heading', { name: 'Accessory work' })).toBeTruthy();
     expect(screen.getByRole('button', { name: /Accessory inventory/ })).toBeTruthy();
+    expect(screen.getByText(/Review what you are training/)).toBeTruthy();
     expect(screen.getByRole('columnheader', { name: 'Exercise' })).toBeTruthy();
     expect(screen.getByText(/Only one accessory appears in this range/)).toBeTruthy();
     expect(screen.queryByText('Diagnostics')).toBeNull();

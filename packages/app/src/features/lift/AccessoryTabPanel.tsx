@@ -59,9 +59,6 @@ function AccessoryTabContent({
       <header className={styles.intro}>
         <p className={styles.eyebrow}>Training inventory</p>
         <h2 id="accessory-work-heading">Accessory work</h2>
-        <p>
-          Review what you are training, when you last trained it, and what you want to inspect next.
-        </p>
       </header>
       <CollapsibleSection
         label="Accessory inventory"
@@ -73,6 +70,9 @@ function AccessoryTabContent({
         }
         trailing={<EditableDateChip dateRange={dateRange} onDateRangeChange={onDateRangeChange} />}
       >
+        <p className={styles.inventoryDescription}>
+          Review what you are training, when you last trained it, and what you want to inspect next.
+        </p>
         <AccessoryTable
           groups={groups}
           hasSessionsInRange={sessionCount > 0}

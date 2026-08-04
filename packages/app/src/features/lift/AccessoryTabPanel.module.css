@@ -14,8 +14,9 @@
   font-size: clamp(1.35rem, 3vw, 1.8rem);
 }
 
-.intro p:last-child {
-  margin: 0.35rem 0 0;
+.inventoryDescription {
+  max-width: 48rem;
+  margin: 0.65rem 0 0.9rem;
   color: var(--muted);
 }
 
