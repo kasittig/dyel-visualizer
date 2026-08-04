@@ -198,13 +198,19 @@ describe('SheetUrlPanel mobile settings', () => {
     const sheetUrlTab = within(settings).getByRole('tab', { name: 'Sheet URL' });
 
     fireEvent.focus(textarea);
-    fireEvent.blur(textarea, { relatedTarget: sheetUrlTab });
+    fireEvent.pointerDown(sheetUrlTab);
+    fireEvent.blur(textarea, { relatedTarget: null });
     fireEvent.click(sheetUrlTab);
+    fireEvent.pointerUp(sheetUrlTab);
 
     expect(onTextChange).toHaveBeenCalledWith('comp squat 1rm 300lbs', false);
     expect(onModeChange).toHaveBeenCalledWith('url');
     if (mobile) {
       expect(screen.getByRole('dialog').hasAttribute('open')).toBe(true);
     }
+
+    fireEvent.focus(textarea);
+    fireEvent.blur(textarea, { relatedTarget: null });
+    expect(onTextChange).toHaveBeenLastCalledWith('comp squat 1rm 300lbs', true);
   });
 });
