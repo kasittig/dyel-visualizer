@@ -63,6 +63,12 @@
   border-top: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
   font-size: 0.76rem;
 }
+.priorities strong,
+.priorities span,
+.priorities small {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
 .priorities span,
 .priorities small {
   color: color-mix(in srgb, var(--text) 70%, transparent);
@@ -215,10 +221,12 @@
 }
 .variationName {
   flex: 1;
+  min-width: 0;
   font-family: var(--heading);
   font-size: 0.95rem;
   font-weight: 650;
   line-height: 1.35;
+  overflow-wrap: anywhere;
 }
 .status {
   flex: 0 0 auto;
@@ -294,6 +302,7 @@
   font-family: var(--heading);
   font-size: 0.72rem;
   line-height: 1.35;
+  overflow-wrap: anywhere;
 }
 .comparisonContext strong {
   color: var(--text);
@@ -390,9 +399,47 @@
 }
 .needAction {
   color: color-mix(in srgb, var(--text) 72%, transparent);
+  overflow-wrap: anywhere;
 }
 
 @media (max-width: 760px) {
+  .cardPadded,
+  .attention {
+    padding-inline: 14px;
+  }
+  .priorities li {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.18rem;
+  }
+  .priorities small {
+    grid-column: 1;
+  }
+  .findingToggle {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.35rem 0.65rem;
+    padding-inline: 14px;
+  }
+  .variationName {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .staleAge {
+    grid-column: 1;
+    grid-row: 2;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  .status {
+    grid-column: 2;
+    grid-row: 2;
+    justify-self: end;
+  }
+  .collapseIcon {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: end;
+  }
   .findingDetails {
     grid-template-columns: 1fr;
     grid-template-areas:
@@ -400,6 +447,7 @@
       'footer'
       'provenance';
     gap: 0.8rem;
+    padding-inline: 14px;
   }
   .comparison {
     grid-template-columns: auto auto auto;
