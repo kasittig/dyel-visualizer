@@ -181,6 +181,13 @@
   }
 }
 
+@media (min-width: 641px) and (max-width: 900px) {
+  .tab {
+    padding-inline: 0.3rem;
+    font-size: 0.75rem;
+  }
+}
+
 .calculatorRow {
   margin-top: 2.5rem;
   display: flex;
