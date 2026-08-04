@@ -14,7 +14,8 @@ const rec = (
   rpe = 7,
   sub?: string,
   tags?: string[],
-  effects: string[] = []
+  effects: string[] = [],
+  rawExercise?: string
 ): TaggedSetRecord => ({
   date: d.getTime(),
   exercise: name,
@@ -25,10 +26,12 @@ const rec = (
   effects,
   baselineRange: null,
   meta: {
-    rawExercise: name
-      .split('-')
-      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-      .join(' '),
+    rawExercise:
+      rawExercise ??
+      name
+        .split('-')
+        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+        .join(' '),
   },
   tags: new Set(
     tags
@@ -99,6 +102,35 @@ describe('buildAccessoryTableRows', () => {
       'picks most recent date for subtype determination',
       [rec(d1, 'leg-curl', 12, 80, 6, 'lower'), rec(d0, 'leg-curl', 12, 85, 7, 'upper')],
       [row('Leg Curl', 'upper', '2026-01-15', 1, 12, 85, 7, 2)],
+    ],
+    [
+      'groups capitalization and punctuation aliases by canonical identity',
+      [
+        rec(d1, 'lat-pulldown', 10, 90, 7, 'upper', undefined, ['BACK'], 'Lat Pulldown'),
+        rec(d0, 'lat-pulldown', 8, 100, 8, 'upper', undefined, ['LATS'], 'LAT-PULLDOWN'),
+      ],
+      [row('LAT-PULLDOWN', 'upper', '2026-01-15', 1, 8, 100, 8, 2, 2, ['BACK', 'LATS'])],
+    ],
+    [
+      'keeps meaningfully different canonical variants separate',
+      [
+        rec(d0, 'lat-pulldown', 8, 100, 7, 'upper', undefined, [], 'Lat Pulldown'),
+        rec(
+          d0,
+          'lat-pulldown-wide-grip',
+          8,
+          90,
+          7,
+          'upper',
+          undefined,
+          [],
+          'Lat Pulldown (Wide Grip)'
+        ),
+      ],
+      [
+        row('Lat Pulldown', 'upper', '2026-01-15', 1, 8, 100, 7),
+        row('Lat Pulldown (Wide Grip)', 'upper', '2026-01-15', 1, 8, 90, 7),
+      ],
     ],
   ])('%s', (_, input, expected) => {
     // Sort logic inherently verified via grouped assertions
