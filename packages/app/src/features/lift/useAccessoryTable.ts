@@ -4,7 +4,9 @@ import { usePipelineModel } from '../../app/PipelineContext';
 import {
   buildAccessoryTableRows,
   formatEffect,
+  formatLastSessionParts,
   formatLastSessionSummary,
+  formatWeight,
   type AccessoryTableRow,
   type AccessorySubtype,
   type DisplayUnit,
@@ -13,6 +15,8 @@ import {
 export interface AccessoryTableDisplay extends AccessoryTableRow {
   lastPerformedDisplay: string;
   effectsDisplay: string;
+  progressDisplay: string;
+  progressDetailDisplay: string;
 }
 export interface AccessoryTableGroup {
   subtype: AccessorySubtype;
@@ -29,6 +33,51 @@ const SUBTYPE_MAP: Record<string, string> = {
 };
 const SUBTYPE_ORDER: AccessorySubtype[] = ['upper', 'lower', 'core', null];
 
+const STATUS_LABEL: Record<AccessoryTableRow['progress']['status'], string> = {
+  new: 'New',
+  progressing: 'Progressing',
+  flat: 'Flat',
+  regressing: 'Regressing',
+  stale: 'Stale',
+  'insufficient-history': 'More history needed',
+};
+
+function formatProgress(
+  row: AccessoryTableRow,
+  unit: DisplayUnit
+): {
+  summary: string;
+  detail: string;
+} {
+  const { progress } = row;
+  const load = progress.change?.load;
+  const previous = progress.previous
+    ? `vs ${formatLastSessionParts(progress.previous, unit).date}`
+    : 'first session';
+  const best = progress.best ? `best ${formatWeight(progress.best.weight, unit)}` : null;
+  const detail = [previous, best].filter(Boolean).join(' · ');
+  if (load) {
+    return {
+      summary: `${STATUS_LABEL[progress.status]} · ${load > 0 ? '+' : ''}${formatWeight(load, unit)}`,
+      detail,
+    };
+  }
+  const reps = progress.change?.reps;
+  if (reps) {
+    return {
+      summary: `${STATUS_LABEL[progress.status]} · ${reps > 0 ? '+' : ''}${reps} reps`,
+      detail,
+    };
+  }
+  return {
+    summary:
+      progress.status === 'stale'
+        ? `Stale · ${progress.daysSinceLastPerformed}d ago`
+        : STATUS_LABEL[progress.status],
+    detail,
+  };
+}
+
 export function useAccessoryTable(unit: DisplayUnit, dateRange?: DateRange): AccessoryTableGroup[] {
   const { status, model } = usePipelineModel();
 
@@ -38,11 +87,16 @@ export function useAccessoryTable(unit: DisplayUnit, dateRange?: DateRange): Acc
     }
 
     const rows = buildAccessoryTableRows(model.tagged, dateRange?.from, dateRange?.to).map(
-      (row) => ({
-        ...row,
-        lastPerformedDisplay: formatLastSessionSummary(row.lastSession, unit),
-        effectsDisplay: row.effects.length ? row.effects.map(formatEffect).join(', ') : '—',
-      })
+      (row) => {
+        const progress = formatProgress(row, unit);
+        return {
+          ...row,
+          lastPerformedDisplay: formatLastSessionSummary(row.lastSession, unit),
+          effectsDisplay: row.effects.length ? row.effects.map(formatEffect).join(', ') : '—',
+          progressDisplay: progress.summary,
+          progressDetailDisplay: progress.detail,
+        };
+      }
     );
 
     const grouped = Map.groupBy(rows, (row) => row.subtype);

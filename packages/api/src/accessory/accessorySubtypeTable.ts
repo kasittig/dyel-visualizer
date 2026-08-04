@@ -1,6 +1,7 @@
 import { matches, type TaggedSetRecord } from '@dyel/pipeline';
 import { buildMostRecentSessionDetail, type LastSessionDetail } from '../session/lastSessionDetail';
 import { isRecordInDateRange } from '../dateRange/dateRangeUtils';
+import { buildAccessoryProgress, type AccessoryProgress } from './accessoryProgress';
 
 export type AccessorySubtype = 'upper' | 'lower' | 'core' | null;
 export interface AccessoryTableRow {
@@ -10,6 +11,7 @@ export interface AccessoryTableRow {
   lastSession: LastSessionDetail;
   sessionCount: number;
   sessionCountInRange: number;
+  progress: AccessoryProgress;
 }
 
 const SUBTYPES: Exclude<AccessorySubtype, null>[] = ['core', 'upper', 'lower'];
@@ -60,6 +62,7 @@ export function buildAccessoryTableRows(
         lastSession,
         sessionCount: sessionDates.size,
         sessionCountInRange: inRangeSessionDates.size,
+        progress: buildAccessoryProgress(records)!,
       });
       return acc;
     }, [])

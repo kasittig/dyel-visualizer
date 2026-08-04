@@ -17,7 +17,13 @@ interface AccessoryTableProps {
   onVariationClick?: (v: string) => void;
 }
 
-type SortCol = 'label' | 'effects' | 'lastPerformed' | 'sessionCountInRange' | 'sessionCount';
+type SortCol =
+  | 'label'
+  | 'effects'
+  | 'progress'
+  | 'lastPerformed'
+  | 'sessionCountInRange'
+  | 'sessionCount';
 
 function SubtypeTable({
   label,
@@ -42,6 +48,7 @@ function SubtypeTable({
     {
       label: (r) => r.label,
       effects: (r) => r.effectsDisplay,
+      progress: (r) => r.progressDisplay,
       lastPerformed: (r) => r.lastSession.date,
       sessionCountInRange: (r) => r.sessionCountInRange,
       sessionCount: (r) => r.sessionCount,
@@ -69,6 +76,9 @@ function SubtypeTable({
             <TableCell as="th" {...sortProps('effects')}>
               Effects
             </TableCell>
+            <TableCell as="th" {...sortProps('progress')}>
+              Progress (all time)
+            </TableCell>
             <TableCell as="th" {...sortProps('lastPerformed')}>
               Last performed
             </TableCell>
@@ -84,6 +94,8 @@ function SubtypeTable({
               ({
                 label: rLabel,
                 effectsDisplay,
+                progressDisplay,
+                progressDetailDisplay,
                 lastPerformedDisplay,
                 sessionCount,
                 sessionCountInRange,
@@ -95,6 +107,10 @@ function SubtypeTable({
                 >
                   <TableCell variant="left">{rLabel}</TableCell>
                   <TableCell>{effectsDisplay}</TableCell>
+                  <TableCell>
+                    <span className={styles.progress}>{progressDisplay}</span>
+                    <span className={styles.progressDetail}>{progressDetailDisplay}</span>
+                  </TableCell>
                   <TableCell>{lastPerformedDisplay}</TableCell>
                   <TableCell>{sessionCountInRange}</TableCell>
                   <TableCell>{sessionCount}</TableCell>

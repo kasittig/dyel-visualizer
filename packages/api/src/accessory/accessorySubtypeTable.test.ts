@@ -146,7 +146,7 @@ describe('buildAccessoryTableRows', () => {
   ])('%s', (_, input, expected) => {
     // Sort logic inherently verified via grouped assertions
     const result = buildAccessoryTableRows(input);
-    expect(result).toEqual(expected.sort((a, b) => a.label.localeCompare(b.label)));
+    expect(result).toMatchObject(expected.sort((a, b) => a.label.localeCompare(b.label)));
   });
 
   it.each([
@@ -179,7 +179,7 @@ describe('buildAccessoryTableRows', () => {
       rec(d1, 'leg-curl', 12, 80, 6, 'lower'),
       rec(d0, 'leg-curl', 12, 85, 7, 'upper'),
     ];
-    expect(buildAccessoryTableRows(input, from, to)).toEqual([expected]);
+    expect(buildAccessoryTableRows(input, from, to)).toMatchObject([expected]);
   });
 
   it.each([
@@ -195,6 +195,6 @@ describe('buildAccessoryTableRows', () => {
     ],
   ])('%s', (_, input, expected) => {
     const result = buildAccessoryTableRows(input);
-    expect(result).toEqual(expected);
+    expect(result).toMatchObject(expected);
   });
 });

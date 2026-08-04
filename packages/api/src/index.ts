@@ -79,6 +79,8 @@ export {
 export type { LastSessionDetail } from './session/lastSessionDetail';
 export { buildAccessoryTableRows } from './accessory/accessorySubtypeTable';
 export type { AccessoryTableRow, AccessorySubtype } from './accessory/accessorySubtypeTable';
+export { buildAccessoryProgress } from './accessory/accessoryProgress';
+export type { AccessoryProgress, AccessoryProgressStatus } from './accessory/accessoryProgress';
 export {
   snapshotVariationsFromPipeline,
   snapshotNormalizedVariationsFromPipeline,
