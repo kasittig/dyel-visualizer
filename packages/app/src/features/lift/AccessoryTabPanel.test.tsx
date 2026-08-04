@@ -31,8 +31,19 @@ describe('AccessoryTabPanel', () => {
             label: 'Chest-supported row',
             effects: [],
             effectsDisplay: '—',
-            lastSession: { date: new Date(2026, 0, 30), sets: [] },
+            lastSession: { date: '2026-01-30', sets: 1, reps: 10, weight: 50, rpe: null },
             lastPerformedDisplay: 'Jan 30',
+            progress: {
+              scope: 'all-time',
+              status: 'flat',
+              latest: { date: '2026-01-30', sets: 1, reps: 10, weight: 50, rpe: null },
+              previous: null,
+              best: null,
+              daysSinceLastPerformed: 1,
+              change: null,
+            },
+            progressDisplay: 'Flat',
+            progressDetailDisplay: 'first session',
             sessionCount: 4,
             sessionCountInRange: 2,
             subtype: 'upper',
@@ -54,6 +65,8 @@ describe('AccessoryTabPanel', () => {
     expect(screen.getByRole('heading', { name: 'Accessory inventory' })).toBeTruthy();
     expect(screen.getByText(/Review what you are training/)).toBeTruthy();
     expect(screen.getByRole('columnheader', { name: 'Exercise' })).toBeTruthy();
+    expect(screen.getByRole('columnheader', { name: 'Progress (all time)' })).toBeTruthy();
+    expect(screen.getByRole('cell', { name: /Flat.*first session/ })).toBeTruthy();
     expect(screen.getByText(/Only one accessory appears in this range/)).toBeTruthy();
     expect(screen.queryByText('Diagnostics')).toBeNull();
     expect(screen.queryByText(/e1RM history by variation/)).toBeNull();
@@ -83,8 +96,19 @@ describe('AccessoryTabPanel', () => {
             label: 'Chest-supported row',
             effects: [],
             effectsDisplay: '—',
-            lastSession: { date: new Date(2026, 0, 30), sets: [] },
+            lastSession: { date: '2026-01-30', sets: 1, reps: 10, weight: 50, rpe: null },
             lastPerformedDisplay: 'Jan 30',
+            progress: {
+              scope: 'all-time',
+              status: 'flat',
+              latest: { date: '2026-01-30', sets: 1, reps: 10, weight: 50, rpe: null },
+              previous: null,
+              best: null,
+              daysSinceLastPerformed: 1,
+              change: null,
+            },
+            progressDisplay: 'Flat',
+            progressDetailDisplay: 'first session',
             sessionCount: 4,
             sessionCountInRange: 0,
             subtype: 'upper',
