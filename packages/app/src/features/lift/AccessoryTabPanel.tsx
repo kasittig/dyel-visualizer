@@ -4,7 +4,7 @@ import type { DisplayUnit } from '@dyel/api';
 import { AccessoryTable } from './AccessoryTable';
 import { useAccessoryTable } from './useAccessoryTable';
 import type { AccessoryTableGroup } from './useAccessoryTable';
-import { CollapsibleSection, EditableDateChip } from '../../shared/components';
+import { EditableDateChip } from '../../shared/components';
 import styles from './AccessoryTabPanel.module.css';
 
 export function AccessoryTabPanel({
@@ -60,16 +60,18 @@ function AccessoryTabContent({
         <p className={styles.eyebrow}>Training inventory</p>
         <h2 id="accessory-work-heading">Accessory work</h2>
       </header>
-      <CollapsibleSection
-        label="Accessory inventory"
-        persistenceId="visualizer:accessory:inventory"
-        summary={
-          exerciseCount
-            ? `${exerciseCount} exercises · ${sessionCount} sessions in range`
-            : 'No accessory sessions in this range'
-        }
-        trailing={<EditableDateChip dateRange={dateRange} onDateRangeChange={onDateRangeChange} />}
-      >
+      <section className={styles.inventory} aria-labelledby="accessory-inventory-heading">
+        <header className={styles.inventoryHeader}>
+          <div>
+            <h3 id="accessory-inventory-heading">Accessory inventory</h3>
+            <p>
+              {exerciseCount
+                ? `${exerciseCount} exercises · ${sessionCount} sessions in range`
+                : 'No accessory sessions in this range'}
+            </p>
+          </div>
+          <EditableDateChip dateRange={dateRange} onDateRangeChange={onDateRangeChange} />
+        </header>
         <p className={styles.inventoryDescription}>
           Review what you are training, when you last trained it, and what you want to inspect next.
         </p>
@@ -81,7 +83,7 @@ function AccessoryTabContent({
             setSelectedAccessory((current) => (current === accessory ? null : accessory))
           }
         />
-      </CollapsibleSection>
+      </section>
       {exerciseCount === 1 && (
         <p className={styles.lowData}>
           Only one accessory appears in this range. Widen the date range to review more training.
