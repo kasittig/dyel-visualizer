@@ -1,4 +1,5 @@
 export { LiftTabPanel } from './LiftTabPanel';
+export { AccessoryTabPanel } from './AccessoryTabPanel';
 export { ConjugateCharts } from './ConjugateCharts';
 export { VariationRadarChart } from './VariationRadarChart';
 export { DiagnosticsPanel } from './DiagnosticsPanel';

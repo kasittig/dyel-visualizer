@@ -1,9 +1,5 @@
-import type { DateRange } from 'react-day-picker';
-import type { DisplayUnit } from '@dyel/api';
-import { useAccessoryTable } from './useAccessoryTable';
-import type { AccessoryTableDisplay } from './useAccessoryTable';
+import type { AccessoryTableDisplay, AccessoryTableGroup } from './useAccessoryTable';
 import { useSortableRows } from '../../shared/hooks';
-import { shortDate } from '../../shared/dateUtils';
 import {
   CollapsibleSection,
   TableCard,
@@ -15,8 +11,8 @@ import {
 import styles from './AccessoryTable.module.css';
 
 interface AccessoryTableProps {
-  unit: DisplayUnit;
-  dateRange?: DateRange;
+  groups: AccessoryTableGroup[];
+  hasSessionsInRange: boolean;
   highlightedVariation?: string | null;
   onVariationClick?: (v: string) => void;
 }
@@ -113,31 +109,35 @@ function SubtypeTable({
 }
 
 export function AccessoryTable({
-  unit,
-  dateRange,
+  groups,
+  hasSessionsInRange,
   highlightedVariation,
   onVariationClick,
 }: AccessoryTableProps) {
-  const groups = useAccessoryTable(unit, dateRange);
-
   if (!groups.length) {
-    return <div className={styles.emptyState}>No accessory data logged yet</div>;
+    return (
+      <div className={styles.emptyState}>
+        No accessory work is available in this training period. Adjust the date range or log an
+        accessory exercise to build your inventory.
+      </div>
+    );
   }
-
-  const rangeHeader =
-    dateRange?.from && dateRange?.to
-      ? `${shortDate(dateRange.from)} - ${shortDate(dateRange.to)}`
-      : 'Sessions (in range)';
 
   return (
     <>
+      {!hasSessionsInRange && (
+        <div className={styles.emptyState}>
+          No accessory work was logged in this training period. Adjust the date range to review
+          recent sessions; your all-time inventory remains available below.
+        </div>
+      )}
       {groups.map(({ subtype, label, rows }) => (
         <SubtypeTable
           key={subtype ?? 'null'}
           label={label}
           persistenceId={`visualizer:accessory:table:${subtype ?? 'uncategorized'}`}
           rows={rows}
-          inRangeHeader={rangeHeader}
+          inRangeHeader="Sessions (in range)"
           highlightedVariation={highlightedVariation}
           onVariationClick={onVariationClick}
         />

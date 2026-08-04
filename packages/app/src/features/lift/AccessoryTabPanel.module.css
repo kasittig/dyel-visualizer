@@ -1,0 +1,46 @@
+.panel {
+  margin-top: 0.5rem;
+}
+
+.inventoryHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.inventoryHeader h2,
+.inventoryHeader p {
+  margin: 0;
+}
+
+.inventoryHeader h2 {
+  color: var(--text-h);
+  font-family: var(--heading);
+  font-size: clamp(1.35rem, 3vw, 1.8rem);
+}
+
+.inventoryHeader p {
+  margin-top: 0.15rem;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.inventoryDescription {
+  max-width: 48rem;
+  margin: 0.65rem 0 0.9rem;
+  color: var(--muted);
+}
+
+.selection,
+.lowData {
+  margin: 0.75rem 0 0;
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+@media (max-width: 640px) {
+  .inventoryHeader {
+    align-items: flex-start;
+  }
+}

@@ -4,7 +4,7 @@ import { PipelineProvider } from './PipelineContext';
 import { RepCalculator } from '../features/calculator/RepCalculator';
 import { StrengthScoreCalculator } from '../features/calculator/StrengthScoreCalculator';
 import { SigmaTab } from '../features/sigma/SigmaTab';
-import { LiftTabPanel } from '../features/lift/LiftTabPanel';
+import { AccessoryTabPanel, LiftTabPanel } from '../features/lift';
 import { SheetUrlPanel } from '../features/data-source/SheetUrlPanel';
 import { GettingStarted } from '../features/data-source/GettingStarted';
 import { DateRangePicker } from '../shared/components/DateRangePicker';
@@ -215,6 +215,13 @@ export function App() {
                     onDateRangeChange={setDateRange}
                     unit={dataUnit}
                     volumeByDate={volumeByDate}
+                  />
+                ) : liftTab === 'accessory' ? (
+                  <AccessoryTabPanel
+                    key={shownResetToken}
+                    dateRange={dateRange}
+                    onDateRangeChange={setDateRange}
+                    unit={dataUnit}
                   />
                 ) : liftTab !== null ? (
                   <LiftTabPanel
