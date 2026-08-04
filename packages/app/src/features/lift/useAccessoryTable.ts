@@ -50,15 +50,17 @@ function formatProgress(
   detail: string;
 } {
   const { progress } = row;
-  const load = progress.change?.load;
   const previous = progress.previous
     ? `vs ${formatLastSessionParts(progress.previous, unit).date}`
-    : 'first session';
+    : progress.status === 'new'
+      ? 'first session'
+      : 'no comparable session';
   const best = progress.best ? `best ${formatWeight(progress.best.weight, unit)}` : null;
   const detail = [previous, best].filter(Boolean).join(' · ');
-  if (load) {
+  const volume = progress.change?.volume;
+  if (volume) {
     return {
-      summary: `${STATUS_LABEL[progress.status]} · ${load > 0 ? '+' : ''}${formatWeight(load, unit)}`,
+      summary: `${STATUS_LABEL[progress.status]} · ${volume > 0 ? '+' : ''}${formatWeight(volume, unit)} volume`,
       detail,
     };
   }

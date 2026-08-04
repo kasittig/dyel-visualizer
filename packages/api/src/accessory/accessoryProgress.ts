@@ -25,24 +25,34 @@ interface Session {
   date: number;
   detail: LastSessionDetail;
   volume: number | null;
+  isComparable: boolean;
 }
 
 const STALE_AFTER_DAYS = 21;
 
 function toSession(date: number, records: TaggedSetRecord[]): Session {
   const detail = buildMostRecentSessionDetail(records)!;
-  const sets = records[0]?.meta?.sets ? parseInt(records[0].meta.sets, 10) : records.length;
+  const setCounts = records.map((record) => {
+    const sets = record.meta?.sets ? parseInt(record.meta.sets, 10) : 1;
+    return Number.isFinite(sets) && sets > 0 ? sets : 1;
+  });
+  const sets = setCounts.reduce((total, count) => total + count, 0);
   const volume = records.every((record) => record.weight > 0)
-    ? records.reduce((total, record) => total + record.weight * record.reps, 0) *
-      (records.length === 1 ? sets : 1)
+    ? records.reduce(
+        (total, record, index) => total + record.weight * record.reps * setCounts[index]!,
+        0
+      )
     : null;
-  return { date, detail: { ...detail, sets }, volume };
+  const isComparable =
+    new Set(records.map((record) => `${record.reps}:${record.weight}`)).size === 1;
+  return { date, detail: { ...detail, sets }, volume, isComparable };
 }
 
 /**
- * Sessions compare only when their set counts match. Reps may change within that same
- * structure, allowing a 3x10 -> 3x12 progression while rejecting 3x10 -> 4x8.
- * Load and volume changes are omitted for bodyweight/zero-load sessions.
+ * Sessions compare only when every row in each session has the same load and reps, and the
+ * total set counts match. Reps may change between otherwise comparable sessions, allowing a
+ * 3x10 -> 3x12 progression while rejecting 3x10 -> 4x8. Load and volume changes are omitted
+ * for bodyweight/zero-load sessions.
  */
 export function buildAccessoryProgress(
   records: TaggedSetRecord[],
@@ -57,12 +67,17 @@ export function buildAccessoryProgress(
     ([date, items]) => toSession(date, items)
   ).sort((a, b) => b.date - a.date);
   const latest = sessions[0]!;
-  const previous = sessions[1] ?? null;
+  const previous = latest.isComparable
+    ? (sessions.find(
+        (session, index) =>
+          index > 0 && session.isComparable && session.detail.sets === latest.detail.sets
+      ) ?? null)
+    : null;
   const daysSinceLastPerformed = Math.max(
     0,
     Math.floor((now.getTime() - latest.date) / 86_400_000)
   );
-  const comparable = previous?.detail.sets === latest.detail.sets ? previous : null;
+  const comparable = previous;
   const change = comparable
     ? {
         load:
@@ -78,7 +93,9 @@ export function buildAccessoryProgress(
     : null;
   const sameScheme = sessions.filter(
     (session) =>
-      session.detail.sets === latest.detail.sets && session.detail.reps === latest.detail.reps
+      session.detail.sets === latest.detail.sets &&
+      session.detail.reps === latest.detail.reps &&
+      session.isComparable
   );
   const best =
     sameScheme.reduce<Session | null>(
@@ -91,9 +108,9 @@ export function buildAccessoryProgress(
   const status: AccessoryProgressStatus =
     daysSinceLastPerformed > STALE_AFTER_DAYS
       ? 'stale'
-      : !previous
+      : sessions.length === 1
         ? 'new'
-        : !comparable || !change
+        : !latest.isComparable || !comparable || !change
           ? 'insufficient-history'
           : (change.volume ?? change.reps) > 0
             ? 'progressing'

@@ -59,4 +59,30 @@ describe('buildAccessoryProgress', () => {
       best: { date: '2026-01-30', weight: 110 },
     });
   });
+
+  it('skips intervening incompatible sessions when finding a comparison', () => {
+    expect(
+      buildAccessoryProgress(
+        [rec(day(1), 100, 12, '3'), rec(day(8), 100, 8, '4'), rec(day(15), 100, 10, '3')],
+        now
+      )
+    ).toMatchObject({
+      status: 'progressing',
+      previous: { date: '2026-01-16', sets: 3, reps: 10 },
+      change: { reps: 2 },
+    });
+  });
+
+  it("aggregates every row's set multiplier and rejects mixed session schemes", () => {
+    expect(
+      buildAccessoryProgress(
+        [rec(day(1), 100, 10, '3'), rec(day(1), 80, 12, '2'), rec(day(8), 100, 10, '3')],
+        now
+      )
+    ).toMatchObject({
+      status: 'insufficient-history',
+      previous: null,
+      change: null,
+    });
+  });
 });
