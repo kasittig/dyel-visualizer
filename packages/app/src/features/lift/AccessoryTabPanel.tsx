@@ -15,9 +15,14 @@ export function AccessoryTabPanel({
   onDateRangeChange: (range: DateRange) => void;
   unit: DisplayUnit;
 }) {
-  const [selectedAccessory, setSelectedAccessory] = useState<string | null>(null);
+  const rangeKey = `${dateRange.from?.getTime() ?? ''}:${dateRange.to?.getTime() ?? ''}`;
+  const [selection, setSelection] = useState({ rangeKey, accessory: null as string | null });
+  const selectedAccessory = selection.rangeKey === rangeKey ? selection.accessory : null;
   const groups = useAccessoryTable(unit, dateRange);
-  const exerciseCount = groups.reduce((total, group) => total + group.rows.length, 0);
+  const exerciseCount = groups.reduce(
+    (total, group) => total + group.rows.filter((row) => row.sessionCountInRange > 0).length,
+    0
+  );
   const sessionCount = groups.reduce(
     (total, group) => total + group.rows.reduce((sum, row) => sum + row.sessionCountInRange, 0),
     0
@@ -40,21 +45,17 @@ export function AccessoryTabPanel({
             ? `${exerciseCount} exercises · ${sessionCount} sessions in range`
             : 'No accessory sessions in this range'
         }
-        trailing={
-          <EditableDateChip
-            dateRange={dateRange}
-            onDateRangeChange={(range) => {
-              setSelectedAccessory(null);
-              onDateRangeChange(range);
-            }}
-          />
-        }
+        trailing={<EditableDateChip dateRange={dateRange} onDateRangeChange={onDateRangeChange} />}
       >
         <AccessoryTable
           groups={groups}
+          hasSessionsInRange={sessionCount > 0}
           highlightedVariation={selectedAccessory}
           onVariationClick={(accessory) =>
-            setSelectedAccessory((current) => (current === accessory ? null : accessory))
+            setSelection({
+              rangeKey,
+              accessory: selectedAccessory === accessory ? null : accessory,
+            })
           }
         />
       </CollapsibleSection>

@@ -48,7 +48,7 @@ describe('AccessoryTabPanel', () => {
     vi.unstubAllGlobals();
   });
 
-  it.each(['desktop', 'mobile'])('keeps the inventory first on %s layouts', () => {
+  it('keeps the inventory first and excludes main-lift-only UI', () => {
     render(<AccessoryTabPanel dateRange={dateRange} onDateRangeChange={vi.fn()} unit="lbs" />);
 
     expect(screen.getByRole('heading', { name: 'Accessory work' })).toBeTruthy();
@@ -71,5 +71,47 @@ describe('AccessoryTabPanel', () => {
     render(<AccessoryTabPanel dateRange={dateRange} onDateRangeChange={vi.fn()} unit="lbs" />);
 
     expect(screen.getByText(/Adjust the date range or log an accessory exercise/)).toBeTruthy();
+  });
+
+  it('keeps all-time inventory visible while explaining an empty date range', () => {
+    mockUseAccessoryTable.mockReturnValue([
+      {
+        subtype: 'upper',
+        label: 'Upper',
+        rows: [
+          {
+            label: 'Chest-supported row',
+            effects: [],
+            effectsDisplay: '—',
+            lastSession: { date: new Date(2026, 0, 30), sets: [] },
+            lastPerformedDisplay: 'Jan 30',
+            sessionCount: 4,
+            sessionCountInRange: 0,
+            subtype: 'upper',
+          },
+        ],
+      },
+    ]);
+    render(<AccessoryTabPanel dateRange={dateRange} onDateRangeChange={vi.fn()} unit="lbs" />);
+
+    expect(screen.getByText(/No accessory work was logged in this training period/)).toBeTruthy();
+    expect(screen.getByRole('cell', { name: 'Chest-supported row' })).toBeTruthy();
+  });
+
+  it('clears an accessory selection when the global date range changes', () => {
+    const view = render(
+      <AccessoryTabPanel dateRange={dateRange} onDateRangeChange={vi.fn()} unit="lbs" />
+    );
+    fireEvent.click(screen.getByRole('cell', { name: 'Chest-supported row' }));
+    expect(screen.getByRole('status')).toBeTruthy();
+
+    view.rerender(
+      <AccessoryTabPanel
+        dateRange={{ from: new Date(2026, 1, 1), to: new Date(2026, 1, 28) }}
+        onDateRangeChange={vi.fn()}
+        unit="lbs"
+      />
+    );
+    expect(screen.queryByRole('status')).toBeNull();
   });
 });

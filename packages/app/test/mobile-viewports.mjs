@@ -40,6 +40,10 @@ try {
       'visualizer',
       '/?mode=text&text=comp%20squat%201rm%20300lbs%0Acomp%20bench%201rm%20200lbs%0Acomp%20deadlift%201rm%20400lbs',
     ],
+    [
+      'accessories',
+      '/?mode=text&text=DB%20Curl%202026-01-30%2010lbs%20x12%0ACable%20Row%202026-02-01%2040lbs%20x10',
+    ],
     ['calculator', '/?mode=text&tab=calculator&text=comp%20squat%201rm%20300lbs'],
     ['validator', '/?page=validator'],
     ['team', '/?page=team'],
@@ -55,7 +59,17 @@ try {
     });
     for (const [name, path] of pages) {
       const page = await context.newPage();
+      if (name === 'accessories') {
+        await page.addInitScript(() => {
+          localStorage.setItem('dyel:activeTab', JSON.stringify('accessory'));
+          localStorage.setItem('dyel:lastLiftTab', JSON.stringify('accessory'));
+        });
+      }
       await page.goto(`${baseUrl}${path}`, { waitUntil: 'domcontentloaded' });
+      if (name === 'accessories') {
+        await page.getByRole('heading', { name: 'Accessory work' }).waitFor();
+        await page.getByRole('columnheader', { name: 'Exercise' }).waitFor();
+      }
       const overflow = await page.evaluate(() => {
         const viewport = document.documentElement.clientWidth;
         const intentionallyScrollable = (element) => {

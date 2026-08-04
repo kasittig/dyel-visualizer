@@ -12,6 +12,7 @@ import styles from './AccessoryTable.module.css';
 
 interface AccessoryTableProps {
   groups: AccessoryTableGroup[];
+  hasSessionsInRange: boolean;
   highlightedVariation?: string | null;
   onVariationClick?: (v: string) => void;
 }
@@ -109,6 +110,7 @@ function SubtypeTable({
 
 export function AccessoryTable({
   groups,
+  hasSessionsInRange,
   highlightedVariation,
   onVariationClick,
 }: AccessoryTableProps) {
@@ -123,6 +125,12 @@ export function AccessoryTable({
 
   return (
     <>
+      {!hasSessionsInRange && (
+        <div className={styles.emptyState}>
+          No accessory work was logged in this training period. Adjust the date range to review
+          recent sessions; your all-time inventory remains available below.
+        </div>
+      )}
       {groups.map(({ subtype, label, rows }) => (
         <SubtypeTable
           key={subtype ?? 'null'}
