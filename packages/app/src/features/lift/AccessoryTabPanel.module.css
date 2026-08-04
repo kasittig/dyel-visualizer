@@ -1,0 +1,43 @@
+.panel {
+  margin-top: 0.5rem;
+}
+
+.intro {
+  max-width: 48rem;
+  margin: 0.5rem 0 1rem;
+}
+
+.intro h2 {
+  margin: 0;
+  color: var(--text-h);
+  font-family: var(--heading);
+  font-size: clamp(1.35rem, 3vw, 1.8rem);
+}
+
+.intro p:last-child {
+  margin: 0.35rem 0 0;
+  color: var(--muted);
+}
+
+.eyebrow {
+  margin: 0 0 0.2rem;
+  color: var(--accent);
+  font-family: var(--heading);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.selection,
+.lowData {
+  margin: 0.75rem 0 0;
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+@media (max-width: 640px) {
+  .intro {
+    margin-top: 0;
+  }
+}
