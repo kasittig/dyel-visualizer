@@ -116,7 +116,7 @@ describe('usePipelineDiagnostics', () => {
     ]);
   });
 
-  it('renders production unknown-exercise findings in the accessory scope', () => {
+  it('keeps production unknown-exercise findings out of lift diagnostics', () => {
     mockUsePipelineModel.mockReturnValue({
       status: 'success',
       model: buildPipelineModel(
@@ -125,14 +125,9 @@ describe('usePipelineDiagnostics', () => {
       ),
     });
 
-    expect(renderHook(() => usePipelineDiagnostics('accessory')).result.current.needsData).toEqual([
-      expect.objectContaining({
-        displayName: 'Mystery Press',
-        lift: null,
-        reason: 'missing-lift',
-        reasonDisplay: 'Lift not recognized',
-      }),
-    ]);
+    expect(renderHook(() => usePipelineDiagnostics('accessory')).result.current.needsData).toEqual(
+      []
+    );
     expect(renderHook(() => usePipelineDiagnostics('bench')).result.current.needsData).toEqual([]);
   });
 

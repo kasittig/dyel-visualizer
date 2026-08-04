@@ -66,6 +66,27 @@ describe('DiagnosticsPanel', () => {
     });
   });
 
+  it('does not render an empty diagnostics section', () => {
+    mockUsePipelineDiagnostics.mockReturnValue({
+      variants: [],
+      hasDeadlift: false,
+      effectEvidence: [],
+      needsData: [],
+      attentionSummary: {
+        belowCount: 0,
+        aboveCount: 0,
+        leadingBelowEffectDisplay: null,
+        leadingBelowEffectCount: 0,
+      },
+      priorityFindings: [],
+    });
+
+    const { container } = render(<DiagnosticsPanel liftType="accessory" unit="lbs" />);
+
+    expect(container.childElementCount).toBe(0);
+    expect(screen.queryByText('Diagnostics')).toBeNull();
+  });
+
   it('describes every status and presents actual-versus-expected evidence with recency', () => {
     const { container } = render(<DiagnosticsPanel liftType="squat" unit="lbs" />);
 
