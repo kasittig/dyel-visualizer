@@ -67,7 +67,7 @@ try {
       }
       await page.goto(`${baseUrl}${path}`, { waitUntil: 'domcontentloaded' });
       if (name === 'accessories') {
-        await page.getByRole('heading', { name: 'Accessory work' }).waitFor();
+        await page.getByRole('heading', { name: 'Accessory inventory' }).waitFor();
         await page.getByRole('columnheader', { name: 'Exercise' }).waitFor();
       }
       const overflow = await page.evaluate(() => {
