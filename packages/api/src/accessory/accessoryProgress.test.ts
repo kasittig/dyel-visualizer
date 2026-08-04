@@ -83,6 +83,7 @@ describe('buildAccessoryProgress', () => {
       status: 'insufficient-history',
       previous: null,
       change: null,
+      best: null,
     });
   });
 });

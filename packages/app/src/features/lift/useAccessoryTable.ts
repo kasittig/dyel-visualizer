@@ -7,6 +7,7 @@ import {
   formatLastSessionParts,
   formatLastSessionSummary,
   formatWeight,
+  roundWeight,
   type AccessoryTableRow,
   type AccessorySubtype,
   type DisplayUnit,
@@ -42,7 +43,7 @@ const STATUS_LABEL: Record<AccessoryTableRow['progress']['status'], string> = {
   'insufficient-history': 'More history needed',
 };
 
-function formatProgress(
+export function formatAccessoryProgress(
   row: AccessoryTableRow,
   unit: DisplayUnit
 ): {
@@ -60,7 +61,7 @@ function formatProgress(
   const volume = progress.change?.volume;
   if (volume) {
     return {
-      summary: `${STATUS_LABEL[progress.status]} · ${volume > 0 ? '+' : ''}${formatWeight(volume, unit)} volume`,
+      summary: `${STATUS_LABEL[progress.status]} · ${volume > 0 ? '+' : ''}${roundWeight(volume, unit)} ${unit}-reps`,
       detail,
     };
   }
@@ -90,7 +91,7 @@ export function useAccessoryTable(unit: DisplayUnit, dateRange?: DateRange): Acc
 
     const rows = buildAccessoryTableRows(model.tagged, dateRange?.from, dateRange?.to).map(
       (row) => {
-        const progress = formatProgress(row, unit);
+        const progress = formatAccessoryProgress(row, unit);
         return {
           ...row,
           lastPerformedDisplay: formatLastSessionSummary(row.lastSession, unit),

@@ -91,12 +91,14 @@ export function buildAccessoryProgress(
             : null,
       }
     : null;
-  const sameScheme = sessions.filter(
-    (session) =>
-      session.detail.sets === latest.detail.sets &&
-      session.detail.reps === latest.detail.reps &&
-      session.isComparable
-  );
+  const sameScheme = latest.isComparable
+    ? sessions.filter(
+        (session) =>
+          session.detail.sets === latest.detail.sets &&
+          session.detail.reps === latest.detail.reps &&
+          session.isComparable
+      )
+    : [];
   const best =
     sameScheme.reduce<Session | null>(
       (current, session) =>
