@@ -3,6 +3,7 @@ import type { DateRange } from 'react-day-picker';
 import type { DisplayUnit } from '@dyel/api';
 import { AccessoryTable } from './AccessoryTable';
 import { useAccessoryTable } from './useAccessoryTable';
+import type { AccessoryTableGroup } from './useAccessoryTable';
 import { CollapsibleSection, EditableDateChip } from '../../shared/components';
 import styles from './AccessoryTabPanel.module.css';
 
@@ -16,8 +17,6 @@ export function AccessoryTabPanel({
   unit: DisplayUnit;
 }) {
   const rangeKey = `${dateRange.from?.getTime() ?? ''}:${dateRange.to?.getTime() ?? ''}`;
-  const [selection, setSelection] = useState({ rangeKey, accessory: null as string | null });
-  const selectedAccessory = selection.rangeKey === rangeKey ? selection.accessory : null;
   const groups = useAccessoryTable(unit, dateRange);
   const exerciseCount = groups.reduce(
     (total, group) => total + group.rows.filter((row) => row.sessionCountInRange > 0).length,
@@ -27,6 +26,33 @@ export function AccessoryTabPanel({
     (total, group) => total + group.rows.reduce((sum, row) => sum + row.sessionCountInRange, 0),
     0
   );
+
+  return (
+    <AccessoryTabContent
+      key={rangeKey}
+      dateRange={dateRange}
+      onDateRangeChange={onDateRangeChange}
+      groups={groups}
+      exerciseCount={exerciseCount}
+      sessionCount={sessionCount}
+    />
+  );
+}
+
+function AccessoryTabContent({
+  dateRange,
+  onDateRangeChange,
+  groups,
+  exerciseCount,
+  sessionCount,
+}: {
+  dateRange: DateRange;
+  onDateRangeChange: (range: DateRange) => void;
+  groups: AccessoryTableGroup[];
+  exerciseCount: number;
+  sessionCount: number;
+}) {
+  const [selectedAccessory, setSelectedAccessory] = useState<string | null>(null);
 
   return (
     <section className={styles.panel} aria-labelledby="accessory-work-heading">
@@ -52,10 +78,7 @@ export function AccessoryTabPanel({
           hasSessionsInRange={sessionCount > 0}
           highlightedVariation={selectedAccessory}
           onVariationClick={(accessory) =>
-            setSelection({
-              rangeKey,
-              accessory: selectedAccessory === accessory ? null : accessory,
-            })
+            setSelectedAccessory((current) => (current === accessory ? null : accessory))
           }
         />
       </CollapsibleSection>

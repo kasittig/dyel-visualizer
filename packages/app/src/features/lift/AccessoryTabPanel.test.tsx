@@ -98,7 +98,7 @@ describe('AccessoryTabPanel', () => {
     expect(screen.getByRole('cell', { name: 'Chest-supported row' })).toBeTruthy();
   });
 
-  it('clears an accessory selection when the global date range changes', () => {
+  it('clears an accessory selection across date range changes, including a prior range', () => {
     const view = render(
       <AccessoryTabPanel dateRange={dateRange} onDateRangeChange={vi.fn()} unit="lbs" />
     );
@@ -111,6 +111,11 @@ describe('AccessoryTabPanel', () => {
         onDateRangeChange={vi.fn()}
         unit="lbs"
       />
+    );
+    expect(screen.queryByRole('status')).toBeNull();
+
+    view.rerender(
+      <AccessoryTabPanel dateRange={dateRange} onDateRangeChange={vi.fn()} unit="lbs" />
     );
     expect(screen.queryByRole('status')).toBeNull();
   });
