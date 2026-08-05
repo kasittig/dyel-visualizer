@@ -7,7 +7,8 @@ const rec = (
   date = new Date(2026, 0, 15).getTime(),
   weight = 10,
   reps = 10,
-  tags: string[] = []
+  tags: string[] = [],
+  sets?: string
 ): TaggedSetRecord => ({
   date,
   exercise,
@@ -17,7 +18,7 @@ const rec = (
   rpe: null,
   effects: [],
   baselineRange: null,
-  meta: { rawExercise: exercise },
+  meta: { rawExercise: exercise, sets },
   tags: new Set(['lift:accessory', ...tags]),
 });
 
@@ -38,6 +39,14 @@ describe('classifyAccessory', () => {
     ["Single Arm Farmer's Walk", 'carries', 'high'],
     ['Facepull', 'shoulders', 'high'],
     ['Palloff Press', 'core', 'high'],
+    ['Birddog', 'core', 'high'],
+    ['Side Bend', 'core', 'high'],
+    ['Stir the pot', 'core', 'high'],
+    ['Pull Through', 'glutes', 'high'],
+    ['Dumbbell Rollback', 'triceps', 'high'],
+    ['French Press', 'triceps', 'high'],
+    ['Tate Press', 'triceps', 'high'],
+    ['Mini Band Pull Apart', 'shoulders', 'high'],
     ['Press', null, 'none'],
     ['Curl', null, 'none'],
     ['Raise', null, 'none'],
@@ -89,6 +98,11 @@ describe('buildAccessoryCoverage', () => {
       'unclassified and primary lifts excluded',
       [rec('Raise'), { ...rec('Lat Pulldown'), tags: new Set(['lift:bench']) }],
       [],
+    ],
+    [
+      'logged set counts multiply volume with invalid values falling back to one',
+      [rec('Lat Pulldown', 1, 100, 10, [], '4'), rec('Row', 2, 50, 10, [], 'invalid')],
+      [{ category: 'upper-pull', sessionCount: 2, volume: 4500 }],
     ],
   ])('%s', (_, records, expected) => {
     expect(buildAccessoryCoverage(records)).toEqual(expected);

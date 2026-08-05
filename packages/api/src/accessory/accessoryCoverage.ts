@@ -34,7 +34,7 @@ export interface AccessoryCoverage {
 const RULES: readonly [AccessoryCategory, RegExp, AccessoryClassificationConfidence][] = [
   [
     'core',
-    /\b(ab(?:s)?|core|plank|crunch(?:es)?|sit[ -]?up|russian twist|leg raise|pallof|palloffs?|wood ?chop|dead bug|v[ -]?up)\b/,
+    /\b(ab(?:s)?|core|plank|crunch(?:es)?|sit[ -]?up|russian twist|leg raise|pallof|palloffs?|wood ?chop|dead bug|v[ -]?up|birddog|bird dog|side bend|stir the pot)\b/,
     'high',
   ],
   ['carries', /\b(?:farmer'?s?|suitcase|overhead) (?:carr(?:y|ies)|walk)\b|\byoke walk\b/, 'high'],
@@ -43,13 +43,21 @@ const RULES: readonly [AccessoryCategory, RegExp, AccessoryClassificationConfide
     /\b(?:sled (?:drag|push)|prowler|bike|rowing machine|run(?:ning)?|sprint(?:s)?|burpee(?:s)?)\b/,
     'high',
   ],
-  ['triceps', /\b(?:triceps?|push[ -]?down|skull ?crusher|jm press)\b/, 'high'],
+  [
+    'triceps',
+    /\b(?:triceps?|push[ -]?down|skull ?crusher|jm press|dumbbell rollback|french press|tate press)\b/,
+    'high',
+  ],
   [
     'biceps',
     /\b(?:biceps?|hammer curl|preacher curl|db curl|dumbbell curl|barbell curl)\b/,
     'high',
   ],
-  ['shoulders', /\b(?:lateral|front|rear delt) raise\b|\b(?:face ?pull|delt(?:oid)?s?)\b/, 'high'],
+  [
+    'shoulders',
+    /\b(?:lateral|front|rear delt) raise\b|\b(?:face ?pull|delt(?:oid)?s?|mini band pull apart)\b/,
+    'high',
+  ],
   ['upper-pull', /\b(?:row|pulldown|pull[ -]?up|chin[ -]?up)s?\b/, 'high'],
   [
     'upper-push',
@@ -58,7 +66,7 @@ const RULES: readonly [AccessoryCategory, RegExp, AccessoryClassificationConfide
   ],
   ['quads', /\b(?:leg press|leg extension|split squat|lunge|step[ -]?up|hack squat)s?\b/, 'high'],
   ['hamstrings', /\b(?:hamstring curl|leg curl|nordic|glute ham raise|ghr)s?\b/, 'high'],
-  ['glutes', /\b(?:hip thrust|glute bridge|kickback)s?\b/, 'high'],
+  ['glutes', /\b(?:hip thrust|glute bridge|kickback|pull through)s?\b/, 'high'],
   [
     'low-back',
     /\b(?:45 back raise|back extension|rev\.? hyper|reverse hyper|hyperextension|good morning)s?\b/,
@@ -104,7 +112,8 @@ export function buildAccessoryCoverage(
     if (!category) continue;
     const summary = categories.get(category) ?? { dates: new Set<number>(), volume: 0 };
     summary.dates.add(record.date);
-    summary.volume += record.weight * record.reps;
+    const sets = record.meta?.sets ? parseInt(record.meta.sets, 10) : 1;
+    summary.volume += record.weight * record.reps * (Number.isFinite(sets) && sets > 0 ? sets : 1);
     categories.set(category, summary);
   }
   return ACCESSORY_CATEGORIES.flatMap((category) => {
