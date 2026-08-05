@@ -3,36 +3,57 @@ import type { DateRange } from 'react-day-picker';
 import { usePipelineModel } from '../../app/PipelineContext';
 import {
   buildAccessoryTableRows,
-  formatEffect,
   formatLastSessionParts,
   formatLastSessionSummary,
   formatWeight,
   roundWeight,
   type AccessoryTableRow,
-  type AccessorySubtype,
+  type AccessoryCategory,
   type DisplayUnit,
 } from '@dyel/api';
 
 export interface AccessoryTableDisplay extends AccessoryTableRow {
   lastPerformedDisplay: string;
-  effectsDisplay: string;
   progressDisplay: string;
   progressDetailDisplay: string;
+  classificationDisplay: string;
 }
 export interface AccessoryTableGroup {
-  subtype: AccessorySubtype;
+  category: AccessoryCategory | null;
   label: string;
   rows: AccessoryTableDisplay[];
 }
 
 const EMPTY: AccessoryTableGroup[] = [];
-const SUBTYPE_MAP: Record<string, string> = {
-  upper: 'Upper',
-  lower: 'Lower',
+export const ACCESSORY_CATEGORY_LABELS: Record<AccessoryCategory, string> = {
+  'upper-push': 'Upper push',
+  'upper-pull': 'Upper pull',
+  triceps: 'Triceps',
+  biceps: 'Biceps',
+  shoulders: 'Shoulders',
+  quads: 'Quads',
+  hamstrings: 'Hamstrings',
+  glutes: 'Glutes',
+  'low-back': 'Low back',
   core: 'Core',
-  null: 'Unclassified',
+  carries: 'Carries',
+  conditioning: 'Conditioning',
 };
-const SUBTYPE_ORDER: AccessorySubtype[] = ['upper', 'lower', 'core', null];
+const CATEGORY_ORDER: (AccessoryCategory | null)[] = [
+  'upper-push',
+  'upper-pull',
+  'triceps',
+  'biceps',
+  'shoulders',
+  'quads',
+  'hamstrings',
+  'glutes',
+  'low-back',
+  'core',
+  'carries',
+  'conditioning',
+  null,
+];
 
 const STATUS_LABEL: Record<AccessoryTableRow['progress']['status'], string> = {
   new: 'New',
@@ -95,19 +116,26 @@ export function useAccessoryTable(unit: DisplayUnit, dateRange?: DateRange): Acc
         return {
           ...row,
           lastPerformedDisplay: formatLastSessionSummary(row.lastSession, unit),
-          effectsDisplay: row.effects.length ? row.effects.map(formatEffect).join(', ') : '—',
           progressDisplay: progress.summary,
           progressDetailDisplay: progress.detail,
+          classificationDisplay:
+            row.classification.source === 'unclassified'
+              ? 'Unclassified'
+              : `${row.classification.source === 'user' ? 'User mapping' : row.classification.source === 'legacy-tag' ? 'Legacy fallback' : 'Name match'} · ${row.classification.confidence} confidence`,
         };
       }
     );
 
-    const grouped = Map.groupBy(rows, (row) => row.subtype);
+    const grouped = Map.groupBy(rows, (row) => row.category);
 
-    return SUBTYPE_ORDER.reduce<AccessoryTableGroup[]>((acc, subtype) => {
-      const match = grouped.get(subtype);
+    return CATEGORY_ORDER.reduce<AccessoryTableGroup[]>((acc, category) => {
+      const match = grouped.get(category);
       if (match?.length) {
-        acc.push({ subtype, label: SUBTYPE_MAP[String(subtype)], rows: match });
+        acc.push({
+          category,
+          label: category ? ACCESSORY_CATEGORY_LABELS[category] : 'Unclassified',
+          rows: match,
+        });
       }
       return acc;
     }, []);

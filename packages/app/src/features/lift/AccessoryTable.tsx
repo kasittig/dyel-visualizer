@@ -19,7 +19,7 @@ interface AccessoryTableProps {
 
 type SortCol =
   | 'label'
-  | 'effects'
+  | 'classification'
   | 'progress'
   | 'lastPerformed'
   | 'sessionCountInRange'
@@ -47,7 +47,7 @@ function SubtypeTable({
     rows,
     {
       label: (r) => r.label,
-      effects: (r) => r.effectsDisplay,
+      classification: (r) => r.classificationDisplay,
       progress: (r) => r.progressDisplay,
       lastPerformed: (r) => r.lastSession.date,
       sessionCountInRange: (r) => r.sessionCountInRange,
@@ -73,8 +73,8 @@ function SubtypeTable({
             <TableCell as="th" variant="left" {...sortProps('label')}>
               Exercise
             </TableCell>
-            <TableCell as="th" className={styles.effectsHeader} {...sortProps('effects')}>
-              Effects
+            <TableCell as="th" {...sortProps('classification')}>
+              Classification
             </TableCell>
             <TableCell as="th" {...sortProps('progress')}>
               Progress (all time)
@@ -94,7 +94,7 @@ function SubtypeTable({
               ({
                 id,
                 label: rLabel,
-                effectsDisplay,
+                classificationDisplay,
                 progressDisplay,
                 progressDetailDisplay,
                 lastPerformedDisplay,
@@ -126,7 +126,7 @@ function SubtypeTable({
                       {rLabel}
                     </button>
                   </TableCell>
-                  <TableCell>{effectsDisplay}</TableCell>
+                  <TableCell>{classificationDisplay}</TableCell>
                   <TableCell>
                     <span className={styles.progress}>{progressDisplay}</span>
                     <span className={styles.progressDetail}>{progressDetailDisplay}</span>
@@ -167,11 +167,11 @@ export function AccessoryTable({
           recent sessions; your all-time inventory remains available below.
         </div>
       )}
-      {groups.map(({ subtype, label, rows }) => (
+      {groups.map(({ category, label, rows }) => (
         <SubtypeTable
-          key={subtype ?? 'null'}
+          key={category ?? 'null'}
           label={label}
-          persistenceId={`visualizer:accessory:table:${subtype ?? 'uncategorized'}`}
+          persistenceId={`visualizer:accessory:table:${category ?? 'uncategorized'}`}
           rows={rows}
           inRangeHeader="Sessions (in range)"
           highlightedVariation={highlightedVariation}

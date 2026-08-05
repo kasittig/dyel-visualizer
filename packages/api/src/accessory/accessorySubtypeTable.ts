@@ -2,12 +2,20 @@ import { matches, type TaggedSetRecord } from '@dyel/pipeline';
 import { buildMostRecentSessionDetail, type LastSessionDetail } from '../session/lastSessionDetail';
 import { isRecordInDateRange } from '../dateRange/dateRangeUtils';
 import { buildAccessoryProgress, type AccessoryProgress } from './accessoryProgress';
+import {
+  classifyAccessory,
+  type AccessoryCategory,
+  type AccessoryCategoryMappings,
+  type AccessoryClassification,
+} from './accessoryCoverage';
 
 export type AccessorySubtype = 'upper' | 'lower' | 'core' | null;
 export interface AccessoryTableRow {
   id: string;
   label: string;
   subtype: AccessorySubtype;
+  category: AccessoryCategory | null;
+  classification: AccessoryClassification;
   effects: string[];
   lastSession: LastSessionDetail;
   sessionCount: number;
@@ -26,7 +34,8 @@ export function accessoryExerciseId(record: TaggedSetRecord): string {
 export function buildAccessoryTableRows(
   tagged: TaggedSetRecord[],
   from?: Date,
-  to?: Date
+  to?: Date,
+  mappings: AccessoryCategoryMappings = {}
 ): AccessoryTableRow[] {
   const filtered = tagged.filter((r) => matches(r.tags, { all: ['lift:accessory'] }));
 
@@ -40,6 +49,10 @@ export function buildAccessoryTableRows(
       const latestDate = Math.max(...records.map((r) => r.date));
       const latestTags = records.find((r) => r.date === latestDate)?.tags;
       const subtype = SUBTYPES.find((s) => latestTags?.has(`accessory:${s}`)) ?? null;
+      const classification = classifyAccessory(
+        records.find((r) => r.date === latestDate)!,
+        mappings
+      );
 
       const latestLabels = new Set<string>();
       const effects = new Set<string>();
@@ -62,6 +75,8 @@ export function buildAccessoryTableRows(
         id,
         label: [...latestLabels].sort((a, b) => a.localeCompare(b))[0]!,
         subtype,
+        category: classification.category,
+        classification,
         effects: [...effects],
         lastSession,
         sessionCount: sessionDates.size,

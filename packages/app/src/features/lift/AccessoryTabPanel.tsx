@@ -5,6 +5,8 @@ import { AccessoryTable } from './AccessoryTable';
 import { AccessoryHistoryChart } from './AccessoryHistoryChart';
 import { useAccessoryTable } from './useAccessoryTable';
 import type { AccessoryTableGroup } from './useAccessoryTable';
+import { ACCESSORY_CATEGORY_LABELS } from './useAccessoryTable';
+import { useAccessoryCoverage } from './useAccessoryCoverage';
 import { EditableDateChip } from '../../shared/components';
 import styles from './AccessoryTabPanel.module.css';
 
@@ -19,6 +21,7 @@ export function AccessoryTabPanel({
 }) {
   const rangeKey = `${dateRange.from?.getTime() ?? ''}:${dateRange.to?.getTime() ?? ''}`;
   const groups = useAccessoryTable(unit, dateRange);
+  const coverage = useAccessoryCoverage(dateRange);
   const exerciseCount = groups.reduce(
     (total, group) => total + group.rows.filter((row) => row.sessionCountInRange > 0).length,
     0
@@ -36,6 +39,7 @@ export function AccessoryTabPanel({
       groups={groups}
       exerciseCount={exerciseCount}
       sessionCount={sessionCount}
+      coverage={coverage}
       unit={unit}
     />
   );
@@ -47,6 +51,7 @@ function AccessoryTabContent({
   groups,
   exerciseCount,
   sessionCount,
+  coverage,
   unit,
 }: {
   dateRange: DateRange;
@@ -54,6 +59,7 @@ function AccessoryTabContent({
   groups: AccessoryTableGroup[];
   exerciseCount: number;
   sessionCount: number;
+  coverage: ReturnType<typeof useAccessoryCoverage>;
   unit: DisplayUnit;
 }) {
   const allRows = groups.flatMap((group) => group.rows);
@@ -81,6 +87,23 @@ function AccessoryTabContent({
       <p className={styles.inventoryDescription}>
         Review what you are training, when you last trained it, and what you want to inspect next.
       </p>
+      <section className={styles.coverage} aria-labelledby="accessory-coverage-heading">
+        <h3 id="accessory-coverage-heading">Coverage in range</h3>
+        {coverage.length ? (
+          <ul>
+            {coverage.map(({ category, sessionCount: sessions }) => (
+              <li key={category}>
+                <strong>{ACCESSORY_CATEGORY_LABELS[category]}</strong>
+                <span>
+                  {sessions} session{sessions === 1 ? '' : 's'}
+                </span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p>No classified accessory coverage in this range.</p>
+        )}
+      </section>
       <AccessoryTable
         groups={groups}
         hasSessionsInRange={sessionCount > 0}
