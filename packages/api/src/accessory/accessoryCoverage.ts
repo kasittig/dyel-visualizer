@@ -34,10 +34,10 @@ export interface AccessoryCoverage {
 const RULES: readonly [AccessoryCategory, RegExp, AccessoryClassificationConfidence][] = [
   [
     'core',
-    /\b(ab(?:s)?|core|plank|crunch(?:es)?|sit[ -]?up|russian twist|leg raise|pallof|wood ?chop|dead bug|v[ -]?up)\b/,
+    /\b(ab(?:s)?|core|plank|crunch(?:es)?|sit[ -]?up|russian twist|leg raise|pallof|palloffs?|wood ?chop|dead bug|v[ -]?up)\b/,
     'high',
   ],
-  ['carries', /\b(?:farmer'?s?|suitcase|overhead) carr(?:y|ies)\b|\byoke walk\b/, 'high'],
+  ['carries', /\b(?:farmer'?s?|suitcase|overhead) (?:carr(?:y|ies)|walk)\b|\byoke walk\b/, 'high'],
   [
     'conditioning',
     /\b(?:sled (?:drag|push)|prowler|bike|rowing machine|run(?:ning)?|sprint(?:s)?|burpee(?:s)?)\b/,
@@ -49,7 +49,7 @@ const RULES: readonly [AccessoryCategory, RegExp, AccessoryClassificationConfide
     /\b(?:biceps?|hammer curl|preacher curl|db curl|dumbbell curl|barbell curl)\b/,
     'high',
   ],
-  ['shoulders', /\b(?:lateral|front|rear delt) raise\b|\b(?:face pull|delt(?:oid)?s?)\b/, 'high'],
+  ['shoulders', /\b(?:lateral|front|rear delt) raise\b|\b(?:face ?pull|delt(?:oid)?s?)\b/, 'high'],
   ['upper-pull', /\b(?:row|pulldown|pull[ -]?up|chin[ -]?up)s?\b/, 'high'],
   [
     'upper-push',
@@ -59,7 +59,11 @@ const RULES: readonly [AccessoryCategory, RegExp, AccessoryClassificationConfide
   ['quads', /\b(?:leg press|leg extension|split squat|lunge|step[ -]?up|hack squat)s?\b/, 'high'],
   ['hamstrings', /\b(?:hamstring curl|leg curl|nordic|glute ham raise|ghr)s?\b/, 'high'],
   ['glutes', /\b(?:hip thrust|glute bridge|kickback)s?\b/, 'high'],
-  ['low-back', /\b(?:back extension|reverse hyper|hyperextension|good morning)s?\b/, 'high'],
+  [
+    'low-back',
+    /\b(?:45 back raise|back extension|rev\.? hyper|reverse hyper|hyperextension|good morning)s?\b/,
+    'high',
+  ],
 ];
 
 export function classifyAccessory(
