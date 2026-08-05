@@ -81,7 +81,9 @@ export function classifyAccessory(
   const raw = record.meta?.rawExercise ?? record.canonical ?? record.exercise;
   const identity = record.canonical || raw;
   const mapped = mappings[identity] ?? mappings[raw];
-  if (mapped) return { category: mapped, source: 'user', confidence: 'high' };
+  if (mapped) {
+    return { category: mapped, source: 'user', confidence: 'high' };
+  }
 
   const normalized = raw
     .toLowerCase()
@@ -89,7 +91,9 @@ export function classifyAccessory(
     .replace(/\s+/g, ' ')
     .trim();
   const match = RULES.find(([, pattern]) => pattern.test(normalized));
-  if (match) return { category: match[0], source: 'heuristic', confidence: match[2] };
+  if (match) {
+    return { category: match[0], source: 'heuristic', confidence: match[2] };
+  }
 
   // Retain the old explicit core tag as a low-confidence migration fallback. Upper/lower tags
   // were inferred from the day's primary lift, so they are intentionally not promoted into the
@@ -107,9 +111,13 @@ export function buildAccessoryCoverage(
 ): AccessoryCoverage[] {
   const categories = new Map<AccessoryCategory, { dates: Set<number>; volume: number }>();
   for (const record of tagged) {
-    if (!record.tags.has('lift:accessory') || !isRecordInDateRange(record.date, from, to)) continue;
+    if (!record.tags.has('lift:accessory') || !isRecordInDateRange(record.date, from, to)) {
+      continue;
+    }
     const { category } = classifyAccessory(record, mappings);
-    if (!category) continue;
+    if (!category) {
+      continue;
+    }
     const summary = categories.get(category) ?? { dates: new Set<number>(), volume: 0 };
     summary.dates.add(record.date);
     const sets = record.meta?.sets ? parseInt(record.meta.sets, 10) : 1;
