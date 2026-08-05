@@ -79,6 +79,19 @@ export {
 export type { LastSessionDetail } from './session/lastSessionDetail';
 export { buildAccessoryTableRows } from './accessory/accessorySubtypeTable';
 export type { AccessoryTableRow, AccessorySubtype } from './accessory/accessorySubtypeTable';
+export {
+  ACCESSORY_CATEGORIES,
+  buildAccessoryCoverage,
+  classifyAccessory,
+} from './accessory/accessoryCoverage';
+export type {
+  AccessoryCategory,
+  AccessoryCategoryMappings,
+  AccessoryClassification,
+  AccessoryClassificationConfidence,
+  AccessoryClassificationSource,
+  AccessoryCoverage,
+} from './accessory/accessoryCoverage';
 export { buildAccessoryHistory, selectAccessoryHistoryMetric } from './accessory/accessoryHistory';
 export type { AccessoryHistoryData, AccessoryHistoryMetric } from './accessory/accessoryHistory';
 export { buildAccessoryProgress } from './accessory/accessoryProgress';
