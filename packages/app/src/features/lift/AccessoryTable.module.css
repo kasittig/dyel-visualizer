@@ -17,3 +17,27 @@
   margin-top: 0.15rem;
   white-space: nowrap;
 }
+
+.effectsHeader {
+  white-space: nowrap;
+}
+
+.exerciseButton {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.exerciseButton:hover {
+  color: var(--accent);
+}
+
+.exerciseButton:focus-visible {
+  border-radius: 2px;
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}

@@ -73,7 +73,7 @@ function SubtypeTable({
             <TableCell as="th" variant="left" {...sortProps('label')}>
               Exercise
             </TableCell>
-            <TableCell as="th" {...sortProps('effects')}>
+            <TableCell as="th" className={styles.effectsHeader} {...sortProps('effects')}>
               Effects
             </TableCell>
             <TableCell as="th" {...sortProps('progress')}>
@@ -92,6 +92,7 @@ function SubtypeTable({
           <tbody>
             {sortedRows.map(
               ({
+                id,
                 label: rLabel,
                 effectsDisplay,
                 progressDisplay,
@@ -102,10 +103,29 @@ function SubtypeTable({
               }) => (
                 <TableRow
                   key={rLabel}
-                  selected={rLabel === highlightedVariation}
-                  onClick={() => onVariationClick?.(rLabel)}
+                  selected={id === highlightedVariation}
+                  onClick={() => onVariationClick?.(id)}
                 >
-                  <TableCell variant="left">{rLabel}</TableCell>
+                  <TableCell variant="left">
+                    <button
+                      type="button"
+                      className={styles.exerciseButton}
+                      aria-pressed={id === highlightedVariation}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onVariationClick?.(id);
+                      }}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter' || event.key === ' ') {
+                          event.preventDefault();
+                          event.stopPropagation();
+                          onVariationClick?.(id);
+                        }
+                      }}
+                    >
+                      {rLabel}
+                    </button>
+                  </TableCell>
                   <TableCell>{effectsDisplay}</TableCell>
                   <TableCell>
                     <span className={styles.progress}>{progressDisplay}</span>

@@ -9,7 +9,7 @@ import { TOUCH_EXPLORATION_QUERY, useMediaQuery } from '../hooks';
 
 export interface MultiSeriesLineChartProps {
   data: ChartPoint[];
-  unit: 'lbs' | 'kg';
+  unit: string;
   seriesKeys: string[];
   tooltip: (item: { name: string; value: unknown; color?: string }, isoDate: string) => TooltipLine;
   highlightedKey?: string | null;
@@ -37,9 +37,7 @@ export function MultiSeriesLineChart({
   const visibleKeys = seriesKeys.filter((key) => !hiddenKeys.has(key));
   const accessibleSummary = [
     summary,
-    visibleKeys.length
-      ? `Visible series: ${visibleKeys.join(', ')}.`
-      : 'All series are hidden.',
+    visibleKeys.length ? `Visible series: ${visibleKeys.join(', ')}.` : 'All series are hidden.',
   ]
     .filter(Boolean)
     .join(' ');

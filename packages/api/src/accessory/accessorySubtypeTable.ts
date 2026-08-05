@@ -5,6 +5,7 @@ import { buildAccessoryProgress, type AccessoryProgress } from './accessoryProgr
 
 export type AccessorySubtype = 'upper' | 'lower' | 'core' | null;
 export interface AccessoryTableRow {
+  id: string;
   label: string;
   subtype: AccessorySubtype;
   effects: string[];
@@ -16,6 +17,12 @@ export interface AccessoryTableRow {
 
 const SUBTYPES: Exclude<AccessorySubtype, null>[] = ['core', 'upper', 'lower'];
 
+export function accessoryExerciseId(record: TaggedSetRecord): string {
+  return record.canonical
+    ? `canonical:${record.canonical}`
+    : `raw:${record.meta?.rawExercise ?? record.exercise}`;
+}
+
 export function buildAccessoryTableRows(
   tagged: TaggedSetRecord[],
   from?: Date,
@@ -23,12 +30,8 @@ export function buildAccessoryTableRows(
 ): AccessoryTableRow[] {
   const filtered = tagged.filter((r) => matches(r.tags, { all: ['lift:accessory'] }));
 
-  return Array.from(
-    Map.groupBy(filtered, (r) =>
-      r.canonical ? `canonical:${r.canonical}` : `raw:${r.meta?.rawExercise ?? r.exercise}`
-    )
-  )
-    .reduce<AccessoryTableRow[]>((acc, [, records]) => {
+  return Array.from(Map.groupBy(filtered, accessoryExerciseId))
+    .reduce<AccessoryTableRow[]>((acc, [id, records]) => {
       const lastSession = buildMostRecentSessionDetail(records);
       if (!lastSession) {
         return acc;
@@ -56,6 +59,7 @@ export function buildAccessoryTableRows(
       }
 
       acc.push({
+        id,
         label: [...latestLabels].sort((a, b) => a.localeCompare(b))[0]!,
         subtype,
         effects: [...effects],

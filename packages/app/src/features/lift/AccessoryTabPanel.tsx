@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { DateRange } from 'react-day-picker';
 import type { DisplayUnit } from '@dyel/api';
 import { AccessoryTable } from './AccessoryTable';
+import { AccessoryHistoryChart } from './AccessoryHistoryChart';
 import { useAccessoryTable } from './useAccessoryTable';
 import type { AccessoryTableGroup } from './useAccessoryTable';
 import { EditableDateChip } from '../../shared/components';
@@ -35,6 +36,7 @@ export function AccessoryTabPanel({
       groups={groups}
       exerciseCount={exerciseCount}
       sessionCount={sessionCount}
+      unit={unit}
     />
   );
 }
@@ -45,14 +47,23 @@ function AccessoryTabContent({
   groups,
   exerciseCount,
   sessionCount,
+  unit,
 }: {
   dateRange: DateRange;
   onDateRangeChange: (range: DateRange) => void;
   groups: AccessoryTableGroup[];
   exerciseCount: number;
   sessionCount: number;
+  unit: DisplayUnit;
 }) {
-  const [selectedAccessory, setSelectedAccessory] = useState<string | null>(null);
+  const allRows = groups.flatMap((group) => group.rows);
+  const [requestedAccessoryId, setRequestedAccessoryId] = useState<string | null>(
+    () => allRows.find((row) => row.sessionCountInRange > 0)?.id ?? allRows[0]?.id ?? null
+  );
+  const selectedAccessoryId = allRows.some((row) => row.id === requestedAccessoryId)
+    ? requestedAccessoryId
+    : (allRows.find((row) => row.sessionCountInRange > 0)?.id ?? allRows[0]?.id ?? null);
+  const selectedAccessory = allRows.find((row) => row.id === selectedAccessoryId) ?? null;
 
   return (
     <section className={styles.panel} aria-labelledby="accessory-inventory-heading">
@@ -73,10 +84,8 @@ function AccessoryTabContent({
       <AccessoryTable
         groups={groups}
         hasSessionsInRange={sessionCount > 0}
-        highlightedVariation={selectedAccessory}
-        onVariationClick={(accessory) =>
-          setSelectedAccessory((current) => (current === accessory ? null : accessory))
-        }
+        highlightedVariation={selectedAccessoryId}
+        onVariationClick={setRequestedAccessoryId}
       />
       {exerciseCount === 1 && (
         <p className={styles.lowData}>
@@ -84,9 +93,12 @@ function AccessoryTabContent({
         </p>
       )}
       {selectedAccessory && (
-        <p className={styles.selection} role="status">
-          Selected: {selectedAccessory}. Its history is ready for detail views.
-        </p>
+        <AccessoryHistoryChart
+          exerciseId={selectedAccessory.id}
+          exerciseLabel={selectedAccessory.label}
+          dateRange={dateRange}
+          unit={unit}
+        />
       )}
     </section>
   );
