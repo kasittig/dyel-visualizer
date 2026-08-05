@@ -106,7 +106,26 @@ function SubtypeTable({
                   selected={id === highlightedVariation}
                   onClick={() => onVariationClick?.(id)}
                 >
-                  <TableCell variant="left">{rLabel}</TableCell>
+                  <TableCell variant="left">
+                    <button
+                      type="button"
+                      className={styles.exerciseButton}
+                      aria-pressed={id === highlightedVariation}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onVariationClick?.(id);
+                      }}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter' || event.key === ' ') {
+                          event.preventDefault();
+                          event.stopPropagation();
+                          onVariationClick?.(id);
+                        }
+                      }}
+                    >
+                      {rLabel}
+                    </button>
+                  </TableCell>
                   <TableCell>{effectsDisplay}</TableCell>
                   <TableCell>
                     <span className={styles.progress}>{progressDisplay}</span>

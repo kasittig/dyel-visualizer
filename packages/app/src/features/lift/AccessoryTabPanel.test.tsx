@@ -86,6 +86,33 @@ describe('AccessoryTabPanel', () => {
     expect(screen.getByRole('status').textContent).toContain('Selected: Chest-supported row');
   });
 
+  it.each(['Enter', ' '])('selects another accessory with the %s key', (key) => {
+    const groups = mockUseAccessoryTable('lbs', dateRange);
+    const firstRow = groups[0]!.rows[0]!;
+    mockUseAccessoryTable.mockReturnValue([
+      {
+        ...groups[0]!,
+        rows: [
+          firstRow,
+          {
+            ...firstRow,
+            id: 'canonical:db-curl',
+            label: 'DB curl',
+          },
+        ],
+      },
+    ]);
+    render(<AccessoryTabPanel dateRange={dateRange} onDateRangeChange={vi.fn()} unit="lbs" />);
+
+    const button = screen.getByRole('button', { name: 'DB curl' });
+    expect(button.getAttribute('aria-pressed')).toBe('false');
+    button.focus();
+    fireEvent.keyDown(button, { key });
+
+    expect(screen.getByRole('status').textContent).toContain('Selected: DB curl');
+    expect(button.getAttribute('aria-pressed')).toBe('true');
+  });
+
   it('explains how to recover from an empty training period', () => {
     mockUseAccessoryTable.mockReturnValue([]);
     render(<AccessoryTabPanel dateRange={dateRange} onDateRangeChange={vi.fn()} unit="lbs" />);
