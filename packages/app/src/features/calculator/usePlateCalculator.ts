@@ -37,9 +37,13 @@ function inputNumber(value: string): number {
   return value.trim() === '' ? Number.NaN : Number(value);
 }
 
-function displayWeight(pounds: number, unit: DisplayUnit): string {
+function displayWeight(pounds: number, unit: DisplayUnit, preserveNonzero = false): string {
   const value = convertWeightUnit(pounds, 'lbs', unit);
-  return `${unit === 'kg' ? value.toFixed(1) : Number.isInteger(value) ? value : value.toFixed(1)} ${unit === 'lbs' ? 'lb' : 'kg'}`;
+  let decimals = unit === 'kg' || !Number.isInteger(value) ? 1 : 0;
+  while (preserveNonzero && value !== 0 && Number(value.toFixed(decimals)) === 0 && decimals < 3) {
+    decimals += 1;
+  }
+  return `${decimals === 0 ? value : value.toFixed(decimals)} ${unit === 'lbs' ? 'lb' : 'kg'}`;
 }
 
 function loadMessage(
@@ -98,11 +102,11 @@ export function usePlateCalculator() {
       ? '—'
       : result.difference === 0
         ? 'Exact'
-        : `${result.difference > 0 ? '+' : '−'}${displayWeight(Math.abs(result.difference), targetUnit)}`;
+        : `${result.difference > 0 ? '+' : '−'}${displayWeight(Math.abs(result.difference), targetUnit, true)}`;
   const differenceSecondary =
     result.difference === null || result.difference === 0
       ? null
-      : `${result.difference > 0 ? '+' : '−'}${displayWeight(Math.abs(result.difference), secondaryUnit)}`;
+      : `${result.difference > 0 ? '+' : '−'}${displayWeight(Math.abs(result.difference), secondaryUnit, true)}`;
   const message = loadMessage(result, loadedTotalDisplay, differenceDisplay, sideLoadDescription);
 
   return {

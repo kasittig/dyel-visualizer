@@ -90,4 +90,21 @@ describe('usePlateCalculator', () => {
     expect(result.current.differenceDisplay).toBe('−0.4 kg');
     expect(result.current.differenceSecondary).toBe('−0.9 lb');
   });
+
+  it('preserves a visible nonzero difference for a near-achievable kilogram target', () => {
+    const { result } = renderHook(() => usePlateCalculator());
+
+    act(() => {
+      result.current.setTargetUnit('kg');
+      result.current.setTargetWeight('61.25');
+    });
+
+    expect(result.current.result).toMatchObject({
+      status: 'closest-under-target',
+      loadedTotal: 135,
+    });
+    expect(result.current.differenceDisplay).toBe('−0.02 kg');
+    expect(result.current.differenceSecondary).toBe('−0.03 lb');
+    expect(result.current.message).not.toContain('−0.0 kg');
+  });
 });
