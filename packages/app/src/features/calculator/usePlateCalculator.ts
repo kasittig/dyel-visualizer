@@ -40,10 +40,16 @@ function inputNumber(value: string): number {
 function displayWeight(pounds: number, unit: DisplayUnit, preserveNonzero = false): string {
   const value = convertWeightUnit(pounds, 'lbs', unit);
   let decimals = unit === 'kg' || !Number.isInteger(value) ? 1 : 0;
-  while (preserveNonzero && value !== 0 && Number(value.toFixed(decimals)) === 0 && decimals < 3) {
+  while (preserveNonzero && value !== 0 && Number(value.toFixed(decimals)) === 0 && decimals < 10) {
     decimals += 1;
   }
-  return `${decimals === 0 ? value : value.toFixed(decimals)} ${unit === 'lbs' ? 'lb' : 'kg'}`;
+  const display =
+    preserveNonzero && value !== 0 && Number(value.toFixed(decimals)) === 0
+      ? value.toExponential(2)
+      : decimals === 0
+        ? value
+        : value.toFixed(decimals);
+  return `${display} ${unit === 'lbs' ? 'lb' : 'kg'}`;
 }
 
 function loadMessage(
