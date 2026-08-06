@@ -3,6 +3,7 @@ import clsx from 'clsx';
 import { PipelineProvider } from './PipelineContext';
 import { RepCalculator } from '../features/calculator/RepCalculator';
 import { StrengthScoreCalculator } from '../features/calculator/StrengthScoreCalculator';
+import { PlateCalculator } from '../features/calculator/PlateCalculator';
 import { SigmaTab } from '../features/sigma/SigmaTab';
 import { AccessoryTabPanel, LiftTabPanel } from '../features/lift';
 import { SheetUrlPanel } from '../features/data-source/SheetUrlPanel';
@@ -131,6 +132,11 @@ export function App() {
               )}
             </p>
           )}
+          {effStatus !== 'success' && (
+            <div className={styles.offlineCalculator}>
+              <PlateCalculator />
+            </div>
+          )}
           {effStatus === 'success' && (
             <>
               <FirstUseGuide isFirstUse={isFirstUse} />
@@ -201,12 +207,17 @@ export function App() {
                 tabIndex={0}
               >
                 {effActiveTab === 'calculator' ? (
-                  <div className={styles.calculatorRow}>
-                    <div>
-                      <RepCalculator tabRows={tabRows} baselineNames={defaultCanonicals} />
+                  <div className={styles.calculatorWorkspace}>
+                    <div className={styles.calculatorPlate}>
+                      <PlateCalculator />
                     </div>
-                    <div>
-                      <StrengthScoreCalculator dateRange={dateRange} unit={dataUnit} />
+                    <div className={styles.calculatorRow}>
+                      <div>
+                        <RepCalculator tabRows={tabRows} baselineNames={defaultCanonicals} />
+                      </div>
+                      <div>
+                        <StrengthScoreCalculator dateRange={dateRange} unit={dataUnit} />
+                      </div>
                     </div>
                   </div>
                 ) : effActiveTab === 'sigma' ? (

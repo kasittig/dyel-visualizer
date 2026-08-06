@@ -9,6 +9,10 @@ export function convertWeight(kg: number, unit: DisplayUnit): number {
   return unit === 'lbs' ? kg * KG_TO_LBS : kg;
 }
 
+export function convertWeightUnit(value: number, from: DisplayUnit, to: DisplayUnit): number {
+  return from === to ? value : from === 'kg' ? value * KG_TO_LBS : value / KG_TO_LBS;
+}
+
 export function roundWeight(kg: number, unit: DisplayUnit): number {
   return Math.round(convertWeight(kg, unit));
 }

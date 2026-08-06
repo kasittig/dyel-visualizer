@@ -3,9 +3,21 @@ export { calculateVolumeCorrelationFromTagged } from './volume/volume';
 export { parseTextData } from './text/parseTextData';
 export { TOTAL_CHART_SPECS } from './totalChartSpecs';
 export { buildChartDatasets } from './chart/buildChartDatasets';
-export { convertWeight, roundWeight, formatWeight } from './weightUnit';
+export { convertWeight, convertWeightUnit, roundWeight, formatWeight } from './weightUnit';
 export type { SplitRows } from './sheet/parseSheetData';
 export type { DisplayUnit } from './weightUnit';
+export {
+  CALIBRATED_PLATES,
+  STANDARD_IRON_PLATES,
+  calculatePlateLoad,
+  type CalibratedPlateColor,
+  type Plate,
+  type PlateInventory,
+  type PlateLoadInput,
+  type PlateLoadResult,
+  type PlateLoadStatus,
+  type PlateStyle,
+} from './plateCalculator';
 export type {
   PipelineModel,
   PipelinePointStore,

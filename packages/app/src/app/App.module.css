@@ -188,13 +188,38 @@
   }
 }
 
+.calculatorWorkspace {
+  display: grid;
+  width: min(100%, 760px);
+  gap: 1rem;
+  margin: 1.25rem auto 0;
+}
+
+.calculatorPlate {
+  min-width: 0;
+}
+
 .calculatorRow {
-  margin-top: 2.5rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+  align-items: stretch;
+}
+
+.calculatorRow > div {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  min-width: 0;
+}
+
+.calculatorRow > div > :global([role='region']) {
+  min-height: 0;
+}
+
+.offlineCalculator {
   display: flex;
-  gap: 0 3rem;
-  align-items: flex-start;
-  flex-wrap: wrap;
   justify-content: center;
+  margin-top: 1.5rem;
 }
 
 .mobileTopControls,
