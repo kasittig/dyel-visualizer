@@ -1,46 +1,68 @@
 .card {
-  display: grid;
-  grid-template-columns: 260px 1fr;
-  max-width: 680px;
+  height: 100%;
   background: var(--code-bg);
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: 8px;
   overflow: hidden;
   width: 100%;
 }
 
+.masthead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.9rem 1rem;
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--text-h) 3%, var(--code-bg));
+}
+
+.eyebrow,
+.fieldLabel {
+  color: var(--text);
+  font-family: var(--heading);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.mastheadTitle {
+  margin: 0.15rem 0 0;
+  color: var(--text-h);
+  font: 700 1.25rem/1 var(--heading);
+  letter-spacing: 0.01em;
+}
+
+.mastheadNote {
+  color: var(--muted);
+  font: 0.68rem/1.25 var(--mono);
+  text-align: right;
+}
+
+.body {
+  display: grid;
+  grid-template-columns: minmax(13rem, 0.78fr) minmax(0, 1.22fr);
+}
+
 .leftCol {
-  padding: 20px;
+  padding: 1rem;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 1rem;
   border-right: 1px solid var(--border);
 }
 
 .rightCol {
-  padding: 20px;
+  padding: 1rem;
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  justify-content: center;
-}
-
-.sectionLabel {
-  font-family: var(--heading);
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--text);
+  gap: 1rem;
+  justify-content: flex-start;
 }
 
 .fieldLabel {
-  font-family: var(--heading);
-  font-size: 9px;
-  font-weight: 700;
-  text-transform: uppercase;
   letter-spacing: 0.07em;
-  color: var(--text);
   margin-bottom: 6px;
 }
 
@@ -66,12 +88,13 @@
   background: transparent;
   color: var(--text);
   font-family: var(--heading);
-  font-size: 11px;
+  min-height: 2.25rem;
+  font-size: 0.68rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  padding: 5px 11px;
-  border-radius: 999px;
+  padding: 0.4rem;
+  border-radius: 4px;
   cursor: pointer;
   text-align: center;
   transition:
@@ -88,7 +111,8 @@
 
 .input {
   font-size: 0.9rem;
-  padding: 6px 8px;
+  min-height: 2.25rem;
+  padding: 0.58rem 0.65rem;
   border: 1px solid var(--border);
   border-radius: 4px;
   width: 100%;
@@ -124,6 +148,9 @@
 }
 
 .e1rmDisplay {
+  margin-top: auto;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
   font-family: var(--mono);
   font-size: 20px;
   font-weight: 700;
@@ -139,9 +166,15 @@
 }
 
 @media (max-width: 640px) {
-  .card {
-    grid-template-columns: minmax(0, 1fr);
-    max-width: none;
+  .masthead,
+  .body {
+    display: block;
+  }
+
+  .mastheadNote {
+    display: block;
+    margin-top: 0.45rem;
+    text-align: left;
   }
 
   .leftCol {

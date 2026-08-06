@@ -1,9 +1,20 @@
 import { describe, it, expect } from 'vitest';
-import { convertWeight, roundWeight, formatWeight } from './weightUnit';
+import { convertWeight, convertWeightUnit, roundWeight, formatWeight } from './weightUnit';
 
 const MUL = 2.20462262185;
 
 describe('weightUnit utilities', () => {
+  it.each([
+    ['kg to lbs', 200, 'kg', 'lbs', 200 * MUL],
+    ['lbs to kg', 440, 'lbs', 'kg', 440 / MUL],
+    ['same unit', 200, 'kg', 'kg', 200],
+  ])('converts %s', (_, value, from, to, expected) => {
+    expect(convertWeightUnit(value, from as 'lbs' | 'kg', to as 'lbs' | 'kg')).toBeCloseTo(
+      expected,
+      5
+    );
+  });
+
   it.each([
     ['kg zero', 0, 'kg', 0],
     ['kg pos', 100, 'kg', 100],
