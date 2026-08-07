@@ -44,6 +44,8 @@ export type {
   DayContext,
 } from './derive/dayContext';
 export { deriveDayContexts } from './derive/dayContext';
+export type { SessionContext, SessionContextFinding } from './derive/sessionContext';
+export { extractSessionContexts } from './derive/sessionContext';
 export type {
   DiagnosticsReport,
   VariantAssessment,

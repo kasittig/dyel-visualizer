@@ -1,11 +1,12 @@
 import type { SetRecord } from '../types';
+import type { SessionContextFinding } from './sessionContext';
 
 export interface ConflictingBodyweightsFinding {
   type: 'conflicting-bodyweights';
   valuesKg: number[];
 }
 
-export type DayContextFinding = ConflictingBodyweightsFinding;
+export type DayContextFinding = ConflictingBodyweightsFinding | SessionContextFinding;
 
 export interface DayContext {
   date: number;

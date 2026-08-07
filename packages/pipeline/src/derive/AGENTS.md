@@ -11,6 +11,16 @@
 - Deduplicates exact nonempty `meta.notes` strings in source order. It does not interpret notes or
   carry either kind of context between dates.
 
+## sessionContext.ts — day contexts → explicit note context findings
+
+    extractSessionContexts(dayContexts): DayContext[]
+
+- Matches only local, deterministic phrases for deloads, illness, poor sleep, and positive
+  readiness. Matching is case-insensitive, rejects explicit negation, and makes no AI/API calls or
+  readiness calculations.
+- Findings preserve the complete note as `sourceText` and its exact matched casing as `matchedText`.
+  Notes, bodyweight context, and existing findings remain unchanged.
+
 ## derivers.ts — TaggedSetRecord[] → single value per (date, canonical)
 
     type SeriesDeriver = { id: string; derive(daySets: TaggedSetRecord[]): number | null };
