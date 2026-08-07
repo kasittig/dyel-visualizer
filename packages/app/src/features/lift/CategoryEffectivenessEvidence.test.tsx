@@ -27,6 +27,8 @@ const row = (status: CategoryEffectivenessRow['status']): CategoryEffectivenessR
   evidenceSummary:
     '2 follow-up observations · 6 contributing lift signals (2 baseline, 4 follow-up)',
   interpretation: 'Category exposure was followed by possible improvement.',
+  requirementDisplay:
+    status === 'insufficient-data' ? 'Needed: 1 category session in the earlier period.' : null,
 });
 
 describe('CategoryEffectivenessEvidence', () => {
@@ -53,6 +55,7 @@ describe('CategoryEffectivenessEvidence', () => {
     fireEvent.click(guideSummary);
     expect(guide.hasAttribute('open')).toBe(true);
     expect(screen.getByText(/not proof.*caused/i)).toBeTruthy();
+    expect(screen.getByText(/Minimum evidence: 1 category session/)).toBeTruthy();
 
     const summary = screen.getByText('View periods and evidence');
     const details = summary.closest('details')!;
@@ -86,6 +89,7 @@ describe('CategoryEffectivenessEvidence', () => {
     ]) {
       expect(screen.getByText(label)).toBeTruthy();
     }
+    expect(screen.getByText('Needed: 1 category session in the earlier period.')).toBeTruthy();
     expect(screen.getAllByLabelText('Core Demand analysis periods')).toHaveLength(4);
     for (const summary of screen.getAllByText('View periods and evidence')) {
       expect(summary.closest('details')!.hasAttribute('open')).toBe(false);

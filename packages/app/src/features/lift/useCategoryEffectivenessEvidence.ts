@@ -26,6 +26,7 @@ export interface CategoryEffectivenessRow {
   changeDisplay: string;
   evidenceSummary: string;
   interpretation: string;
+  requirementDisplay: string | null;
 }
 
 export interface CategoryEffectivenessView {
@@ -40,6 +41,10 @@ const STATUS_LABELS: Record<CategoryEffectivenessStatus, string> = {
   'no-clear-change': 'No clear change',
   'possible-worsening': 'Possible worsening',
 };
+const REQUIREMENT_LIST = new Intl.ListFormat('en-US', {
+  style: 'long',
+  type: 'conjunction',
+});
 const EMPTY: CategoryEffectivenessView = {
   windowPolicy:
     'Choose a start and end date to compare an earlier exposure period with a later follow-up.',
@@ -93,31 +98,45 @@ export function useCategoryEffectivenessEvidence(dateRange: DateRange): Category
       unavailableReason: evidence.length
         ? null
         : 'No related category and lift-quality history is available for these periods.',
-      rows: evidence.map((item) => ({
-        id: `${item.category}:${item.quality}`,
-        category: item.category,
-        categoryLabel: ACCESSORY_CATEGORY_LABELS[item.category],
-        qualityLabel: formatEffect(item.quality),
-        status: item.status,
-        statusLabel: STATUS_LABELS[item.status],
-        exposurePeriod: formatPeriod(item.exposurePeriod.start, item.exposurePeriod.end),
-        outcomePeriod: formatPeriod(item.outcomePeriod.start, item.outcomePeriod.end),
-        sessionSummary: `${item.sessionCount} session${item.sessionCount === 1 ? '' : 's'} across ${item.exposureWeekCount} week${item.exposureWeekCount === 1 ? '' : 's'}${item.exposureWeekCount ? ` · ${(item.sessionCount / item.exposureWeekCount).toFixed(1)} per week` : ''}`,
-        baselineDisplay:
+      rows: evidence.map((item) => {
+        const missingRequirements = [
+          item.sessionCount === 0 ? '1 category session in the earlier period' : null,
           item.baselineNormalizedResult === null
-            ? 'Not available'
-            : item.baselineNormalizedResult.toFixed(3),
-        outcomeDisplay:
+            ? '1 usable lift observation in the earlier period'
+            : null,
           item.outcomeNormalizedResult === null
-            ? 'Not available'
-            : item.outcomeNormalizedResult.toFixed(3),
-        changeDisplay:
-          item.weaknessChange === null
-            ? 'Not available'
-            : `${item.weaknessChange > 0 ? '+' : ''}${item.weaknessChange.toFixed(3)}`,
-        evidenceSummary: `${item.observationCount} follow-up observation${item.observationCount === 1 ? '' : 's'} · ${item.evidenceCount} contributing lift signal${item.evidenceCount === 1 ? '' : 's'} (${item.baselineEvidenceCount} baseline, ${item.outcomeEvidenceCount} follow-up)`,
-        interpretation: item.interpretation,
-      })),
+            ? '1 usable lift observation in the later follow-up'
+            : null,
+        ].filter((requirement): requirement is string => requirement !== null);
+        return {
+          id: `${item.category}:${item.quality}`,
+          category: item.category,
+          categoryLabel: ACCESSORY_CATEGORY_LABELS[item.category],
+          qualityLabel: formatEffect(item.quality),
+          status: item.status,
+          statusLabel: STATUS_LABELS[item.status],
+          exposurePeriod: formatPeriod(item.exposurePeriod.start, item.exposurePeriod.end),
+          outcomePeriod: formatPeriod(item.outcomePeriod.start, item.outcomePeriod.end),
+          sessionSummary: `${item.sessionCount} session${item.sessionCount === 1 ? '' : 's'} across ${item.exposureWeekCount} week${item.exposureWeekCount === 1 ? '' : 's'}${item.exposureWeekCount ? ` · ${(item.sessionCount / item.exposureWeekCount).toFixed(1)} per week` : ''}`,
+          baselineDisplay:
+            item.baselineNormalizedResult === null
+              ? 'Not available'
+              : item.baselineNormalizedResult.toFixed(3),
+          outcomeDisplay:
+            item.outcomeNormalizedResult === null
+              ? 'Not available'
+              : item.outcomeNormalizedResult.toFixed(3),
+          changeDisplay:
+            item.weaknessChange === null
+              ? 'Not available'
+              : `${item.weaknessChange > 0 ? '+' : ''}${item.weaknessChange.toFixed(3)}`,
+          evidenceSummary: `${item.observationCount} follow-up observation${item.observationCount === 1 ? '' : 's'} · ${item.evidenceCount} contributing lift signal${item.evidenceCount === 1 ? '' : 's'} (${item.baselineEvidenceCount} baseline, ${item.outcomeEvidenceCount} follow-up)`,
+          interpretation: item.interpretation,
+          requirementDisplay: missingRequirements.length
+            ? `Needed: ${REQUIREMENT_LIST.format(missingRequirements)}.`
+            : null,
+        };
+      }),
     };
   }, [status, model, dateRange.from, dateRange.to]);
 }

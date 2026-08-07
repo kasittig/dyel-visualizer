@@ -87,6 +87,37 @@ describe('useCategoryEffectivenessEvidence', () => {
       sessionSummary: '4 sessions across 2 weeks · 2.0 per week',
       changeDisplay: '+0.100',
       evidenceSummary: expect.stringContaining('6 contributing lift signals'),
+      requirementDisplay: null,
     });
+  });
+
+  it('explains the exact missing requirements for insufficient evidence', () => {
+    mockAssociate.mockReturnValue([
+      {
+        category: 'core',
+        quality: 'CORE_DEMAND',
+        exposurePeriod: { start: Date.UTC(2026, 7, 1), end: Date.UTC(2026, 7, 16) },
+        outcomePeriod: { start: Date.UTC(2026, 7, 16), end: Date.UTC(2026, 8, 1) },
+        sessionCount: 0,
+        exposureWeekCount: 0,
+        baselineNormalizedResult: null,
+        outcomeNormalizedResult: 0.9,
+        weaknessChange: null,
+        baselineEvidenceCount: 0,
+        outcomeEvidenceCount: 4,
+        evidenceCount: 4,
+        observationCount: 2,
+        status: 'insufficient-data',
+        interpretation: 'Insufficient data to assess an association.',
+      },
+    ]);
+
+    expect(
+      renderHook(() =>
+        useCategoryEffectivenessEvidence({ from: new Date(2026, 7, 1), to: new Date(2026, 7, 31) })
+      ).result.current.rows[0]?.requirementDisplay
+    ).toBe(
+      'Needed: 1 category session in the earlier period and 1 usable lift observation in the earlier period.'
+    );
   });
 });

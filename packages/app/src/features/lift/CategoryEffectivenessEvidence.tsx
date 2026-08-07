@@ -13,6 +13,10 @@ export function CategoryEffectivenessGuide({ evidence }: { evidence: CategoryEff
         Evidence appears inside its accessory category. These are category-level associations, not
         proof that accessory work caused a change. No individual exercise receives credit.
       </p>
+      <p>
+        Minimum evidence: 1 category session and 1 usable lift-quality observation in the earlier
+        period, plus 1 usable lift-quality observation in the later follow-up.
+      </p>
       {evidence.unavailableReason && <p>{evidence.unavailableReason}</p>}
     </details>
   );
@@ -42,6 +46,9 @@ export function CategoryEffectivenessEvidence({ rows }: { rows: CategoryEffectiv
               <strong>{row.statusLabel}</strong>
             </div>
             <p className={styles.compactSummary}>{row.sessionSummary}</p>
+            {row.requirementDisplay && (
+              <p className={styles.requirement}>{row.requirementDisplay}</p>
+            )}
             <details className={styles.evidenceDetails}>
               <summary>View periods and evidence</summary>
               <div className={styles.timeline} aria-label={`${row.qualityLabel} analysis periods`}>

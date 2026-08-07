@@ -103,6 +103,12 @@
   color: var(--muted);
   font-size: 0.72rem;
 }
+.requirement {
+  margin-top: 0.35rem;
+  color: var(--text);
+  font-size: 0.74rem;
+  line-height: 1.4;
+}
 .evidenceDetails {
   margin-top: 0.55rem;
 }
