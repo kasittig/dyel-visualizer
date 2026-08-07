@@ -1,5 +1,16 @@
 # derive/ — tagged sets → Points, normalization model, athlete math
 
+## dayContext.ts — parsed records → daily bodyweight, notes, and findings
+
+    deriveDayContexts(records): DayContext[]
+
+- Groups records by UTC calendar date and preserves the first-seen order of dates.
+- Reads normalized kilograms only from `meta.bodyweight`; raw bodyweight audit metadata is never
+  changed. A single distinct value becomes `bodyweightKg`; conflicts leave it `null` and produce a
+  `conflicting-bodyweights` finding containing the distinct values in source order.
+- Deduplicates exact nonempty `meta.notes` strings in source order. It does not interpret notes or
+  carry either kind of context between dates.
+
 ## derivers.ts — TaggedSetRecord[] → single value per (date, canonical)
 
     type SeriesDeriver = { id: string; derive(daySets: TaggedSetRecord[]): number | null };

@@ -39,6 +39,12 @@ export {
 export type { AthleteContext } from './derive/athlete';
 export { wilks, dots } from './derive/athlete';
 export type {
+  ConflictingBodyweightsFinding,
+  DayContextFinding,
+  DayContext,
+} from './derive/dayContext';
+export { deriveDayContexts } from './derive/dayContext';
+export type {
   DiagnosticsReport,
   VariantAssessment,
   PerformanceStatus,
