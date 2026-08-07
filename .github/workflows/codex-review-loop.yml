@@ -31,7 +31,6 @@ jobs:
             const maxRevisions = Number(process.env.MAX_CODEX_REVISIONS);
             const humanReviewer = process.env.HUMAN_REVIEWER;
             const headSha = context.payload.pull_request.head.sha;
-            const beforeSha = context.payload.before;
             const conversation = await github.paginate(
               github.rest.issues.listComments,
               { owner, repo, issue_number, per_page: 100 },
@@ -44,32 +43,32 @@ jobs:
               (context.payload.sender.login.includes('codex') ||
                 context.payload.sender.login.includes('chatgpt'))
             ) {
-              const previousMarker = new RegExp(
-                `<!-- codex-review-loop:(?:request|state):revision:(\\d+):head:${beforeSha} -->`,
+              const requestPattern =
+                /<!-- codex-review-loop:request:revision:(\d+):head:([0-9a-f]{40}) -->/;
+              const requests = [];
+              for (const comment of conversation) {
+                const match =
+                  comment.user?.login === 'github-actions[bot]' &&
+                  comment.body?.match(requestPattern);
+                if (match) requests.push({ revision: Number(match[1]), head: match[2] });
+              }
+              const ancestry = await Promise.all(
+                requests.map(async (request) => ({
+                  ...request,
+                  comparison: await github.rest.repos.compareCommitsWithBasehead({
+                    owner,
+                    repo,
+                    basehead: `${request.head}...${headSha}`,
+                  }),
+                })),
               );
-              revisions = Number(
-                conversation.findLast(
-                  (comment) =>
-                    comment.user?.login === 'github-actions[bot]' &&
-                    previousMarker.test(comment.body ?? ''),
-                )?.body?.match(previousMarker)?.[1] ?? 0,
-              );
-              const stateMarker =
-                `<!-- codex-review-loop:state:revision:${revisions}:head:${headSha} -->`;
-              if (
-                revisions > 0 &&
-                !conversation.some(
-                  (comment) =>
-                    comment.user?.login === 'github-actions[bot]' &&
-                    comment.body?.includes(stateMarker),
-                )
-              ) {
-                await github.rest.issues.createComment({
-                  owner,
-                  repo,
-                  issue_number,
-                  body: stateMarker,
-                });
+              for (const { revision, comparison } of ancestry) {
+                if (
+                  revision > revisions &&
+                  ['ahead', 'identical'].includes(comparison.data.status)
+                ) {
+                  revisions = revision;
+                }
               }
             }
 
@@ -193,9 +192,26 @@ jobs:
               return;
             }
 
+            const nextRevision = revisions + 1;
+            const requestMarker =
+              `<!-- codex-review-loop:request:revision:${nextRevision}:head:${headSha} -->`;
+            const latestConversation = await github.paginate(
+              github.rest.issues.listComments,
+              { owner, repo, issue_number, per_page: 100 },
+            );
+            if (
+              latestConversation.some(
+                (comment) =>
+                  comment.user?.login === 'github-actions[bot]' &&
+                  comment.body?.includes(requestMarker),
+              )
+            ) {
+              core.info('The revision request for this head already exists.');
+              return;
+            }
             await github.rest.issues.createComment({
               owner,
               repo,
               issue_number,
-              body: `<!-- codex-review-loop:request:revision:${revisions + 1}:head:${headSha} -->\n@codex fix all actionable findings from your latest review. Keep the changes scoped, run the relevant tests, and push the fixes to this PR branch. Revision ${revisions + 1} of ${maxRevisions}.`,
+              body: `${requestMarker}\n@codex fix all actionable findings from your latest review. Keep the changes scoped, run the relevant tests, and push the fixes to this PR branch. Revision ${nextRevision} of ${maxRevisions}.`,
             });
