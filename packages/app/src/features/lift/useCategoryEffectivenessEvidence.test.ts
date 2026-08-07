@@ -80,6 +80,7 @@ describe('useCategoryEffectivenessEvidence', () => {
         useCategoryEffectivenessEvidence({ from: new Date(2026, 7, 1), to: new Date(2026, 7, 31) })
       ).result.current.rows[0]
     ).toMatchObject({
+      category: 'core',
       categoryLabel: 'Core',
       qualityLabel: 'Core Demand',
       statusLabel: 'Possible improvement',

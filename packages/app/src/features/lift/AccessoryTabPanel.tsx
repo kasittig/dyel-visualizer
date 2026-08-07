@@ -10,7 +10,7 @@ import { useAccessoryCoverage } from './useAccessoryCoverage';
 import { useWeaknessAccessoryCoverage } from './useWeaknessAccessoryCoverage';
 import { WeaknessAccessoryCoverage } from './WeaknessAccessoryCoverage';
 import { useCategoryEffectivenessEvidence } from './useCategoryEffectivenessEvidence';
-import { CategoryEffectivenessEvidence } from './CategoryEffectivenessEvidence';
+import { CategoryEffectivenessGuide } from './CategoryEffectivenessEvidence';
 import { EditableDateChip } from '../../shared/components';
 import styles from './AccessoryTabPanel.module.css';
 
@@ -100,7 +100,6 @@ function AccessoryTabContent({
         Review what you are training, when you last trained it, and what you want to inspect next.
       </p>
       <WeaknessAccessoryCoverage rows={weaknessCoverage} />
-      <CategoryEffectivenessEvidence evidence={effectivenessEvidence} />
       <section className={styles.coverage} aria-labelledby="accessory-coverage-heading">
         <h3 id="accessory-coverage-heading">Coverage in range</h3>
         {coverage.length ? (
@@ -118,11 +117,13 @@ function AccessoryTabContent({
           <p>No classified accessory coverage in this range.</p>
         )}
       </section>
+      <CategoryEffectivenessGuide evidence={effectivenessEvidence} />
       <AccessoryTable
         groups={groups}
         hasSessionsInRange={sessionCount > 0}
         highlightedVariation={selectedAccessoryId}
         onVariationClick={setRequestedAccessoryId}
+        effectivenessEvidence={effectivenessEvidence}
       />
       {exerciseCount === 1 && (
         <p className={styles.lowData}>

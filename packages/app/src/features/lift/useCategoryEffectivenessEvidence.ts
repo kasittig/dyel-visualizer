@@ -5,6 +5,7 @@ import {
   buildWeeklyAccessoryCategoryExposure,
   deriveHistoricalWeaknessTrends,
   formatEffect,
+  type AccessoryCategory,
   type CategoryEffectivenessStatus,
 } from '@dyel/api';
 import { usePipelineModel } from '../../app/PipelineContext';
@@ -12,6 +13,7 @@ import { ACCESSORY_CATEGORY_LABELS } from './useAccessoryTable';
 
 export interface CategoryEffectivenessRow {
   id: string;
+  category: AccessoryCategory;
   categoryLabel: string;
   qualityLabel: string;
   status: CategoryEffectivenessStatus;
@@ -93,6 +95,7 @@ export function useCategoryEffectivenessEvidence(dateRange: DateRange): Category
         : 'No related category and lift-quality history is available for these periods.',
       rows: evidence.map((item) => ({
         id: `${item.category}:${item.quality}`,
+        category: item.category,
         categoryLabel: ACCESSORY_CATEGORY_LABELS[item.category],
         qualityLabel: formatEffect(item.quality),
         status: item.status,

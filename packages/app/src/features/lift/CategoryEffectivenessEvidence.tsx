@@ -1,80 +1,82 @@
-import type { CategoryEffectivenessView } from './useCategoryEffectivenessEvidence';
+import type {
+  CategoryEffectivenessRow,
+  CategoryEffectivenessView,
+} from './useCategoryEffectivenessEvidence';
 import styles from './CategoryEffectivenessEvidence.module.css';
 
-export function CategoryEffectivenessEvidence({
-  evidence,
-}: {
-  evidence: CategoryEffectivenessView;
-}) {
+export function CategoryEffectivenessGuide({ evidence }: { evidence: CategoryEffectivenessView }) {
   return (
-    <section className={styles.section} aria-labelledby="category-effectiveness-heading">
+    <details className={styles.guide}>
+      <summary>How effectiveness evidence works</summary>
+      <p>{evidence.windowPolicy}</p>
+      <p>
+        Evidence appears inside its accessory category. These are category-level associations, not
+        proof that accessory work caused a change. No individual exercise receives credit.
+      </p>
+      {evidence.unavailableReason && <p>{evidence.unavailableReason}</p>}
+    </details>
+  );
+}
+
+export function CategoryEffectivenessEvidence({ rows }: { rows: CategoryEffectivenessRow[] }) {
+  if (!rows.length) {
+    return null;
+  }
+
+  return (
+    <section className={styles.section} aria-label="Category effectiveness evidence">
       <header className={styles.header}>
         <div>
           <p className={styles.eyebrow}>Earlier work → later signal</p>
-          <h3 id="category-effectiveness-heading">Category effectiveness evidence</h3>
+          <h4>Effectiveness evidence</h4>
         </div>
-        <details className={styles.guide}>
-          <summary>How this works</summary>
-          <p>{evidence.windowPolicy}</p>
-          <p>
-            These are category-level associations, not proof that accessory work caused a change. No
-            individual exercise receives credit.
-          </p>
-        </details>
+        <span>
+          {rows.length} association{rows.length === 1 ? '' : 's'}
+        </span>
       </header>
-      {evidence.unavailableReason && !evidence.rows.length ? (
-        <p className={styles.empty}>{evidence.unavailableReason}</p>
-      ) : (
-        <ul className={styles.list}>
-          {evidence.rows.map((row) => (
-            <li key={row.id} className={styles.card} data-status={row.status}>
-              <div className={styles.cardHeading}>
+      <ul className={styles.list}>
+        {rows.map((row) => (
+          <li key={row.id} className={styles.card} data-status={row.status}>
+            <div className={styles.cardHeading}>
+              <h5>{row.qualityLabel}</h5>
+              <strong>{row.statusLabel}</strong>
+            </div>
+            <p className={styles.compactSummary}>{row.sessionSummary}</p>
+            <details className={styles.evidenceDetails}>
+              <summary>View periods and evidence</summary>
+              <div className={styles.timeline} aria-label={`${row.qualityLabel} analysis periods`}>
                 <div>
-                  <span>{row.categoryLabel}</span>
-                  <h4>{row.qualityLabel}</h4>
+                  <span>Exposure</span>
+                  <strong>{row.exposurePeriod}</strong>
+                  <small>{row.sessionSummary}</small>
                 </div>
-                <strong>{row.statusLabel}</strong>
+                <span aria-hidden="true">→</span>
+                <div>
+                  <span>Later follow-up</span>
+                  <strong>{row.outcomePeriod}</strong>
+                  <small>{row.evidenceSummary}</small>
+                </div>
               </div>
-              <p className={styles.compactSummary}>{row.sessionSummary}</p>
-              <details className={styles.evidenceDetails}>
-                <summary>View periods and evidence</summary>
-                <div
-                  className={styles.timeline}
-                  aria-label={`${row.categoryLabel} analysis periods`}
-                >
-                  <div>
-                    <span>Exposure</span>
-                    <strong>{row.exposurePeriod}</strong>
-                    <small>{row.sessionSummary}</small>
-                  </div>
-                  <span aria-hidden="true">→</span>
-                  <div>
-                    <span>Later follow-up</span>
-                    <strong>{row.outcomePeriod}</strong>
-                    <small>{row.evidenceSummary}</small>
-                  </div>
+              <dl className={styles.metrics}>
+                <div>
+                  <dt>Baseline</dt>
+                  <dd>{row.baselineDisplay}</dd>
                 </div>
-                <dl className={styles.metrics}>
-                  <div>
-                    <dt>Baseline</dt>
-                    <dd>{row.baselineDisplay}</dd>
-                  </div>
-                  <div>
-                    <dt>Follow-up</dt>
-                    <dd>{row.outcomeDisplay}</dd>
-                  </div>
-                  <div>
-                    <dt>Change</dt>
-                    <dd>{row.changeDisplay}</dd>
-                  </div>
-                </dl>
-                <p>{row.evidenceSummary}</p>
-                <p>{row.interpretation} This describes timing and association only.</p>
-              </details>
-            </li>
-          ))}
-        </ul>
-      )}
+                <div>
+                  <dt>Follow-up</dt>
+                  <dd>{row.outcomeDisplay}</dd>
+                </div>
+                <div>
+                  <dt>Change</dt>
+                  <dd>{row.changeDisplay}</dd>
+                </div>
+              </dl>
+              <p>{row.evidenceSummary}</p>
+              <p>{row.interpretation} This describes timing and association only.</p>
+            </details>
+          </li>
+        ))}
+      </ul>
     </section>
   );
 }

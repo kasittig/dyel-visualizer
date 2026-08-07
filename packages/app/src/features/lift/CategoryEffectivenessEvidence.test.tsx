@@ -1,10 +1,14 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
-import { CategoryEffectivenessEvidence } from './CategoryEffectivenessEvidence';
+import {
+  CategoryEffectivenessEvidence,
+  CategoryEffectivenessGuide,
+} from './CategoryEffectivenessEvidence';
 import type { CategoryEffectivenessRow } from './useCategoryEffectivenessEvidence';
 
 const row = (status: CategoryEffectivenessRow['status']): CategoryEffectivenessRow => ({
   id: `core:${status}`,
+  category: 'core',
   categoryLabel: 'Core',
   qualityLabel: 'Core Demand',
   status,
@@ -29,20 +33,24 @@ describe('CategoryEffectivenessEvidence', () => {
   afterEach(cleanup);
   it('keeps secondary guidance and evidence collapsed until requested', () => {
     render(
-      <CategoryEffectivenessEvidence
-        evidence={{
-          windowPolicy: 'Selected range split into two periods.',
-          unavailableReason: null,
-          rows: [row('possible-improvement')],
-        }}
-      />
+      <>
+        <CategoryEffectivenessGuide
+          evidence={{
+            windowPolicy: 'Selected range split into two periods.',
+            unavailableReason: null,
+            rows: [row('possible-improvement')],
+          }}
+        />
+        <CategoryEffectivenessEvidence rows={[row('possible-improvement')]} />
+      </>
     );
-    expect(screen.getByRole('heading', { name: 'Category effectiveness evidence' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Effectiveness evidence' })).toBeTruthy();
     expect(screen.getAllByText(/2.0 per week/).length).toBeGreaterThan(0);
 
-    const guide = screen.getByText('How this works').closest('details')!;
+    const guideSummary = screen.getByText('How effectiveness evidence works');
+    const guide = guideSummary.closest('details')!;
     expect(guide.hasAttribute('open')).toBe(false);
-    fireEvent.click(screen.getByText('How this works'));
+    fireEvent.click(guideSummary);
     expect(guide.hasAttribute('open')).toBe(true);
     expect(screen.getByText(/not proof.*caused/i)).toBeTruthy();
 
@@ -62,16 +70,12 @@ describe('CategoryEffectivenessEvidence', () => {
   it('renders every honest result state as text', () => {
     render(
       <CategoryEffectivenessEvidence
-        evidence={{
-          windowPolicy: 'Selected range split into two periods.',
-          unavailableReason: null,
-          rows: [
-            row('insufficient-data'),
-            row('possible-improvement'),
-            row('no-clear-change'),
-            row('possible-worsening'),
-          ],
-        }}
+        rows={[
+          row('insufficient-data'),
+          row('possible-improvement'),
+          row('no-clear-change'),
+          row('possible-worsening'),
+        ]}
       />
     );
     for (const label of [
@@ -82,14 +86,15 @@ describe('CategoryEffectivenessEvidence', () => {
     ]) {
       expect(screen.getByText(label)).toBeTruthy();
     }
+    expect(screen.getAllByLabelText('Core Demand analysis periods')).toHaveLength(4);
     for (const summary of screen.getAllByText('View periods and evidence')) {
       expect(summary.closest('details')!.hasAttribute('open')).toBe(false);
     }
   });
 
-  it('keeps missing history explicit', () => {
+  it('keeps missing history explicit in the shared guide', () => {
     render(
-      <CategoryEffectivenessEvidence
+      <CategoryEffectivenessGuide
         evidence={{
           windowPolicy: 'Choose a complete range.',
           unavailableReason: 'A complete selected date range is required.',

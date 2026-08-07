@@ -1,4 +1,9 @@
 import type { AccessoryTableDisplay, AccessoryTableGroup } from './useAccessoryTable';
+import type {
+  CategoryEffectivenessRow,
+  CategoryEffectivenessView,
+} from './useCategoryEffectivenessEvidence';
+import { CategoryEffectivenessEvidence } from './CategoryEffectivenessEvidence';
 import { useSortableRows } from '../../shared/hooks';
 import {
   CollapsibleSection,
@@ -15,6 +20,7 @@ interface AccessoryTableProps {
   hasSessionsInRange: boolean;
   highlightedVariation?: string | null;
   onVariationClick?: (v: string) => void;
+  effectivenessEvidence: CategoryEffectivenessView;
 }
 
 type SortCol =
@@ -32,6 +38,7 @@ function SubtypeTable({
   inRangeHeader,
   highlightedVariation,
   onVariationClick,
+  effectivenessRows,
 }: {
   label: string;
   persistenceId: string;
@@ -39,6 +46,7 @@ function SubtypeTable({
   inRangeHeader: string;
   highlightedVariation?: string | null;
   onVariationClick?: (v: string) => void;
+  effectivenessRows: CategoryEffectivenessRow[];
 }) {
   const { sortedRows, sortKey, direction, toggleSort } = useSortableRows<
     AccessoryTableDisplay,
@@ -65,9 +73,10 @@ function SubtypeTable({
     <CollapsibleSection
       persistenceId={persistenceId}
       label={label}
-      summary={`${rows.length} exercise${rows.length === 1 ? '' : 's'} · ${rows.reduce((total, row) => total + row.sessionCountInRange, 0)} sessions in range`}
+      summary={`${rows.length} exercise${rows.length === 1 ? '' : 's'} · ${rows.reduce((total, row) => total + row.sessionCountInRange, 0)} sessions in range${effectivenessRows.length ? ` · ${effectivenessRows.length} association${effectivenessRows.length === 1 ? '' : 's'}` : ''}`}
       defaultExpanded={false}
     >
+      <CategoryEffectivenessEvidence rows={effectivenessRows} />
       <TableCard>
         <Table>
           <TableHeadRow>
@@ -150,6 +159,7 @@ export function AccessoryTable({
   hasSessionsInRange,
   highlightedVariation,
   onVariationClick,
+  effectivenessEvidence,
 }: AccessoryTableProps) {
   if (!groups.length) {
     return (
@@ -177,6 +187,9 @@ export function AccessoryTable({
           inRangeHeader="Sessions (in range)"
           highlightedVariation={highlightedVariation}
           onVariationClick={onVariationClick}
+          effectivenessRows={effectivenessEvidence.rows.filter(
+            (evidence) => evidence.category === category
+          )}
         />
       ))}
     </>
