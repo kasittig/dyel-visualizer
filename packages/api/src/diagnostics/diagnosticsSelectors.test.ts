@@ -31,6 +31,7 @@ const baseVariant = (overrides?: Partial<VariantAssessment>): VariantAssessment 
   staleDays: 3,
   effects: ['hypertrophy'],
   isCompLift: true,
+  symptomContext: { events: [], limitingEvents: [] },
   addlWtOffset: { offsetKg: 5, n: 10 },
   ...overrides,
 });
@@ -100,6 +101,27 @@ describe('selectDiagnosticVariants', () => {
     )[0];
     expect(res.addlWtOffset).toBeUndefined();
     expect(res.expectedBaseline).toBeNull();
+  });
+
+  it.each([
+    ['explicit', 1, 1],
+    ['ambiguous', 1, 0],
+    ['absent', 0, 0],
+  ])('projects %s symptom context', (_, eventCount, limitingCount) => {
+    const event = {
+      date: 1000,
+      sourceText: 'Shoulder pain limited bench',
+      matchedText: 'Shoulder pain limited bench',
+      limitation: 'limited bench',
+      relatedExercise: 'bench press',
+    };
+    const symptomContext = {
+      events: eventCount ? [event] : [],
+      limitingEvents: limitingCount ? [event] : [],
+    };
+    expect(
+      selectDiagnosticVariants(baseModel([baseVariant({ symptomContext })]))[0].symptomContext
+    ).toEqual(symptomContext);
   });
 
   it.each([

@@ -258,4 +258,45 @@ describe('usePipelineDiagnostics', () => {
       });
     }
   );
+
+  it.each([
+    ['explicit', 1, true],
+    ['ambiguous', 0, false],
+    ['absent', -1, false],
+  ])(
+    'formats %s symptom context without changing the diagnostic result',
+    (_, limitingCount, isSymptomLimited) => {
+      const event = {
+        date: Date.UTC(2026, 0, 10),
+        sourceText: 'Shoulder pain limited bench',
+        matchedText: 'Shoulder pain limited bench',
+        limitation: 'limited bench',
+        relatedExercise: 'bench press',
+      };
+      mockUsePipelineModel.mockReturnValue({
+        status: 'success',
+        model: pipelineModelMock({
+          diagnostics: {
+            variants: [
+              variantAssessmentMock({
+                symptomContext: {
+                  events: limitingCount < 0 ? [] : [event],
+                  limitingEvents: limitingCount > 0 ? [event] : [],
+                },
+              }),
+            ],
+            weaknesses: [],
+            unassessed: [],
+          },
+        }),
+      });
+
+      expect(renderHook(() => usePipelineDiagnostics()).result.current.variants[0]).toMatchObject({
+        status: 'optimal',
+        actualE1rmKg: 102,
+        symptomContextDisplay: limitingCount < 0 ? [] : ['Shoulder pain limited bench'],
+        isSymptomLimited,
+      });
+    }
+  );
 });

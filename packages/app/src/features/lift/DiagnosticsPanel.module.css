@@ -146,6 +146,19 @@
   vertical-align: middle;
   cursor: help;
 }
+.symptomBadge {
+  display: inline-block;
+  margin-left: 0.45rem;
+  border: 1px solid color-mix(in srgb, var(--warning) 45%, transparent);
+  border-radius: 999px;
+  padding: 0.1rem 0.38rem;
+  color: var(--warning);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  vertical-align: middle;
+}
 
 .sortBar {
   display: flex;

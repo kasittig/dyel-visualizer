@@ -7,6 +7,8 @@ import type { TaggedSetRecord } from './tag/tag';
 import { classifyAccessorySubtypes, tagRecordsByPrimaryEvidence } from './tag/tag';
 import { parseExercise } from './tag/detect/parseExercise';
 import { derivers, selectMaxEffortSet } from './derive/derivers';
+import { deriveDayContexts } from './derive/dayContext';
+import { extractSymptomEvents } from './derive/symptomEvents';
 import type { NormalizationModel } from './derive/normalize';
 import {
   fitNormalizationModel,
@@ -290,7 +292,8 @@ export function runPipelineModel(
     timestamp,
     displayNameByCanonical,
     baselineRangeByCanonical,
-    maxEffortSetByPoint
+    maxEffortSetByPoint,
+    extractSymptomEvents(deriveDayContexts(records))
   );
   diagnostics.unassessed.push(
     ...unknownExercises.map((displayName) => ({

@@ -107,6 +107,66 @@ describe('diagnose evaluations', () => {
 
   it.each([
     [
+      'explicit exercise limit',
+      {
+        date: basePt.t,
+        sourceText: 'Shoulder pain, unable to bench',
+        matchedText: 'Shoulder pain, unable to bench',
+        limitation: 'unable to bench',
+        relatedExercise: 'bench press',
+      },
+      1,
+    ],
+    [
+      'ambiguous session symptom',
+      {
+        date: basePt.t,
+        sourceText: 'Shoulder pain today',
+        matchedText: 'Shoulder pain today',
+        region: 'shoulder',
+      },
+      0,
+    ],
+    [
+      'explicit training limit',
+      {
+        date: basePt.t,
+        sourceText: 'Knee pain after squats, had to cut training short',
+        matchedText: 'Knee pain after squats, had to cut training short',
+        limitation: 'had to cut training short',
+        relatedExercise: 'squat',
+      },
+      1,
+    ],
+    [
+      'different-day explicit limit',
+      {
+        date: basePt.t + 86400000,
+        sourceText: 'Shoulder pain, unable to bench',
+        matchedText: 'Shoulder pain, unable to bench',
+        limitation: 'unable to bench',
+        relatedExercise: 'bench press',
+      },
+      0,
+    ],
+  ])('keeps %s as structured same-day symptom context', (_, event, limitingCount) => {
+    const before = diagnose([basePt], model, map, opts, undefined);
+    const after = diagnose([basePt], model, map, opts, undefined, new Map(), new Map(), new Map(), [
+      event,
+    ]);
+
+    expect(after.variants[0].symptomContext.events).toHaveLength(event.date === basePt.t ? 1 : 0);
+    expect(after.variants[0].symptomContext.limitingEvents).toHaveLength(limitingCount);
+    expect(after.variants[0]).toMatchObject({
+      actualE1rmKg: before.variants[0].actualE1rmKg,
+      ratio: before.variants[0].ratio,
+      status: before.variants[0].status,
+    });
+    expect(after.weaknesses).toEqual(before.weaknesses);
+  });
+
+  it.each([
+    [
       'missing normalization factor',
       [basePt, pt('bench-bands', 70, day(20))],
       model,

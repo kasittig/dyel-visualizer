@@ -202,6 +202,9 @@ export function DiagnosticsPanel({
                             🏆
                           </span>
                         )}
+                        {r.isSymptomLimited && (
+                          <span className={styles.symptomBadge}>Symptom-limited</span>
+                        )}
                       </span>
                       {r.status === 'stale' && (
                         <span className={styles.staleAge}>Last tested {r.ageDisplay}</span>
@@ -269,6 +272,12 @@ export function DiagnosticsPanel({
                             <strong>Why this status</strong>
                             {r.rationaleDisplay}
                           </span>
+                          {r.symptomContextDisplay.length > 0 && (
+                            <span className={styles.provenanceWide}>
+                              <strong>Session symptom context</strong>
+                              {r.symptomContextDisplay.join(' · ')}
+                            </span>
+                          )}
                         </span>
                       </button>
                     )}

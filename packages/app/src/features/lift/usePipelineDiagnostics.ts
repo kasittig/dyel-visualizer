@@ -29,6 +29,8 @@ export interface DiagnosticRow extends DiagnosticVariant {
   observationDisplay: string;
   calculationDisplay: string;
   rationaleDisplay: string;
+  symptomContextDisplay: string[];
+  isSymptomLimited: boolean;
 }
 
 export interface DiagnosticNeedRow extends UnassessedVariant {
@@ -117,6 +119,8 @@ export function usePipelineDiagnostics(
             : variant.status === 'optimal'
               ? `The latest e1RM is within 5% of its expected value.`
               : `The latest e1RM is ${Math.abs(deltaPercent).toFixed(1)}% ${variant.status === 'weakness' ? 'below' : 'above'} its expected value.`,
+        symptomContextDisplay: variant.symptomContext.events.map((event) => event.matchedText),
+        isSymptomLimited: variant.symptomContext.limitingEvents.length > 0,
       };
     });
   }, [model, liftType, unit]);
