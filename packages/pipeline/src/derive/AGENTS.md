@@ -21,6 +21,16 @@
 - Findings preserve the complete note as `sourceText` and its exact matched casing as `matchedText`.
   Notes, bodyweight context, and existing findings remain unchanged.
 
+## symptomEvents.ts — daily notes → explicit symptom events
+
+    extractSymptomEvents(contexts): SymptomEvent[]
+
+- Uses local deterministic patterns and dictionaries. Events retain the complete `sourceText` and
+  exact matched statement; input notes remain unchanged.
+- Only explicitly written regions, sides, severities out of 10, training limitations, related
+  exercises, and timing are populated. Missing details remain absent and negated symptoms are
+  ignored; the extractor does not infer diagnoses, treatments, or causation.
+
 ## derivers.ts — TaggedSetRecord[] → single value per (date, canonical)
 
     type SeriesDeriver = { id: string; derive(daySets: TaggedSetRecord[]): number | null };
