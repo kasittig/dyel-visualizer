@@ -16,6 +16,7 @@ interface CollapsibleSectionProps {
   trailing?: React.ReactNode;
   persistenceId: string;
   summary?: React.ReactNode;
+  defaultExpanded?: boolean;
 }
 
 export function CollapsibleSection(props: CollapsibleSectionProps) {
@@ -28,10 +29,11 @@ function PersistedCollapsibleSection({
   trailing,
   persistenceId,
   summary,
+  defaultExpanded = true,
 }: CollapsibleSectionProps) {
   const [isExpanded, setIsExpanded] = useLocalStorageState(
     `dyel:collapsibleSection:${persistenceId}`,
-    true,
+    defaultExpanded,
     { deserialize: deserializeExpanded }
   );
   const generatedId = useId();

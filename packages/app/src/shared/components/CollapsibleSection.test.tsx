@@ -37,6 +37,22 @@ describe('CollapsibleSection', () => {
     expect(localStorage.getItem(storageKey)).toBe('false');
   });
 
+  it('supports sections that default to collapsed', () => {
+    render(
+      <CollapsibleSection
+        label="Compact section"
+        persistenceId="test:compact"
+        defaultExpanded={false}
+      >
+        <div>Compact contents</div>
+      </CollapsibleSection>
+    );
+
+    const toggle = screen.getByRole('button', { name: 'Compact section' });
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    expect(screen.queryByText('Compact contents')).toBeNull();
+  });
+
   it('associates its expanded trigger and visible region', () => {
     renderSection();
 

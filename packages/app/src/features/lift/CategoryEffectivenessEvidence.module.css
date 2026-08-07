@@ -26,11 +26,19 @@
   font-family: var(--heading);
   font-size: 1rem;
 }
-.header > p {
+.guide {
   max-width: 34rem;
+  text-align: right;
+}
+.guide summary {
+  cursor: pointer;
+  color: var(--accent);
+  font-size: 0.78rem;
+}
+.guide p {
+  margin-top: 0.35rem;
   color: var(--muted);
   font-size: 0.78rem;
-  text-align: right;
 }
 .eyebrow {
   color: var(--muted);
@@ -39,7 +47,6 @@
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
-.caution,
 .empty {
   margin-top: 0.7rem;
   color: var(--muted);
@@ -95,6 +102,14 @@
   font-size: 0.75rem;
   text-align: right;
 }
+.compactSummary {
+  margin-top: 0.4rem;
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+.evidenceDetails {
+  margin-top: 0.55rem;
+}
 .timeline {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
@@ -140,7 +155,8 @@
   font-size: 0.82rem;
   font-variant-numeric: tabular-nums;
 }
-.card summary {
+.card summary,
+.guide summary {
   width: fit-content;
   cursor: pointer;
   color: var(--accent);
@@ -151,7 +167,8 @@
   color: var(--muted);
   font-size: 0.74rem;
 }
-.card summary:focus-visible {
+.card summary:focus-visible,
+.guide summary:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 0.2rem;
 }
@@ -160,7 +177,7 @@
     display: grid;
     align-items: start;
   }
-  .header > p {
+  .guide {
     text-align: left;
   }
   .timeline {

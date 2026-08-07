@@ -13,12 +13,15 @@ export function CategoryEffectivenessEvidence({
           <p className={styles.eyebrow}>Earlier work → later signal</p>
           <h3 id="category-effectiveness-heading">Category effectiveness evidence</h3>
         </div>
-        <p>{evidence.windowPolicy}</p>
+        <details className={styles.guide}>
+          <summary>How this works</summary>
+          <p>{evidence.windowPolicy}</p>
+          <p>
+            These are category-level associations, not proof that accessory work caused a change. No
+            individual exercise receives credit.
+          </p>
+        </details>
       </header>
-      <p className={styles.caution}>
-        These are category-level associations, not proof that accessory work caused a change. No
-        individual exercise receives credit.
-      </p>
       {evidence.unavailableReason && !evidence.rows.length ? (
         <p className={styles.empty}>{evidence.unavailableReason}</p>
       ) : (
@@ -32,35 +35,39 @@ export function CategoryEffectivenessEvidence({
                 </div>
                 <strong>{row.statusLabel}</strong>
               </div>
-              <div className={styles.timeline} aria-label={`${row.categoryLabel} analysis periods`}>
-                <div>
-                  <span>Exposure</span>
-                  <strong>{row.exposurePeriod}</strong>
-                  <small>{row.sessionSummary}</small>
+              <p className={styles.compactSummary}>{row.sessionSummary}</p>
+              <details className={styles.evidenceDetails}>
+                <summary>View periods and evidence</summary>
+                <div
+                  className={styles.timeline}
+                  aria-label={`${row.categoryLabel} analysis periods`}
+                >
+                  <div>
+                    <span>Exposure</span>
+                    <strong>{row.exposurePeriod}</strong>
+                    <small>{row.sessionSummary}</small>
+                  </div>
+                  <span aria-hidden="true">→</span>
+                  <div>
+                    <span>Later follow-up</span>
+                    <strong>{row.outcomePeriod}</strong>
+                    <small>{row.evidenceSummary}</small>
+                  </div>
                 </div>
-                <span aria-hidden="true">→</span>
-                <div>
-                  <span>Later follow-up</span>
-                  <strong>{row.outcomePeriod}</strong>
-                  <small>{row.evidenceSummary}</small>
-                </div>
-              </div>
-              <dl className={styles.metrics}>
-                <div>
-                  <dt>Baseline</dt>
-                  <dd>{row.baselineDisplay}</dd>
-                </div>
-                <div>
-                  <dt>Follow-up</dt>
-                  <dd>{row.outcomeDisplay}</dd>
-                </div>
-                <div>
-                  <dt>Change</dt>
-                  <dd>{row.changeDisplay}</dd>
-                </div>
-              </dl>
-              <details>
-                <summary>Inspect lift evidence</summary>
+                <dl className={styles.metrics}>
+                  <div>
+                    <dt>Baseline</dt>
+                    <dd>{row.baselineDisplay}</dd>
+                  </div>
+                  <div>
+                    <dt>Follow-up</dt>
+                    <dd>{row.outcomeDisplay}</dd>
+                  </div>
+                  <div>
+                    <dt>Change</dt>
+                    <dd>{row.changeDisplay}</dd>
+                  </div>
+                </dl>
                 <p>{row.evidenceSummary}</p>
                 <p>{row.interpretation} This describes timing and association only.</p>
               </details>

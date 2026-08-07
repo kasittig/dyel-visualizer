@@ -28,6 +28,11 @@ const mockUseAccessoryCoverage = vi.mocked(useAccessoryCoverage);
 const mockUseWeaknessAccessoryCoverage = vi.mocked(useWeaknessAccessoryCoverage);
 const mockUseCategoryEffectivenessEvidence = vi.mocked(useCategoryEffectivenessEvidence);
 const dateRange = { from: new Date(2026, 0, 1), to: new Date(2026, 0, 31) };
+const expandCategory = (label: string) => {
+  const toggle = screen.getByRole('button', { name: new RegExp(label, 'i') });
+  expect(toggle.getAttribute('aria-expanded')).toBe('false');
+  fireEvent.click(toggle);
+};
 
 describe('AccessoryTabPanel', () => {
   beforeEach(() => {
@@ -95,6 +100,7 @@ describe('AccessoryTabPanel', () => {
     expect(screen.getByRole('heading', { name: 'Category effectiveness evidence' })).toBeTruthy();
     expect(screen.getByText('No related history is available.')).toBeTruthy();
     expect(screen.getByText('2 sessions')).toBeTruthy();
+    expandCategory('Upper pull');
     expect(screen.getByRole('columnheader', { name: 'Exercise' })).toBeTruthy();
     expect(screen.getByRole('columnheader', { name: 'Progress (all time)' })).toBeTruthy();
     expect(screen.getByRole('cell', { name: /Flat.*first session/ })).toBeTruthy();
@@ -107,6 +113,7 @@ describe('AccessoryTabPanel', () => {
     render(<AccessoryTabPanel dateRange={dateRange} onDateRangeChange={vi.fn()} unit="lbs" />);
 
     expect(screen.getByRole('status').textContent).toContain('Selected: Chest-supported row');
+    expandCategory('Upper pull');
     fireEvent.click(screen.getByRole('cell', { name: 'Chest-supported row' }));
     expect(screen.getByRole('status').textContent).toContain('Selected: Chest-supported row');
   });
@@ -129,6 +136,7 @@ describe('AccessoryTabPanel', () => {
     ]);
     render(<AccessoryTabPanel dateRange={dateRange} onDateRangeChange={vi.fn()} unit="lbs" />);
 
+    expandCategory('Upper pull');
     const button = screen.getByRole('button', { name: 'DB curl' });
     expect(button.getAttribute('aria-pressed')).toBe('false');
     button.focus();
@@ -178,6 +186,7 @@ describe('AccessoryTabPanel', () => {
     render(<AccessoryTabPanel dateRange={dateRange} onDateRangeChange={vi.fn()} unit="lbs" />);
 
     expect(screen.getByText(/No accessory work was logged in this training period/)).toBeTruthy();
+    expandCategory('Upper');
     expect(screen.getByRole('cell', { name: 'Chest-supported row' })).toBeTruthy();
   });
 
@@ -185,6 +194,7 @@ describe('AccessoryTabPanel', () => {
     const view = render(
       <AccessoryTabPanel dateRange={dateRange} onDateRangeChange={vi.fn()} unit="lbs" />
     );
+    expandCategory('Upper pull');
     fireEvent.click(screen.getByRole('cell', { name: 'Chest-supported row' }));
     expect(screen.getByRole('status')).toBeTruthy();
 

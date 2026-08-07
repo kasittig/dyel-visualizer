@@ -66,6 +66,7 @@ function SubtypeTable({
       persistenceId={persistenceId}
       label={label}
       summary={`${rows.length} exercise${rows.length === 1 ? '' : 's'} · ${rows.reduce((total, row) => total + row.sessionCountInRange, 0)} sessions in range`}
+      defaultExpanded={false}
     >
       <TableCard>
         <Table>
@@ -171,7 +172,7 @@ export function AccessoryTable({
         <SubtypeTable
           key={category ?? 'null'}
           label={label}
-          persistenceId={`visualizer:accessory:table:${category ?? 'uncategorized'}`}
+          persistenceId={`visualizer:accessory:table:v2:${category ?? 'uncategorized'}`}
           rows={rows}
           inRangeHeader="Sessions (in range)"
           highlightedVariation={highlightedVariation}

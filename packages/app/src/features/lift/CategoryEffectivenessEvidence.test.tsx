@@ -27,7 +27,7 @@ const row = (status: CategoryEffectivenessRow['status']): CategoryEffectivenessR
 
 describe('CategoryEffectivenessEvidence', () => {
   afterEach(cleanup);
-  it('shows periods, counts, change, caution, and keyboard-inspectable lift evidence', () => {
+  it('keeps secondary guidance and evidence collapsed until requested', () => {
     render(
       <CategoryEffectivenessEvidence
         evidence={{
@@ -38,14 +38,23 @@ describe('CategoryEffectivenessEvidence', () => {
       />
     );
     expect(screen.getByRole('heading', { name: 'Category effectiveness evidence' })).toBeTruthy();
-    expect(screen.getByText('Aug 1, 2026–Aug 15, 2026')).toBeTruthy();
-    expect(screen.getByText('Aug 16, 2026–Aug 31, 2026')).toBeTruthy();
-    expect(screen.getByText(/2.0 per week/)).toBeTruthy();
-    expect(screen.getByText('+0.100')).toBeTruthy();
+    expect(screen.getAllByText(/2.0 per week/).length).toBeGreaterThan(0);
+
+    const guide = screen.getByText('How this works').closest('details')!;
+    expect(guide.hasAttribute('open')).toBe(false);
+    fireEvent.click(screen.getByText('How this works'));
+    expect(guide.hasAttribute('open')).toBe(true);
     expect(screen.getByText(/not proof.*caused/i)).toBeTruthy();
-    const summary = screen.getByText('Inspect lift evidence');
+
+    const summary = screen.getByText('View periods and evidence');
+    const details = summary.closest('details')!;
+    expect(details.hasAttribute('open')).toBe(false);
     summary.focus();
     fireEvent.click(summary);
+    expect(details.hasAttribute('open')).toBe(true);
+    expect(screen.getByText('Aug 1, 2026–Aug 15, 2026')).toBeTruthy();
+    expect(screen.getByText('Aug 16, 2026–Aug 31, 2026')).toBeTruthy();
+    expect(screen.getByText('+0.100')).toBeTruthy();
     expect(screen.getAllByText(/6 contributing lift signals/).length).toBeGreaterThan(0);
     expect(screen.getByText(/timing and association only/)).toBeTruthy();
   });
@@ -73,7 +82,9 @@ describe('CategoryEffectivenessEvidence', () => {
     ]) {
       expect(screen.getByText(label)).toBeTruthy();
     }
-    expect(screen.getAllByLabelText('Core analysis periods')).toHaveLength(4);
+    for (const summary of screen.getAllByText('View periods and evidence')) {
+      expect(summary.closest('details')!.hasAttribute('open')).toBe(false);
+    }
   });
 
   it('keeps missing history explicit', () => {
