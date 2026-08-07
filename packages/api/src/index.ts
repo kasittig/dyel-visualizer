@@ -104,6 +104,15 @@ export type {
   AccessoryClassificationSource,
   AccessoryCoverage,
 } from './accessory/accessoryCoverage';
+export {
+  DIAGNOSTIC_EFFECTS,
+  mapWeaknessesToAccessoryCategories,
+} from './diagnostics/weaknessAccessoryCategories';
+export type {
+  DiagnosticEffect,
+  WeaknessAccessoryCategoryMapping,
+  WeaknessAccessoryMappingStatus,
+} from './diagnostics/weaknessAccessoryCategories';
 export { buildAccessoryHistory, selectAccessoryHistoryMetric } from './accessory/accessoryHistory';
 export type { AccessoryHistoryData, AccessoryHistoryMetric } from './accessory/accessoryHistory';
 export { buildAccessoryProgress } from './accessory/accessoryProgress';
