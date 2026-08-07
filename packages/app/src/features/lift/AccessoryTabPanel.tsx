@@ -82,6 +82,11 @@ function AccessoryTabContent({
     ? requestedAccessoryId
     : (allRows.find((row) => row.sessionCountInRange > 0)?.id ?? allRows[0]?.id ?? null);
   const selectedAccessory = allRows.find((row) => row.id === selectedAccessoryId) ?? null;
+  const recommendedCategories = new Set(
+    weaknessCoverage.flatMap((row) =>
+      row.status === 'mapped' ? row.categories.map(({ category }) => category) : []
+    )
+  );
 
   return (
     <section className={styles.panel} aria-labelledby="accessory-inventory-heading">
@@ -101,12 +106,22 @@ function AccessoryTabContent({
       </p>
       <WeaknessAccessoryCoverage rows={weaknessCoverage} />
       <section className={styles.coverage} aria-labelledby="accessory-coverage-heading">
-        <h3 id="accessory-coverage-heading">Coverage in range</h3>
+        <div className={styles.coverageHeader}>
+          <h3 id="accessory-coverage-heading">Coverage in range</h3>
+          {recommendedCategories.size > 0 && (
+            <span>Recommended means mapped to a current weakness signal.</span>
+          )}
+        </div>
         {coverage.length ? (
           <ul>
             {coverage.map(({ category, sessionCount: sessions }) => (
               <li key={category}>
-                <strong>{ACCESSORY_CATEGORY_LABELS[category]}</strong>
+                <div>
+                  <strong>{ACCESSORY_CATEGORY_LABELS[category]}</strong>
+                  {recommendedCategories.has(category) && (
+                    <mark className={styles.recommended}>Recommended</mark>
+                  )}
+                </div>
                 <span>
                   {sessions} session{sessions === 1 ? '' : 's'}
                 </span>

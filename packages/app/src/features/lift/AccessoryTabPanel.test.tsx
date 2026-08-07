@@ -109,6 +109,31 @@ describe('AccessoryTabPanel', () => {
     expect(screen.queryByText(/e1RM history by variation/)).toBeNull();
   });
 
+  it('marks covered categories recommended by a current weakness signal', () => {
+    mockUseWeaknessAccessoryCoverage.mockReturnValue([
+      {
+        effect: 'UPPER_BACK',
+        effectLabel: 'Upper Back',
+        evidenceSummary: '1 below-range signal · 0 above-range signals',
+        rationale: 'Reviewed association.',
+        status: 'mapped',
+        categories: [
+          {
+            category: 'upper-pull',
+            label: 'Upper pull',
+            recentExposure: [],
+            contributingExercises: ['Chest-supported row'],
+          },
+        ],
+      },
+    ]);
+
+    render(<AccessoryTabPanel dateRange={dateRange} onDateRangeChange={vi.fn()} unit="lbs" />);
+
+    expect(screen.getByText('Recommended')).toBeTruthy();
+    expect(screen.getByText(/mapped to a current weakness signal/)).toBeTruthy();
+  });
+
   it('selects the first in-range accessory initially and synchronizes table clicks', () => {
     render(<AccessoryTabPanel dateRange={dateRange} onDateRangeChange={vi.fn()} unit="lbs" />);
 
