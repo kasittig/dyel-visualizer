@@ -10,8 +10,9 @@ The visualizer can read any published Google Sheet in CSV format. It expects the
 - Reps (# of times weight was lifted)
 - RPE _(optional)_ — Rate of Perceived Exertion on a 1–10 scale; lets multi-set volume work contribute to e1RM estimates as a real effort attempt (without RPE, a single-set entry is still assumed taken to failure, but a multi-set entry is treated as speed/volume work and mostly excluded)
 - Notes _(optional)_ — free-text training notes preserved with the set without interpretation
+- Bodyweight or BW _(optional)_ — daily bodyweight; add `(lbs)` or `(kg)` to the header to specify the unit (unitless headers default to pounds)
 
-The visualizer assumes that all weights use the same unit (ex. lbs, kgs).
+The visualizer assumes that all exercise weights use the same unit (ex. lbs, kgs).
 
 For detailed setup instructions, exercise naming rules, and a walkthrough of every chart, see [ONBOARDING.md](ONBOARDING.md).
 
