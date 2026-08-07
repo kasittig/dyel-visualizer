@@ -1,5 +1,7 @@
 export { LiftTabPanel } from './LiftTabPanel';
 export { AccessoryTabPanel } from './AccessoryTabPanel';
+export { WeaknessAccessoryCoverage } from './WeaknessAccessoryCoverage';
+export { useWeaknessAccessoryCoverage } from './useWeaknessAccessoryCoverage';
 export { AccessoryHistoryChart } from './AccessoryHistoryChart';
 export { ConjugateCharts } from './ConjugateCharts';
 export { VariationRadarChart } from './VariationRadarChart';

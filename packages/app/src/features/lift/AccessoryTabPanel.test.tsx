@@ -3,9 +3,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AccessoryTabPanel } from './AccessoryTabPanel';
 import { useAccessoryTable } from './useAccessoryTable';
 import { useAccessoryCoverage } from './useAccessoryCoverage';
+import { useWeaknessAccessoryCoverage } from './useWeaknessAccessoryCoverage';
 
 vi.mock('./useAccessoryTable');
 vi.mock('./useAccessoryCoverage');
+vi.mock('./useWeaknessAccessoryCoverage');
 vi.mock('./AccessoryHistoryChart', () => ({
   AccessoryHistoryChart: ({ exerciseLabel }: { exerciseLabel: string }) => (
     <div role="status">Selected: {exerciseLabel}</div>
@@ -21,6 +23,7 @@ vi.mock('../../shared/components', async (importOriginal) => {
 
 const mockUseAccessoryTable = vi.mocked(useAccessoryTable);
 const mockUseAccessoryCoverage = vi.mocked(useAccessoryCoverage);
+const mockUseWeaknessAccessoryCoverage = vi.mocked(useWeaknessAccessoryCoverage);
 const dateRange = { from: new Date(2026, 0, 1), to: new Date(2026, 0, 31) };
 
 describe('AccessoryTabPanel', () => {
@@ -33,6 +36,7 @@ describe('AccessoryTabPanel', () => {
     mockUseAccessoryCoverage.mockReturnValue([
       { category: 'upper-pull', sessionCount: 2, volume: 1_000 },
     ]);
+    mockUseWeaknessAccessoryCoverage.mockReturnValue([]);
     mockUseAccessoryTable.mockReturnValue([
       {
         category: 'upper-pull',
@@ -79,6 +83,7 @@ describe('AccessoryTabPanel', () => {
     expect(screen.getByRole('heading', { name: 'Accessory inventory' })).toBeTruthy();
     expect(screen.getByText(/Review what you are training/)).toBeTruthy();
     expect(screen.getByRole('heading', { name: 'Coverage in range' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Weakness coverage' })).toBeTruthy();
     expect(screen.getByText('2 sessions')).toBeTruthy();
     expect(screen.getByRole('columnheader', { name: 'Exercise' })).toBeTruthy();
     expect(screen.getByRole('columnheader', { name: 'Progress (all time)' })).toBeTruthy();

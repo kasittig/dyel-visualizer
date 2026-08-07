@@ -7,6 +7,8 @@ import { useAccessoryTable } from './useAccessoryTable';
 import type { AccessoryTableGroup } from './useAccessoryTable';
 import { ACCESSORY_CATEGORY_LABELS } from './useAccessoryTable';
 import { useAccessoryCoverage } from './useAccessoryCoverage';
+import { useWeaknessAccessoryCoverage } from './useWeaknessAccessoryCoverage';
+import { WeaknessAccessoryCoverage } from './WeaknessAccessoryCoverage';
 import { EditableDateChip } from '../../shared/components';
 import styles from './AccessoryTabPanel.module.css';
 
@@ -22,6 +24,7 @@ export function AccessoryTabPanel({
   const rangeKey = `${dateRange.from?.getTime() ?? ''}:${dateRange.to?.getTime() ?? ''}`;
   const groups = useAccessoryTable(unit, dateRange);
   const coverage = useAccessoryCoverage(dateRange);
+  const weaknessCoverage = useWeaknessAccessoryCoverage(dateRange);
   const exerciseCount = groups.reduce(
     (total, group) => total + group.rows.filter((row) => row.sessionCountInRange > 0).length,
     0
@@ -40,6 +43,7 @@ export function AccessoryTabPanel({
       exerciseCount={exerciseCount}
       sessionCount={sessionCount}
       coverage={coverage}
+      weaknessCoverage={weaknessCoverage}
       unit={unit}
     />
   );
@@ -52,6 +56,7 @@ function AccessoryTabContent({
   exerciseCount,
   sessionCount,
   coverage,
+  weaknessCoverage,
   unit,
 }: {
   dateRange: DateRange;
@@ -60,6 +65,7 @@ function AccessoryTabContent({
   exerciseCount: number;
   sessionCount: number;
   coverage: ReturnType<typeof useAccessoryCoverage>;
+  weaknessCoverage: ReturnType<typeof useWeaknessAccessoryCoverage>;
   unit: DisplayUnit;
 }) {
   const allRows = groups.flatMap((group) => group.rows);
@@ -87,6 +93,7 @@ function AccessoryTabContent({
       <p className={styles.inventoryDescription}>
         Review what you are training, when you last trained it, and what you want to inspect next.
       </p>
+      <WeaknessAccessoryCoverage rows={weaknessCoverage} />
       <section className={styles.coverage} aria-labelledby="accessory-coverage-heading">
         <h3 id="accessory-coverage-heading">Coverage in range</h3>
         {coverage.length ? (

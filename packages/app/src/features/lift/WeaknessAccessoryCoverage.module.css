@@ -1,0 +1,147 @@
+.section {
+  margin: 0 0 1rem;
+  padding: 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: 0.65rem;
+  background: var(--surface);
+}
+
+.header {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 0.7rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.header h3,
+.header p,
+.trace p {
+  margin: 0;
+}
+
+.header h3 {
+  color: var(--text-h);
+  font-family: var(--heading);
+  font-size: 1rem;
+}
+
+.header > p,
+.empty,
+.rationale,
+.exercises,
+.noExposure,
+.unavailable,
+.quality details p {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.header > p {
+  max-width: 30rem;
+  text-align: right;
+}
+
+.eyebrow,
+.quality > span,
+.mapping > span {
+  color: var(--muted);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.list,
+.weeks {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.trace {
+  display: grid;
+  grid-template-columns: minmax(12rem, 0.75fr) minmax(18rem, 1.5fr);
+  gap: 1rem;
+  padding: 0.85rem 0;
+}
+
+.trace + .trace {
+  border-top: 1px solid var(--border);
+}
+
+.quality,
+.mapping {
+  display: grid;
+  align-content: start;
+  gap: 0.35rem;
+}
+
+.quality strong {
+  color: var(--text-h);
+  font-size: 1rem;
+}
+
+.quality summary {
+  width: fit-content;
+  cursor: pointer;
+  color: var(--accent);
+  font-size: 0.76rem;
+}
+
+.quality details p {
+  margin-top: 0.4rem;
+}
+
+.categories {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: 0.5rem;
+}
+
+.categories article {
+  padding: 0.55rem;
+  border-left: 0.2rem solid var(--accent);
+  background: var(--surface-2);
+}
+
+.categories h4 {
+  margin: 0 0 0.35rem;
+  color: var(--text-h);
+  font-size: 0.82rem;
+}
+
+.weeks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.weeks li {
+  display: flex;
+  gap: 0.35rem;
+  padding: 0.2rem 0.35rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 0.7rem;
+}
+
+.exercises,
+.noExposure,
+.unavailable,
+.rationale {
+  margin-top: 0.35rem !important;
+}
+
+@media (max-width: 640px) {
+  .header,
+  .trace {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .header > p {
+    text-align: left;
+  }
+}
