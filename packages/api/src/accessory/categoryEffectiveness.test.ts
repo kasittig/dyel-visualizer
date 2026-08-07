@@ -1,0 +1,127 @@
+import { describe, expect, it } from 'vitest';
+import type { WeaknessTrendPoint } from '../diagnostics/weaknessTrends';
+import { associateCategoryExposureWithLaterWeakness } from './categoryEffectiveness';
+
+const DAY = 86_400_000;
+const window = {
+  exposure: { start: 0, end: 14 * DAY },
+  outcome: { start: 14 * DAY, end: 28 * DAY },
+};
+const trend = (date: number, normalizedResult: number | null): WeaknessTrendPoint => ({
+  date,
+  quality: 'QUAD_DOMINANT',
+  normalizedResult,
+  status: 'insufficient-history',
+  contributingVariations: [],
+  evidenceCount: normalizedResult === null ? 0 : 2,
+  staleEvidenceCount: 0,
+  unassessedCount: 0,
+});
+
+describe('associateCategoryExposureWithLaterWeakness', () => {
+  it.each([
+    ['possible improvement', 0.8, 0.9, 'possible-improvement', 0.1],
+    ['no clear change', 0.8, 0.8, 'no-clear-change', 0],
+    ['possible worsening', 0.9, 0.8, 'possible-worsening', -0.1],
+    ['insufficient history', null, 0.9, 'insufficient-data', null],
+  ])('%s', (_, baseline, outcome, status, weaknessChange) => {
+    expect(
+      associateCategoryExposureWithLaterWeakness(
+        [
+          { weekStart: 0, category: 'quads', sessionCount: 2 },
+          { weekStart: 7 * DAY, category: 'quads', sessionCount: 3 },
+        ],
+        [trend(7 * DAY, baseline), trend(21 * DAY, outcome)],
+        window
+      )
+    ).toEqual([
+      expect.objectContaining({
+        category: 'quads',
+        quality: 'QUAD_DOMINANT',
+        sessionCount: 5,
+        exposureWeekCount: 2,
+        weaknessChange,
+        baselineEvidenceCount: baseline === null ? 0 : 2,
+        outcomeEvidenceCount: outcome === null ? 0 : 2,
+        evidenceCount: (baseline === null ? 0 : 2) + (outcome === null ? 0 : 2),
+        observationCount: outcome === null ? 0 : 1,
+        status,
+        interpretation: expect.stringContaining(
+          status === 'insufficient-data' ? 'Insufficient data' : 'was followed by'
+        ),
+      }),
+    ]);
+  });
+
+  it('uses half-open boundaries and excludes future exposure and outcome data', () => {
+    expect(
+      associateCategoryExposureWithLaterWeakness(
+        [
+          { weekStart: -DAY, category: 'quads', sessionCount: 20 },
+          { weekStart: 0, category: 'quads', sessionCount: 2 },
+          { weekStart: 14 * DAY, category: 'quads', sessionCount: 20 },
+        ],
+        [
+          trend(28 * DAY, 0.1),
+          trend(28 * DAY - 1, 1),
+          trend(14 * DAY, 0.9),
+          trend(-DAY, 0.1),
+          trend(0, 0.7),
+          trend(14 * DAY - 1, 0.8),
+        ],
+        window
+      )[0]
+    ).toMatchObject({
+      sessionCount: 2,
+      baselineNormalizedResult: 0.8,
+      outcomeNormalizedResult: 1,
+      weaknessChange: 0.2,
+      baselineEvidenceCount: 2,
+      outcomeEvidenceCount: 4,
+      evidenceCount: 6,
+      observationCount: 2,
+    });
+  });
+
+  it('distinguishes no category exposure from no clear change', () => {
+    expect(
+      associateCategoryExposureWithLaterWeakness(
+        [],
+        [trend(7 * DAY, 0.8), trend(21 * DAY, 0.8)],
+        window
+      )[0]
+    ).toMatchObject({ sessionCount: 0, weaknessChange: null, status: 'insufficient-data' });
+  });
+
+  it('combines category exposure and emits one result for every mapped category', () => {
+    const posterior = (date: number, normalizedResult: number): WeaknessTrendPoint => ({
+      ...trend(date, normalizedResult),
+      quality: 'POSTERIOR_CHAIN',
+    });
+    expect(
+      associateCategoryExposureWithLaterWeakness(
+        [
+          { weekStart: 0, category: 'glutes', sessionCount: 2 },
+          { weekStart: 0, category: 'hamstrings', sessionCount: 1 },
+          { weekStart: 7 * DAY, category: 'hamstrings', sessionCount: 2 },
+          { weekStart: 0, category: 'low-back', sessionCount: 1 },
+        ],
+        [posterior(7 * DAY, 0.8), posterior(21 * DAY, 0.9)],
+        window
+      ).map(({ category, sessionCount }) => ({ category, sessionCount }))
+    ).toEqual([
+      { category: 'glutes', sessionCount: 2 },
+      { category: 'hamstrings', sessionCount: 3 },
+      { category: 'low-back', sessionCount: 1 },
+    ]);
+  });
+
+  it.each([
+    ['overlapping periods', { exposure: { start: 0, end: 15 }, outcome: { start: 14, end: 20 } }],
+    ['empty exposure period', { exposure: { start: 1, end: 1 }, outcome: { start: 2, end: 3 } }],
+    ['empty outcome period', { exposure: { start: 0, end: 1 }, outcome: { start: 2, end: 2 } }],
+    ['non-finite boundary', { exposure: { start: 0, end: 1 }, outcome: { start: 2, end: NaN } }],
+  ])('rejects %s', (_, invalid) => {
+    expect(() => associateCategoryExposureWithLaterWeakness([], [], invalid)).toThrow(RangeError);
+  });
+});

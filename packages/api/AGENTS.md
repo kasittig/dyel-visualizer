@@ -153,6 +153,13 @@ subpath (`src/display.ts`) so app components do not need exceptions to the busin
 diagnostic effects, preserves weakness evidence, and returns mapped, explicitly unsupported, or
 unmapped results with rationale and provenance.
 
+### Category exposure association
+
+`associateCategoryExposureWithLaterWeakness` aligns weekly category sessions with later historical
+quality observations using caller-supplied, half-open exposure and outcome periods. Exposure must
+precede outcome; results report association-only states, periods, session counts, normalized
+weakness change, and evidence counts without causal or prescriptive language.
+
 ## Commands
 
 ```bash

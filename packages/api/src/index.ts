@@ -115,6 +115,13 @@ export type {
 } from './diagnostics/weaknessAccessoryCategories';
 export { buildWeeklyAccessoryCategoryExposure } from './accessory/weeklyAccessoryExposure';
 export type { WeeklyAccessoryCategoryExposure } from './accessory/weeklyAccessoryExposure';
+export { associateCategoryExposureWithLaterWeakness } from './accessory/categoryEffectiveness';
+export type {
+  AnalysisPeriod,
+  CategoryEffectivenessEvidence,
+  CategoryEffectivenessStatus,
+  CategoryEffectivenessWindow,
+} from './accessory/categoryEffectiveness';
 export { buildAccessoryHistory, selectAccessoryHistoryMetric } from './accessory/accessoryHistory';
 export type { AccessoryHistoryData, AccessoryHistoryMetric } from './accessory/accessoryHistory';
 export { buildAccessoryProgress } from './accessory/accessoryProgress';
