@@ -1,5 +1,5 @@
 import type { TaggedSetRecord } from '@dyel/pipeline';
-import { matches } from '@dyel/pipeline';
+import { groupBy, matches } from '@dyel/pipeline';
 import { formatWeight, type DisplayUnit } from '../weightUnit';
 
 export interface LastSessionDetail {
@@ -22,7 +22,7 @@ function getLatestSession(
   if (!records.length) {
     return null;
   }
-  const groups = Map.groupBy(records, (r) => r.date);
+  const groups = groupBy(records, (r) => r.date);
   const maxDate = Math.max(...Array.from(groups.keys(), Number));
   return { maxDate, maxRecs: groups.get(maxDate)! };
 }
@@ -32,7 +32,7 @@ export function buildLastSessionDetail(
   liftType: string
 ): Map<string, LastSessionDetail> {
   const filtered = tagged.filter((r) => matches(r.tags, { all: [`lift:${liftType}`] }));
-  const byLabel = Map.groupBy(filtered, (r) => r.meta?.rawExercise ?? r.canonical);
+  const byLabel = groupBy(filtered, (r) => r.meta?.rawExercise ?? r.canonical);
 
   return new Map(
     Array.from(byLabel, ([label, recs]) => {

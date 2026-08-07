@@ -1,4 +1,4 @@
-import { matches, type TaggedSetRecord } from '@dyel/pipeline';
+import { groupBy, matches, type TaggedSetRecord } from '@dyel/pipeline';
 import { buildMostRecentSessionDetail, type LastSessionDetail } from '../session/lastSessionDetail';
 import { isRecordInDateRange } from '../dateRange/dateRangeUtils';
 import { buildAccessoryProgress, type AccessoryProgress } from './accessoryProgress';
@@ -39,7 +39,7 @@ export function buildAccessoryTableRows(
 ): AccessoryTableRow[] {
   const filtered = tagged.filter((r) => matches(r.tags, { all: ['lift:accessory'] }));
 
-  return Array.from(Map.groupBy(filtered, accessoryExerciseId))
+  return Array.from(groupBy(filtered, accessoryExerciseId))
     .reduce<AccessoryTableRow[]>((acc, [id, records]) => {
       const lastSession = buildMostRecentSessionDetail(records);
       if (!lastSession) {

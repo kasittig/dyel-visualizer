@@ -11,6 +11,7 @@ import {
   type AccessoryCategory,
   type DisplayUnit,
 } from '@dyel/api';
+import { groupBy } from '@dyel/pipeline';
 
 export interface AccessoryTableDisplay extends AccessoryTableRow {
   lastPerformedDisplay: string;
@@ -126,7 +127,7 @@ export function useAccessoryTable(unit: DisplayUnit, dateRange?: DateRange): Acc
       }
     );
 
-    const grouped = Map.groupBy(rows, (row) => row.category);
+    const grouped = groupBy(rows, (row) => row.category);
 
     return CATEGORY_ORDER.reduce<AccessoryTableGroup[]>((acc, category) => {
       const match = grouped.get(category);

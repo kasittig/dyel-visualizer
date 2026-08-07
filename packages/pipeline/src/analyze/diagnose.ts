@@ -1,6 +1,7 @@
 import type { Point, SetRecord } from '../types';
 import type { NormalizationModel } from '../derive/normalize';
 import type { BaselineRange } from '../tag/detect/canonical';
+import { groupBy } from '../groupBy';
 
 export type Quality = string;
 export type PerformanceStatus = 'optimal' | 'weakness' | 'overperforming';
@@ -54,7 +55,7 @@ export function diagnose(
   maxEffortSetByPoint: ReadonlyMap<string, SetRecord> = new Map()
 ): DiagnosticsReport {
   const timestamp = now ?? Date.now();
-  const pointsBySeries = Map.groupBy(points, (p) => p.series);
+  const pointsBySeries = groupBy(points, (p) => p.series);
   const latestBySeries = new Map(Array.from(pointsBySeries, ([s, p]) => [s, latestOf(p)]));
 
   const variants: VariantAssessment[] = [];

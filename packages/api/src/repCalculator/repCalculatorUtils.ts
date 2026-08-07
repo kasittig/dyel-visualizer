@@ -1,5 +1,5 @@
 import type { Point, NormalizationModel } from '@dyel/pipeline';
-import { invertE1RM } from '@dyel/pipeline';
+import { groupBy, invertE1RM } from '@dyel/pipeline';
 import { convertWeight } from '../weightUnit';
 import { canonicalLiftType } from '../exerciseUtils';
 
@@ -83,7 +83,7 @@ export function findMostRecentFamilyE1RM(
 
   // Group by series (canonical) and find the one with the most recent point, tracking each
   // group's latest point in the same pass instead of re-reducing it later.
-  const byCanonical = Map.groupBy(familyE1RMPoints, (p) => p.series);
+  const byCanonical = groupBy(familyE1RMPoints, (p) => p.series);
   let mostRecentCanonical: string | null = null;
   let mostRecentPoint: Point | null = null;
 

@@ -1,5 +1,5 @@
 import type { TaggedSetRecord } from '@dyel/pipeline';
-import { matches, isSpeedWork, calcE1RM } from '@dyel/pipeline';
+import { matches, isSpeedWork, calcE1RM, groupBy } from '@dyel/pipeline';
 
 export interface BestSet {
   sets: number;
@@ -13,7 +13,7 @@ export function buildBestSetByLabelAndDate(
   liftType: string
 ): Map<string, Map<string, BestSet>> {
   const filtered = tagged.filter((r) => matches(r.tags, { all: [`lift:${liftType}`] }));
-  const byLabelAndDate = Map.groupBy(
+  const byLabelAndDate = groupBy(
     filtered,
     (r) => `${r.meta?.rawExercise ?? r.canonical}::${new Date(r.date).toISOString()}`
   );

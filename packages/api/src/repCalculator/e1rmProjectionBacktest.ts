@@ -1,5 +1,5 @@
 import type { Point, TaggedSetRecord } from '@dyel/pipeline';
-import { derivers, fitNormalizationModel, projectE1RMToDate } from '@dyel/pipeline';
+import { derivers, fitNormalizationModel, groupBy, projectE1RMToDate } from '@dyel/pipeline';
 import { resolveE1RMEstimate, resolveFamilyRecentE1RMEstimate } from './repCalculatorUtils';
 import { canonicalLiftType } from '../exerciseUtils';
 
@@ -87,7 +87,7 @@ export function runE1RMProjectionBacktest(
 
     // Re-derive every historical family point. The former harness filtered to the target
     // canonical here, which made the family-recent strategy incapable of seeing its family.
-    const dayGroups = Map.groupBy(truncatedTagged, (r) => `${r.canonical}:${r.date}`);
+    const dayGroups = groupBy(truncatedTagged, (r) => `${r.canonical}:${r.date}`);
     const truncatedE1RMPoints: Point[] = Array.from(dayGroups.values())
       .map((daySets) => {
         const v = derivers['e1rm-max-effort'].derive(daySets);

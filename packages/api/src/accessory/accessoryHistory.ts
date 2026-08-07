@@ -1,4 +1,4 @@
-import type { ChartPoint, TaggedSetRecord } from '@dyel/pipeline';
+import { groupBy, type ChartPoint, type TaggedSetRecord } from '@dyel/pipeline';
 import { isRecordInDateRange } from '../dateRange/dateRangeUtils';
 import { convertWeight, type DisplayUnit } from '../weightUnit';
 import { accessoryExerciseId } from './accessorySubtypeTable';
@@ -43,7 +43,7 @@ export function buildAccessoryHistory(
 
   const metric = selectAccessoryHistoryMetric(allRecords);
   const data = Array.from(
-    Map.groupBy(
+    groupBy(
       allRecords.filter((record) => isRecordInDateRange(record.date, from, to)),
       (record) => record.date
     ),

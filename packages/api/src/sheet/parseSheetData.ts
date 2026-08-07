@@ -1,5 +1,5 @@
 import type { AthleteContext, LiftType, TaggedSetRecord } from '@dyel/pipeline';
-import { runPipelineModel } from '@dyel/pipeline';
+import { groupBy, runPipelineModel } from '@dyel/pipeline';
 export type { LiftType } from '@dyel/pipeline';
 
 export interface SplitRows {
@@ -31,7 +31,7 @@ export function splitByEffort(records: TaggedSetRecord[], type: LiftType): Split
 }
 
 export function groupByLiftType(tagged: TaggedSetRecord[]): Record<LiftType, SplitRows> {
-  const g = Map.groupBy(tagged, liftTypeOf);
+  const g = groupBy(tagged, liftTypeOf);
   return {
     squat: splitByEffort(g.get('squat') ?? [], 'squat'),
     bench: splitByEffort(g.get('bench') ?? [], 'bench'),

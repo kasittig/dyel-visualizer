@@ -5,6 +5,7 @@ import type { BaselineRange } from './detect/canonical';
 import type { ParsedExercise, LiftType } from './detect/conjugate-types';
 import { classifyAccessoryEffects, isCoreExercise } from './detect/detectors';
 import { isSpeedWork } from '../derive/derivers';
+import { groupBy } from '../groupBy';
 
 export type TaggedSetRecord = SetRecord & {
   canonical: string;
@@ -176,7 +177,7 @@ export function tagRecordsByPrimaryEvidence(records: SetRecord[]): {
 }
 
 export function classifyAccessorySubtypes(tagged: TaggedSetRecord[]): TaggedSetRecord[] {
-  const byDate = Map.groupBy(tagged, (r) => r.date);
+  const byDate = groupBy(tagged, (r) => r.date);
   return tagged.map((r) => {
     if (!r.tags.has('lift:accessory')) {
       return r;

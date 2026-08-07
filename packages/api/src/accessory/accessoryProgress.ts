@@ -1,4 +1,4 @@
-import type { TaggedSetRecord } from '@dyel/pipeline';
+import { groupBy, type TaggedSetRecord } from '@dyel/pipeline';
 import { buildMostRecentSessionDetail, type LastSessionDetail } from '../session/lastSessionDetail';
 
 export type AccessoryProgressStatus =
@@ -63,7 +63,7 @@ export function buildAccessoryProgress(
   }
 
   const sessions = Array.from(
-    Map.groupBy(records, (record) => record.date),
+    groupBy(records, (record) => record.date),
     ([date, items]) => toSession(date, items)
   ).sort((a, b) => b.date - a.date);
   const latest = sessions[0]!;

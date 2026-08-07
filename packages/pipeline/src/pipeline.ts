@@ -1,4 +1,5 @@
 import type { Point, SetRecord } from './types';
+import { groupBy } from './groupBy';
 import type { RawInput, ParseContext } from './parse/parser';
 import { ParseError, ParserRegistry } from './parse/parser';
 import { csvParser } from './parse/csv';
@@ -79,11 +80,11 @@ export function createPipelinePointStore({
 }
 
 function groupByDateAndCanonical(tagged: TaggedSetRecord[]): Map<string, TaggedSetRecord[]> {
-  return Map.groupBy(tagged, (r) => `${r.date}::${r.canonical}`);
+  return groupBy(tagged, (r) => `${r.date}::${r.canonical}`);
 }
 
 function groupByDateAndLabel(tagged: TaggedSetRecord[]): Map<string, TaggedSetRecord[]> {
-  return Map.groupBy(tagged, (r) => `${r.date}::${r.meta?.rawExercise ?? r.canonical}`);
+  return groupBy(tagged, (r) => `${r.date}::${r.meta?.rawExercise ?? r.canonical}`);
 }
 
 function buildPointsFromGroups(groups: Map<string, TaggedSetRecord[]>, deriverId: string): Point[] {
@@ -129,7 +130,7 @@ function projectedE1RMForCanonical(
   canonical: string,
   now: number
 ): number | null {
-  const dayGroups = Map.groupBy(
+  const dayGroups = groupBy(
     compTagged.filter((r) => r.canonical === canonical),
     (r) => r.date
   );
@@ -251,7 +252,7 @@ export function runPipelineModel(
     adjustedLabel: pointsByLabelByDeriverAdjusted,
   });
 
-  const unnormalized = Array.from(Map.groupBy(pointsByDeriver.get('e1rm')!, (p) => p.series))
+  const unnormalized = Array.from(groupBy(pointsByDeriver.get('e1rm')!, (p) => p.series))
     .map(([, pts]) => pts.reduce((a, b) => (b.t > a.t ? b : a)))
     .filter((latest) => normalizeE1rm(latest.series, latest.v, model) === null)
     .map((latest) => latest.series);

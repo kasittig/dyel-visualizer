@@ -2,6 +2,7 @@ import type { TaggedSetRecord } from '../tag/tag';
 import { calcE1RM, invertE1RM } from './e1rm';
 import { isSpeedWork } from './derivers';
 import { DEFAULT_STANCE } from '../tag/detect/conjugate-types';
+import { groupBy } from '../groupBy';
 
 // Default-stance tags (e.g. `stance:wide` for bare bench) are facet-neutral, same as
 // `bar:standard` — they mark the absence of an explicit modifier, not a real variant, so
@@ -99,7 +100,10 @@ export function fitNormalizationModel(
   history: TaggedSetRecord[],
   opts: { minSamples: number }
 ): NormalizationModel {
-  const byCan = Object.groupBy(history, (r: TaggedSetRecord) => r.canonical);
+  const byCan = Object.fromEntries(groupBy(history, (r: TaggedSetRecord) => r.canonical)) as Record<
+    string,
+    TaggedSetRecord[]
+  >;
   // Build effort-filtered-with-fallback view: each canonical uses only non-speed-work sets,
   // but falls back to all sets if it has zero effort records
   const byCanFitted = Object.fromEntries(
