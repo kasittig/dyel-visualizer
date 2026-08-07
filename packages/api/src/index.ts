@@ -192,6 +192,12 @@ export {
   type DiagnosticAttentionSummary,
 } from './diagnostics/diagnosticsSelectors';
 export { formatEffect, formatAddlWtOffset } from './diagnostics/diagnosticsUtils';
+export {
+  deriveHistoricalWeaknessTrends,
+  type WeaknessTrendContributor,
+  type WeaknessTrendPoint,
+  type WeaknessTrendStatus,
+} from './diagnostics/weaknessTrends';
 export { buildTeamViewRowSnapshot } from './team/teamViewRow';
 export type { TeamViewRowSnapshot } from './team/teamViewRow';
 export {
