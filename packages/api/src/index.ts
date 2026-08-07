@@ -113,6 +113,8 @@ export type {
   WeaknessAccessoryCategoryMapping,
   WeaknessAccessoryMappingStatus,
 } from './diagnostics/weaknessAccessoryCategories';
+export { buildWeeklyAccessoryCategoryExposure } from './accessory/weeklyAccessoryExposure';
+export type { WeeklyAccessoryCategoryExposure } from './accessory/weeklyAccessoryExposure';
 export { buildAccessoryHistory, selectAccessoryHistoryMetric } from './accessory/accessoryHistory';
 export type { AccessoryHistoryData, AccessoryHistoryMetric } from './accessory/accessoryHistory';
 export { buildAccessoryProgress } from './accessory/accessoryProgress';
