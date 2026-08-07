@@ -1,0 +1,102 @@
+name: Codex review loop
+
+on:
+  pull_request_review:
+    types: [submitted]
+
+env:
+  MAX_CODEX_REVISIONS: '3'
+  HUMAN_REVIEWER: kasittig
+
+jobs:
+  coordinate:
+    if: >-
+      github.event.pull_request.draft == false &&
+      github.event.review.user.type == 'Bot' &&
+      (contains(github.event.review.user.login, 'codex') ||
+       contains(github.event.review.user.login, 'chatgpt'))
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
+    steps:
+      - name: Continue revisions or hand off to a human
+        uses: actions/github-script@v7
+        env:
+          REVIEW_ID: ${{ github.event.review.id }}
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const issue_number = context.payload.pull_request.number;
+            const review_id = Number(process.env.REVIEW_ID);
+            const maxRevisions = Number(process.env.MAX_CODEX_REVISIONS);
+            const humanReviewer = process.env.HUMAN_REVIEWER;
+            const marker = '<!-- codex-review-loop:revision -->';
+
+            const reviewComments = await github.paginate(
+              github.rest.pulls.listReviewComments,
+              { owner, repo, pull_number: issue_number, per_page: 100 },
+            );
+            const findings = reviewComments.filter(
+              (comment) => comment.pull_request_review_id === review_id,
+            );
+            const conversation = await github.paginate(
+              github.rest.issues.listComments,
+              { owner, repo, issue_number, per_page: 100 },
+            );
+            const revisions = conversation.filter((comment) => comment.body?.includes(marker)).length;
+
+            const ensureLabel = async (name, color, description) => {
+              try {
+                await github.rest.issues.getLabel({ owner, repo, name });
+              } catch (error) {
+                if (error.status !== 404) throw error;
+                await github.rest.issues.createLabel({ owner, repo, name, color, description });
+              }
+            };
+
+            const replaceHandoffLabel = async (add, remove) => {
+              await ensureLabel(...add);
+              await github.rest.issues.addLabels({ owner, repo, issue_number, labels: [add[0]] });
+              try {
+                await github.rest.issues.removeLabel({ owner, repo, issue_number, name: remove });
+              } catch (error) {
+                if (error.status !== 404) throw error;
+              }
+            };
+
+            if (findings.length === 0) {
+              await replaceHandoffLabel(
+                ['human-review-ready', '2da44e', 'Codex review is clear; ready for human review'],
+                'human-review-needed',
+              );
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number,
+                body: `@${humanReviewer} Codex found no blocking issues in its latest review. This PR is ready for your manual review.`,
+              });
+              return;
+            }
+
+            if (revisions >= maxRevisions) {
+              await replaceHandoffLabel(
+                ['human-review-needed', 'd93f0b', 'Codex revision cap reached; human attention needed'],
+                'human-review-ready',
+              );
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number,
+                body: `@${humanReviewer} Codex still has ${findings.length} actionable finding(s) after ${maxRevisions} revision rounds. The automation stopped here for manual review.`,
+              });
+              return;
+            }
+
+            await github.rest.issues.createComment({
+              owner,
+              repo,
+              issue_number,
+              body: `${marker}\n@codex fix all actionable findings from your latest review. Keep the changes scoped, run the relevant tests, and push the fixes to this PR branch. Revision ${revisions + 1} of ${maxRevisions}.`,
+            });

@@ -136,3 +136,21 @@ Eliminate temporary variable assignments (like `const rows = run()`). Feed code 
 ```typescript
 expect(buildDataset(points, spec(lifts))).toEqual([{ t: 1, total: 300 }]);
 ```
+
+## Code Review Rules
+
+### Package boundaries
+
+- Flag any `packages/app` value import from `@dyel/pipeline` or direct value import from `@dyel/api`
+  outside the ESLint-allowlisted display-only exceptions. The safe path is to expose derivations from
+  `@dyel/api` and consume them through a feature hook.
+- Flag relative path traversal across workspace package boundaries. Cross-package imports must use the
+  package name, and sibling app features must use the owning feature's `index.ts` barrel.
+
+### Behavioral safety
+
+- Flag changes to pipeline, API derivation, routing, or persisted browser state that alter existing
+  behavior without focused regression coverage. The safe path is a concise unit or matrix test near the
+  affected boundary.
+- Flag new multi-pass processing over the same collection on data-heavy paths when the work can be
+  performed in one pass without reducing clarity.
