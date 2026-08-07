@@ -9,6 +9,8 @@ import { ACCESSORY_CATEGORY_LABELS } from './useAccessoryTable';
 import { useAccessoryCoverage } from './useAccessoryCoverage';
 import { useWeaknessAccessoryCoverage } from './useWeaknessAccessoryCoverage';
 import { WeaknessAccessoryCoverage } from './WeaknessAccessoryCoverage';
+import { useCategoryEffectivenessEvidence } from './useCategoryEffectivenessEvidence';
+import { CategoryEffectivenessEvidence } from './CategoryEffectivenessEvidence';
 import { EditableDateChip } from '../../shared/components';
 import styles from './AccessoryTabPanel.module.css';
 
@@ -25,6 +27,7 @@ export function AccessoryTabPanel({
   const groups = useAccessoryTable(unit, dateRange);
   const coverage = useAccessoryCoverage(dateRange);
   const weaknessCoverage = useWeaknessAccessoryCoverage(dateRange);
+  const effectivenessEvidence = useCategoryEffectivenessEvidence(dateRange);
   const exerciseCount = groups.reduce(
     (total, group) => total + group.rows.filter((row) => row.sessionCountInRange > 0).length,
     0
@@ -44,6 +47,7 @@ export function AccessoryTabPanel({
       sessionCount={sessionCount}
       coverage={coverage}
       weaknessCoverage={weaknessCoverage}
+      effectivenessEvidence={effectivenessEvidence}
       unit={unit}
     />
   );
@@ -57,6 +61,7 @@ function AccessoryTabContent({
   sessionCount,
   coverage,
   weaknessCoverage,
+  effectivenessEvidence,
   unit,
 }: {
   dateRange: DateRange;
@@ -66,6 +71,7 @@ function AccessoryTabContent({
   sessionCount: number;
   coverage: ReturnType<typeof useAccessoryCoverage>;
   weaknessCoverage: ReturnType<typeof useWeaknessAccessoryCoverage>;
+  effectivenessEvidence: ReturnType<typeof useCategoryEffectivenessEvidence>;
   unit: DisplayUnit;
 }) {
   const allRows = groups.flatMap((group) => group.rows);
@@ -94,6 +100,7 @@ function AccessoryTabContent({
         Review what you are training, when you last trained it, and what you want to inspect next.
       </p>
       <WeaknessAccessoryCoverage rows={weaknessCoverage} />
+      <CategoryEffectivenessEvidence evidence={effectivenessEvidence} />
       <section className={styles.coverage} aria-labelledby="accessory-coverage-heading">
         <h3 id="accessory-coverage-heading">Coverage in range</h3>
         {coverage.length ? (
