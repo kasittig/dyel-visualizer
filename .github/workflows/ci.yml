@@ -27,6 +27,7 @@ jobs:
           VITE_BASE_PATH: /dyel-visualizer/
       - run: cp packages/app/dist/index.html packages/app/dist/404.html
       - run: npm test
+      - run: node --test .github/scripts/codex-review-loop.test.js
       - run: npx playwright install --with-deps chromium
       - run: npm run test:mobile -w packages/app
       - uses: actions/upload-artifact@v7

@@ -1,0 +1,35 @@
+name: Codex review loop
+
+on:
+  pull_request_target:
+    types: [opened, reopened, synchronize, ready_for_review]
+
+env:
+  MAX_CODEX_REVISIONS: '3'
+  HUMAN_REVIEWER: kasittig
+
+concurrency:
+  group: codex-review-loop-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  coordinate:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: read
+    steps:
+      # This trusted-base workflow must never check out or execute pull-request-controlled content.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          persist-credentials: false
+      - name: Continue revisions or hand off to a human
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+        with:
+          script: |
+            const run = require('./.github/scripts/codex-review-loop.js');
+            await run({ github, context, core });
