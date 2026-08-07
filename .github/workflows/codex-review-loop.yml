@@ -1,6 +1,8 @@
 name: Codex review loop
 
 on:
+  pull_request:
+    types: [synchronize]
   pull_request_review:
     types: [submitted]
 
@@ -9,8 +11,53 @@ env:
   HUMAN_REVIEWER: kasittig
 
 jobs:
+  carry-revision-state:
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.event.sender.type == 'Bot' &&
+      (contains(github.event.sender.login, 'codex') ||
+       contains(github.event.sender.login, 'chatgpt'))
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: read
+    steps:
+      - name: Bind the revision count to the new head
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const issue_number = context.payload.pull_request.number;
+            const headSha = context.payload.pull_request.head.sha;
+            const beforeSha = context.payload.before;
+            const requestMarker = new RegExp(
+              `<!-- codex-review-loop:request:revision:(\\d+):head:${beforeSha} -->`,
+            );
+            const conversation = await github.paginate(
+              github.rest.issues.listComments,
+              { owner, repo, issue_number, per_page: 100 },
+            );
+            const request = conversation.findLast(
+              (comment) =>
+                comment.user?.login === 'github-actions[bot]' &&
+                requestMarker.test(comment.body ?? ''),
+            );
+            const revision = request?.body?.match(requestMarker)?.[1];
+            if (!revision) {
+              core.warning('Codex pushed without a workflow-authored revision request.');
+              return;
+            }
+            await github.rest.issues.createComment({
+              owner,
+              repo,
+              issue_number,
+              body: `<!-- codex-review-loop:state:revision:${revision}:head:${headSha} -->`,
+            });
+
   coordinate:
     if: >-
+      github.event_name == 'pull_request_review' &&
       github.event.pull_request.draft == false &&
       github.event.review.user.type == 'Bot' &&
       (contains(github.event.review.user.login, 'codex') ||
@@ -22,30 +69,52 @@ jobs:
     steps:
       - name: Continue revisions or hand off to a human
         uses: actions/github-script@v7
-        env:
-          REVIEW_ID: ${{ github.event.review.id }}
         with:
           script: |
             const owner = context.repo.owner;
             const repo = context.repo.repo;
             const issue_number = context.payload.pull_request.number;
-            const review_id = Number(process.env.REVIEW_ID);
             const maxRevisions = Number(process.env.MAX_CODEX_REVISIONS);
             const humanReviewer = process.env.HUMAN_REVIEWER;
-            const marker = '<!-- codex-review-loop:revision -->';
+            const headSha = context.payload.pull_request.head.sha;
 
-            const reviewComments = await github.paginate(
-              github.rest.pulls.listReviewComments,
-              { owner, repo, pull_number: issue_number, per_page: 100 },
-            );
-            const findings = reviewComments.filter(
-              (comment) => comment.pull_request_review_id === review_id,
-            );
+            if (context.payload.review.commit_id !== headSha) {
+              core.info('Ignoring a review for a stale PR head.');
+              return;
+            }
+
             const conversation = await github.paginate(
               github.rest.issues.listComments,
               { owner, repo, issue_number, per_page: 100 },
             );
-            const revisions = conversation.filter((comment) => comment.body?.includes(marker)).length;
+            const stateMarker = new RegExp(
+              `<!-- codex-review-loop:state:revision:(\\d+):head:${headSha} -->`,
+            );
+            const revisions = Number(
+              conversation.findLast(
+                (comment) =>
+                  comment.user?.login === 'github-actions[bot]' &&
+                  stateMarker.test(comment.body ?? ''),
+              )?.body?.match(stateMarker)?.[1] ?? 0,
+            );
+            const verdictMatch = context.payload.review.body?.match(
+              /<!-- codex-review-verdict: (\{[^\n]+\}) -->/,
+            );
+            let verdict;
+            try {
+              verdict = verdictMatch && JSON.parse(verdictMatch[1]);
+            } catch (error) {
+              core.warning(`Codex returned an invalid review verdict: ${error.message}`);
+            }
+            const cleanVerdict =
+              verdict?.actionable === false &&
+              verdict.highest_severity === null &&
+              verdict.finding_count === 0;
+            const actionableVerdict =
+              verdict?.actionable === true &&
+              ['P0', 'P1'].includes(verdict.highest_severity) &&
+              Number.isInteger(verdict.finding_count) &&
+              verdict.finding_count > 0;
 
             const ensureLabel = async (name, color, description) => {
               try {
@@ -66,7 +135,7 @@ jobs:
               }
             };
 
-            if (findings.length === 0) {
+            if (cleanVerdict) {
               await replaceHandoffLabel(
                 ['human-review-ready', '2da44e', 'Codex review is clear; ready for human review'],
                 'human-review-needed',
@@ -80,6 +149,20 @@ jobs:
               return;
             }
 
+            if (!actionableVerdict) {
+              await replaceHandoffLabel(
+                ['human-review-needed', 'd93f0b', 'Codex review verdict missing or invalid'],
+                'human-review-ready',
+              );
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number,
+                body: `@${humanReviewer} Codex did not return a valid machine-readable verdict for ${headSha.slice(0, 7)}. The automation stopped for manual review.`,
+              });
+              return;
+            }
+
             if (revisions >= maxRevisions) {
               await replaceHandoffLabel(
                 ['human-review-needed', 'd93f0b', 'Codex revision cap reached; human attention needed'],
@@ -89,7 +172,7 @@ jobs:
                 owner,
                 repo,
                 issue_number,
-                body: `@${humanReviewer} Codex still has ${findings.length} actionable finding(s) after ${maxRevisions} revision rounds. The automation stopped here for manual review.`,
+                body: `@${humanReviewer} Codex still has ${verdict.finding_count} actionable finding(s) after ${maxRevisions} revision rounds. The automation stopped here for manual review.`,
               });
               return;
             }
@@ -98,5 +181,5 @@ jobs:
               owner,
               repo,
               issue_number,
-              body: `${marker}\n@codex fix all actionable findings from your latest review. Keep the changes scoped, run the relevant tests, and push the fixes to this PR branch. Revision ${revisions + 1} of ${maxRevisions}.`,
+              body: `<!-- codex-review-loop:request:revision:${revisions + 1}:head:${headSha} -->\n@codex fix all actionable findings from your latest review. Keep the changes scoped, run the relevant tests, and push the fixes to this PR branch. Revision ${revisions + 1} of ${maxRevisions}.`,
             });

@@ -141,9 +141,9 @@ expect(buildDataset(points, spec(lifts))).toEqual([{ t: 1, total: 300 }]);
 
 ### Package boundaries
 
-- Flag any `packages/app` value import from `@dyel/pipeline` or direct value import from `@dyel/api`
-  outside the ESLint-allowlisted display-only exceptions. The safe path is to expose derivations from
-  `@dyel/api` and consume them through a feature hook.
+- Flag any `packages/app` import from `@dyel/pipeline`, and any component `.tsx` value import from
+  `@dyel/api` outside the ESLint-allowlisted display-only exceptions. The safe path for components is
+  to consume values through a feature hook; feature hooks may import derivation values from `@dyel/api`.
 - Flag relative path traversal across workspace package boundaries. Cross-package imports must use the
   package name, and sibling app features must use the owning feature's `index.ts` barrel.
 
@@ -154,3 +154,10 @@ expect(buildDataset(points, spec(lifts))).toEqual([{ t: 1, total: 300 }]);
   affected boundary.
 - Flag new multi-pass processing over the same collection on data-heavy paths when the work can be
   performed in one pass without reducing clarity.
+
+### Automated review verdict
+
+- End every GitHub Codex review body with exactly one machine-readable verdict comment. Use
+  `<!-- codex-review-verdict: {"actionable":false,"highest_severity":null,"finding_count":0} -->`
+  when there are no actionable P0/P1 findings. When findings exist, set `actionable` to `true`,
+  `highest_severity` to `"P0"` or `"P1"`, and `finding_count` to their positive integer count.
