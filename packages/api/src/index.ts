@@ -1,5 +1,6 @@
 export { getCompetitionTotal } from './getCompetitionTotal';
 export { calculateVolumeCorrelationFromTagged } from './volume/volume';
+export { groupBy } from './groupBy';
 export { parseTextData } from './text/parseTextData';
 export { TOTAL_CHART_SPECS } from './totalChartSpecs';
 export { buildChartDatasets } from './chart/buildChartDatasets';

@@ -6,12 +6,12 @@ import {
   formatLastSessionParts,
   formatLastSessionSummary,
   formatWeight,
+  groupBy,
   roundWeight,
   type AccessoryTableRow,
   type AccessoryCategory,
   type DisplayUnit,
 } from '@dyel/api';
-import { groupBy } from '@dyel/pipeline';
 
 export interface AccessoryTableDisplay extends AccessoryTableRow {
   lastPerformedDisplay: string;
