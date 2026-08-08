@@ -71,6 +71,8 @@ describe('useCategoryEffectivenessEvidence', () => {
         outcomeEvidenceCount: 4,
         evidenceCount: 6,
         observationCount: 2,
+        baselineVariations: ['squat-box'],
+        outcomeVariations: ['squat-box', 'good-morning'],
         status: 'possible-improvement',
         interpretation: 'Category exposure was followed by possible improvement.',
       },
@@ -88,6 +90,7 @@ describe('useCategoryEffectivenessEvidence', () => {
       changeDisplay: '+10.0 percentage points',
       evidenceSummary: expect.stringContaining('6 contributing lift signals'),
       requirementDisplay: null,
+      sourceSummary: expect.stringContaining('squat box, good morning'),
     });
   });
 
@@ -107,6 +110,8 @@ describe('useCategoryEffectivenessEvidence', () => {
         outcomeEvidenceCount: 4,
         evidenceCount: 4,
         observationCount: 2,
+        baselineVariations: [],
+        outcomeVariations: ['squat-box'],
         status: 'insufficient-data',
         interpretation: 'Insufficient data to assess an association.',
       },

@@ -158,7 +158,8 @@ unmapped results with rationale and provenance.
 `associateCategoryExposureWithLaterWeakness` aligns weekly category sessions with later historical
 quality observations using caller-supplied, half-open exposure and outcome periods. Exposure must
 precede outcome; results report association-only states, periods, session counts, normalized
-weakness change, and evidence counts without causal or prescriptive language.
+weakness change, evidence counts, and the exact baseline/follow-up variations contributing to each
+score without causal or prescriptive language.
 
 ## Commands
 

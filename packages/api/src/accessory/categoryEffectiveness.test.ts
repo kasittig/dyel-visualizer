@@ -13,7 +13,17 @@ const trend = (date: number, normalizedResult: number | null): WeaknessTrendPoin
   quality: 'QUAD_DOMINANT',
   normalizedResult,
   status: 'insufficient-history',
-  contributingVariations: [],
+  contributingVariations:
+    normalizedResult === null
+      ? []
+      : [
+          {
+            canonical: 'squat-box',
+            status: 'optimal',
+            ratio: normalizedResult,
+            latestAt: date,
+          },
+        ],
   evidenceCount: normalizedResult === null ? 0 : 2,
   staleEvidenceCount: 0,
   unassessedCount: 0,
@@ -49,6 +59,8 @@ describe('associateCategoryExposureWithLaterWeakness', () => {
         outcomeEvidenceCount: outcome === null ? 0 : 2,
         evidenceCount: (baseline === null ? 0 : 2) + (outcome === null ? 0 : 2),
         observationCount: outcome === null ? 0 : 1,
+        baselineVariations: baseline === null ? [] : ['squat-box'],
+        outcomeVariations: outcome === null ? [] : ['squat-box'],
         status,
         interpretation: expect.stringContaining(
           status === 'insufficient-data' ? 'Insufficient data' : 'was followed by'

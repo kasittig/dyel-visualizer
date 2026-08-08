@@ -33,6 +33,8 @@ export interface CategoryEffectivenessEvidence {
   outcomeEvidenceCount: number;
   evidenceCount: number;
   observationCount: number;
+  baselineVariations: string[];
+  outcomeVariations: string[];
   status: CategoryEffectivenessStatus;
   interpretation: string;
 }
@@ -120,6 +122,16 @@ export function associateCategoryExposureWithLaterWeakness(
         categoryExposure.sessionCount > 0 && baseline && outcome
           ? Number((outcome.normalizedResult! - baseline.normalizedResult!).toFixed(6))
           : null;
+      const baselineVariations = baseline
+        ? baseline.contributingVariations
+            .filter(({ ratio, status }) => ratio !== null && status !== 'stale')
+            .map(({ canonical }) => canonical)
+        : [];
+      const outcomeVariations = outcome
+        ? outcome.contributingVariations
+            .filter(({ ratio, status }) => ratio !== null && status !== 'stale')
+            .map(({ canonical }) => canonical)
+        : [];
       const status: CategoryEffectivenessStatus =
         weaknessChange === null
           ? 'insufficient-data'
@@ -142,6 +154,8 @@ export function associateCategoryExposureWithLaterWeakness(
         outcomeEvidenceCount: evidenceCount,
         evidenceCount: (baseline?.evidenceCount ?? 0) + evidenceCount,
         observationCount,
+        baselineVariations,
+        outcomeVariations,
         status,
         interpretation:
           status === 'insufficient-data'

@@ -27,6 +27,7 @@ export interface CategoryEffectivenessRow {
   evidenceSummary: string;
   interpretation: string;
   resultSummary: string;
+  sourceSummary: string;
   requirementDisplay: string | null;
 }
 
@@ -94,6 +95,12 @@ export function useCategoryEffectivenessEvidence(dateRange: DateRange): Category
       deriveHistoricalWeaknessTrends(model),
       window
     );
+    const displayNameByCanonical = new Map(
+      model.tagged.map((record) => [
+        record.canonical,
+        record.meta?.rawExercise ?? record.canonical.replaceAll('-', ' '),
+      ])
+    );
     return {
       windowPolicy: `The selected range is split into an earlier exposure period (${formatPeriod(start, outcomeStart)}) and a later follow-up (${formatPeriod(outcomeStart, end)}).`,
       unavailableReason: evidence.length
@@ -121,6 +128,12 @@ export function useCategoryEffectivenessEvidence(dateRange: DateRange): Category
           item.weaknessChange === null
             ? 'Not available'
             : `${item.weaknessChange > 0 ? '+' : ''}${(item.weaknessChange * 100).toFixed(1)} percentage points`;
+        const baselineVariations = item.baselineVariations.map(
+          (canonical) => displayNameByCanonical.get(canonical) ?? canonical.replaceAll('-', ' ')
+        );
+        const outcomeVariations = item.outcomeVariations.map(
+          (canonical) => displayNameByCanonical.get(canonical) ?? canonical.replaceAll('-', ' ')
+        );
         return {
           id: `${item.category}:${item.quality}`,
           category: item.category,
@@ -139,7 +152,8 @@ export function useCategoryEffectivenessEvidence(dateRange: DateRange): Category
           resultSummary:
             item.weaknessChange === null
               ? 'There is not enough category and lift-quality history to compare the two periods.'
-              : `${formatEffect(item.quality)} moved from ${baselineDisplay} earlier to ${outcomeDisplay} later (${changeDisplay}). The percentage compares actual estimated strength with the expected strength for linked variations.`,
+              : `${item.sessionCount} ${ACCESSORY_CATEGORY_LABELS[item.category].toLowerCase()} session${item.sessionCount === 1 ? '' : 's'} from ${formatPeriod(item.exposurePeriod.start, item.exposurePeriod.end)} were followed by ${item.weaknessChange > 0 ? 'stronger' : item.weaknessChange < 0 ? 'weaker' : 'unchanged'} ${formatEffect(item.quality).toLowerCase()}-linked performance from ${formatPeriod(item.outcomePeriod.start, item.outcomePeriod.end)}: ${baselineDisplay} → ${outcomeDisplay} (${changeDisplay}).`,
+          sourceSummary: `Score sources — earlier: ${baselineVariations.length ? baselineVariations.join(', ') : 'none'}; later: ${outcomeVariations.length ? outcomeVariations.join(', ') : 'none'}.`,
           requirementDisplay: missingRequirements.length
             ? `Needed: ${REQUIREMENT_LIST.format(missingRequirements)}.`
             : null,

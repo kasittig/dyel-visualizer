@@ -58,6 +58,7 @@ export function CategoryEffectivenessEvidence({ rows }: { rows: CategoryEffectiv
             </div>
             <p className={styles.compactSummary}>{row.sessionSummary}</p>
             <p className={styles.resultSummary}>{row.resultSummary}</p>
+            <p className={styles.sourceSummary}>{row.sourceSummary}</p>
             {row.requirementDisplay && (
               <p className={styles.requirement}>{row.requirementDisplay}</p>
             )}
