@@ -94,6 +94,7 @@ describe('useCategoryEffectivenessEvidence', () => {
         { name: 'good morning', inBaseline: false, inOutcome: true },
         { name: 'squat box', inBaseline: true, inOutcome: true },
       ],
+      sourceCountSummary: '1 earlier · 2 later',
     });
   });
 

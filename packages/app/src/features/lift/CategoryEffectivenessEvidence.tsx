@@ -58,28 +58,34 @@ export function CategoryEffectivenessEvidence({ rows }: { rows: CategoryEffectiv
             </div>
             <p className={styles.compactSummary}>{row.sessionSummary}</p>
             <p className={styles.resultSummary}>{row.resultSummary}</p>
-            <table className={styles.sourceGrid} aria-label={`${row.qualityLabel} score sources`}>
-              <thead>
-                <tr>
-                  <th>Earlier score sources</th>
-                  <th>Later score sources</th>
-                </tr>
-              </thead>
-              <tbody>
-                {row.sourceRows.length ? (
-                  row.sourceRows.map(({ name, inBaseline, inOutcome }) => (
-                    <tr key={name}>
-                      <td>{inBaseline ? name : <span aria-label="Not included">—</span>}</td>
-                      <td>{inOutcome ? name : <span aria-label="Not included">—</span>}</td>
-                    </tr>
-                  ))
-                ) : (
+            <details className={styles.sourceDetails}>
+              <summary>
+                <span>Score sources</span>
+                <small>{row.sourceCountSummary}</small>
+              </summary>
+              <table className={styles.sourceGrid} aria-label={`${row.qualityLabel} score sources`}>
+                <thead>
                   <tr>
-                    <td colSpan={2}>No score sources available</td>
+                    <th>Earlier score sources</th>
+                    <th>Later score sources</th>
                   </tr>
-                )}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {row.sourceRows.length ? (
+                    row.sourceRows.map(({ name, inBaseline, inOutcome }) => (
+                      <tr key={name}>
+                        <td>{inBaseline ? name : <span aria-label="Not included">—</span>}</td>
+                        <td>{inOutcome ? name : <span aria-label="Not included">—</span>}</td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={2}>No score sources available</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </details>
             {row.requirementDisplay && (
               <p className={styles.requirement}>{row.requirementDisplay}</p>
             )}

@@ -130,9 +130,21 @@
   font-size: 0.78rem;
   line-height: 1.45;
 }
+.sourceDetails {
+  margin-top: 0.55rem;
+}
+.sourceDetails summary {
+  display: flex;
+  align-items: baseline;
+  gap: 0.45rem;
+}
+.sourceDetails summary small {
+  color: var(--muted);
+  font-size: 0.68rem;
+}
 .sourceGrid {
   width: 100%;
-  margin: 0.55rem 0 0;
+  margin: 0.45rem 0 0;
   border: 1px solid var(--border);
   border-collapse: separate;
   border-spacing: 0;

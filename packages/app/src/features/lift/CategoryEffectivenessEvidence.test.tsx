@@ -35,6 +35,7 @@ const row = (status: CategoryEffectivenessRow['status']): CategoryEffectivenessR
     { name: 'Box squat', inBaseline: true, inOutcome: true },
     { name: 'Good morning', inBaseline: false, inOutcome: true },
   ],
+  sourceCountSummary: '1 earlier · 2 later',
   requirementDisplay:
     status === 'insufficient-data' ? 'Needed: 1 category session in the earlier period.' : null,
 });
@@ -57,6 +58,12 @@ describe('CategoryEffectivenessEvidence', () => {
     expect(screen.getByRole('heading', { name: 'Association evidence' })).toBeTruthy();
     expect(screen.getAllByText(/2.0 per week/).length).toBeGreaterThan(0);
     expect(screen.getByText(/100% means.*exactly as expected/i)).toBeTruthy();
+    const sourceSummary = screen.getByText('Score sources');
+    const sourceDetails = sourceSummary.closest('details')!;
+    expect(sourceDetails.hasAttribute('open')).toBe(false);
+    expect(screen.getByText('1 earlier · 2 later')).toBeTruthy();
+    fireEvent.click(sourceSummary);
+    expect(sourceDetails.hasAttribute('open')).toBe(true);
     expect(screen.getByText('Earlier score sources')).toBeTruthy();
     expect(screen.getByText('Later score sources')).toBeTruthy();
     expect(screen.getAllByText('Box squat')).toHaveLength(2);

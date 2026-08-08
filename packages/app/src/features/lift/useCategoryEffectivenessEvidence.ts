@@ -28,6 +28,7 @@ export interface CategoryEffectivenessRow {
   interpretation: string;
   resultSummary: string;
   sourceRows: { name: string; inBaseline: boolean; inOutcome: boolean }[];
+  sourceCountSummary: string;
   requirementDisplay: string | null;
 }
 
@@ -158,6 +159,7 @@ export function useCategoryEffectivenessEvidence(dateRange: DateRange): Category
               ? 'There is not enough category and lift-quality history to compare the two periods.'
               : `${item.sessionCount} ${ACCESSORY_CATEGORY_LABELS[item.category].toLowerCase()} session${item.sessionCount === 1 ? '' : 's'} from ${formatPeriod(item.exposurePeriod.start, item.exposurePeriod.end)} were followed by ${item.weaknessChange > 0 ? 'stronger' : item.weaknessChange < 0 ? 'weaker' : 'unchanged'} ${formatEffect(item.quality).toLowerCase()}-linked performance from ${formatPeriod(item.outcomePeriod.start, item.outcomePeriod.end)}: ${baselineDisplay} → ${outcomeDisplay} (${changeDisplay}).`,
           sourceRows,
+          sourceCountSummary: `${item.baselineVariations.length} earlier · ${item.outcomeVariations.length} later`,
           requirementDisplay: missingRequirements.length
             ? `Needed: ${REQUIREMENT_LIST.format(missingRequirements)}.`
             : null,
