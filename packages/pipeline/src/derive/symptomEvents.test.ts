@@ -118,6 +118,21 @@ describe('extractSymptomEvents', () => {
     expect(input.notes).toEqual([note]);
   });
 
+  it('keeps a positive symptom when another symptom in the statement is negated', () => {
+    const note = 'No knee pain but right shoulder pain 6/10';
+
+    expect(extractSymptomEvents([context(note)])).toEqual([
+      {
+        date: DAY,
+        sourceText: note,
+        matchedText: 'right shoulder pain 6/10',
+        region: 'shoulder',
+        side: 'right',
+        severityOutOf10: 6,
+      },
+    ]);
+  });
+
   it('leaves optional fields absent rather than guessing', () => {
     expect(extractSymptomEvents([context('Felt sore today')])).toEqual([
       {

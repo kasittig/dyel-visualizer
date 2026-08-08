@@ -65,47 +65,53 @@ export function extractSymptomEvents(contexts: readonly DayContext[]): SymptomEv
   for (const { date, notes } of contexts) {
     for (const sourceText of notes) {
       for (const match of sourceText.matchAll(/[^\n.!?;]+[.!?;]?/g)) {
-        const matchedText = match[0].trim();
-        if (!matchedText || NEGATED_SYMPTOM_PATTERN.test(matchedText)) {
-          continue;
+        const statement = match[0].trim();
+        const clauses = NEGATED_SYMPTOM_PATTERN.test(statement)
+          ? statement.split(/\s+\bbut\b\s+/i)
+          : [statement];
+        for (const clause of clauses) {
+          const matchedText = clause.trim();
+          if (!matchedText || NEGATED_SYMPTOM_PATTERN.test(matchedText)) {
+            continue;
+          }
+
+          const regionMatch = matchedText.match(REGION_PATTERN);
+          const severityMatch = matchedText.match(SEVERITY_PATTERN);
+          if (!SYMPTOM_PATTERN.test(matchedText) && !(regionMatch && severityMatch)) {
+            continue;
+          }
+
+          const sideMatch = matchedText.match(/\b(left|right|bilateral|both)\b/i);
+          const limitationMatch = matchedText.match(LIMITATION_PATTERN);
+          const exerciseMatch =
+            matchedText.match(RELATED_EXERCISE_PATTERN) ??
+            limitationMatch?.[0].match(EXERCISE_PATTERN);
+          const normalized = matchedText.toLowerCase();
+          const timing = /\b(?:next|following)\s+(?:day|morning)\b/.test(normalized)
+            ? 'next-day'
+            : /\b(?:during|while)\s+(?:training|lifting|working out)\b/.test(normalized)
+              ? 'during-training'
+              : /\bafter\s+(?:training|lifting|working out)\b/.test(normalized)
+                ? 'after-training'
+                : undefined;
+
+          events.push({
+            date,
+            sourceText,
+            matchedText,
+            ...(regionMatch && { region: REGIONS[regionMatch[1].toLowerCase()] }),
+            ...(sideMatch && {
+              side:
+                sideMatch[1].toLowerCase() === 'both'
+                  ? ('bilateral' as const)
+                  : (sideMatch[1].toLowerCase() as SymptomSide),
+            }),
+            ...(severityMatch && { severityOutOf10: Number(severityMatch[1]) }),
+            ...(limitationMatch && { limitation: limitationMatch[0] }),
+            ...(exerciseMatch && { relatedExercise: EXERCISES[exerciseMatch[1].toLowerCase()] }),
+            ...(timing && { timing }),
+          });
         }
-
-        const regionMatch = matchedText.match(REGION_PATTERN);
-        const severityMatch = matchedText.match(SEVERITY_PATTERN);
-        if (!SYMPTOM_PATTERN.test(matchedText) && !(regionMatch && severityMatch)) {
-          continue;
-        }
-
-        const sideMatch = matchedText.match(/\b(left|right|bilateral|both)\b/i);
-        const limitationMatch = matchedText.match(LIMITATION_PATTERN);
-        const exerciseMatch =
-          matchedText.match(RELATED_EXERCISE_PATTERN) ??
-          limitationMatch?.[0].match(EXERCISE_PATTERN);
-        const normalized = matchedText.toLowerCase();
-        const timing = /\b(?:next|following)\s+(?:day|morning)\b/.test(normalized)
-          ? 'next-day'
-          : /\b(?:during|while)\s+(?:training|lifting|working out)\b/.test(normalized)
-            ? 'during-training'
-            : /\bafter\s+(?:training|lifting|working out)\b/.test(normalized)
-              ? 'after-training'
-              : undefined;
-
-        events.push({
-          date,
-          sourceText,
-          matchedText,
-          ...(regionMatch && { region: REGIONS[regionMatch[1].toLowerCase()] }),
-          ...(sideMatch && {
-            side:
-              sideMatch[1].toLowerCase() === 'both'
-                ? ('bilateral' as const)
-                : (sideMatch[1].toLowerCase() as SymptomSide),
-          }),
-          ...(severityMatch && { severityOutOf10: Number(severityMatch[1]) }),
-          ...(limitationMatch && { limitation: limitationMatch[0] }),
-          ...(exerciseMatch && { relatedExercise: EXERCISES[exerciseMatch[1].toLowerCase()] }),
-          ...(timing && { timing }),
-        });
       }
     }
   }
