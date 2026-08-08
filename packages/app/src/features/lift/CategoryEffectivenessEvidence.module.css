@@ -131,39 +131,41 @@
   line-height: 1.45;
 }
 .sourceGrid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.4rem;
+  width: 100%;
   margin: 0.55rem 0 0;
-}
-.sourceGrid > div {
-  min-width: 0;
-  padding: 0.45rem 0.55rem;
   border: 1px solid var(--border);
+  border-collapse: separate;
+  border-spacing: 0;
   border-radius: 0.4rem;
+  overflow: hidden;
+  table-layout: fixed;
+}
+.sourceGrid th,
+.sourceGrid td {
+  width: 50%;
+  padding: 0.45rem 0.55rem;
+  text-align: left;
+  vertical-align: top;
+}
+.sourceGrid th + th,
+.sourceGrid td + td {
+  border-left: 1px solid var(--border);
+}
+.sourceGrid th {
   background: var(--surface);
-}
-.sourceGrid dt,
-.sourceGrid dd {
-  margin: 0;
-}
-.sourceGrid dt {
   color: var(--muted);
   font-size: 0.64rem;
   font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
 }
-.sourceGrid dd {
-  margin-top: 0.25rem;
+.sourceGrid td {
+  border-top: 1px solid var(--border);
   color: var(--text-h);
   font-size: 0.72rem;
 }
-.sourceGrid ul {
-  display: grid;
-  gap: 0.15rem;
-  margin: 0;
-  padding-left: 1rem;
+.sourceGrid td span {
+  color: var(--muted);
 }
 .requirement {
   margin-top: 0.35rem;
@@ -247,8 +249,5 @@
   .timeline > span {
     transform: rotate(90deg);
     justify-self: start;
-  }
-  .sourceGrid {
-    grid-template-columns: 1fr;
   }
 }

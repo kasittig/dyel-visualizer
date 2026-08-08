@@ -27,8 +27,7 @@ export interface CategoryEffectivenessRow {
   evidenceSummary: string;
   interpretation: string;
   resultSummary: string;
-  baselineSources: string[];
-  outcomeSources: string[];
+  sourceRows: { name: string; inBaseline: boolean; inOutcome: boolean }[];
   requirementDisplay: string | null;
 }
 
@@ -129,12 +128,16 @@ export function useCategoryEffectivenessEvidence(dateRange: DateRange): Category
           item.weaknessChange === null
             ? 'Not available'
             : `${item.weaknessChange > 0 ? '+' : ''}${(item.weaknessChange * 100).toFixed(1)} percentage points`;
-        const baselineVariations = item.baselineVariations.map(
-          (canonical) => displayNameByCanonical.get(canonical) ?? canonical.replaceAll('-', ' ')
-        );
-        const outcomeVariations = item.outcomeVariations.map(
-          (canonical) => displayNameByCanonical.get(canonical) ?? canonical.replaceAll('-', ' ')
-        );
+        const baselineCanonicals = new Set(item.baselineVariations);
+        const outcomeCanonicals = new Set(item.outcomeVariations);
+        const sourceRows = Array.from(
+          new Set([...item.baselineVariations, ...item.outcomeVariations]),
+          (canonical) => ({
+            name: displayNameByCanonical.get(canonical) ?? canonical.replaceAll('-', ' '),
+            inBaseline: baselineCanonicals.has(canonical),
+            inOutcome: outcomeCanonicals.has(canonical),
+          })
+        ).sort((a, b) => a.name.localeCompare(b.name));
         return {
           id: `${item.category}:${item.quality}`,
           category: item.category,
@@ -154,8 +157,7 @@ export function useCategoryEffectivenessEvidence(dateRange: DateRange): Category
             item.weaknessChange === null
               ? 'There is not enough category and lift-quality history to compare the two periods.'
               : `${item.sessionCount} ${ACCESSORY_CATEGORY_LABELS[item.category].toLowerCase()} session${item.sessionCount === 1 ? '' : 's'} from ${formatPeriod(item.exposurePeriod.start, item.exposurePeriod.end)} were followed by ${item.weaknessChange > 0 ? 'stronger' : item.weaknessChange < 0 ? 'weaker' : 'unchanged'} ${formatEffect(item.quality).toLowerCase()}-linked performance from ${formatPeriod(item.outcomePeriod.start, item.outcomePeriod.end)}: ${baselineDisplay} → ${outcomeDisplay} (${changeDisplay}).`,
-          baselineSources: baselineVariations,
-          outcomeSources: outcomeVariations,
+          sourceRows,
           requirementDisplay: missingRequirements.length
             ? `Needed: ${REQUIREMENT_LIST.format(missingRequirements)}.`
             : null,
