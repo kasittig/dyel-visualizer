@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import * as Popover from '@radix-ui/react-popover';
 import type { DateRange } from 'react-day-picker';
 import type { DisplayUnit } from '@dyel/api';
 import { AccessoryTable } from './AccessoryTable';
@@ -92,7 +93,27 @@ function AccessoryTabContent({
     <section className={styles.panel} aria-labelledby="accessory-inventory-heading">
       <header className={styles.inventoryHeader}>
         <div>
-          <h2 id="accessory-inventory-heading">Accessory inventory</h2>
+          <div className={styles.inventoryTitle}>
+            <h2 id="accessory-inventory-heading">Accessory inventory</h2>
+            <Popover.Root>
+              <Popover.Trigger asChild>
+                <button
+                  type="button"
+                  className={styles.helpButton}
+                  aria-label="About accessory inventory"
+                >
+                  ?
+                </button>
+              </Popover.Trigger>
+              <Popover.Portal>
+                <Popover.Content className={styles.helpPopover} sideOffset={7} collisionPadding={8}>
+                  Review what you are training, when you last trained it, and what you want to
+                  inspect next.
+                  <Popover.Arrow className={styles.helpArrow} width={12} height={6} />
+                </Popover.Content>
+              </Popover.Portal>
+            </Popover.Root>
+          </div>
           <p>
             {exerciseCount
               ? `${exerciseCount} exercises · ${sessionCount} sessions in range`
@@ -101,9 +122,6 @@ function AccessoryTabContent({
         </div>
         <EditableDateChip dateRange={dateRange} onDateRangeChange={onDateRangeChange} />
       </header>
-      <p className={styles.inventoryDescription}>
-        Review what you are training, when you last trained it, and what you want to inspect next.
-      </p>
       <WeaknessAccessoryCoverage rows={weaknessCoverage} />
       <section className={styles.coverage} aria-labelledby="accessory-coverage-heading">
         <div className={styles.coverageHeader}>

@@ -79,13 +79,13 @@ describe('desktop workspace controls', () => {
     expect(within(desktopNav).getByRole('tab', { name: 'Accessories' })).toBeTruthy();
 
     const toolbar = screen.getByRole('toolbar', { name: 'Training period' });
-    expect(within(toolbar).getByText('Applies to all charts and calculations')).toBeTruthy();
-    expect(within(toolbar).getByRole('button', { name: 'Date picker' })).toBeTruthy();
     const periodToggle = within(toolbar).getByRole('button', { name: /Training period/ });
-    expect(periodToggle.getAttribute('aria-expanded')).toBe('true');
-    fireEvent.click(periodToggle);
     expect(periodToggle.getAttribute('aria-expanded')).toBe('false');
     expect(within(toolbar).queryByRole('button', { name: 'Date picker' })).toBeNull();
+    fireEvent.click(periodToggle);
+    expect(periodToggle.getAttribute('aria-expanded')).toBe('true');
+    expect(within(toolbar).getByText('Applies to all charts and calculations')).toBeTruthy();
+    expect(within(toolbar).getByRole('button', { name: 'Date picker' })).toBeTruthy();
 
     fireEvent.click(within(desktopNav).getByRole('tab', { name: 'Bench' }));
     expect(setActiveTab).toHaveBeenCalledWith('bench');

@@ -26,7 +26,7 @@ const SHORT_DATE = new Intl.DateTimeFormat('en-US', { month: 'numeric', day: 'nu
 export function App() {
   const [isTrainingPeriodExpanded, setIsTrainingPeriodExpanded] = useLocalStorageState(
     'dyel:training-period:expanded',
-    true
+    false
   );
   const {
     isFirstUse,

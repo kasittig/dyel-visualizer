@@ -36,6 +36,14 @@ const expandCategory = (label: string) => {
 
 describe('AccessoryTabPanel', () => {
   beforeEach(() => {
+    vi.stubGlobal(
+      'ResizeObserver',
+      vi.fn().mockImplementation(() => ({
+        observe: vi.fn(),
+        unobserve: vi.fn(),
+        disconnect: vi.fn(),
+      }))
+    );
     const values = new Map<string, string>();
     vi.stubGlobal('localStorage', {
       getItem: (key: string) => values.get(key) ?? null,
@@ -94,6 +102,8 @@ describe('AccessoryTabPanel', () => {
     render(<AccessoryTabPanel dateRange={dateRange} onDateRangeChange={vi.fn()} unit="lbs" />);
 
     expect(screen.getByRole('heading', { name: 'Accessory inventory' })).toBeTruthy();
+    expect(screen.queryByText(/Review what you are training/)).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'About accessory inventory' }));
     expect(screen.getByText(/Review what you are training/)).toBeTruthy();
     expect(screen.getByRole('heading', { name: 'Coverage in range' })).toBeTruthy();
     expect(screen.getByRole('heading', { name: 'Weakness coverage' })).toBeTruthy();
