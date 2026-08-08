@@ -112,15 +112,15 @@ export function useCategoryEffectivenessEvidence(dateRange: DateRange): Category
         const baselineDisplay =
           item.baselineNormalizedResult === null
             ? 'Not available'
-            : item.baselineNormalizedResult.toFixed(3);
+            : `${(item.baselineNormalizedResult * 100).toFixed(1)}% of expected`;
         const outcomeDisplay =
           item.outcomeNormalizedResult === null
             ? 'Not available'
-            : item.outcomeNormalizedResult.toFixed(3);
+            : `${(item.outcomeNormalizedResult * 100).toFixed(1)}% of expected`;
         const changeDisplay =
           item.weaknessChange === null
             ? 'Not available'
-            : `${item.weaknessChange > 0 ? '+' : ''}${item.weaknessChange.toFixed(3)}`;
+            : `${item.weaknessChange > 0 ? '+' : ''}${(item.weaknessChange * 100).toFixed(1)} percentage points`;
         return {
           id: `${item.category}:${item.quality}`,
           category: item.category,
@@ -139,7 +139,7 @@ export function useCategoryEffectivenessEvidence(dateRange: DateRange): Category
           resultSummary:
             item.weaknessChange === null
               ? 'There is not enough category and lift-quality history to compare the two periods.'
-              : `${formatEffect(item.quality)} score moved from ${baselineDisplay} earlier to ${outcomeDisplay} later (${changeDisplay}). Higher scores mean better performance relative to the quality benchmark.`,
+              : `${formatEffect(item.quality)} moved from ${baselineDisplay} earlier to ${outcomeDisplay} later (${changeDisplay}). The percentage compares actual estimated strength with the expected strength for linked variations.`,
           requirementDisplay: missingRequirements.length
             ? `Needed: ${REQUIREMENT_LIST.format(missingRequirements)}.`
             : null,

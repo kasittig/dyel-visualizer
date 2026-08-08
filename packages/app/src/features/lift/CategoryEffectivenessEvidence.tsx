@@ -45,7 +45,8 @@ export function CategoryEffectivenessEvidence({ rows }: { rows: CategoryEffectiv
       </header>
       <p className={styles.readingKey}>
         Read each card as a sequence: category work happened in the earlier period, then the linked
-        quality score was measured later. Higher scores are better; association does not prove the
+        quality was measured later. 100% means the linked variations performed exactly as expected
+        from the competition lift; higher percentages are better. Association does not prove the
         category caused the change.
       </p>
       <ul className={styles.list}>
@@ -77,15 +78,15 @@ export function CategoryEffectivenessEvidence({ rows }: { rows: CategoryEffectiv
               </div>
               <dl className={styles.metrics}>
                 <div>
-                  <dt>Earlier score</dt>
+                  <dt>Earlier performance</dt>
                   <dd>{row.baselineDisplay}</dd>
                 </div>
                 <div>
-                  <dt>Later score</dt>
+                  <dt>Later performance</dt>
                   <dd>{row.outcomeDisplay}</dd>
                 </div>
                 <div>
-                  <dt>Later − earlier</dt>
+                  <dt>Change</dt>
                   <dd>{row.changeDisplay}</dd>
                 </div>
               </dl>

@@ -85,7 +85,7 @@ describe('useCategoryEffectivenessEvidence', () => {
       qualityLabel: 'Core Demand',
       statusLabel: 'Possible improvement',
       sessionSummary: '4 sessions across 2 weeks · 2.0 per week',
-      changeDisplay: '+0.100',
+      changeDisplay: '+10.0 percentage points',
       evidenceSummary: expect.stringContaining('6 contributing lift signals'),
       requirementDisplay: null,
     });

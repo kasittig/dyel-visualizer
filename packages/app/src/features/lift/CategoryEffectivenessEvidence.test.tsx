@@ -21,16 +21,16 @@ const row = (status: CategoryEffectivenessRow['status']): CategoryEffectivenessR
   exposurePeriod: 'Aug 1, 2026–Aug 15, 2026',
   outcomePeriod: 'Aug 16, 2026–Aug 31, 2026',
   sessionSummary: '4 sessions across 2 weeks · 2.0 per week',
-  baselineDisplay: '0.800',
-  outcomeDisplay: '0.900',
-  changeDisplay: '+0.100',
+  baselineDisplay: '80.0% of expected',
+  outcomeDisplay: '90.0% of expected',
+  changeDisplay: '+10.0 percentage points',
   evidenceSummary:
     '2 follow-up observations · 6 contributing lift signals (2 baseline, 4 follow-up)',
   interpretation: 'Category exposure was followed by possible improvement.',
   resultSummary:
     status === 'insufficient-data'
       ? 'There is not enough category and lift-quality history to compare the two periods.'
-      : 'Core Demand score moved from 0.800 earlier to 0.900 later (+0.100). Higher scores mean better performance relative to the quality benchmark.',
+      : 'Core Demand moved from 80.0% of expected earlier to 90.0% of expected later (+10.0 percentage points). The percentage compares actual estimated strength with the expected strength for linked variations.',
   requirementDisplay:
     status === 'insufficient-data' ? 'Needed: 1 category session in the earlier period.' : null,
 });
@@ -52,7 +52,7 @@ describe('CategoryEffectivenessEvidence', () => {
     );
     expect(screen.getByRole('heading', { name: 'Association evidence' })).toBeTruthy();
     expect(screen.getAllByText(/2.0 per week/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/Higher scores (are|mean) better/).length).toBeGreaterThan(0);
+    expect(screen.getByText(/100% means.*exactly as expected/i)).toBeTruthy();
 
     const guideSummary = screen.getByText('How to read these associations');
     const guide = guideSummary.closest('details')!;
@@ -70,7 +70,7 @@ describe('CategoryEffectivenessEvidence', () => {
     expect(details.hasAttribute('open')).toBe(true);
     expect(screen.getByText('Aug 1, 2026–Aug 15, 2026')).toBeTruthy();
     expect(screen.getByText('Aug 16, 2026–Aug 31, 2026')).toBeTruthy();
-    expect(screen.getByText('+0.100')).toBeTruthy();
+    expect(screen.getAllByText('+10.0 percentage points').length).toBeGreaterThan(0);
     expect(screen.getAllByText(/6 contributing lift signals/).length).toBeGreaterThan(0);
     expect(screen.getByText(/timing and association only/)).toBeTruthy();
   });
