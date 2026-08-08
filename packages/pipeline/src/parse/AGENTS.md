@@ -53,7 +53,9 @@ Every record carries `meta.rawUnit` / `meta.rawWeight` (audit trail).
 
 ## Boundaries
 
-- No bodyweight parsing — bodyweight is UI state, never log data.
+- CSV may parse optional `Bodyweight`/`BW` columns into record metadata. `meta.bodyweight` stores
+  normalized kilograms as a string; `meta.rawBodyweight` and `meta.rawBodyweightUnit` preserve the
+  audit trail. Blank or absent bodyweight remains unset, and values are not propagated across rows.
 - No tagging, no exercise-name canonicalization (that's tag/).
 - Flag, don't decide: ParseError UX (collect vs fail-fast), grammar corners
   (supersets, AMRAP `315x5+`, per-set RPE in shorthand, comments, digit-

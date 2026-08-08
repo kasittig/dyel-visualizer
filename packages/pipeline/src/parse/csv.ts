@@ -82,6 +82,12 @@ export const csvParser: Parser = {
       rRpe = hMap.get('rpe') || '',
       rSets = hMap.get('sets') || '',
       rNotes = hMap.get('notes');
+    const bodyweightHeader = fields.find((header) =>
+      /^(bodyweight|bw)(?: \((lbs|kg)\))?$/i.test(header.trim())
+    );
+    const bodyweightUnit =
+      (bodyweightHeader?.trim().match(/\((lbs|kg)\)$/i)?.[1].toLowerCase() as Unit | undefined) ??
+      'lbs';
 
     return data.map((row, idx) => {
       const lineNum = idx + 2 + (headIdx === -1 ? 0 : headIdx);
@@ -131,6 +137,12 @@ export const csvParser: Parser = {
       const rpe = row[rRpe] ? parseNum(row[rRpe]) : null;
       const sets = row[rSets] ? parseNum(row[rSets]) : null;
       const notes = rNotes ? row[rNotes] : undefined;
+      const rawBodyweight = bodyweightHeader ? row[bodyweightHeader]?.trim() : '';
+      const bodyweight = rawBodyweight ? parseNum(rawBodyweight) : null;
+
+      if (rawBodyweight && (bodyweight === null || bodyweight < 0)) {
+        throw new ParseError(`Invalid bodyweight: ${rawBodyweight}`, lineNum, rawStr);
+      }
 
       return {
         date: parseDate(dStr, lineNum, rawStr),
@@ -144,6 +156,11 @@ export const csvParser: Parser = {
           rawWeight: wStr,
           ...(sets !== null && { sets: String(sets) }),
           ...(notes && { notes }),
+          ...(bodyweight !== null && {
+            bodyweight: String(convertToKg(bodyweight, bodyweightUnit)),
+            rawBodyweight,
+            rawBodyweightUnit: bodyweightUnit,
+          }),
         },
       };
     });

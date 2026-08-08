@@ -50,6 +50,40 @@ describe('csvParser — Notes column', () => {
   });
 });
 
+describe('csvParser — bodyweight column', () => {
+  it.each([
+    ['Bodyweight', '200', 200 * 0.453592, 'lbs'],
+    ['bodyweight (LBS)', '200', 200 * 0.453592, 'lbs'],
+    ['BODYWEIGHT (KG)', '90', 90, 'kg'],
+    ['BW', '200', 200 * 0.453592, 'lbs'],
+    ['bw (lbs)', '200', 200 * 0.453592, 'lbs'],
+    ['Bw (Kg)', '90', 90, 'kg'],
+  ])('parses %s', (header, rawBodyweight, expectedKg, expectedUnit) => {
+    expect(
+      parse(
+        `${header},Date,Exercise,Reps,Weight (lbs)\n${rawBodyweight},2026-01-05,Bench,3,225\n`
+      )[0]
+    ).toMatchObject({
+      weight: 225 * 0.453592,
+      meta: {
+        bodyweight: String(expectedKg),
+        rawBodyweight,
+        rawBodyweightUnit: expectedUnit,
+      },
+    });
+  });
+
+  it.each([
+    ['no bodyweight column', 'Date,Exercise,Reps,Weight (lbs)\n2026-01-05,Bench,3,225\n'],
+    [
+      'blank bodyweight cell',
+      'Date,Exercise,Reps,Weight (lbs),Bodyweight\n2026-01-05,Bench,3,225,\n',
+    ],
+  ])('leaves bodyweight metadata unset for %s', (_, csv) => {
+    expect(parse(csv)[0].meta).not.toHaveProperty('bodyweight');
+  });
+});
+
 describe('csvParser — error handling', () => {
   it.each([
     ['non-numeric reps', 'Date,Exercise,Reps,Weight (lbs)\n2026-01-05,Bench,AMRAP,85\n'],
