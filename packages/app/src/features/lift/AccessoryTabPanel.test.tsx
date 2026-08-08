@@ -125,7 +125,7 @@ describe('AccessoryTabPanel', () => {
     expect(screen.queryByText(/e1RM history by variation/)).toBeNull();
   });
 
-  it('marks covered categories recommended by a current weakness signal', () => {
+  it('marks categories associated with a current weakness without recommending them', () => {
     mockUseWeaknessAccessoryCoverage.mockReturnValue([
       {
         effect: 'UPPER_BACK',
@@ -146,8 +146,9 @@ describe('AccessoryTabPanel', () => {
 
     render(<AccessoryTabPanel dateRange={dateRange} onDateRangeChange={vi.fn()} unit="lbs" />);
 
-    expect(screen.getByText('Recommended')).toBeTruthy();
-    expect(screen.getByText(/mapped to a current weakness signal/)).toBeTruthy();
+    expect(screen.getByText('Mapped signal')).toBeTruthy();
+    expect(screen.getByText(/not a training recommendation/)).toBeTruthy();
+    expect(screen.queryByText('Recommended')).toBeNull();
   });
 
   it('selects the first in-range accessory initially and synchronizes table clicks', () => {

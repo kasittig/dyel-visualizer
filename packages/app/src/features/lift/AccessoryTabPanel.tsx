@@ -87,7 +87,7 @@ function AccessoryTabContent({
     ? requestedAccessoryId
     : (allRows.find((row) => row.sessionCountInRange > 0)?.id ?? allRows[0]?.id ?? null);
   const selectedAccessory = allRows.find((row) => row.id === selectedAccessoryId) ?? null;
-  const recommendedCategories = new Set(
+  const mappedCategories = new Set(
     weaknessCoverage.flatMap((row) =>
       row.status === 'mapped' ? row.categories.map(({ category }) => category) : []
     )
@@ -130,8 +130,8 @@ function AccessoryTabContent({
       <section className={styles.coverage} aria-labelledby="accessory-coverage-heading">
         <div className={styles.coverageHeader}>
           <h3 id="accessory-coverage-heading">Coverage in range</h3>
-          {recommendedCategories.size > 0 && (
-            <span>Recommended means mapped to a current weakness signal.</span>
+          {mappedCategories.size > 0 && (
+            <span>Mapped signal is an association, not a training recommendation.</span>
           )}
         </div>
         {coverage.length ? (
@@ -152,8 +152,8 @@ function AccessoryTabContent({
                     {ACCESSORY_CATEGORY_LABELS[category]}
                     <span aria-hidden="true">↓</span>
                   </button>
-                  {recommendedCategories.has(category) && (
-                    <mark className={styles.recommended}>Recommended</mark>
+                  {mappedCategories.has(category) && (
+                    <mark className={styles.recommended}>Mapped signal</mark>
                   )}
                 </div>
                 <span>
