@@ -130,11 +130,40 @@
   font-size: 0.78rem;
   line-height: 1.45;
 }
-.sourceSummary {
-  margin-top: 0.35rem;
+.sourceGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.4rem;
+  margin: 0.55rem 0 0;
+}
+.sourceGrid > div {
+  min-width: 0;
+  padding: 0.45rem 0.55rem;
+  border: 1px solid var(--border);
+  border-radius: 0.4rem;
+  background: var(--surface);
+}
+.sourceGrid dt,
+.sourceGrid dd {
+  margin: 0;
+}
+.sourceGrid dt {
   color: var(--muted);
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.sourceGrid dd {
+  margin-top: 0.25rem;
+  color: var(--text-h);
   font-size: 0.72rem;
-  line-height: 1.4;
+}
+.sourceGrid ul {
+  display: grid;
+  gap: 0.15rem;
+  margin: 0;
+  padding-left: 1rem;
 }
 .requirement {
   margin-top: 0.35rem;
@@ -218,5 +247,8 @@
   .timeline > span {
     transform: rotate(90deg);
     justify-self: start;
+  }
+  .sourceGrid {
+    grid-template-columns: 1fr;
   }
 }

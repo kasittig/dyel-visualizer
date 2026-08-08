@@ -31,7 +31,8 @@ const row = (status: CategoryEffectivenessRow['status']): CategoryEffectivenessR
     status === 'insufficient-data'
       ? 'There is not enough category and lift-quality history to compare the two periods.'
       : 'Core Demand moved from 80.0% of expected earlier to 90.0% of expected later (+10.0 percentage points). The percentage compares actual estimated strength with the expected strength for linked variations.',
-  sourceSummary: 'Score sources — earlier: Box squat; later: Box squat, Good morning.',
+  baselineSources: ['Box squat'],
+  outcomeSources: ['Box squat', 'Good morning'],
   requirementDisplay:
     status === 'insufficient-data' ? 'Needed: 1 category session in the earlier period.' : null,
 });
@@ -54,7 +55,10 @@ describe('CategoryEffectivenessEvidence', () => {
     expect(screen.getByRole('heading', { name: 'Association evidence' })).toBeTruthy();
     expect(screen.getAllByText(/2.0 per week/).length).toBeGreaterThan(0);
     expect(screen.getByText(/100% means.*exactly as expected/i)).toBeTruthy();
-    expect(screen.getByText(/earlier: Box squat; later: Box squat, Good morning/)).toBeTruthy();
+    expect(screen.getByText('Earlier score sources')).toBeTruthy();
+    expect(screen.getByText('Later score sources')).toBeTruthy();
+    expect(screen.getAllByText('Box squat')).toHaveLength(2);
+    expect(screen.getByText('Good morning')).toBeTruthy();
 
     const guideSummary = screen.getByText('How to read these associations');
     const guide = guideSummary.closest('details')!;

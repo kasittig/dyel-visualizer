@@ -58,7 +58,36 @@ export function CategoryEffectivenessEvidence({ rows }: { rows: CategoryEffectiv
             </div>
             <p className={styles.compactSummary}>{row.sessionSummary}</p>
             <p className={styles.resultSummary}>{row.resultSummary}</p>
-            <p className={styles.sourceSummary}>{row.sourceSummary}</p>
+            <dl className={styles.sourceGrid}>
+              <div>
+                <dt>Earlier score sources</dt>
+                <dd>
+                  {row.baselineSources.length ? (
+                    <ul>
+                      {row.baselineSources.map((source) => (
+                        <li key={source}>{source}</li>
+                      ))}
+                    </ul>
+                  ) : (
+                    'None'
+                  )}
+                </dd>
+              </div>
+              <div>
+                <dt>Later score sources</dt>
+                <dd>
+                  {row.outcomeSources.length ? (
+                    <ul>
+                      {row.outcomeSources.map((source) => (
+                        <li key={source}>{source}</li>
+                      ))}
+                    </ul>
+                  ) : (
+                    'None'
+                  )}
+                </dd>
+              </div>
+            </dl>
             {row.requirementDisplay && (
               <p className={styles.requirement}>{row.requirementDisplay}</p>
             )}

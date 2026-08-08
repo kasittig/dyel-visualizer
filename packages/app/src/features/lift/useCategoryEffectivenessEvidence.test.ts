@@ -90,7 +90,8 @@ describe('useCategoryEffectivenessEvidence', () => {
       changeDisplay: '+10.0 percentage points',
       evidenceSummary: expect.stringContaining('6 contributing lift signals'),
       requirementDisplay: null,
-      sourceSummary: expect.stringContaining('squat box, good morning'),
+      baselineSources: ['squat box'],
+      outcomeSources: ['squat box', 'good morning'],
     });
   });
 
