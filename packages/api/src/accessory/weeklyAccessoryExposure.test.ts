@@ -73,7 +73,19 @@ describe('buildWeeklyAccessoryCategoryExposure', () => {
       [],
     ],
   ])('%s', (_, records, expected) => {
-    expect(buildWeeklyAccessoryCategoryExposure(records)).toEqual(expected);
+    expect(buildWeeklyAccessoryCategoryExposure(records)).toEqual(
+      expected.map((point) => expect.objectContaining(point))
+    );
+  });
+
+  it('retains sorted distinct training dates for exact downstream window clipping', () => {
+    expect(
+      buildWeeklyAccessoryCategoryExposure([
+        record('Plank', at(2026, 8, 5, 20)),
+        record('Plank', at(2026, 8, 3, 8)),
+        record('Plank', at(2026, 8, 5, 8)),
+      ])[0].sessionDates
+    ).toEqual([at(2026, 8, 3), at(2026, 8, 5)]);
   });
 
   it('honors explicit user taxonomy mappings', () => {
@@ -81,6 +93,13 @@ describe('buildWeeklyAccessoryCategoryExposure', () => {
       buildWeeklyAccessoryCategoryExposure([record('Mystery Movement', at(2026, 8, 3))], {
         'mystery-movement': 'glutes',
       })
-    ).toEqual([{ weekStart: at(2026, 8, 3), category: 'glutes', sessionCount: 1 }]);
+    ).toEqual([
+      {
+        weekStart: at(2026, 8, 3),
+        category: 'glutes',
+        sessionCount: 1,
+        sessionDates: [at(2026, 8, 3)],
+      },
+    ]);
   });
 });

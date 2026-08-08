@@ -62,11 +62,17 @@ export function associateCategoryExposureWithLaterWeakness(
     { sessionCount: number; weekCount: number }
   >();
   for (const point of exposure) {
-    if (point.weekStart < window.exposure.start || point.weekStart >= window.exposure.end) {
+    let sessionCount = 0;
+    for (const date of point.sessionDates) {
+      if (date >= window.exposure.start && date < window.exposure.end) {
+        sessionCount += 1;
+      }
+    }
+    if (!sessionCount) {
       continue;
     }
     const total = exposureByCategory.get(point.category) ?? { sessionCount: 0, weekCount: 0 };
-    total.sessionCount += point.sessionCount;
+    total.sessionCount += sessionCount;
     total.weekCount += 1;
     exposureByCategory.set(point.category, total);
   }

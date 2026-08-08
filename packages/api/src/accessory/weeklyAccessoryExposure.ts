@@ -10,6 +10,7 @@ export interface WeeklyAccessoryCategoryExposure {
   weekStart: number;
   category: AccessoryCategory;
   sessionCount: number;
+  sessionDates: number[];
 }
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
@@ -50,6 +51,7 @@ export function buildWeeklyAccessoryCategoryExposure(
       weekStart: Number(key.slice(0, separator)),
       category: key.slice(separator + 1) as AccessoryCategory,
       sessionCount: dates.size,
+      sessionDates: [...dates].sort((a, b) => a - b),
     };
   }).sort(
     (a, b) =>

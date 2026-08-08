@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { WeaknessTrendPoint } from '../diagnostics/weaknessTrends';
+import type { AccessoryCategory } from './accessoryCoverage';
 import { associateCategoryExposureWithLaterWeakness } from './categoryEffectiveness';
 
 const DAY = 86_400_000;
@@ -17,6 +18,12 @@ const trend = (date: number, normalizedResult: number | null): WeaknessTrendPoin
   staleEvidenceCount: 0,
   unassessedCount: 0,
 });
+const exposure = (weekStart: number, category: AccessoryCategory, sessionDates: number[]) => ({
+  weekStart,
+  category,
+  sessionCount: sessionDates.length,
+  sessionDates,
+});
 
 describe('associateCategoryExposureWithLaterWeakness', () => {
   it.each([
@@ -27,10 +34,7 @@ describe('associateCategoryExposureWithLaterWeakness', () => {
   ])('%s', (_, baseline, outcome, status, weaknessChange) => {
     expect(
       associateCategoryExposureWithLaterWeakness(
-        [
-          { weekStart: 0, category: 'quads', sessionCount: 2 },
-          { weekStart: 7 * DAY, category: 'quads', sessionCount: 3 },
-        ],
+        [exposure(0, 'quads', [0, DAY]), exposure(7 * DAY, 'quads', [7 * DAY, 8 * DAY, 9 * DAY])],
         [trend(7 * DAY, baseline), trend(21 * DAY, outcome)],
         window
       )
@@ -57,9 +61,9 @@ describe('associateCategoryExposureWithLaterWeakness', () => {
     expect(
       associateCategoryExposureWithLaterWeakness(
         [
-          { weekStart: -DAY, category: 'quads', sessionCount: 20 },
-          { weekStart: 0, category: 'quads', sessionCount: 2 },
-          { weekStart: 14 * DAY, category: 'quads', sessionCount: 20 },
+          exposure(-7 * DAY, 'quads', [-DAY]),
+          exposure(0, 'quads', [0, DAY]),
+          exposure(14 * DAY, 'quads', [14 * DAY]),
         ],
         [
           trend(28 * DAY, 0.1),
@@ -83,6 +87,19 @@ describe('associateCategoryExposureWithLaterWeakness', () => {
     });
   });
 
+  it('clips session counts to mid-week half-open boundaries', () => {
+    expect(
+      associateCategoryExposureWithLaterWeakness(
+        [exposure(0, 'quads', [DAY, 3 * DAY, 5 * DAY])],
+        [trend(4 * DAY, 0.8), trend(12 * DAY, 0.9)],
+        {
+          exposure: { start: 2 * DAY, end: 5 * DAY },
+          outcome: { start: 5 * DAY, end: 14 * DAY },
+        }
+      )[0]
+    ).toMatchObject({ sessionCount: 1, exposureWeekCount: 1, weaknessChange: 0.1 });
+  });
+
   it('distinguishes no category exposure from no clear change', () => {
     expect(
       associateCategoryExposureWithLaterWeakness(
@@ -101,10 +118,10 @@ describe('associateCategoryExposureWithLaterWeakness', () => {
     expect(
       associateCategoryExposureWithLaterWeakness(
         [
-          { weekStart: 0, category: 'glutes', sessionCount: 2 },
-          { weekStart: 0, category: 'hamstrings', sessionCount: 1 },
-          { weekStart: 7 * DAY, category: 'hamstrings', sessionCount: 2 },
-          { weekStart: 0, category: 'low-back', sessionCount: 1 },
+          exposure(0, 'glutes', [0, DAY]),
+          exposure(0, 'hamstrings', [0]),
+          exposure(7 * DAY, 'hamstrings', [7 * DAY, 8 * DAY]),
+          exposure(0, 'low-back', [0]),
         ],
         [posterior(7 * DAY, 0.8), posterior(21 * DAY, 0.9)],
         window
