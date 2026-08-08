@@ -38,6 +38,20 @@
   color: var(--muted);
   font-size: 0.78rem;
 }
+.guide ol {
+  display: grid;
+  gap: 0.25rem;
+  max-width: 52rem;
+  margin: 0.5rem 0 0;
+  padding-left: 1.25rem;
+  color: var(--text);
+  font-size: 0.78rem;
+}
+.guide .caution {
+  padding-left: 0.55rem;
+  border-left: 0.18rem solid var(--warning);
+  color: var(--text);
+}
 .eyebrow {
   color: var(--muted);
   font-size: 0.66rem;
@@ -48,6 +62,13 @@
 .header > span {
   color: var(--muted);
   font-size: 0.72rem;
+}
+.readingKey {
+  max-width: 52rem;
+  margin: 0.65rem 0 0;
+  color: var(--muted);
+  font-size: 0.74rem;
+  line-height: 1.45;
 }
 .list {
   display: grid;
@@ -102,6 +123,12 @@
   margin-top: 0.4rem;
   color: var(--muted);
   font-size: 0.72rem;
+}
+.resultSummary {
+  margin-top: 0.4rem;
+  color: var(--text);
+  font-size: 0.78rem;
+  line-height: 1.45;
 }
 .requirement {
   margin-top: 0.35rem;

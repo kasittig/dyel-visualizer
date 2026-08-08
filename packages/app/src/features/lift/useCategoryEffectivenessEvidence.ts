@@ -26,6 +26,7 @@ export interface CategoryEffectivenessRow {
   changeDisplay: string;
   evidenceSummary: string;
   interpretation: string;
+  resultSummary: string;
   requirementDisplay: string | null;
 }
 
@@ -108,6 +109,18 @@ export function useCategoryEffectivenessEvidence(dateRange: DateRange): Category
             ? '1 usable lift observation in the later follow-up'
             : null,
         ].filter((requirement): requirement is string => requirement !== null);
+        const baselineDisplay =
+          item.baselineNormalizedResult === null
+            ? 'Not available'
+            : item.baselineNormalizedResult.toFixed(3);
+        const outcomeDisplay =
+          item.outcomeNormalizedResult === null
+            ? 'Not available'
+            : item.outcomeNormalizedResult.toFixed(3);
+        const changeDisplay =
+          item.weaknessChange === null
+            ? 'Not available'
+            : `${item.weaknessChange > 0 ? '+' : ''}${item.weaknessChange.toFixed(3)}`;
         return {
           id: `${item.category}:${item.quality}`,
           category: item.category,
@@ -118,20 +131,15 @@ export function useCategoryEffectivenessEvidence(dateRange: DateRange): Category
           exposurePeriod: formatPeriod(item.exposurePeriod.start, item.exposurePeriod.end),
           outcomePeriod: formatPeriod(item.outcomePeriod.start, item.outcomePeriod.end),
           sessionSummary: `${item.sessionCount} session${item.sessionCount === 1 ? '' : 's'} across ${item.exposureWeekCount} week${item.exposureWeekCount === 1 ? '' : 's'}${item.exposureWeekCount ? ` · ${(item.sessionCount / item.exposureWeekCount).toFixed(1)} per week` : ''}`,
-          baselineDisplay:
-            item.baselineNormalizedResult === null
-              ? 'Not available'
-              : item.baselineNormalizedResult.toFixed(3),
-          outcomeDisplay:
-            item.outcomeNormalizedResult === null
-              ? 'Not available'
-              : item.outcomeNormalizedResult.toFixed(3),
-          changeDisplay:
-            item.weaknessChange === null
-              ? 'Not available'
-              : `${item.weaknessChange > 0 ? '+' : ''}${item.weaknessChange.toFixed(3)}`,
+          baselineDisplay,
+          outcomeDisplay,
+          changeDisplay,
           evidenceSummary: `${item.observationCount} follow-up observation${item.observationCount === 1 ? '' : 's'} · ${item.evidenceCount} contributing lift signal${item.evidenceCount === 1 ? '' : 's'} (${item.baselineEvidenceCount} baseline, ${item.outcomeEvidenceCount} follow-up)`,
           interpretation: item.interpretation,
+          resultSummary:
+            item.weaknessChange === null
+              ? 'There is not enough category and lift-quality history to compare the two periods.'
+              : `${formatEffect(item.quality)} score moved from ${baselineDisplay} earlier to ${outcomeDisplay} later (${changeDisplay}). Higher scores mean better performance relative to the quality benchmark.`,
           requirementDisplay: missingRequirements.length
             ? `Needed: ${REQUIREMENT_LIST.format(missingRequirements)}.`
             : null,

@@ -109,7 +109,7 @@ describe('AccessoryTabPanel', () => {
     expect(screen.getByText(/Review what you are training/)).toBeTruthy();
     expect(screen.getByRole('heading', { name: 'Coverage in range' })).toBeTruthy();
     expect(screen.getByRole('heading', { name: 'Weakness coverage' })).toBeTruthy();
-    expect(screen.getByText('How effectiveness evidence works')).toBeTruthy();
+    expect(screen.getByText('How to read these associations')).toBeTruthy();
     expect(screen.getByText('No related history is available.')).toBeTruthy();
     expect(screen.getByText('2 sessions')).toBeTruthy();
     const categoryToggle = screen.getByRole('button', { name: /Upper pull.*1 exercise/i });

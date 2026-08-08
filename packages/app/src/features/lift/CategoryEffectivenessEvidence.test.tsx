@@ -27,6 +27,10 @@ const row = (status: CategoryEffectivenessRow['status']): CategoryEffectivenessR
   evidenceSummary:
     '2 follow-up observations · 6 contributing lift signals (2 baseline, 4 follow-up)',
   interpretation: 'Category exposure was followed by possible improvement.',
+  resultSummary:
+    status === 'insufficient-data'
+      ? 'There is not enough category and lift-quality history to compare the two periods.'
+      : 'Core Demand score moved from 0.800 earlier to 0.900 later (+0.100). Higher scores mean better performance relative to the quality benchmark.',
   requirementDisplay:
     status === 'insufficient-data' ? 'Needed: 1 category session in the earlier period.' : null,
 });
@@ -46,18 +50,19 @@ describe('CategoryEffectivenessEvidence', () => {
         <CategoryEffectivenessEvidence rows={[row('possible-improvement')]} />
       </>
     );
-    expect(screen.getByRole('heading', { name: 'Effectiveness evidence' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Association evidence' })).toBeTruthy();
     expect(screen.getAllByText(/2.0 per week/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Higher scores (are|mean) better/).length).toBeGreaterThan(0);
 
-    const guideSummary = screen.getByText('How effectiveness evidence works');
+    const guideSummary = screen.getByText('How to read these associations');
     const guide = guideSummary.closest('details')!;
     expect(guide.hasAttribute('open')).toBe(false);
     fireEvent.click(guideSummary);
     expect(guide.hasAttribute('open')).toBe(true);
-    expect(screen.getByText(/not proof.*caused/i)).toBeTruthy();
+    expect(screen.getByText(/not proof of cause/i)).toBeTruthy();
     expect(screen.getByText(/Minimum evidence: 1 category session/)).toBeTruthy();
 
-    const summary = screen.getByText('View periods and evidence');
+    const summary = screen.getByText('See dates, sample size, and calculation');
     const details = summary.closest('details')!;
     expect(details.hasAttribute('open')).toBe(false);
     summary.focus();
@@ -91,7 +96,7 @@ describe('CategoryEffectivenessEvidence', () => {
     }
     expect(screen.getByText('Needed: 1 category session in the earlier period.')).toBeTruthy();
     expect(screen.getAllByLabelText('Core Demand analysis periods')).toHaveLength(4);
-    for (const summary of screen.getAllByText('View periods and evidence')) {
+    for (const summary of screen.getAllByText('See dates, sample size, and calculation')) {
       expect(summary.closest('details')!.hasAttribute('open')).toBe(false);
     }
   });
