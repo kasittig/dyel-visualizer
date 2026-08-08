@@ -5,7 +5,7 @@ import {
   type PipelineModel,
   type SetRecord,
 } from '@dyel/pipeline';
-import { deriveHistoricalWeaknessTrends } from './weaknessTrends';
+import { deriveHistoricalWeaknessTrends, MAX_WEAKNESS_TREND_DATES } from './weaknessTrends';
 
 const DAY = 86_400_000;
 const record = (date: number, exercise: string, weight: number, reps = 1): SetRecord => ({
@@ -135,5 +135,21 @@ describe('deriveHistoricalWeaknessTrends', () => {
     expect(points.some(({ date, quality }) => date === 0 && quality === 'TRICEP_DOMINANT')).toBe(
       false
     );
+  });
+
+  it('bounds replay work for representative multi-year histories', () => {
+    const points = deriveHistoricalWeaknessTrends(
+      model(
+        Array.from({ length: 365 * 5 }, (_, index) => [
+          record(index * DAY, 'Bench', 100),
+          record(index * DAY, 'Bench (2 board)', 80 + (index % 20)),
+        ]).flat()
+      )
+    );
+    const dates = new Set(points.map(({ date }) => date));
+
+    expect(dates.size).toBe(MAX_WEAKNESS_TREND_DATES);
+    expect(Math.min(...dates)).toBe((365 * 5 - MAX_WEAKNESS_TREND_DATES) * DAY);
+    expect(Math.max(...dates)).toBe((365 * 5 - 1) * DAY);
   });
 });

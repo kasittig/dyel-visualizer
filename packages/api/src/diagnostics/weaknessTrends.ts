@@ -40,6 +40,9 @@ const toSourceRecord = (record: TaggedSetRecord): SetRecord => ({
   meta: record.meta,
 });
 
+/** Caps synchronous historical replay to the most recent year of weekly-equivalent observations. */
+export const MAX_WEAKNESS_TREND_DATES = 52;
+
 /**
  * Replays diagnostics at each max-effort observation date using only records available at that
  * cutoff. The current model and its diagnostics are never mutated.
@@ -47,6 +50,7 @@ const toSourceRecord = (record: TaggedSetRecord): SetRecord => ({
 export function deriveHistoricalWeaknessTrends(model: PipelineModel): WeaknessTrendPoint[] {
   const sourceRecords = model.tagged.map(toSourceRecord).sort((a, b) => a.date - b.date);
   const dates = Array.from(new Set(sourceRecords.map(({ date }) => date))).sort((a, b) => a - b);
+  const retainedDates = new Set(dates.slice(-MAX_WEAKNESS_TREND_DATES));
   const previousByQuality = new Map<string, number>();
   const points: WeaknessTrendPoint[] = [];
   const cutoffRecords: SetRecord[] = [];
@@ -56,6 +60,9 @@ export function deriveHistoricalWeaknessTrends(model: PipelineModel): WeaknessTr
     while (sourceRecords[sourceIndex]?.date === date) {
       cutoffRecords.push(sourceRecords[sourceIndex]);
       sourceIndex += 1;
+    }
+    if (!retainedDates.has(date)) {
+      continue;
     }
     const { primaryTagged } = tagRecordsByPrimaryEvidence(cutoffRecords);
     const groups = Map.groupBy(primaryTagged, (record) => `${record.date}::${record.canonical}`);
@@ -111,7 +118,6 @@ export function deriveHistoricalWeaknessTrends(model: PipelineModel): WeaknessTr
         qualities.add(effect);
       }
     }
-
     for (const quality of Array.from(qualities).sort()) {
       const contributingVariations: WeaknessTrendContributor[] = [];
       let ratioTotal = 0;
