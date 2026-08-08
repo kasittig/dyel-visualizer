@@ -72,10 +72,28 @@ export function CategoryEffectivenessEvidence({ rows }: { rows: CategoryEffectiv
                 </thead>
                 <tbody>
                   {row.sourceRows.length ? (
-                    row.sourceRows.map(({ name, inBaseline, inOutcome }) => (
+                    row.sourceRows.map(({ name, baselineDisplay, outcomeDisplay }) => (
                       <tr key={name}>
-                        <td>{inBaseline ? name : <span aria-label="Not included">—</span>}</td>
-                        <td>{inOutcome ? name : <span aria-label="Not included">—</span>}</td>
+                        <td>
+                          {baselineDisplay ? (
+                            <>
+                              <strong>{name}</strong>
+                              <small>{baselineDisplay}</small>
+                            </>
+                          ) : (
+                            <span aria-label="Not included">—</span>
+                          )}
+                        </td>
+                        <td>
+                          {outcomeDisplay ? (
+                            <>
+                              <strong>{name}</strong>
+                              <small>{outcomeDisplay}</small>
+                            </>
+                          ) : (
+                            <span aria-label="Not included">—</span>
+                          )}
+                        </td>
                       </tr>
                     ))
                   ) : (

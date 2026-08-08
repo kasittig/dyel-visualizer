@@ -59,8 +59,8 @@ describe('associateCategoryExposureWithLaterWeakness', () => {
         outcomeEvidenceCount: outcome === null ? 0 : 2,
         evidenceCount: (baseline === null ? 0 : 2) + (outcome === null ? 0 : 2),
         observationCount: outcome === null ? 0 : 1,
-        baselineVariations: baseline === null ? [] : ['squat-box'],
-        outcomeVariations: outcome === null ? [] : ['squat-box'],
+        baselineVariations: baseline === null ? [] : [{ canonical: 'squat-box', ratio: baseline }],
+        outcomeVariations: outcome === null ? [] : [{ canonical: 'squat-box', ratio: outcome }],
         status,
         interpretation: expect.stringContaining(
           status === 'insufficient-data' ? 'Insufficient data' : 'was followed by'

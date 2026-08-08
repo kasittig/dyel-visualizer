@@ -159,6 +159,19 @@
   text-align: left;
   vertical-align: top;
 }
+.sourceGrid td strong,
+.sourceGrid td small {
+  display: block;
+}
+.sourceGrid td strong {
+  font-weight: 600;
+}
+.sourceGrid td small {
+  margin-top: 0.12rem;
+  color: var(--muted);
+  font-size: 0.66rem;
+  font-variant-numeric: tabular-nums;
+}
 .sourceGrid th + th,
 .sourceGrid td + td {
   border-left: 1px solid var(--border);

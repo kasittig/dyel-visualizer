@@ -33,8 +33,8 @@ export interface CategoryEffectivenessEvidence {
   outcomeEvidenceCount: number;
   evidenceCount: number;
   observationCount: number;
-  baselineVariations: string[];
-  outcomeVariations: string[];
+  baselineVariations: { canonical: string; ratio: number }[];
+  outcomeVariations: { canonical: string; ratio: number }[];
   status: CategoryEffectivenessStatus;
   interpretation: string;
 }
@@ -124,13 +124,19 @@ export function associateCategoryExposureWithLaterWeakness(
           : null;
       const baselineVariations = baseline
         ? baseline.contributingVariations
-            .filter(({ ratio, status }) => ratio !== null && status !== 'stale')
-            .map(({ canonical }) => canonical)
+            .filter(
+              (variation): variation is typeof variation & { ratio: number } =>
+                variation.ratio !== null && variation.status !== 'stale'
+            )
+            .map(({ canonical, ratio }) => ({ canonical, ratio }))
         : [];
       const outcomeVariations = outcome
         ? outcome.contributingVariations
-            .filter(({ ratio, status }) => ratio !== null && status !== 'stale')
-            .map(({ canonical }) => canonical)
+            .filter(
+              (variation): variation is typeof variation & { ratio: number } =>
+                variation.ratio !== null && variation.status !== 'stale'
+            )
+            .map(({ canonical, ratio }) => ({ canonical, ratio }))
         : [];
       const status: CategoryEffectivenessStatus =
         weaknessChange === null

@@ -27,7 +27,11 @@ export interface CategoryEffectivenessRow {
   evidenceSummary: string;
   interpretation: string;
   resultSummary: string;
-  sourceRows: { name: string; inBaseline: boolean; inOutcome: boolean }[];
+  sourceRows: {
+    name: string;
+    baselineDisplay: string | null;
+    outcomeDisplay: string | null;
+  }[];
   sourceCountSummary: string;
   requirementDisplay: string | null;
 }
@@ -129,14 +133,22 @@ export function useCategoryEffectivenessEvidence(dateRange: DateRange): Category
           item.weaknessChange === null
             ? 'Not available'
             : `${item.weaknessChange > 0 ? '+' : ''}${(item.weaknessChange * 100).toFixed(1)} percentage points`;
-        const baselineCanonicals = new Set(item.baselineVariations);
-        const outcomeCanonicals = new Set(item.outcomeVariations);
+        const baselineByCanonical = new Map(
+          item.baselineVariations.map(({ canonical, ratio }) => [canonical, ratio])
+        );
+        const outcomeByCanonical = new Map(
+          item.outcomeVariations.map(({ canonical, ratio }) => [canonical, ratio])
+        );
         const sourceRows = Array.from(
-          new Set([...item.baselineVariations, ...item.outcomeVariations]),
+          new Set([...baselineByCanonical.keys(), ...outcomeByCanonical.keys()]),
           (canonical) => ({
             name: displayNameByCanonical.get(canonical) ?? canonical.replaceAll('-', ' '),
-            inBaseline: baselineCanonicals.has(canonical),
-            inOutcome: outcomeCanonicals.has(canonical),
+            baselineDisplay: baselineByCanonical.has(canonical)
+              ? `${(baselineByCanonical.get(canonical)! * 100).toFixed(1)}% of expected`
+              : null,
+            outcomeDisplay: outcomeByCanonical.has(canonical)
+              ? `${(outcomeByCanonical.get(canonical)! * 100).toFixed(1)}% of expected`
+              : null,
           })
         ).sort((a, b) => a.name.localeCompare(b.name));
         return {
