@@ -23,6 +23,33 @@ describe('csvParser — Sets column', () => {
   });
 });
 
+describe('csvParser — Notes column', () => {
+  it.each([
+    [
+      'preserves mixed-case header notes exactly',
+      'Date,Exercise,Reps,Weight (lbs),nOtEs\n2026-01-05,Bench,3,85,  paused reps  \n',
+      '  paused reps  ',
+    ],
+    [
+      'preserves commas inside quoted notes',
+      'Date,Exercise,Reps,Weight (lbs),Notes\n2026-01-05,Bench,3,85,"Paused, then pressed"\n',
+      'Paused, then pressed',
+    ],
+    [
+      'omits empty notes',
+      'Date,Exercise,Reps,Weight (lbs),Notes\n2026-01-05,Bench,3,85,\n',
+      undefined,
+    ],
+    [
+      'parses unchanged without a Notes column',
+      'Date,Exercise,Reps,Weight (lbs)\n2026-01-05,Bench,3,85\n',
+      undefined,
+    ],
+  ])('%s', (_, csv, expectedNotes) => {
+    expect(parse(csv)[0].meta?.notes).toBe(expectedNotes);
+  });
+});
+
 describe('csvParser — error handling', () => {
   it.each([
     ['non-numeric reps', 'Date,Exercise,Reps,Weight (lbs)\n2026-01-05,Bench,AMRAP,85\n'],

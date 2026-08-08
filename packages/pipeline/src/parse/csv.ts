@@ -80,7 +80,8 @@ export const csvParser: Parser = {
     };
     const rUnitCol = hMap.get('unit') || '',
       rRpe = hMap.get('rpe') || '',
-      rSets = hMap.get('sets') || '';
+      rSets = hMap.get('sets') || '',
+      rNotes = hMap.get('notes');
 
     return data.map((row, idx) => {
       const lineNum = idx + 2 + (headIdx === -1 ? 0 : headIdx);
@@ -129,6 +130,7 @@ export const csvParser: Parser = {
       const fUnit = resolveUnit(rUnit, effCtx);
       const rpe = row[rRpe] ? parseNum(row[rRpe]) : null;
       const sets = row[rSets] ? parseNum(row[rSets]) : null;
+      const notes = rNotes ? row[rNotes] : undefined;
 
       return {
         date: parseDate(dStr, lineNum, rawStr),
@@ -137,7 +139,12 @@ export const csvParser: Parser = {
         reps,
         rpe: rpe ?? undefined,
         sets: sets ?? 1,
-        meta: { rawUnit: fUnit, rawWeight: wStr, ...(sets !== null && { sets: String(sets) }) },
+        meta: {
+          rawUnit: fUnit,
+          rawWeight: wStr,
+          ...(sets !== null && { sets: String(sets) }),
+          ...(notes && { notes }),
+        },
       };
     });
   },
