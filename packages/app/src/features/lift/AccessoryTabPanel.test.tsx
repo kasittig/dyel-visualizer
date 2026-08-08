@@ -29,7 +29,9 @@ const mockUseWeaknessAccessoryCoverage = vi.mocked(useWeaknessAccessoryCoverage)
 const mockUseCategoryEffectivenessEvidence = vi.mocked(useCategoryEffectivenessEvidence);
 const dateRange = { from: new Date(2026, 0, 1), to: new Date(2026, 0, 31) };
 const expandCategory = (label: string) => {
-  const toggle = screen.getByRole('button', { name: new RegExp(label, 'i') });
+  const toggle = screen
+    .getAllByRole('button', { name: new RegExp(label, 'i') })
+    .find((button) => button.hasAttribute('aria-expanded'))!;
   expect(toggle.getAttribute('aria-expanded')).toBe('false');
   fireEvent.click(toggle);
 };
@@ -110,7 +112,11 @@ describe('AccessoryTabPanel', () => {
     expect(screen.getByText('How effectiveness evidence works')).toBeTruthy();
     expect(screen.getByText('No related history is available.')).toBeTruthy();
     expect(screen.getByText('2 sessions')).toBeTruthy();
-    expandCategory('Upper pull');
+    const categoryToggle = screen.getByRole('button', { name: /Upper pull.*1 exercise/i });
+    const coverageCategory = screen.getByRole('button', { name: 'Upper pull' });
+    fireEvent.click(coverageCategory);
+    expect(categoryToggle.getAttribute('aria-expanded')).toBe('true');
+    expect(document.activeElement).toBe(categoryToggle);
     expect(screen.getByRole('columnheader', { name: 'Exercise' })).toBeTruthy();
     expect(screen.getByRole('columnheader', { name: 'Progress (all time)' })).toBeTruthy();
     expect(screen.getByRole('cell', { name: /Flat.*first session/ })).toBeTruthy();

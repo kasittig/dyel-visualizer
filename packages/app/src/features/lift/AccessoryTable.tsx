@@ -21,6 +21,7 @@ interface AccessoryTableProps {
   highlightedVariation?: string | null;
   onVariationClick?: (v: string) => void;
   effectivenessEvidence: CategoryEffectivenessView;
+  categoryExpandRequest?: { category: string; request: number };
 }
 
 type SortCol =
@@ -39,6 +40,7 @@ function SubtypeTable({
   highlightedVariation,
   onVariationClick,
   effectivenessRows,
+  expandRequest,
 }: {
   label: string;
   persistenceId: string;
@@ -47,6 +49,7 @@ function SubtypeTable({
   highlightedVariation?: string | null;
   onVariationClick?: (v: string) => void;
   effectivenessRows: CategoryEffectivenessRow[];
+  expandRequest?: number;
 }) {
   const { sortedRows, sortKey, direction, toggleSort } = useSortableRows<
     AccessoryTableDisplay,
@@ -75,6 +78,7 @@ function SubtypeTable({
       label={label}
       summary={`${rows.length} exercise${rows.length === 1 ? '' : 's'} · ${rows.reduce((total, row) => total + row.sessionCountInRange, 0)} sessions in range${effectivenessRows.length ? ` · ${effectivenessRows.length} association${effectivenessRows.length === 1 ? '' : 's'}` : ''}`}
       defaultExpanded={false}
+      expandRequest={expandRequest}
     >
       <CategoryEffectivenessEvidence rows={effectivenessRows} />
       <TableCard>
@@ -160,6 +164,7 @@ export function AccessoryTable({
   highlightedVariation,
   onVariationClick,
   effectivenessEvidence,
+  categoryExpandRequest,
 }: AccessoryTableProps) {
   if (!groups.length) {
     return (
@@ -190,6 +195,9 @@ export function AccessoryTable({
           effectivenessRows={effectivenessEvidence.rows.filter(
             (evidence) => evidence.category === category
           )}
+          expandRequest={
+            categoryExpandRequest?.category === category ? categoryExpandRequest.request : undefined
+          }
         />
       ))}
     </>

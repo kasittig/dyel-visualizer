@@ -1,4 +1,4 @@
-import { useId } from 'react';
+import { useEffect, useId, useRef } from 'react';
 import type React from 'react';
 import { useLocalStorageState } from '../hooks';
 
@@ -17,6 +17,7 @@ interface CollapsibleSectionProps {
   persistenceId: string;
   summary?: React.ReactNode;
   defaultExpanded?: boolean;
+  expandRequest?: number;
 }
 
 export function CollapsibleSection(props: CollapsibleSectionProps) {
@@ -30,6 +31,7 @@ function PersistedCollapsibleSection({
   persistenceId,
   summary,
   defaultExpanded = true,
+  expandRequest = 0,
 }: CollapsibleSectionProps) {
   const [isExpanded, setIsExpanded] = useLocalStorageState(
     `dyel:collapsibleSection:${persistenceId}`,
@@ -39,9 +41,23 @@ function PersistedCollapsibleSection({
   const generatedId = useId();
   const triggerId = `${generatedId}-trigger`;
   const regionId = `${generatedId}-region`;
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const handledExpandRequest = useRef(0);
+
+  useEffect(() => {
+    if (expandRequest <= handledExpandRequest.current) {
+      return;
+    }
+    handledExpandRequest.current = expandRequest;
+    setIsExpanded(true);
+    triggerRef.current?.focus({ preventScroll: true });
+    triggerRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
+  }, [expandRequest, setIsExpanded]);
+
   return (
     <>
       <button
+        ref={triggerRef}
         id={triggerId}
         type="button"
         className="tab-title"

@@ -140,6 +140,33 @@
   justify-content: space-between;
   gap: 0.45rem;
 }
+.coverageCategory {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text-h);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.coverageCategory span {
+  color: var(--accent);
+  transition: transform 0.15s ease;
+}
+.coverageCategory:hover {
+  color: var(--accent);
+}
+.coverageCategory:hover span {
+  transform: translateY(2px);
+}
+.coverageCategory:focus-visible {
+  border-radius: 2px;
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
 .recommended {
   padding: 0.12rem 0.3rem;
   border-radius: 999px;

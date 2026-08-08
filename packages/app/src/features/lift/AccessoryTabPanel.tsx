@@ -79,6 +79,10 @@ function AccessoryTabContent({
   const [requestedAccessoryId, setRequestedAccessoryId] = useState<string | null>(
     () => allRows.find((row) => row.sessionCountInRange > 0)?.id ?? allRows[0]?.id ?? null
   );
+  const [categoryExpandRequest, setCategoryExpandRequest] = useState({
+    category: '',
+    request: 0,
+  });
   const selectedAccessoryId = allRows.some((row) => row.id === requestedAccessoryId)
     ? requestedAccessoryId
     : (allRows.find((row) => row.sessionCountInRange > 0)?.id ?? allRows[0]?.id ?? null);
@@ -135,7 +139,19 @@ function AccessoryTabContent({
             {coverage.map(({ category, sessionCount: sessions }) => (
               <li key={category}>
                 <div>
-                  <strong>{ACCESSORY_CATEGORY_LABELS[category]}</strong>
+                  <button
+                    type="button"
+                    className={styles.coverageCategory}
+                    onClick={() =>
+                      setCategoryExpandRequest((current) => ({
+                        category,
+                        request: current.request + 1,
+                      }))
+                    }
+                  >
+                    {ACCESSORY_CATEGORY_LABELS[category]}
+                    <span aria-hidden="true">↓</span>
+                  </button>
                   {recommendedCategories.has(category) && (
                     <mark className={styles.recommended}>Recommended</mark>
                   )}
@@ -157,6 +173,7 @@ function AccessoryTabContent({
         highlightedVariation={selectedAccessoryId}
         onVariationClick={setRequestedAccessoryId}
         effectivenessEvidence={effectivenessEvidence}
+        categoryExpandRequest={categoryExpandRequest}
       />
       {exerciseCount === 1 && (
         <p className={styles.lowData}>
