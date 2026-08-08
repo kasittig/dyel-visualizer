@@ -20,7 +20,7 @@ jobs:
     permissions:
       contents: read
       issues: write
-      pull-requests: read
+      pull-requests: write
     steps:
       # This trusted-base workflow must never check out or execute pull-request-controlled content.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7

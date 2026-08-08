@@ -50,6 +50,34 @@ test('request markers make replayed workflow events idempotent', () => {
   assert.equal(testables.hasMarker([{ user: { login: 'someone' }, body: marker }], marker), false);
 });
 
+test('selectResolvableThreadIds returns only unresolved Codex-authored threads', () => {
+  assert.deepEqual(
+    testables.selectResolvableThreadIds([
+      {
+        id: 'codex-open',
+        isResolved: false,
+        comments: { nodes: [{ author: { login: testables.CODEX_BOT_LOGIN } }] },
+      },
+      {
+        id: 'codex-resolved',
+        isResolved: true,
+        comments: { nodes: [{ author: { login: testables.CODEX_BOT_LOGIN } }] },
+      },
+      {
+        id: 'human-open',
+        isResolved: false,
+        comments: {
+          nodes: [
+            { author: { login: 'kasittig' } },
+            { author: { login: testables.CODEX_BOT_LOGIN } },
+          ],
+        },
+      },
+    ]),
+    ['codex-open'],
+  );
+});
+
 test('plans clean, actionable, capped, timeout, and malformed outcomes', () => {
   const cases = [
     ['clean', review(verdict(false)), 0, 'clean'],
@@ -61,4 +89,12 @@ test('plans clean, actionable, capped, timeout, and malformed outcomes', () => {
   for (const [name, candidate, revisions, expected] of cases) {
     assert.equal(testables.planOutcome(candidate, revisions, 3).type, expected, name);
   }
+});
+
+test('builds the timeout handoff without requiring a verdict', () => {
+  assert.deepEqual(testables.buildHandoff({ type: 'timeout' }, 'kasittig', 3, sha('a')), {
+    add: ['human-review-needed', 'd93f0b', 'Codex review timed out; human attention needed'],
+    remove: 'human-review-ready',
+    body: '@kasittig Codex did not finish reviewing aaaaaaa within 30 minutes. The automation stopped for manual review.',
+  });
 });

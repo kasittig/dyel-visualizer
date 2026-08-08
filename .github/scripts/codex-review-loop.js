@@ -64,11 +64,86 @@ const planOutcome = (review, revisions, maxRevisions) => {
   return { type: 'request', verdict, revision: revisions + 1 };
 };
 
+const buildHandoff = (outcome, humanReviewer, maxRevisions, headSha) => {
+  if (outcome.type === 'clean') {
+    return {
+      add: ['human-review-ready', '2da44e', 'Codex review is clear; ready for human review'],
+      remove: 'human-review-needed',
+      body: `@${humanReviewer} Codex found no blocking issues in its latest review. This PR is ready for your manual review.`,
+    };
+  }
+  if (outcome.type === 'cap') {
+    return {
+      add: ['human-review-needed', 'd93f0b', 'Codex revision cap reached; human attention needed'],
+      remove: 'human-review-ready',
+      body: `@${humanReviewer} Codex still has ${outcome.verdict.finding_count} actionable finding(s) after ${maxRevisions} revision rounds. The automation stopped here for manual review.`,
+    };
+  }
+  if (outcome.type === 'invalid') {
+    return {
+      add: ['human-review-needed', 'd93f0b', 'Codex review verdict missing or invalid'],
+      remove: 'human-review-ready',
+      body: `@${humanReviewer} Codex did not return a valid machine-readable verdict for ${headSha.slice(0, 7)}. The automation stopped for manual review.`,
+    };
+  }
+  return {
+    add: ['human-review-needed', 'd93f0b', 'Codex review timed out; human attention needed'],
+    remove: 'human-review-ready',
+    body: `@${humanReviewer} Codex did not finish reviewing ${headSha.slice(0, 7)} within 30 minutes. The automation stopped for manual review.`,
+  };
+};
+
 const hasMarker = (comments, marker) =>
   comments.some(
     (comment) =>
       comment.user?.login === 'github-actions[bot]' && comment.body?.includes(marker),
   );
+
+const selectResolvableThreadIds = (threads) => {
+  const ids = [];
+  for (const thread of threads) {
+    if (
+      !thread.isResolved &&
+      thread.comments.nodes[0]?.author?.login === CODEX_BOT_LOGIN
+    ) {
+      ids.push(thread.id);
+    }
+  }
+  return ids;
+};
+
+const resolveCodexThreads = async (github, owner, repo, issueNumber) => {
+  let after = null;
+  do {
+    const result = await github.graphql(
+      `query($owner: String!, $repo: String!, $issueNumber: Int!, $after: String) {
+        repository(owner: $owner, name: $repo) {
+          pullRequest(number: $issueNumber) {
+            reviewThreads(first: 100, after: $after) {
+              nodes {
+                id
+                isResolved
+                comments(first: 1) { nodes { author { login } } }
+              }
+              pageInfo { hasNextPage endCursor }
+            }
+          }
+        }
+      }`,
+      { owner, repo, issueNumber, after },
+    );
+    const threads = result.repository.pullRequest.reviewThreads;
+    for (const threadId of selectResolvableThreadIds(threads.nodes)) {
+      await github.graphql(
+        `mutation($threadId: ID!) {
+          resolveReviewThread(input: { threadId: $threadId }) { thread { id } }
+        }`,
+        { threadId },
+      );
+    }
+    after = threads.pageInfo.hasNextPage ? threads.pageInfo.endCursor : null;
+  } while (after);
+};
 
 const run = async ({ github, context, core }) => {
   const owner = context.repo.owner;
@@ -92,6 +167,18 @@ const run = async ({ github, context, core }) => {
           return comparison.data.status;
         })
       : 0;
+
+  const initialMarker = `<!-- codex-review-loop:request:review:head:${headSha} -->`;
+  if (!hasMarker(comments, initialMarker)) {
+    await github.rest.issues.createComment({
+      owner,
+      repo,
+      issue_number,
+      body:
+        `${initialMarker}\n@codex review this PR. Report actionable P0/P1 findings and ` +
+        'end the review body with the machine-readable verdict required by AGENTS.md.',
+    });
+  }
 
   let review;
   for (let attempt = 0; attempt < 60; attempt += 1) {
@@ -150,29 +237,11 @@ const run = async ({ github, context, core }) => {
     return;
   }
 
-  const handoffs = {
-    clean: {
-      add: ['human-review-ready', '2da44e', 'Codex review is clear; ready for human review'],
-      remove: 'human-review-needed',
-      body: `@${humanReviewer} Codex found no blocking issues in its latest review. This PR is ready for your manual review.`,
-    },
-    cap: {
-      add: ['human-review-needed', 'd93f0b', 'Codex revision cap reached; human attention needed'],
-      remove: 'human-review-ready',
-      body: `@${humanReviewer} Codex still has ${outcome.verdict.finding_count} actionable finding(s) after ${maxRevisions} revision rounds. The automation stopped here for manual review.`,
-    },
-    invalid: {
-      add: ['human-review-needed', 'd93f0b', 'Codex review verdict missing or invalid'],
-      remove: 'human-review-ready',
-      body: `@${humanReviewer} Codex did not return a valid machine-readable verdict for ${headSha.slice(0, 7)}. The automation stopped for manual review.`,
-    },
-    timeout: {
-      add: ['human-review-needed', 'd93f0b', 'Codex review timed out; human attention needed'],
-      remove: 'human-review-ready',
-      body: `@${humanReviewer} Codex did not finish reviewing ${headSha.slice(0, 7)} within 30 minutes. The automation stopped for manual review.`,
-    },
-  };
-  const handoff = handoffs[outcome.type];
+  if (outcome.type === 'clean') {
+    await resolveCodexThreads(github, owner, repo, issue_number);
+  }
+
+  const handoff = buildHandoff(outcome, humanReviewer, maxRevisions, headSha);
   await replaceHandoffLabel(handoff.add, handoff.remove);
   await postOnce(`<!-- codex-review-loop:${outcome.type}:head:${headSha} -->`, handoff.body);
 };
@@ -180,9 +249,11 @@ const run = async ({ github, context, core }) => {
 module.exports = run;
 module.exports.testables = {
   CODEX_BOT_LOGIN,
+  buildHandoff,
   deriveRevision,
   hasMarker,
   parseVerdict,
   planOutcome,
+  selectResolvableThreadIds,
   selectReview,
 };
