@@ -104,7 +104,7 @@ const selectResolvableThreadIds = (threads) => {
   for (const thread of threads) {
     if (
       !thread.isResolved &&
-      thread.comments.nodes.some((comment) => comment.author?.login === CODEX_BOT_LOGIN)
+      thread.comments.nodes[0]?.author?.login === CODEX_BOT_LOGIN
     ) {
       ids.push(thread.id);
     }
@@ -123,7 +123,7 @@ const resolveCodexThreads = async (github, owner, repo, issueNumber) => {
               nodes {
                 id
                 isResolved
-                comments(first: 100) { nodes { author { login } } }
+                comments(first: 1) { nodes { author { login } } }
               }
               pageInfo { hasNextPage endCursor }
             }

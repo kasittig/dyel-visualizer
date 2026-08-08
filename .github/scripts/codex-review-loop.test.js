@@ -66,7 +66,12 @@ test('selectResolvableThreadIds returns only unresolved Codex-authored threads',
       {
         id: 'human-open',
         isResolved: false,
-        comments: { nodes: [{ author: { login: 'kasittig' } }] },
+        comments: {
+          nodes: [
+            { author: { login: 'kasittig' } },
+            { author: { login: testables.CODEX_BOT_LOGIN } },
+          ],
+        },
       },
     ]),
     ['codex-open'],
