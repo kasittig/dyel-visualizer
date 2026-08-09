@@ -1,0 +1,1 @@
+export { ExerciseAlternativesPage } from './ExerciseAlternativesPage';

@@ -19,6 +19,9 @@ describe('pageRouting', () => {
     ['two-segment team/summary', '/team/summary', 'team-summary'],
     ['two-segment with trailing slash', '/team/summary/', 'team-summary'],
     ['GH Pages subpath two-segment', '/dyel-visualizer/team/summary', 'team-summary'],
+    ['alternatives query param', '/?page=alternatives', 'alternatives'],
+    ['alternatives path', '/alternatives', 'alternatives'],
+    ['GH Pages alternatives path', '/dyel-visualizer/alternatives', 'alternatives'],
     ['unknown path', '/foo/bar', null],
   ])('resolvePage: %s', (_, url, expected) => {
     setLocation(url);
@@ -34,6 +37,8 @@ describe('pageRouting', () => {
     ['two-segment with trailing slash', '/team/summary/', '/'],
     ['GH Pages subpath single-segment', '/dyel-visualizer/team', '/dyel-visualizer/'],
     ['GH Pages subpath two-segment', '/dyel-visualizer/team/summary', '/dyel-visualizer/'],
+    ['alternatives path', '/alternatives', '/'],
+    ['GH Pages alternatives path', '/dyel-visualizer/alternatives', '/dyel-visualizer/'],
   ])('siteRootPath: %s', (_, url, expected) => {
     setLocation(url);
     expect(siteRootPath()).toBe(expected);

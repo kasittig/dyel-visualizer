@@ -36,6 +36,12 @@ const TeamSummaryPage = lazy(() =>
   }))
 );
 
+const ExerciseAlternativesPage = lazy(() =>
+  import('./features/exercise-alternatives/ExerciseAlternativesPage.tsx').then((m) => ({
+    default: m.ExerciseAlternativesPage,
+  }))
+);
+
 function resolvePageComponent(page: string | null) {
   if (page === 'conjugate') {
     return (
@@ -76,6 +82,13 @@ function resolvePageComponent(page: string | null) {
     return (
       <Suspense>
         <TeamSummaryPage />
+      </Suspense>
+    );
+  }
+  if (page === 'alternatives') {
+    return (
+      <Suspense>
+        <ExerciseAlternativesPage />
       </Suspense>
     );
   }
