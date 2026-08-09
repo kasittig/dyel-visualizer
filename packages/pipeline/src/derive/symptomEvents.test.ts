@@ -153,4 +153,23 @@ describe('extractSymptomEvents', () => {
       },
     ]);
   });
+
+  it('handles adversarial whitespace without regex backtracking or symptom loss', () => {
+    const spaces = ' '.repeat(50_000);
+    const note = `No${spaces}knee pain but right shoulder pain 6/10`;
+
+    expect(extractSymptomEvents([context(note)])).toEqual([
+      {
+        date: DAY,
+        sourceText: note,
+        matchedText: 'right shoulder pain 6/10',
+        region: 'shoulder',
+        side: 'right',
+        severityOutOf10: 6,
+      },
+    ]);
+    expect(
+      extractSymptomEvents([context(`Back pain, couldn't${spaces}deadlift today`)])[0]
+    ).toMatchObject({ region: 'back', relatedExercise: 'deadlift' });
+  });
 });

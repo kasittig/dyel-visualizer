@@ -52,11 +52,82 @@ const RELATED_EXERCISE_PATTERN = new RegExp(
 );
 const SYMPTOM_PATTERN =
   /\b(?:ache[ds]?|aching|discomfort|hurt(?:ing|s)?|pain(?:ful)?|sore(?:ness)?|stiff(?:ness)?|tender(?:ness)?|tight(?:ness)?)\b/i;
-const NEGATED_SYMPTOM_PATTERN =
-  /\b(?:no|not|never|without)\s+(?:\w+\s+){0,2}(?:ache[ds]?|aching|discomfort|hurt(?:ing|s)?|pain(?:ful)?|sore(?:ness)?|stiff(?:ness)?|tender(?:ness)?|tight(?:ness)?)\b/i;
 const SEVERITY_PATTERN = /\b(10|[0-9])\s*\/\s*10\b/;
-const LIMITATION_PATTERN =
-  /\b(?:(?:could(?:n't| not)|unable to|had to|stopped|cut)\s+[^,.;!?]+|limited\s+(?:my\s+)?[^,.;!?]+)\b/i;
+const NEGATIONS = new Set(['no', 'not', 'never', 'without']);
+const SYMPTOMS = new Set([
+  'ache',
+  'ached',
+  'aches',
+  'aching',
+  'discomfort',
+  'hurt',
+  'hurting',
+  'hurts',
+  'pain',
+  'painful',
+  'sore',
+  'soreness',
+  'stiff',
+  'stiffness',
+  'tender',
+  'tenderness',
+  'tight',
+  'tightness',
+]);
+const LIMITATION_PREFIXES = [
+  "couldn't",
+  'could not',
+  'unable to',
+  'had to',
+  'stopped',
+  'cut',
+  'limited',
+];
+
+const hasNegatedSymptom = (text: string): boolean => {
+  const words = text.toLowerCase().match(/[a-z]+(?:'[a-z]+)?/g) ?? [];
+  for (let index = 0; index < words.length; index += 1) {
+    if (!NEGATIONS.has(words[index])) {
+      continue;
+    }
+    for (let offset = 1; offset <= 3 && index + offset < words.length; offset += 1) {
+      if (SYMPTOMS.has(words[index + offset])) {
+        return true;
+      }
+    }
+  }
+  return false;
+};
+
+const extractLimitation = (text: string): string | undefined => {
+  const normalized = text.toLowerCase();
+  let start = -1;
+  for (const prefix of LIMITATION_PREFIXES) {
+    let candidate = normalized.indexOf(prefix);
+    while (
+      candidate >= 0 &&
+      ((candidate > 0 && /[a-z]/.test(normalized[candidate - 1])) ||
+        /[a-z]/.test(normalized[candidate + prefix.length] ?? ''))
+    ) {
+      candidate = normalized.indexOf(prefix, candidate + prefix.length);
+    }
+    if (candidate >= 0 && (start < 0 || candidate < start)) {
+      start = candidate;
+    }
+  }
+  if (start < 0) {
+    return undefined;
+  }
+  let end = text.length;
+  for (const delimiter of [',', '.', ';', '!', '?']) {
+    const candidate = text.indexOf(delimiter, start);
+    if (candidate >= 0 && candidate < end) {
+      end = candidate;
+    }
+  }
+  const limitation = text.slice(start, end).trim();
+  return limitation.includes(' ') ? limitation : undefined;
+};
 
 /** Extracts only explicit symptom statements; input contexts and notes are never modified. */
 export function extractSymptomEvents(contexts: readonly DayContext[]): SymptomEvent[] {
@@ -66,12 +137,10 @@ export function extractSymptomEvents(contexts: readonly DayContext[]): SymptomEv
     for (const sourceText of notes) {
       for (const match of sourceText.matchAll(/[^\n.!?;]+[.!?;]?/g)) {
         const statement = match[0].trim();
-        const clauses = NEGATED_SYMPTOM_PATTERN.test(statement)
-          ? statement.split(/\s+\bbut\b\s+/i)
-          : [statement];
+        const clauses = hasNegatedSymptom(statement) ? statement.split(/\bbut\b/i) : [statement];
         for (const clause of clauses) {
           const matchedText = clause.trim();
-          if (!matchedText || NEGATED_SYMPTOM_PATTERN.test(matchedText)) {
+          if (!matchedText || hasNegatedSymptom(matchedText)) {
             continue;
           }
 
@@ -82,10 +151,9 @@ export function extractSymptomEvents(contexts: readonly DayContext[]): SymptomEv
           }
 
           const sideMatch = matchedText.match(/\b(left|right|bilateral|both)\b/i);
-          const limitationMatch = matchedText.match(LIMITATION_PATTERN);
+          const limitation = extractLimitation(matchedText);
           const exerciseMatch =
-            matchedText.match(RELATED_EXERCISE_PATTERN) ??
-            limitationMatch?.[0].match(EXERCISE_PATTERN);
+            matchedText.match(RELATED_EXERCISE_PATTERN) ?? limitation?.match(EXERCISE_PATTERN);
           const normalized = matchedText.toLowerCase();
           const timing = /\b(?:next|following)\s+(?:day|morning)\b/.test(normalized)
             ? 'next-day'
@@ -107,7 +175,7 @@ export function extractSymptomEvents(contexts: readonly DayContext[]): SymptomEv
                   : (sideMatch[1].toLowerCase() as SymptomSide),
             }),
             ...(severityMatch && { severityOutOf10: Number(severityMatch[1]) }),
-            ...(limitationMatch && { limitation: limitationMatch[0] }),
+            ...(limitation && { limitation }),
             ...(exerciseMatch && { relatedExercise: EXERCISES[exerciseMatch[1].toLowerCase()] }),
             ...(timing && { timing }),
           });
