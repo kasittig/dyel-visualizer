@@ -55,6 +55,10 @@ run and NEVER stored on identity types.
   `previousE1rmKg` support recency/trend display; `observationCount` counts the variation's
   e1RM observations and `comparisonCount` reports the fitted relationship's sample count;
   it is `null` for baseline lifts because their identity factor is not fitted from comparisons.
+- `VariantAssessment.symptomContext.events` contains extracted events from the observation's UTC
+  calendar date. `limitingEvents` contains only events that explicitly limit training or the
+  assessment's lift; ambiguous same-day symptoms remain session context and do not mark the lift.
+  These fields annotate evidence only and never alter its result, status, ratio, or vote.
 - Weakness aggregation is a SIGNED VOTE COUNT per quality: each non-stale 'weakness'
   variant with the quality → +1, each non-stale 'overperforming' variant → −1,
   'optimal' → 0, 'stale' → 0 (no votes). Report qualities with score > 0; evidence

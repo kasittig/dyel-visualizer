@@ -1,4 +1,4 @@
-import type { PipelineModel, UnassessedVariant } from '@dyel/pipeline';
+import type { PipelineModel, SymptomEvent, UnassessedVariant } from '@dyel/pipeline';
 
 export type { UnassessedVariant } from '@dyel/pipeline';
 
@@ -23,6 +23,10 @@ export interface DiagnosticVariant {
   averageIndex: number;
   expectedBaseline: string | null;
   isCompLift: boolean;
+  symptomContext: {
+    events: SymptomEvent[];
+    limitingEvents: SymptomEvent[];
+  };
   addlWtOffset?: { offsetKg: number; n: number };
 }
 
@@ -187,6 +191,7 @@ export function selectDiagnosticVariants(
     averageIndex: v.averageIndex,
     expectedBaseline: v.expectedBaseline,
     isCompLift: v.isCompLift,
+    symptomContext: v.symptomContext,
     addlWtOffset: v.addlWtOffset,
   }));
 

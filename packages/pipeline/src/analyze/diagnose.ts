@@ -1,6 +1,7 @@
 import type { Point, SetRecord } from '../types';
 import type { NormalizationModel } from '../derive/normalize';
 import type { BaselineRange } from '../tag/detect/canonical';
+import type { SymptomEvent } from '../derive/symptomEvents';
 
 export type Quality = string;
 export type PerformanceStatus = 'optimal' | 'weakness' | 'overperforming';
@@ -32,6 +33,10 @@ export interface VariantAssessment {
   staleDays: number;
   effects: Quality[];
   isCompLift: boolean;
+  symptomContext: {
+    events: SymptomEvent[];
+    limitingEvents: SymptomEvent[];
+  };
   addlWtOffset?: { offsetKg: number; n: number };
 }
 export interface DiagnosticsReport {
@@ -51,7 +56,8 @@ export function diagnose(
   now: number | undefined,
   displayNameByCanonical: ReadonlyMap<string, string> = new Map(),
   baselineRangeByCanonical: ReadonlyMap<string, BaselineRange> = new Map(),
-  maxEffortSetByPoint: ReadonlyMap<string, SetRecord> = new Map()
+  maxEffortSetByPoint: ReadonlyMap<string, SetRecord> = new Map(),
+  symptomEvents: readonly SymptomEvent[] = []
 ): DiagnosticsReport {
   const timestamp = now ?? Date.now();
   const pointsBySeries = Map.groupBy(points, (p) => p.series);
@@ -60,6 +66,7 @@ export function diagnose(
   const variants: VariantAssessment[] = [];
   const unassessed: UnassessedVariant[] = [];
   const votes = new Map<Quality, { score: number; evidence: string[] }>();
+  const symptomsByDate = Map.groupBy(symptomEvents, (event) => event.date);
 
   for (const [canonical, latest] of latestBySeries) {
     const observations = pointsBySeries.get(canonical)!;
@@ -110,6 +117,15 @@ export function diagnose(
 
     const status: VariantAssessment['status'] =
       timestamp - latest.t > opts.staleDays * DAY_MS ? 'stale' : normalStatus;
+    const sessionSymptoms = symptomsByDate.get(latest.t) ?? [];
+    const liftExercise = lift.slice('lift:'.length);
+    const limitingSymptoms = sessionSymptoms.filter(
+      (event) =>
+        event.limitation !== undefined &&
+        (event.relatedExercise === liftExercise ||
+          (liftExercise === 'bench' && event.relatedExercise === 'bench press') ||
+          /\b(?:training|lifting|working out)\b/i.test(event.limitation))
+    );
     const v: VariantAssessment = {
       canonical,
       displayName: displayNameByCanonical.get(canonical) ?? canonical,
@@ -131,6 +147,10 @@ export function diagnose(
       staleDays: (timestamp - latest.t) / DAY_MS,
       effects: effectsByCanonical.get(canonical) ?? [],
       isCompLift: latest.tags.has('comp-lift'),
+      symptomContext: {
+        events: [...sessionSymptoms],
+        limitingEvents: limitingSymptoms,
+      },
       ...(addlWt && addlWt.n > 0
         ? { addlWtOffset: { offsetKg: addlWt.offsetKg, n: addlWt.n } }
         : {}),

@@ -34,6 +34,7 @@ const variant = (status: DiagnosticVariant['status'], averageIndex: number) => (
   averageIndex,
   expectedBaseline: '90-110%',
   isCompLift: false,
+  symptomContext: { events: [], limitingEvents: [] },
   effectsDisplay: status === 'weakness' ? 'Paused, +20 lb' : '—',
   actualE1rmDisplay: `${averageIndex} lb`,
   expectedE1rmDisplay: '100 lb',
@@ -47,6 +48,8 @@ const variant = (status: DiagnosticVariant['status'], averageIndex: number) => (
   observationDisplay: '4 observations · 3 fitted comparisons',
   calculationDisplay: '110.0 lb baseline × 91.0% = 100.1 lb expected',
   rationaleDisplay: 'The latest e1RM is 18.0% below its expected value.',
+  symptomContextDisplay: [],
+  isSymptomLimited: false,
 });
 
 describe('DiagnosticsPanel', () => {
@@ -374,5 +377,28 @@ describe('DiagnosticsPanel', () => {
     expect(
       screen.getByRole('heading', { name: 'No current findings need attention' })
     ).toBeDefined();
+  });
+
+  it('visibly marks an explicitly symptom-limited observation and preserves its session context', () => {
+    mockUsePipelineDiagnostics.mockReturnValue({
+      variants: [
+        {
+          ...variant('weakness', 82),
+          symptomContextDisplay: ['Shoulder pain limited bench'],
+          isSymptomLimited: true,
+        },
+      ],
+      hasDeadlift: false,
+      effectEvidence: [],
+      needsData: [],
+      attentionSummary,
+      priorityFindings: [],
+    });
+
+    const { container } = render(<DiagnosticsPanel liftType="squat" unit="lbs" />);
+    expect(within(container).getByText('Symptom-limited')).toBeDefined();
+    fireEvent.click(container.querySelector('button[aria-expanded="false"]')!);
+    expect(within(container).getByText('Session symptom context')).toBeDefined();
+    expect(within(container).getByText('Shoulder pain limited bench')).toBeDefined();
   });
 });

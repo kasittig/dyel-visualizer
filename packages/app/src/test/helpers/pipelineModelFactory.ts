@@ -30,6 +30,7 @@ export const variantAssessmentMock = (
   effects: ['hypertrophy'],
   addlWtOffset: { offsetKg: 5, n: 10 },
   isCompLift: false,
+  symptomContext: { events: [], limitingEvents: [] },
   ...overrides,
 });
 
