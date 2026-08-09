@@ -4,6 +4,7 @@ import { EXAMPLE_SHEET_URL, EXAMPLE_VISUALIZER_URL } from './sheetRef';
 import type { InputMode } from '../../app/appTabs';
 import { InputModeToggle } from './InputModeToggle';
 import { MOBILE_LAYOUT_QUERY, useMediaQuery } from '../../shared/hooks';
+import { siteRootPath } from '../../shared/pageRouting';
 import styles from './SheetUrlPanel.module.css';
 
 interface SettingsContentProps {
@@ -187,6 +188,7 @@ function SettingsLinks({ valUrl }: { valUrl: string }): ReactNode {
     <nav className={styles.settingsLinks} aria-label="Data and help links">
       <a href={valUrl}>Validate training log</a>
       <a href="?page=team">View team</a>
+      <a href={`${siteRootPath()}alternatives`}>Exercise alternatives</a>
       <a href="?page=conjugate">Help &amp; conjugate method</a>
     </nav>
   );
@@ -364,6 +366,11 @@ export function SheetUrlPanel({
                 <a href="?page=team" className={styles.utilityButton}>
                   View team
                 </a>
+                {loaded && (
+                  <a href={`${siteRootPath()}alternatives`} className={styles.utilityButton}>
+                    Exercise alternatives
+                  </a>
+                )}
               </div>
             </div>
           </div>
@@ -390,7 +397,10 @@ export function SheetUrlPanel({
                     Cancel
                   </button>
                 ) : (
-                  <a href="?page=conjugate">What is the conjugate method?</a>
+                  <>
+                    <a href="?page=conjugate">What is the conjugate method?</a> ·{' '}
+                    <a href={`${siteRootPath()}alternatives`}>Explore exercise alternatives</a>
+                  </>
                 )}{' '}
                 · <a href={valUrl}>See if your training log is compatible</a> ·{' '}
                 <a href="?page=team">View team</a>
