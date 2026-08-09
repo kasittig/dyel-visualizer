@@ -13,6 +13,8 @@ describe('exercise alternatives', () => {
     ['canonical', 'Push-Up', 'push-up'],
     ['case-insensitive alias', 'PRESS-UP', 'push-up'],
     ['trimmed alias', '  RDL ', 'romanian-deadlift'],
+    ['base squat display name', 'Squat', 'back-squat'],
+    ['unhyphenated trap-bar display name', 'Trap Bar Deadlift', 'trap-bar-deadlift'],
   ])('resolves a %s', (_, name, id) => expect(resolveAlternativeExercise(name)?.id).toBe(id));
 
   it('documents unknown input with empty/null results', () => {

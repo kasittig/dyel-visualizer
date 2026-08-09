@@ -20,8 +20,10 @@ export type ExerciseIssueDirection =
   | 'too-short'
   | 'too-long';
 export type ExerciseIssueId =
-  | `${'grip-handle' | 'stance-spacing' | 'range-of-motion'}:${'too-small' | 'too-large' | 'too-narrow' | 'too-wide' | 'too-short' | 'too-long'}`
+  | `grip-handle:${'too-small' | 'too-large'}`
   | `loading-range:${'starting-resistance-too-heavy' | 'maximum-resistance-too-light'}`
+  | `stance-spacing:${'too-narrow' | 'too-wide'}`
+  | `range-of-motion:${'too-short' | 'too-long'}`
   | 'equipment-unavailable'
   | 'setup-unstable-difficult'
   | 'grip-uncomfortable'
@@ -434,7 +436,7 @@ export const EXERCISE_ALTERNATIVES_CATALOG: readonly ExerciseAlternative[] = [
   {
     id: 'back-squat',
     name: 'Back Squat',
-    aliases: ['barbell squat'],
+    aliases: ['squat', 'barbell squat'],
     recommendations: {
       'stance-spacing:too-narrow': [
         rec(
@@ -670,7 +672,7 @@ export const EXERCISE_ALTERNATIVES_CATALOG: readonly ExerciseAlternative[] = [
   {
     id: 'trap-bar-deadlift',
     name: 'Trap-Bar Deadlift',
-    aliases: ['hex bar deadlift'],
+    aliases: ['trap bar deadlift', 'hex bar deadlift'],
     recommendations: {
       'grip-handle:too-large': [
         rec(
