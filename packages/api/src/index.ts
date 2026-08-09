@@ -104,6 +104,24 @@ export type {
   AccessoryClassificationSource,
   AccessoryCoverage,
 } from './accessory/accessoryCoverage';
+export {
+  DIAGNOSTIC_EFFECTS,
+  mapWeaknessesToAccessoryCategories,
+} from './diagnostics/weaknessAccessoryCategories';
+export type {
+  DiagnosticEffect,
+  WeaknessAccessoryCategoryMapping,
+  WeaknessAccessoryMappingStatus,
+} from './diagnostics/weaknessAccessoryCategories';
+export { buildWeeklyAccessoryCategoryExposure } from './accessory/weeklyAccessoryExposure';
+export type { WeeklyAccessoryCategoryExposure } from './accessory/weeklyAccessoryExposure';
+export { associateCategoryExposureWithLaterWeakness } from './accessory/categoryEffectiveness';
+export type {
+  AnalysisPeriod,
+  CategoryEffectivenessEvidence,
+  CategoryEffectivenessStatus,
+  CategoryEffectivenessWindow,
+} from './accessory/categoryEffectiveness';
 export { buildAccessoryHistory, selectAccessoryHistoryMetric } from './accessory/accessoryHistory';
 export type { AccessoryHistoryData, AccessoryHistoryMetric } from './accessory/accessoryHistory';
 export { buildAccessoryProgress } from './accessory/accessoryProgress';
@@ -181,6 +199,12 @@ export {
   type DiagnosticAttentionSummary,
 } from './diagnostics/diagnosticsSelectors';
 export { formatEffect, formatAddlWtOffset } from './diagnostics/diagnosticsUtils';
+export {
+  deriveHistoricalWeaknessTrends,
+  type WeaknessTrendContributor,
+  type WeaknessTrendPoint,
+  type WeaknessTrendStatus,
+} from './diagnostics/weaknessTrends';
 export { buildTeamViewRowSnapshot } from './team/teamViewRow';
 export type { TeamViewRowSnapshot } from './team/teamViewRow';
 export {

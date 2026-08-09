@@ -37,6 +37,51 @@ describe('CollapsibleSection', () => {
     expect(localStorage.getItem(storageKey)).toBe('false');
   });
 
+  it('supports sections that default to collapsed', () => {
+    render(
+      <CollapsibleSection
+        label="Compact section"
+        persistenceId="test:compact"
+        defaultExpanded={false}
+      >
+        <div>Compact contents</div>
+      </CollapsibleSection>
+    );
+
+    const toggle = screen.getByRole('button', { name: 'Compact section' });
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    expect(screen.queryByText('Compact contents')).toBeNull();
+  });
+
+  it('expands and focuses when requested externally', () => {
+    const view = render(
+      <CollapsibleSection
+        label="Requested section"
+        persistenceId="test:requested"
+        defaultExpanded={false}
+        expandRequest={0}
+      >
+        <div>Requested contents</div>
+      </CollapsibleSection>
+    );
+
+    view.rerender(
+      <CollapsibleSection
+        label="Requested section"
+        persistenceId="test:requested"
+        defaultExpanded={false}
+        expandRequest={1}
+      >
+        <div>Requested contents</div>
+      </CollapsibleSection>
+    );
+
+    const trigger = screen.getByRole('button', { name: 'Requested section' });
+    expect(trigger.getAttribute('aria-expanded')).toBe('true');
+    expect(document.activeElement).toBe(trigger);
+    expect(screen.getByText('Requested contents')).toBeTruthy();
+  });
+
   it('associates its expanded trigger and visible region', () => {
     renderSection();
 

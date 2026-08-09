@@ -18,9 +18,16 @@ import { useVisualizerData } from './useVisualizerData';
 import { PrimaryTabs } from './PrimaryTabs';
 import { PRIMARY_TABPANEL_ID, primaryTabId } from './appTabA11y';
 import { FirstUseGuide } from './FirstUseGuide';
+import { useLocalStorageState } from '../shared/hooks';
 import styles from './App.module.css';
 
+const SHORT_DATE = new Intl.DateTimeFormat('en-US', { month: 'numeric', day: 'numeric' });
+
 export function App() {
+  const [isTrainingPeriodExpanded, setIsTrainingPeriodExpanded] = useLocalStorageState(
+    'dyel:training-period:expanded',
+    false
+  );
   const {
     isFirstUse,
     url,
@@ -82,6 +89,9 @@ export function App() {
     ...tabs,
     { id: 'calculator' as const, label: 'Calculator' },
   ];
+  const trainingPeriodSummary = dateRange.from
+    ? `${SHORT_DATE.format(dateRange.from)}${dateRange.to ? ` – ${SHORT_DATE.format(dateRange.to)}` : ''}`
+    : 'Choose dates';
 
   const selectLift = (lift: LiftType) => {
     setLastLiftTab(lift);
@@ -143,25 +153,43 @@ export function App() {
               <div className={styles.controlDock}>
                 <PrimaryTabs tabs={primaryTabs} activeTab={effActiveTab} onSelect={setActiveTab} />
                 <section
-                  className={styles.filterToolbar}
+                  className={clsx(
+                    styles.filterToolbar,
+                    !isTrainingPeriodExpanded && styles.filterToolbarCollapsed
+                  )}
                   role="toolbar"
                   aria-labelledby="training-period-label"
                 >
-                  <div className={styles.filterDescription}>
-                    <span id="training-period-label" className={styles.filterLabel}>
-                      Training period
+                  <button
+                    type="button"
+                    className={styles.filterToggle}
+                    aria-expanded={isTrainingPeriodExpanded}
+                    aria-controls="training-period-controls"
+                    onClick={() => setIsTrainingPeriodExpanded((expanded) => !expanded)}
+                  >
+                    <span className={styles.filterToggleIcon} aria-hidden="true">
+                      {isTrainingPeriodExpanded ? '▾' : '▸'}
                     </span>
-                    <span className={styles.filterScope}>
-                      Applies to all charts and calculations
+                    <span className={styles.filterDescription}>
+                      <span id="training-period-label" className={styles.filterLabel}>
+                        Training period
+                      </span>
+                      <span className={styles.filterScope}>
+                        {isTrainingPeriodExpanded
+                          ? 'Applies to all charts and calculations'
+                          : trainingPeriodSummary}
+                      </span>
                     </span>
-                  </div>
-                  <div className={styles.datePickerWrap}>
-                    <DateRangePicker
-                      value={dateRange}
-                      onChange={setDateRange}
-                      sessionDates={allSessionDates}
-                    />
-                  </div>
+                  </button>
+                  {isTrainingPeriodExpanded && (
+                    <div id="training-period-controls" className={styles.datePickerWrap}>
+                      <DateRangePicker
+                        value={dateRange}
+                        onChange={setDateRange}
+                        sessionDates={allSessionDates}
+                      />
+                    </div>
+                  )}
                 </section>
               </div>
               <div className={styles.mobileTopControls}>

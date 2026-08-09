@@ -1,4 +1,9 @@
 import type { AccessoryTableDisplay, AccessoryTableGroup } from './useAccessoryTable';
+import type {
+  CategoryEffectivenessRow,
+  CategoryEffectivenessView,
+} from './useCategoryEffectivenessEvidence';
+import { CategoryEffectivenessEvidence } from './CategoryEffectivenessEvidence';
 import { useSortableRows } from '../../shared/hooks';
 import {
   CollapsibleSection,
@@ -15,6 +20,8 @@ interface AccessoryTableProps {
   hasSessionsInRange: boolean;
   highlightedVariation?: string | null;
   onVariationClick?: (v: string) => void;
+  effectivenessEvidence: CategoryEffectivenessView;
+  categoryExpandRequest?: { category: string; request: number };
 }
 
 type SortCol =
@@ -32,6 +39,8 @@ function SubtypeTable({
   inRangeHeader,
   highlightedVariation,
   onVariationClick,
+  effectivenessRows,
+  expandRequest,
 }: {
   label: string;
   persistenceId: string;
@@ -39,6 +48,8 @@ function SubtypeTable({
   inRangeHeader: string;
   highlightedVariation?: string | null;
   onVariationClick?: (v: string) => void;
+  effectivenessRows: CategoryEffectivenessRow[];
+  expandRequest?: number;
 }) {
   const { sortedRows, sortKey, direction, toggleSort } = useSortableRows<
     AccessoryTableDisplay,
@@ -65,8 +76,11 @@ function SubtypeTable({
     <CollapsibleSection
       persistenceId={persistenceId}
       label={label}
-      summary={`${rows.length} exercise${rows.length === 1 ? '' : 's'} · ${rows.reduce((total, row) => total + row.sessionCountInRange, 0)} sessions in range`}
+      summary={`${rows.length} exercise${rows.length === 1 ? '' : 's'} · ${rows.reduce((total, row) => total + row.sessionCountInRange, 0)} sessions in range${effectivenessRows.length ? ` · ${effectivenessRows.length} association${effectivenessRows.length === 1 ? '' : 's'}` : ''}`}
+      defaultExpanded={false}
+      expandRequest={expandRequest}
     >
+      <CategoryEffectivenessEvidence rows={effectivenessRows} />
       <TableCard>
         <Table>
           <TableHeadRow>
@@ -149,6 +163,8 @@ export function AccessoryTable({
   hasSessionsInRange,
   highlightedVariation,
   onVariationClick,
+  effectivenessEvidence,
+  categoryExpandRequest,
 }: AccessoryTableProps) {
   if (!groups.length) {
     return (
@@ -171,11 +187,17 @@ export function AccessoryTable({
         <SubtypeTable
           key={category ?? 'null'}
           label={label}
-          persistenceId={`visualizer:accessory:table:${category ?? 'uncategorized'}`}
+          persistenceId={`visualizer:accessory:table:v2:${category ?? 'uncategorized'}`}
           rows={rows}
           inRangeHeader="Sessions (in range)"
           highlightedVariation={highlightedVariation}
           onVariationClick={onVariationClick}
+          effectivenessRows={effectivenessEvidence.rows.filter(
+            (evidence) => evidence.category === category
+          )}
+          expandRequest={
+            categoryExpandRequest?.category === category ? categoryExpandRequest.request : undefined
+          }
         />
       ))}
     </>

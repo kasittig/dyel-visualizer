@@ -142,6 +142,34 @@
   border-radius: 0 0 8px 8px;
   background: color-mix(in srgb, var(--code-bg) 55%, var(--bg));
 }
+.filterToolbarCollapsed {
+  padding-block: 0.45rem;
+}
+
+.filterToggle {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.filterToggle:hover .filterLabel {
+  color: var(--accent);
+}
+.filterToggle:focus-visible {
+  border-radius: 4px;
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+.filterToggleIcon {
+  color: var(--accent);
+  font-size: 0.8rem;
+}
 
 .filterDescription {
   display: grid;
