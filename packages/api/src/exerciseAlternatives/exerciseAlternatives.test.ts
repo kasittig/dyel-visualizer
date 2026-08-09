@@ -1,19 +1,21 @@
 import { describe, expect, it } from 'vitest';
 import {
+  EXERCISE_ALTERNATIVES_CATALOG,
+  getExerciseFamily,
   getExerciseRecommendations,
   getSupportedExerciseIssues,
   listSearchableExerciseNames,
   resolveAlternativeExercise,
 } from './exerciseAlternatives';
 
-describe('exercise alternatives selectors', () => {
+describe('exercise alternatives', () => {
   it.each([
-    ['canonical name', 'Push-Up', 'push-up'],
+    ['canonical', 'Push-Up', 'push-up'],
     ['case-insensitive alias', 'PRESS-UP', 'push-up'],
-    ['trimmed alias', '  football bar bench ', 'swiss-bar-bench-press'],
+    ['trimmed alias', '  RDL ', 'romanian-deadlift'],
   ])('resolves a %s', (_, name, id) => expect(resolveAlternativeExercise(name)?.id).toBe(id));
 
-  it('returns documented empty results for unknown input', () => {
+  it('documents unknown input with empty/null results', () => {
     expect(resolveAlternativeExercise('unknown')).toBeNull();
     expect(getSupportedExerciseIssues('unknown')).toEqual([]);
     expect(getExerciseRecommendations('unknown', 'equipment-unavailable')).toEqual([]);
@@ -25,17 +27,91 @@ describe('exercise alternatives selectors', () => {
     );
   });
 
-  it('returns only issues supported by the selected exercise', () => {
+  it('returns only supported issue choices', () => {
     expect(getSupportedExerciseIssues('Swiss-Bar Bench Press').map(({ id }) => id)).toEqual([
       'grip-handle:too-small',
+      'equipment-unavailable',
     ]);
   });
 
-  it('orders adjustments before replacements while retaining authored order', () => {
+  it.each([
+    ['Push-Up', 'bench'],
+    ['Belt Squat', 'squat'],
+    ['Cable Pull-Through', 'deadlift'],
+    ['unknown', null],
+  ])('classifies %s in its powerlifting family', (exercise, expected) => {
+    expect(getExerciseFamily(exercise)).toBe(expected);
+  });
+
+  it('orders adjustments before replacements while preserving authored group order', () => {
     expect(
       getExerciseRecommendations('Swiss-Bar Bench Press', 'grip-handle:too-small').map(
-        ({ kind }) => kind
+        ({ id }) => id
       )
-    ).toEqual(['adjustment', 'replacement']);
+    ).toEqual(['swiss-wider', 'swiss-flex', 'swiss-barbell']);
+  });
+
+  it('regresses Swiss-bar small-handle recommendations', () => {
+    const recommendations = getExerciseRecommendations(
+      'football bar bench',
+      'grip-handle:too-small'
+    );
+    expect(recommendations[0]).toMatchObject({
+      kind: 'adjustment',
+      title: 'Use a wider handle pair',
+    });
+    expect(recommendations.slice(1).map(({ kind }) => kind)).toEqual([
+      'replacement',
+      'replacement',
+    ]);
+  });
+
+  it('regresses push-up maximum-load recommendations', () => {
+    const recommendations = getExerciseRecommendations(
+      'pushup',
+      'loading-range:maximum-resistance-too-light'
+    );
+    expect(recommendations[0]).toMatchObject({
+      kind: 'adjustment',
+      title: 'Band-Resisted Push-Up',
+    });
+    expect(recommendations[0]?.whyItHelps).toContain('band tension increasing toward lockout');
+  });
+
+  it.each([
+    ['Back Squat', ['Belt Squat', 'Leg Press']],
+    ['Conventional Deadlift', ['Hip Thrust', 'Cable Pull-Through']],
+    ['Romanian Deadlift', ['Hip Thrust', 'Cable Pull-Through']],
+  ])('offers lower-direct-load alternatives for %s', (exercise, expected) => {
+    const recommendations = getExerciseRecommendations(exercise, 'avoid-spinal-loading');
+    expect(recommendations.map(({ title }) => title)).toEqual(expected);
+    expect(
+      recommendations.every(({ whyItHelps }) =>
+        whyItHelps.includes('does not eliminate spinal demand')
+      )
+    ).toBe(true);
+  });
+
+  it('maintains catalog integrity', () => {
+    const names = new Set<string>();
+    expect(EXERCISE_ALTERNATIVES_CATALOG.length).toBeGreaterThanOrEqual(15);
+    expect(EXERCISE_ALTERNATIVES_CATALOG.length).toBeLessThanOrEqual(25);
+    for (const exercise of EXERCISE_ALTERNATIVES_CATALOG) {
+      expect(getExerciseFamily(exercise.name)).not.toBeNull();
+      for (const name of [exercise.name, ...exercise.aliases]) {
+        expect(names.has(name.toLocaleLowerCase())).toBe(false);
+        names.add(name.toLocaleLowerCase());
+        expect(resolveAlternativeExercise(name)?.id).toBe(exercise.id);
+      }
+      for (const issue of getSupportedExerciseIssues(exercise.name)) {
+        const recommendations = getExerciseRecommendations(exercise.name, issue.id);
+        expect(recommendations.length).toBeGreaterThan(0);
+        for (const recommendation of recommendations) {
+          expect(recommendation.whyItHelps.trim()).not.toBe('');
+          expect(recommendation.staysSimilar.trim()).not.toBe('');
+          expect(recommendation.changes.trim()).not.toBe('');
+        }
+      }
+    }
   });
 });
