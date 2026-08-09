@@ -170,13 +170,16 @@ export const EXERCISE_ALTERNATIVES_CATALOG: readonly ExerciseAlternative[] = [
 const byName = new Map<string, ExerciseAlternative>();
 for (const exercise of EXERCISE_ALTERNATIVES_CATALOG) {
   byName.set(exercise.name.toLocaleLowerCase(), exercise);
-  for (const alias of exercise.aliases) byName.set(alias.toLocaleLowerCase(), exercise);
+  for (const alias of exercise.aliases) {
+    byName.set(alias.toLocaleLowerCase(), exercise);
+  }
 }
 
 export const listSearchableExerciseNames = (): string[] => {
   const names: string[] = [];
-  for (const exercise of EXERCISE_ALTERNATIVES_CATALOG)
+  for (const exercise of EXERCISE_ALTERNATIVES_CATALOG) {
     names.push(exercise.name, ...exercise.aliases);
+  }
   return names;
 };
 
@@ -185,10 +188,14 @@ export const resolveAlternativeExercise = (name: string): ExerciseAlternative | 
 
 export const getSupportedExerciseIssues = (exerciseName: string): ExerciseIssueChoice[] => {
   const exercise = resolveAlternativeExercise(exerciseName);
-  if (!exercise) return [];
+  if (!exercise) {
+    return [];
+  }
   const choices: ExerciseIssueChoice[] = [];
   for (const issue of EXERCISE_ALTERNATIVE_ISSUES) {
-    if (exercise.recommendations[issue.id]?.length) choices.push(issue);
+    if (exercise.recommendations[issue.id]?.length) {
+      choices.push(issue);
+    }
   }
   return choices;
 };
@@ -198,7 +205,9 @@ export const getExerciseRecommendations = (
   issueId: ExerciseIssueId
 ): ExerciseRecommendation[] => {
   const recommendations = resolveAlternativeExercise(exerciseName)?.recommendations[issueId];
-  if (!recommendations) return [];
+  if (!recommendations) {
+    return [];
+  }
   const adjustments: ExerciseRecommendation[] = [];
   const replacements: ExerciseRecommendation[] = [];
   for (const recommendation of recommendations) {
