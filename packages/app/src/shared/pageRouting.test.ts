@@ -1,5 +1,11 @@
 import { describe, it, expect, afterEach } from 'vitest';
-import { destinationForPage, destinationHref, resolvePage, siteRootPath } from './pageRouting';
+import {
+  destinationForPage,
+  destinationHref,
+  pageHref,
+  resolvePage,
+  siteRootPath,
+} from './pageRouting';
 
 function setLocation(url: string) {
   window.history.pushState({}, '', url);
@@ -62,5 +68,12 @@ describe('pageRouting', () => {
     setLocation('/dyel-visualizer/?sheet=abc&page=team');
     expect(destinationHref('tools')).toBe('/dyel-visualizer/?sheet=abc&page=tools');
     expect(destinationHref('my-training')).toBe('/dyel-visualizer/?sheet=abc');
+  });
+
+  it('builds page links without dropping source state', () => {
+    setLocation('/dyel-visualizer/learn?sheet=abc&mode=url&page=learn');
+    expect(pageHref('tools', { tool: 'alternatives' })).toBe(
+      '/dyel-visualizer/?sheet=abc&mode=url&page=tools&tool=alternatives'
+    );
   });
 });

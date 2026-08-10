@@ -60,7 +60,7 @@ const LAZY_PAGES = {
   validator: ValidatorPage,
   'pipeline-validation': PipelineValidationPage,
   coach: TeamViewPage,
-  team: TeamSummaryPage,
+  team: TeamViewPage,
   'team-summary': TeamSummaryPage,
   alternatives: ExerciseAlternativesPage,
 };

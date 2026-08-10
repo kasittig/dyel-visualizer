@@ -14,6 +14,8 @@ const orchestrationState = vi.hoisted(() => ({
   lastUpdatedAt: null as Date | null,
   isUsingCachedData: false,
   model: {},
+  invalidUrl: false,
+  requestError: null,
 }));
 const visualizerState = vi.hoisted(() => ({
   visibleLiftIds: new Set(['squat', 'bench', 'deadlift', 'accessory']),
@@ -81,6 +83,8 @@ describe('desktop workspace controls', () => {
       lastUpdatedAt: null,
       isUsingCachedData: false,
       model: {},
+      invalidUrl: false,
+      requestError: null,
     });
     visualizerState.visibleLiftIds = new Set(['squat', 'bench', 'deadlift', 'accessory']);
     appSettingsState.url = 'https://docs.google.com/spreadsheets/d/test/pubhtml';
@@ -128,6 +132,18 @@ describe('desktop workspace controls', () => {
 
     expect(screen.getByRole('heading', { name: heading })).toBeTruthy();
     expect(screen.queryByText('Overview content')).toBeNull();
+  });
+
+  it('treats an invalid configured URL as an error instead of loading forever', () => {
+    orchestrationState.status = 'idle';
+    orchestrationState.requestStatus = 'idle';
+    orchestrationState.invalidUrl = true;
+    render(<App />);
+
+    expect(
+      screen.getByRole('heading', { name: 'Your training log could not be loaded' })
+    ).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Open Data & Setup' })).toBeTruthy();
   });
 
   it('distinguishes an empty connected log from a failed request', () => {

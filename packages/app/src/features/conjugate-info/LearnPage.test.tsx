@@ -36,4 +36,16 @@ describe('LearnPage', () => {
       ).toBe(alternatives);
     }
   );
+
+  it('preserves configured source parameters in guide links', () => {
+    window.history.pushState({}, '', '/learn?sheet=abc&mode=url&page=learn');
+    render(<LearnPage />);
+
+    expect(
+      screen.getByRole('link', { name: /Understanding the conjugate method/ }).getAttribute('href')
+    ).toBe('/?sheet=abc&mode=url&page=conjugate');
+    expect(
+      screen.getByRole('link', { name: /Choose an exercise alternative/ }).getAttribute('href')
+    ).toBe('/?sheet=abc&mode=url&page=tools&tool=alternatives');
+  });
 });

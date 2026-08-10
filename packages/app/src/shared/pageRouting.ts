@@ -67,6 +67,15 @@ export function destinationHref(destination: AppDestination): string {
   return `${siteRootPath()}${query ? `?${query}` : ''}`;
 }
 
+export function pageHref(page: string, values: Record<string, string> = {}): string {
+  const params = new URLSearchParams(window.location.search);
+  params.set('page', page);
+  for (const [key, value] of Object.entries(values)) {
+    params.set(key, value);
+  }
+  return `${siteRootPath()}?${params}`;
+}
+
 // Checked before the single-segment fallback in both resolvePage() and siteRootPath(): matched by
 // suffix (not equality) because GitHub Pages serves this app under a subpath (e.g.
 // /dyel-visualizer/team/summary), and /team/summary's last segment ("summary") isn't itself in

@@ -144,9 +144,9 @@ export function DataSetupPage(props: DataSetupPageProps) {
           </label>
         )}
         <div className={styles.actions}>
-          {connected && mode === 'url' && (
+          {configured && mode === 'url' && (connected || requestStatus === 'error') && (
             <button type="button" onClick={onRefresh} disabled={loading}>
-              {loading ? 'Refreshing…' : 'Refresh data'}
+              {loading ? 'Refreshing…' : connected ? 'Refresh data' : 'Retry loading data'}
             </button>
           )}
           {configured && (
@@ -166,7 +166,7 @@ export function DataSetupPage(props: DataSetupPageProps) {
         <div className={styles.links}>
           <a href={validatorHref}>Validate training data</a>
           <a href="?page=pipeline-validation">Review exercise compatibility</a>
-          <a href={EXAMPLE_VISUALIZER_URL}>Open the example</a>
+          <a href={`${siteRootPath()}${EXAMPLE_VISUALIZER_URL}`}>Open the example</a>
           <a href={EXAMPLE_SHEET_URL} target="_blank" rel="noreferrer">
             View example sheet
           </a>

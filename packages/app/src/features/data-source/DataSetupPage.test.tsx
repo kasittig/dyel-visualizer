@@ -86,6 +86,27 @@ describe('DataSetupPage', () => {
     expect(input.onUrlChange).toHaveBeenCalledWith('');
   });
 
+  it('allows retrying the first failed request', () => {
+    const input = props({
+      url: 'https://docs.google.com/example',
+      status: 'error',
+      requestStatus: 'error',
+      requestError: 'Network unavailable.',
+    });
+    render(<DataSetupPage {...input} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Retry loading data' }));
+    expect(input.onRefresh).toHaveBeenCalledOnce();
+  });
+
+  it('routes the example from a setup path back through the site root', () => {
+    window.history.pushState({}, '', '/dyel-visualizer/setup');
+    render(<DataSetupPage {...props()} />);
+    expect(screen.getByRole('link', { name: 'Open the example' }).getAttribute('href')).toMatch(
+      /^\/dyel-visualizer\/\?sheet=/
+    );
+    window.history.pushState({}, '', '/');
+  });
+
   it('selects a spreadsheet directly from the team index', () => {
     const input = props();
     render(<DataSetupPage {...input} />);

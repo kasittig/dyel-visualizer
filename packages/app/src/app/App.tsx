@@ -78,7 +78,7 @@ export function App({
         : null
       : effStatus === 'loading'
         ? 'loading'
-        : effStatus === 'error'
+        : effStatus === 'error' || invalidUrl
           ? 'error'
           : hasConfiguredSource
             ? 'loading'
