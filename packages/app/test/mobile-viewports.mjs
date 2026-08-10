@@ -182,9 +182,9 @@ try {
     const viewNav = page.locator('nav[aria-label="Visualization views"]');
     const stickyControls = toolbar.locator('..');
     const toolbarCount = await toolbar.count();
-    const mobileNavDisplay = await page
+    const primaryNavDisplays = await page
       .locator('nav[aria-label="Primary navigation"]')
-      .evaluate((element) => getComputedStyle(element).display);
+      .evaluateAll((elements) => elements.map((element) => getComputedStyle(element).display));
     if (toolbarCount !== 1) {
       failures.push(`visualizer at ${width}px: sticky controls toolbar is missing`);
     } else {
@@ -212,7 +212,7 @@ try {
     if ((await viewNav.count()) !== 1) {
       failures.push(`visualizer at ${width}px: visualization navigation landmark is missing`);
     }
-    if (mobileNavDisplay !== 'none') {
+    if (primaryNavDisplays.length !== 2 || primaryNavDisplays.filter((display) => display === 'none').length !== 1) {
       failures.push(`visualizer at ${width}px: mobile bottom navigation remains visible`);
     }
     await page.close();

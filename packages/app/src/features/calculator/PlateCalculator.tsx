@@ -56,7 +56,15 @@ function PlateStack({ plates, side }: { plates: readonly DisplayPlate[]; side: '
 }
 
 /** Self-contained plate loading utility; all selection and validation is adapted by its feature hook. */
-export function PlateCalculator() {
+export function PlateCalculator({
+  defaultExpanded = true,
+  persistenceId = 'visualizer:calculator:plate',
+  collapsible = true,
+}: {
+  defaultExpanded?: boolean;
+  persistenceId?: string;
+  collapsible?: boolean;
+}) {
   const {
     targetWeight,
     setTargetWeight,
@@ -81,12 +89,17 @@ export function PlateCalculator() {
 
   return (
     <div className={styles.shell}>
-      <CollapsibleSection label="Plate Calculator" persistenceId="visualizer:calculator:plate">
+      <CollapsibleSection
+        label="Plate Calculator"
+        persistenceId={persistenceId}
+        defaultExpanded={defaultExpanded}
+        enabled={collapsible}
+      >
         <section className={styles.card} aria-label="Barbell plate calculator">
           <header className={styles.masthead}>
             <div>
-              <span className={styles.eyebrow}>Loading bay</span>
-              <p className={styles.mastheadTitle}>Symmetrical barbell setup</p>
+              <span className={styles.eyebrow}>Training tool</span>
+              <h2 className={styles.mastheadTitle}>Plate calculator</h2>
             </div>
             <span className={styles.mastheadNote}>Plate + bar inventory in lb</span>
           </header>

@@ -97,7 +97,7 @@ describe('usePipelineRepCalculator', () => {
     expect(Number(calc.current.reps)).toBeGreaterThan(0);
   });
 
-  it('re-syncs weight from the existing reps when estimate changes without touching reps directly', () => {
+  it('keeps user-entered values stable when connected estimates refresh', () => {
     mockUsePipelineModel.mockReturnValue({ status: 'success', model: mockModel(200) });
     const rows = emptyRows();
     rows.squat = splitRows([rec('squat')]);
@@ -116,8 +116,137 @@ describe('usePipelineRepCalculator', () => {
       rerender();
     });
     expect(result.current.reps).toBe('5');
-    expect(result.current.weight).not.toBe(originalWeight);
-    expect(Number(result.current.weight)).toBeGreaterThan(0);
+    expect(result.current.weight).toBe(originalWeight);
+  });
+
+  it('recalculates the dependent weight when the connected selection changes its estimate', () => {
+    const rows = emptyRows();
+    rows.squat = splitRows([rec('squat')]);
+    rows.bench = splitRows([rec('bench', ['lift:bench', 'comp-lift'], { exercise: 'Bench' })]);
+    const connectedModel = pipelineModelMock({
+      model: {
+        baseline: { 'lift:squat': 'squat', 'lift:bench': 'bench' },
+        variantFactor: {},
+        addlWtOffset: {},
+        fittedAt: Date.now(),
+      },
+      points: pointStoreMock(
+        new Map([
+          [
+            'e1rm-max-effort',
+            [
+              { t: 1, v: 200, series: 'squat', tags: new Set(['lift:squat']) },
+              { t: 1, v: 300, series: 'bench', tags: new Set(['lift:bench']) },
+            ],
+          ],
+        ])
+      ),
+    });
+    mockUsePipelineModel.mockReturnValue({ status: 'success', model: connectedModel });
+    const { result } = renderHook(() =>
+      usePipelineRepCalculator(rows, { squat: 'Squat', bench: 'Bench' })
+    );
+
+    act(() => result.current.handleRepsChange('5'));
+    const squatWeight = result.current.weight;
+    act(() => result.current.setLiftType('bench'));
+
+    expect(result.current.reps).toBe('5');
+    expect(result.current.weight).not.toBe(squatWeight);
+  });
+
+  it('recalculates the dependent weight when the connected display unit changes', () => {
+    mockUsePipelineModel.mockReturnValue({ status: 'success', model: mockModel(200) });
+    let rows = emptyRows();
+    rows.squat = splitRows([rec('squat')]);
+    const { result, rerender } = renderHook(() =>
+      usePipelineRepCalculator(rows, { squat: 'Squat' })
+    );
+    act(() => result.current.handleRepsChange('5'));
+    const kgWeight = result.current.weight;
+
+    rows = { ...rows, squat: splitRows([rec('squat', undefined, { meta: { rawUnit: 'lbs' } })]) };
+    rerender();
+
+    expect(result.current.reps).toBe('5');
+    expect(result.current.weight).not.toBe(kgWeight);
+  });
+
+  it.each([
+    ['reps were last edited', '5', null],
+    ['weight was last edited', null, '250'],
+  ])('recalculates only the dependent field when manual e1RM changes and %s', (_, reps, weight) => {
+    mockUsePipelineModel.mockReturnValue({ status: 'idle', model: null });
+    const { result } = renderHook(() => usePipelineRepCalculator(emptyRows(), {}, 'manual'));
+    act(() => result.current.handleManualE1rmChange('300'));
+    if (reps) {
+      act(() => result.current.handleRepsChange(reps));
+    }
+    if (weight) {
+      act(() => result.current.handleWeightChange(weight));
+    }
+    const originalWeight = result.current.weight;
+    const originalReps = result.current.reps;
+
+    act(() => result.current.handleManualE1rmChange('400'));
+
+    if (reps) {
+      expect(result.current.reps).toBe(originalReps);
+      expect(result.current.weight).not.toBe(originalWeight);
+    } else {
+      expect(result.current.weight).toBe(originalWeight);
+      expect(result.current.reps).not.toBe(originalReps);
+    }
+  });
+
+  it.each(['idle', 'loading', 'error'] as const)(
+    'keeps manual calculations usable while pipeline status is %s',
+    (status) => {
+      mockUsePipelineModel.mockReturnValue({ status, model: null });
+      const { result } = renderHook(() => usePipelineRepCalculator(emptyRows(), {}, 'manual'));
+
+      act(() => {
+        result.current.handleManualE1rmChange('300');
+      });
+      act(() => {
+        result.current.handleRepsChange('5');
+      });
+
+      expect(result.current.mode).toBe('manual');
+      expect(result.current.reps).toBe('5');
+      expect(Number(result.current.weight)).toBeGreaterThan(0);
+    }
+  );
+
+  it('preserves manual inputs across connect and disconnect transitions', () => {
+    mockUsePipelineModel.mockReturnValue({ status: 'loading', model: null });
+    const rows = emptyRows();
+    rows.squat = splitRows([rec('squat')]);
+    let mode: 'manual' | 'connected' = 'manual';
+    const { result, rerender } = renderHook(() =>
+      usePipelineRepCalculator(rows, { squat: 'Squat' }, mode)
+    );
+
+    act(() => {
+      result.current.handleManualE1rmChange('300');
+    });
+    act(() => {
+      result.current.handleRepsChange('5');
+    });
+    const manualWeight = result.current.weight;
+
+    mockUsePipelineModel.mockReturnValue({ status: 'success', model: mockModel(200) });
+    mode = 'connected';
+    rerender();
+    expect(result.current.reps).toBe('5');
+    expect(result.current.weight).toBe(manualWeight);
+
+    mockUsePipelineModel.mockReturnValue({ status: 'error', model: null });
+    mode = 'manual';
+    rerender();
+    expect(result.current.manualE1rm).toBe('300');
+    expect(result.current.reps).toBe('5');
+    expect(result.current.weight).toBe(manualWeight);
   });
 
   it('computes and displays actual, projected, and source-label e1RM values when model is populated', () => {

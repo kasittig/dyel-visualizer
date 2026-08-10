@@ -8,6 +8,11 @@
 // app's actual root.
 
 export const KNOWN_PAGES = new Set([
+  'tools',
+  'my-training',
+  'setup',
+  'learn',
+  'metrics',
   'conjugate',
   'index',
   'validator',
@@ -17,6 +22,59 @@ export const KNOWN_PAGES = new Set([
   'team-summary',
   'alternatives',
 ]);
+
+export type AppDestination = 'tools' | 'my-training' | 'team' | 'setup' | 'learn';
+
+export const APP_DESTINATIONS: ReadonlyArray<{
+  id: AppDestination;
+  label: string;
+  mobileLabel: string;
+}> = [
+  { id: 'tools', label: 'Training Tools', mobileLabel: 'Tools' },
+  { id: 'my-training', label: 'My Training', mobileLabel: 'Training' },
+  { id: 'team', label: 'Team', mobileLabel: 'Team' },
+  { id: 'setup', label: 'Data & Setup', mobileLabel: 'Setup' },
+  { id: 'learn', label: 'Learn', mobileLabel: 'Learn' },
+];
+
+const DESTINATION_BY_PAGE: Partial<Record<string, AppDestination>> = {
+  tools: 'tools',
+  alternatives: 'tools',
+  team: 'team',
+  coach: 'team',
+  'team-summary': 'team',
+  setup: 'setup',
+  validator: 'setup',
+  'pipeline-validation': 'setup',
+  index: 'setup',
+  learn: 'learn',
+  conjugate: 'learn',
+  metrics: 'learn',
+};
+
+export function destinationForPage(page: string | null): AppDestination {
+  return (page && DESTINATION_BY_PAGE[page]) || 'my-training';
+}
+
+export function destinationHref(destination: AppDestination): string {
+  const params = new URLSearchParams(window.location.search);
+  if (destination === 'my-training') {
+    params.delete('page');
+  } else {
+    params.set('page', destination);
+  }
+  const query = params.toString();
+  return `${siteRootPath()}${query ? `?${query}` : ''}`;
+}
+
+export function pageHref(page: string, values: Record<string, string> = {}): string {
+  const params = new URLSearchParams(window.location.search);
+  params.set('page', page);
+  for (const [key, value] of Object.entries(values)) {
+    params.set(key, value);
+  }
+  return `${siteRootPath()}?${params}`;
+}
 
 // Checked before the single-segment fallback in both resolvePage() and siteRootPath(): matched by
 // suffix (not equality) because GitHub Pages serves this app under a subpath (e.g.

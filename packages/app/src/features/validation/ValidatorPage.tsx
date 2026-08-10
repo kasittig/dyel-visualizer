@@ -6,6 +6,7 @@ import type { ColumnInfo } from '@dyel/api';
 import { EXAMPLE_SHEET_URL, InputModeToggle } from '../data-source';
 import type { InputMode } from '../../app/appTabs';
 import styles from './ValidatorPage.module.css';
+import { siteRootPath } from '../../shared/pageRouting';
 
 const BANNERS = {
   ok: ['var(--success)', '✓', 'Your data is compatible with DYEL Visualizer.'],
@@ -86,8 +87,8 @@ export function ValidatorPage() {
       <div className={styles.header}>
         <h1>Sheet Validator</h1>
         <p className={styles.backLinkP}>
-          <a href="./" className={styles.accentLink}>
-            ← Back to DYEL Visualizer
+          <a href={`${siteRootPath()}?page=setup`} className={styles.accentLink}>
+            ← Back to Data &amp; Setup
           </a>
         </p>
       </div>

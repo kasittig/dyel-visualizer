@@ -72,6 +72,10 @@ describe('TeamSummaryPage', () => {
     });
     render(<TeamSummaryPage />);
     expect(screen.getByText('Failed to fetch sheets')).toBeDefined();
+    expect(screen.getByRole('heading', { name: 'Team data could not be loaded' })).toBeDefined();
+    expect(screen.getByRole('link', { name: 'Open Data & Setup' }).getAttribute('href')).toBe(
+      '/?page=setup'
+    );
   });
 
   it.each([
@@ -153,7 +157,7 @@ describe('TeamSummaryPage', () => {
     expect(link.getAttribute('target')).toBe('_blank');
   });
 
-  it('back link resolves against the site root, not the current two-segment path', () => {
+  it('links to Team comparison from the current two-segment path', () => {
     window.history.pushState({}, '', '/dyel-visualizer/team/summary');
     vi.mocked(useTeamViewData).mockReturnValue({
       status: 'success',
@@ -161,8 +165,8 @@ describe('TeamSummaryPage', () => {
     });
     render(<TeamSummaryPage />);
 
-    expect(screen.getByText('← Back to DYEL Visualizer').getAttribute('href')).toBe(
-      '/dyel-visualizer/'
+    expect(screen.getByText('Compare lifters').getAttribute('href')).toBe(
+      '/dyel-visualizer/?page=coach'
     );
 
     window.history.pushState({}, '', '/');

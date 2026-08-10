@@ -27,12 +27,15 @@ import { usePipelineModel } from '../../app/PipelineContext';
 
 export function usePipelineRepCalculator(
   tabRows: Record<LiftType, SplitRows>,
-  baselineNames: Partial<Record<LiftType, string>>
+  baselineNames: Partial<Record<LiftType, string>>,
+  mode: 'manual' | 'connected' = 'connected'
 ) {
   const [liftType, setLiftType] = useState<LiftType>('squat');
   const [selectedCanonical, setSelectedCanonical] = useState('');
   const [reps, setReps] = useState('');
   const [weight, setWeight] = useState('');
+  const [manualE1rm, setManualE1rm] = useState('');
+  const [manualUnit, setManualUnit] = useState<'lbs' | 'kg'>('lbs');
   const [selectedBar, setSelectedBar] = useState<ConjugateBar | null>(null);
   const [selectedStance, setSelectedStance] = useState<ConjugateStance | null>(null);
   const [selectedEquipment, setSelectedEquipment] = useState<ConjugateEquipment | null>(null);
@@ -44,10 +47,17 @@ export function usePipelineRepCalculator(
   const repsRef = useRef(reps);
   const weightRef = useRef(weight);
   const lastEditedRef = useRef<'reps' | 'weight'>('reps');
+  const previousCalculationSourceRef = useRef<string | null>(null);
+  const previousModeRef = useRef(mode);
 
   const unit = useMemo(
-    () => (records.find((r) => r.meta?.rawUnit)?.meta?.rawUnit === 'lbs' ? 'lbs' : 'kg'),
-    [records]
+    () =>
+      mode === 'manual'
+        ? manualUnit
+        : records.find((r) => r.meta?.rawUnit)?.meta?.rawUnit === 'lbs'
+          ? 'lbs'
+          : 'kg',
+    [manualUnit, mode, records]
   );
   const availableMagnitudes = useMemo(
     () => availableEquipmentMagnitudes(records, selectedEquipment),
@@ -146,30 +156,47 @@ export function usePipelineRepCalculator(
     [familyE1RMEstimate]
   );
 
+  const calculationE1rm =
+    mode === 'manual'
+      ? parseFloat(manualE1rm)
+      : estimate
+        ? convertE1RMToDisplayUnit(estimate.e1rm, unit)
+        : Number.NaN;
+
   const syncWeightFromReps = (rVal: string) => {
     const r = parseFloat(rVal);
-    if (r > 0 && estimate) {
-      setWeight(
-        String(roundTo5(predictWeightForReps(convertE1RMToDisplayUnit(estimate.e1rm, unit), r)))
-      );
+    if (r > 0 && calculationE1rm > 0) {
+      setWeight(String(roundTo5(predictWeightForReps(calculationE1rm, r))));
     }
   };
 
   const syncRepsFromWeight = (wVal: string) => {
     const w = parseFloat(wVal);
-    if (w > 0 && estimate) {
-      setReps(predictRepsForWeight(convertE1RMToDisplayUnit(estimate.e1rm, unit), w).toFixed(1));
+    if (w > 0 && calculationE1rm > 0) {
+      setReps(predictRepsForWeight(calculationE1rm, w).toFixed(1));
     }
   };
 
+  const calculationSource =
+    mode === 'manual' ? `${manualE1rm}:${unit}` : `${effectiveCanonical}:${unit}`;
+
   useEffect(() => {
+    const previousSource = previousCalculationSourceRef.current;
+    const modeChanged = previousModeRef.current !== mode;
+    previousCalculationSourceRef.current = calculationSource;
+    previousModeRef.current = mode;
+    if (previousSource === null || modeChanged || previousSource === calculationSource) {
+      return;
+    }
     if (lastEditedRef.current === 'weight') {
       syncRepsFromWeight(weightRef.current);
     } else {
       syncWeightFromReps(repsRef.current);
     }
+    // The source key deliberately excludes the connected estimate value: data refreshes must not
+    // silently change an in-progress calculation for the same exercise.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [estimate, unit]);
+  }, [calculationSource, mode]);
 
   return {
     liftType,
@@ -193,6 +220,10 @@ export function usePipelineRepCalculator(
     reps,
     weight,
     unit,
+    mode,
+    manualE1rm,
+    manualUnit,
+    setManualUnit,
     estimate,
     actualE1rmDisplay,
     projectedE1rmDisplay,
@@ -213,6 +244,9 @@ export function usePipelineRepCalculator(
       setSelectedEquipment(f.equipment ?? null);
       setSelectedAddlWt(f.addlWts?.[0] ?? null);
       setSelectedEquipmentMagnitude(f.equipmentMagnitude ?? null);
+    },
+    handleManualE1rmChange: (val: string) => {
+      setManualE1rm(val);
     },
     handleRepsChange: (val: string) => {
       repsRef.current = val;

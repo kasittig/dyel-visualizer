@@ -1,0 +1,45 @@
+.page {
+  width: min(100%, 48rem);
+  margin-inline: auto;
+  padding: clamp(1.5rem, 5vw, 4rem);
+  text-align: left;
+}
+
+.backLink {
+  display: inline-flex;
+  min-height: var(--touch-target);
+  align-items: center;
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.guide {
+  margin-top: 1rem;
+  padding: clamp(1.25rem, 4vw, 2rem);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--code-bg) 65%, var(--bg));
+}
+
+.guide h1 {
+  margin: 0;
+  font-size: clamp(1.5rem, 4vw, 2.25rem);
+}
+
+.guide dl {
+  display: grid;
+  gap: 1.25rem;
+  margin: 1.5rem 0 0;
+}
+
+.guide dt {
+  color: var(--text-h);
+  font-family: var(--heading);
+  font-weight: 700;
+}
+
+.guide dd {
+  margin: 0.25rem 0 0;
+  color: var(--text);
+  line-height: 1.55;
+}

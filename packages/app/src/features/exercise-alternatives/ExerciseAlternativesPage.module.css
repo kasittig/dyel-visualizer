@@ -9,6 +9,15 @@
   text-align: left;
 }
 
+.embedded {
+  max-width: none;
+  padding: 0;
+}
+
+.embedded .finder {
+  margin-top: 0;
+}
+
 .backLink {
   display: inline-flex;
   min-height: var(--touch-target);

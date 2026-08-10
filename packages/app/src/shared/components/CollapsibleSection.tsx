@@ -18,9 +18,13 @@ interface CollapsibleSectionProps {
   summary?: React.ReactNode;
   defaultExpanded?: boolean;
   expandRequest?: number;
+  enabled?: boolean;
 }
 
-export function CollapsibleSection(props: CollapsibleSectionProps) {
+export function CollapsibleSection({ enabled = true, ...props }: CollapsibleSectionProps) {
+  if (!enabled) {
+    return props.children;
+  }
   return <PersistedCollapsibleSection key={props.persistenceId} {...props} />;
 }
 

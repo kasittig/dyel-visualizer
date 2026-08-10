@@ -19,6 +19,7 @@ export interface PipelineOrchestrationReturn {
   model: PipelineModel | null;
   invalidUrl: boolean;
   textValidation: { hasText: boolean; isValid: boolean };
+  requestError: string | null;
 }
 
 export function usePipelineOrchestration(
@@ -33,6 +34,7 @@ export function usePipelineOrchestration(
     status: rawStatus,
     raw,
     lastUpdatedAt,
+    error: requestError,
   } = useResolvedRawInput(inputMode, url, pastedText, refreshToken);
   const [cache, setCache] = useLocalStorageState<CachedSheetData | null>(
     'dyel:sheetDataCache',
@@ -103,5 +105,6 @@ export function usePipelineOrchestration(
         isValid: inputMode === 'text' && !!trimmed.length && parseTextData(pastedText).length > 0,
       };
     }, [inputMode, pastedText]),
+    requestError,
   };
 }

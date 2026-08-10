@@ -38,9 +38,11 @@ const METRICS = [
 export function StrengthScoreCalculator({
   dateRange,
   unit: dataUnit,
+  collapsible = true,
 }: {
   dateRange: DateRange;
   unit: 'lbs' | 'kg';
+  collapsible?: boolean;
 }) {
   const [bodyweight, setBodyweight] = useState('');
   const [unit, setUnit] = useState<'lbs' | 'kg'>('lbs');
@@ -57,6 +59,7 @@ export function StrengthScoreCalculator({
     <CollapsibleSection
       label="Strength Score Calculator"
       persistenceId="visualizer:calculator:strength-score"
+      enabled={collapsible}
     >
       <div className={styles.card}>
         <header className={styles.masthead}>

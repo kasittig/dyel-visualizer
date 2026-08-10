@@ -1,0 +1,77 @@
+.page {
+  width: min(100%, 64rem);
+  margin-inline: auto;
+  padding: clamp(1.5rem, 5vw, 4rem);
+}
+
+.hero {
+  max-width: 44rem;
+}
+
+.hero h1 {
+  margin-block: 0.4rem 0.75rem;
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  letter-spacing: -0.035em;
+}
+
+.hero p:last-child {
+  color: var(--text);
+  font-size: 1.05rem;
+}
+
+.eyebrow,
+.guideCard > span {
+  color: var(--accent);
+  font-family: var(--heading);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.eyebrow {
+  margin: 0;
+}
+
+.guideGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: 2.5rem;
+}
+
+.guideCard {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.55rem;
+  padding: 1.4rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--code-bg) 65%, var(--bg));
+  color: var(--text);
+  text-decoration: none;
+}
+
+.guideCard strong {
+  color: var(--text-h);
+  font-family: var(--heading);
+  font-size: 1.2rem;
+}
+
+.guideCard p {
+  margin: 0;
+}
+
+.guideCard:hover,
+.guideCard:focus-visible {
+  border-color: var(--accent-border);
+  outline: 2px solid transparent;
+  background: var(--accent-bg);
+}
+
+@media (max-width: 640px) {
+  .guideGrid {
+    grid-template-columns: 1fr;
+  }
+}

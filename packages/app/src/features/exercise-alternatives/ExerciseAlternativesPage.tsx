@@ -48,26 +48,29 @@ function RecommendationList({
   );
 }
 
-export function ExerciseAlternativesPage() {
+export function ExerciseAlternativesPage({ embedded = false }: { embedded?: boolean }) {
   const alternatives = useExerciseAlternatives();
+  const content = (
+    <>
+      {!embedded && (
+        <>
+          <a href={`${siteRootPath()}?page=tools&tool=alternatives`} className={styles.backLink}>
+            ← Back to Training Tools
+          </a>
 
-  return (
-    <main className={styles.page}>
-      <a href={siteRootPath()} className={styles.backLink}>
-        ← Back to DYEL Visualizer
-      </a>
-
-      <header className={styles.intro}>
-        <p className={styles.eyebrow}>Exercise guide</p>
-        <h1>Exercise alternatives</h1>
-        <p>
-          Find another movement that fits your training needs. No training sheet is required to use
-          this guide.
-        </p>
-      </header>
+          <header className={styles.intro}>
+            <p className={styles.eyebrow}>Exercise guide</p>
+            <h1>Exercise alternatives</h1>
+            <p>
+              Find another movement that fits your training needs. No training sheet is required to
+              use this guide.
+            </p>
+          </header>
+        </>
+      )}
 
       <section className={styles.finder} aria-labelledby="alternatives-form-heading">
-        <h2 id="alternatives-form-heading">Find an alternative</h2>
+        <h2 id="alternatives-form-heading">Exercise alternatives</h2>
         <div className={styles.controlGroup}>
           <label htmlFor="exercise-search">Exercise</label>
           <TypeaheadDropdown
@@ -168,6 +171,12 @@ export function ExerciseAlternativesPage() {
           )}
         </section>
       )}
-    </main>
+    </>
+  );
+
+  return embedded ? (
+    <div className={`${styles.page} ${styles.embedded}`}>{content}</div>
+  ) : (
+    <main className={styles.page}>{content}</main>
   );
 }
