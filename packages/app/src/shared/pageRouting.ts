@@ -15,6 +15,7 @@ export const KNOWN_PAGES = new Set([
   'team',
   'coach',
   'team-summary',
+  'alternatives',
 ]);
 
 // Checked before the single-segment fallback in both resolvePage() and siteRootPath(): matched by

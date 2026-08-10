@@ -1,4 +1,4 @@
-import { useState, useEffect, useId, useRef } from 'react';
+import { Fragment, useState, useEffect, useId, useRef } from 'react';
 import * as Popover from '@radix-ui/react-popover';
 import styles from './TypeaheadDropdown.module.css';
 
@@ -8,6 +8,9 @@ interface TypeaheadDropdownProps {
   onChange: (value: string) => void;
   placeholder?: string;
   emptyMessage?: string;
+  inputId?: string;
+  getSearchText?: (option: string) => string;
+  getGroupLabel?: (option: string) => string | null;
 }
 
 export function TypeaheadDropdown({
@@ -16,6 +19,9 @@ export function TypeaheadDropdown({
   onChange,
   placeholder = 'Search...',
   emptyMessage = 'No matches',
+  inputId,
+  getSearchText,
+  getGroupLabel,
 }: TypeaheadDropdownProps) {
   const [open, setOpen] = useState(false);
   const [inputText, setInputText] = useState(value ?? '');
@@ -29,7 +35,9 @@ export function TypeaheadDropdown({
 
   const visibleOptions = showFullList
     ? options
-    : options.filter((opt) => opt.toLowerCase().includes(inputText.toLowerCase()));
+    : options.filter((opt) =>
+        (getSearchText?.(opt) ?? opt).toLowerCase().includes(inputText.toLowerCase())
+      );
 
   useEffect(() => {
     if (!focused && value !== null) {
@@ -108,6 +116,7 @@ export function TypeaheadDropdown({
         <Popover.Anchor asChild>
           <div className={styles.container}>
             <input
+              id={inputId}
               type="text"
               value={inputText}
               placeholder={placeholder}
@@ -180,24 +189,36 @@ export function TypeaheadDropdown({
           >
             <div id={listId} className={styles.list} role="listbox">
               {visibleOptions.length > 0 ? (
-                visibleOptions.map((option, idx) => (
-                  <button
-                    key={option}
-                    id={`${listId}-option-${idx}`}
-                    type="button"
-                    onMouseDown={(e) => {
-                      e.preventDefault();
-                    }}
-                    onClick={() => {
-                      selectOption(option);
-                    }}
-                    className={`${styles.option} ${idx === highlightedIndex ? styles.optionHighlighted : ''}`}
-                    aria-selected={idx === highlightedIndex}
-                    role="option"
-                  >
-                    {option}
-                  </button>
-                ))
+                visibleOptions.map((option, idx) => {
+                  const groupLabel = getGroupLabel?.(option) ?? null;
+                  const previousGroup = idx
+                    ? (getGroupLabel?.(visibleOptions[idx - 1]) ?? null)
+                    : null;
+                  return (
+                    <Fragment key={option}>
+                      {groupLabel && groupLabel !== previousGroup && (
+                        <div className={styles.groupLabel} role="presentation">
+                          {groupLabel}
+                        </div>
+                      )}
+                      <button
+                        id={`${listId}-option-${idx}`}
+                        type="button"
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                        }}
+                        onClick={() => {
+                          selectOption(option);
+                        }}
+                        className={`${styles.option} ${idx === highlightedIndex ? styles.optionHighlighted : ''}`}
+                        aria-selected={idx === highlightedIndex}
+                        role="option"
+                      >
+                        {option}
+                      </button>
+                    </Fragment>
+                  );
+                })
               ) : (
                 <div className={styles.empty}>{emptyMessage}</div>
               )}

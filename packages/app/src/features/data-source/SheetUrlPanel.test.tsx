@@ -78,6 +78,7 @@ describe('SheetUrlPanel mobile settings', () => {
     expect(input.onRefresh).toHaveBeenCalledOnce();
     expect(within(dialog).getByRole('link', { name: 'Validate training log' })).toBeTruthy();
     expect(within(dialog).getByRole('link', { name: 'View team' })).toBeTruthy();
+    expect(within(dialog).getByRole('link', { name: 'Exercise alternatives' })).toBeTruthy();
     expect(within(dialog).getByRole('link', { name: 'Help & conjugate method' })).toBeTruthy();
   });
 
@@ -140,10 +141,28 @@ describe('SheetUrlPanel mobile settings', () => {
   });
 
   it('gives an empty source one clear mobile action', () => {
+    window.history.replaceState({}, '', '/dyel-visualizer/');
     render(<SheetUrlPanel {...props({ showUrlPanel: true, url: '', loaded: false })} />);
 
     expect(screen.getByText('No data source')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Add source' })).toBeTruthy();
+    expect(
+      within(screen.getByRole('dialog'))
+        .getByRole('link', { name: 'Exercise alternatives' })
+        .getAttribute('href')
+    ).toBe('/dyel-visualizer/alternatives');
+  });
+
+  it('offers exercise discovery in the desktop getting-started help area', () => {
+    mobileMatches = false;
+    window.history.replaceState({}, '', '/dyel-visualizer/');
+    render(<SheetUrlPanel {...props({ showUrlPanel: true, url: '', loaded: false })} />);
+
+    expect(screen.getByRole('link', { name: 'What is the conjugate method?' })).toBeTruthy();
+    expect(screen.getAllByRole('link', { name: 'View team' }).length).toBeGreaterThan(0);
+    expect(
+      screen.getByRole('link', { name: 'Explore exercise alternatives' }).getAttribute('href')
+    ).toBe('/dyel-visualizer/alternatives');
   });
 
   it('switches between one mobile and desktop settings tree when the viewport changes', () => {
@@ -163,6 +182,7 @@ describe('SheetUrlPanel mobile settings', () => {
 
   it('separates product identity, data status, and desktop utility actions', () => {
     mobileMatches = false;
+    window.history.replaceState({}, '', '/dyel-visualizer/');
     const input = props();
     render(<SheetUrlPanel {...input} />);
 
@@ -173,6 +193,9 @@ describe('SheetUrlPanel mobile settings', () => {
     fireEvent.click(screen.getByRole('button', { name: /Reload/ }));
     expect(input.onRefresh).toHaveBeenCalledOnce();
     expect(screen.getByRole('link', { name: 'View team' })).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Exercise alternatives' }).getAttribute('href')).toBe(
+      '/dyel-visualizer/alternatives'
+    );
   });
 
   it.each([

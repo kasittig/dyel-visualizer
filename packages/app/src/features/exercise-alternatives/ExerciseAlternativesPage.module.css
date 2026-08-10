@@ -1,0 +1,261 @@
+.page {
+  width: 100%;
+  max-width: 760px;
+  margin: 0 auto;
+  padding-top: clamp(1.5rem, 5vw, 3.5rem);
+  padding-right: max(var(--page-gutter), var(--safe-right));
+  padding-bottom: clamp(1.5rem, 5vw, 3.5rem);
+  padding-left: max(var(--page-gutter), var(--safe-left));
+  text-align: left;
+}
+
+.backLink {
+  display: inline-flex;
+  min-height: var(--touch-target);
+  align-items: center;
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.intro {
+  margin-top: clamp(1.5rem, 5vw, 3rem);
+}
+
+.eyebrow {
+  margin: 0 0 0.5rem;
+  color: var(--accent);
+  font: 600 0.75rem/1.2 var(--mono);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.intro h1 {
+  margin: 0;
+  color: var(--text-h);
+  font: 700 clamp(2rem, 8vw, 3.25rem)/1 var(--heading);
+  letter-spacing: -0.04em;
+}
+
+.intro > p:last-child {
+  max-width: 60ch;
+  margin: 1rem 0 0;
+  color: var(--text);
+  font-size: 1.05rem;
+}
+
+.finder,
+.results {
+  margin-top: clamp(2rem, 6vw, 3.5rem);
+  padding: clamp(1.25rem, 4vw, 2rem);
+  border: 1px solid var(--accent-border);
+  border-radius: 12px;
+  background: var(--code-bg);
+  box-shadow: var(--shadow);
+}
+
+.finder h2,
+.results h2 {
+  margin: 0;
+  color: var(--text-h);
+  font: 600 1.4rem/1.3 var(--heading);
+}
+
+.controlGroup,
+.choiceGroup {
+  margin-top: 1.5rem;
+}
+
+.controlGroup > label,
+.choiceGroup legend {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: var(--text-h);
+  font-weight: 650;
+}
+
+.controlGroup > div {
+  display: block;
+  width: 100%;
+}
+
+.controlGroup > div > div {
+  width: 100%;
+  min-height: var(--touch-target);
+}
+
+.hint,
+.initialState,
+.emptyGroup,
+.noRecommendations {
+  margin: 0.65rem 0 0;
+  color: var(--muted);
+}
+
+.hint {
+  font-size: 0.85rem;
+}
+
+.initialState {
+  padding: 1.25rem 0 0.25rem;
+}
+
+.choiceGroup {
+  min-width: 0;
+  padding: 0;
+  border: 0;
+}
+
+.choiceGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.choice {
+  position: relative;
+  display: flex;
+  min-height: var(--touch-target);
+  cursor: pointer;
+}
+
+.choice input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.choice span {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  padding: 0.65rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  line-height: 1.25;
+  transition:
+    border-color 0.15s,
+    background 0.15s,
+    color 0.15s;
+}
+
+.choice input:checked + span {
+  border-color: var(--accent);
+  background: var(--accent-bg);
+  color: var(--text-h);
+  font-weight: 650;
+}
+
+.choice input:checked + span::before {
+  content: '✓';
+  margin-right: 0.5rem;
+  color: var(--accent);
+}
+
+.choice input:focus-visible + span {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.resetButton {
+  min-height: var(--touch-target);
+  margin-top: 1.5rem;
+  padding: 0.55rem 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-h);
+  font: 600 0.9rem/1 var(--sans);
+  cursor: pointer;
+}
+
+.results {
+  margin-top: 1.25rem;
+}
+
+.resultGroup {
+  margin-top: 1.75rem;
+}
+
+.resultGroup h3 {
+  margin: 0 0 0.75rem;
+  color: var(--text-h);
+  font: 600 1.15rem/1.3 var(--heading);
+}
+
+.resultList {
+  display: grid;
+  gap: 0.85rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.resultCard {
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+}
+
+.resultCard h4 {
+  margin: 0;
+  color: var(--accent);
+  font: 650 1rem/1.3 var(--heading);
+}
+
+.resultCard dl,
+.resultCard dd {
+  margin: 0;
+}
+
+.resultCard dl {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 0.9rem;
+}
+
+.resultCard dt {
+  color: var(--text-h);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.035em;
+  text-transform: uppercase;
+}
+
+.resultCard dd {
+  margin-top: 0.15rem;
+  color: var(--text);
+  font-size: 0.9rem;
+}
+
+.liveRegion {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (max-width: 640px) {
+  .page {
+    padding-top: max(clamp(1.5rem, 5vw, 3.5rem), var(--safe-top));
+    padding-right: max(1rem, var(--safe-right));
+    padding-left: max(1rem, var(--safe-left));
+  }
+
+  .choiceGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .choice span {
+    transition: none;
+  }
+}

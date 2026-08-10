@@ -22,6 +22,16 @@ describe('TypeaheadDropdown', () => {
     expect(screen.getByRole('button', { name: /toggle dropdown/i })).toBeDefined();
   });
 
+  it('associates an external visible label through inputId', () => {
+    render(
+      <>
+        <label htmlFor="fruit-search">Fruit</label>
+        <TypeaheadDropdown inputId="fruit-search" options={opts} value={null} onChange={vi.fn()} />
+      </>
+    );
+    expect(screen.getByRole('combobox', { name: 'Fruit' })).toBeDefined();
+  });
+
   it.each([
     ['all options', '', 5],
     ['a matches', 'a', 4],
@@ -51,6 +61,42 @@ describe('TypeaheadDropdown', () => {
     fireEvent.click(screen.getByRole('button', { name: /toggle dropdown/i }));
     await wait();
     expect(getOpts()).toHaveLength(5);
+  });
+
+  it('can match hidden search terms without rendering them as options', async () => {
+    render(
+      <TypeaheadDropdown
+        options={['Apple', 'Banana']}
+        value={null}
+        onChange={vi.fn()}
+        getSearchText={(option) => (option === 'Apple' ? 'Apple granny smith' : option)}
+      />
+    );
+    const input = screen.getByPlaceholderText('Search...');
+    fireEvent.change(input, { target: { value: 'granny' } });
+    fireEvent.focus(input);
+    await wait();
+
+    expect(getOpts()).toHaveLength(1);
+    expect(screen.getByRole('option', { name: 'Apple' })).toBeDefined();
+    expect(screen.queryByRole('option', { name: 'granny smith' })).toBeNull();
+  });
+
+  it('renders optional group labels without changing the selectable options', async () => {
+    render(
+      <TypeaheadDropdown
+        options={['Apple', 'Apricot', 'Banana']}
+        value={null}
+        onChange={vi.fn()}
+        getGroupLabel={(option) => (option.startsWith('A') ? 'A fruit' : 'B fruit')}
+      />
+    );
+    fireEvent.focus(screen.getByPlaceholderText('Search...'));
+    await wait();
+
+    expect(screen.getByText('A fruit')).toBeDefined();
+    expect(screen.getByText('B fruit')).toBeDefined();
+    expect(getOpts()).toHaveLength(3);
   });
 
   it('calls onChange when an option is clicked', async () => {

@@ -212,3 +212,22 @@ export {
   buildExerciseDisplayNameIndex,
   canonicalLiftType,
 } from './exerciseUtils';
+export {
+  EXERCISE_ALTERNATIVE_ISSUES,
+  EXERCISE_ALTERNATIVES_CATALOG,
+  listSearchableExerciseNames,
+  resolveAlternativeExercise,
+  getExerciseFamily,
+  getSupportedExerciseIssues,
+  getExerciseRecommendations,
+  type ExerciseAlias,
+  type ExerciseAlternative,
+  type ExerciseFamily,
+  type ExerciseIssueCategory,
+  type ExerciseIssueChoice,
+  type ExerciseIssueDirection,
+  type ExerciseIssueId,
+  type ExerciseRecommendation,
+  type ExerciseRecommendationExplanation,
+  type ExerciseRecommendationKind,
+} from './exerciseAlternatives/exerciseAlternatives';
