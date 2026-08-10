@@ -1,13 +1,9 @@
 import { useEffect } from 'react';
 import clsx from 'clsx';
 import { PipelineProvider } from './PipelineContext';
-import { RepCalculator } from '../features/calculator/RepCalculator';
 import { StrengthScoreCalculator } from '../features/calculator/StrengthScoreCalculator';
-import { PlateCalculator } from '../features/calculator/PlateCalculator';
 import { SigmaTab } from '../features/sigma/SigmaTab';
 import { AccessoryTabPanel, LiftTabPanel } from '../features/lift';
-import { SheetUrlPanel } from '../features/data-source/SheetUrlPanel';
-import { GettingStarted } from '../features/data-source/GettingStarted';
 import { DateRangePicker } from '../shared/components/DateRangePicker';
 import { defaultDateRangeFromLastSession } from '@dyel/api';
 import type { LiftType } from '@dyel/api';
@@ -17,26 +13,28 @@ import { usePipelineOrchestration } from './usePipelineOrchestration';
 import { useVisualizerData } from './useVisualizerData';
 import { PrimaryTabs } from './PrimaryTabs';
 import { PRIMARY_TABPANEL_ID, primaryTabId } from './appTabA11y';
-import { FirstUseGuide } from './FirstUseGuide';
+import { CachedTrainingNotice, MyTrainingGate } from './MyTrainingState';
+import { DataSetupPage } from '../features/data-source/DataSetupPage';
+import { TrainingToolsPage } from '../features/training-tools';
 import { useLocalStorageState } from '../shared/hooks';
 import styles from './App.module.css';
 
 const SHORT_DATE = new Intl.DateTimeFormat('en-US', { month: 'numeric', day: 'numeric' });
 
-export function App() {
+export function App({
+  destination = 'training',
+}: {
+  destination?: 'training' | 'setup' | 'tools';
+}) {
   const [isTrainingPeriodExpanded, setIsTrainingPeriodExpanded] = useLocalStorageState(
     'dyel:training-period:expanded',
     false
   );
   const {
-    isFirstUse,
     url,
     inputMode,
     pastedText,
-    panelForcedOpen,
-    setPanelForcedOpen,
     refreshToken,
-    setRefreshToken,
     activeTab,
     setActiveTab,
     lastLiftTab,
@@ -48,6 +46,7 @@ export function App() {
     handleUrlChange,
     handleTextChange,
     handleModeChange,
+    setRefreshToken,
   } = useAppSettings();
 
   const {
@@ -57,7 +56,7 @@ export function App() {
     isUsingCachedData,
     model: effModel,
     invalidUrl,
-    textValidation,
+    requestError,
   } = usePipelineOrchestration(inputMode, url, pastedText, refreshToken, athleteBase);
   const {
     tabRows,
@@ -69,8 +68,21 @@ export function App() {
     lastSessionDate,
   } = useVisualizerData(effModel, dateRange);
 
-  const showUrlPanel = panelForcedOpen || effStatus !== 'success';
   const tabs = MAIN_TABS.filter(({ id }) => visibleLiftIds.has(id));
+  const hasConfiguredSource =
+    inputMode === 'url' ? url.trim().length > 0 : pastedText.trim().length > 0;
+  const blockingState =
+    effStatus === 'success'
+      ? visibleLiftIds.size === 0
+        ? 'empty'
+        : null
+      : effStatus === 'loading'
+        ? 'loading'
+        : effStatus === 'error'
+          ? 'error'
+          : hasConfiguredSource
+            ? 'loading'
+            : 'unconnected';
   const effActiveTab: PageTab =
     activeTab !== 'sigma' &&
     activeTab !== 'calculator' &&
@@ -87,7 +99,7 @@ export function App() {
   const primaryTabs = [
     { id: 'sigma' as const, label: 'Σ Overview', accessibleLabel: 'Overview' },
     ...tabs,
-    { id: 'calculator' as const, label: 'Calculator' },
+    { id: 'calculator' as const, label: 'Strength score' },
   ];
   const trainingPeriodSummary = dateRange.from
     ? `${SHORT_DATE.format(dateRange.from)}${dateRange.to ? ` – ${SHORT_DATE.format(dateRange.to)}` : ''}`
@@ -105,51 +117,48 @@ export function App() {
     setDateRange(defaultDateRangeFromLastSession(lastSessionDate));
   }, [lastSessionDate, setDateRange]);
 
+  if (destination === 'setup') {
+    return (
+      <DataSetupPage
+        mode={inputMode}
+        url={url}
+        text={pastedText}
+        status={effStatus}
+        requestStatus={requestStatus}
+        requestError={requestError}
+        invalidUrl={invalidUrl}
+        isUsingCachedData={isUsingCachedData}
+        lastUpdatedAt={lastUpdatedAt}
+        onModeChange={handleModeChange}
+        onUrlChange={handleUrlChange}
+        onTextChange={handleTextChange}
+        onRefresh={() => setRefreshToken((token) => token + 1)}
+      />
+    );
+  }
+
+  if (destination === 'tools') {
+    return (
+      <PipelineProvider status={effStatus} model={effModel}>
+        <TrainingToolsPage
+          tabRows={tabRows}
+          baselineNames={defaultCanonicals}
+          connected={effStatus === 'success' && visibleLiftIds.size > 0}
+        />
+      </PipelineProvider>
+    );
+  }
+
   return (
     <main className={styles.main}>
-      <SheetUrlPanel
-        showUrlPanel={showUrlPanel}
-        url={url}
-        loaded={effStatus === 'success'}
-        refreshStatus={requestStatus}
-        lastUpdatedAt={lastUpdatedAt}
-        isUsingCachedData={isUsingCachedData}
-        invalidUrl={invalidUrl}
-        onUrlChange={handleUrlChange}
-        onForceOpen={() => setPanelForcedOpen(true)}
-        onCancel={() => setPanelForcedOpen(false)}
-        onRefresh={() => setRefreshToken((t) => t + 1)}
-        mode={inputMode}
-        onModeChange={handleModeChange}
-        text={pastedText}
-        onTextChange={handleTextChange}
-      />
       <PipelineProvider status={effStatus} model={effModel}>
         <div className={styles.content}>
-          {inputMode === 'url' && url.length === 0 && <GettingStarted mode="url" />}
-          {inputMode === 'text' && pastedText.length === 0 && <GettingStarted mode="text" />}
-          {effStatus === 'loading' && <p>Loading…</p>}
-          {effStatus === 'error' && (
-            <p className={styles.errorMsg}>
-              {inputMode === 'text' && !textValidation.isValid
-                ? 'No usable exercise lines found. Try one exercise per line, e.g. "comp squat 1rm 300lbs".'
-                : 'Failed to load data — check the URL and try again.'}
-              {inputMode === 'url' && (
-                <a href="?page=validator" className={styles.accentLink}>
-                  {' '}
-                  Check your spreadsheet format{' '}
-                </a>
-              )}
-            </p>
-          )}
-          {effStatus !== 'success' && (
-            <div className={styles.offlineCalculator}>
-              <PlateCalculator />
-            </div>
-          )}
-          {effStatus === 'success' && (
+          {blockingState && <MyTrainingGate state={blockingState} />}
+          {!blockingState && (
             <>
-              <FirstUseGuide isFirstUse={isFirstUse} />
+              {isUsingCachedData && (
+                <CachedTrainingNotice requestStatus={requestStatus} lastUpdatedAt={lastUpdatedAt} />
+              )}
               <div className={styles.controlDock}>
                 <PrimaryTabs tabs={primaryTabs} activeTab={effActiveTab} onSelect={setActiveTab} />
                 <section
@@ -198,7 +207,7 @@ export function App() {
                     {mobileDestination === 'overview'
                       ? 'Σ Overview'
                       : mobileDestination === 'calculator'
-                        ? 'Calculator'
+                        ? 'Strength score'
                         : 'Lifts'}
                   </span>
                   <DateRangePicker
@@ -236,17 +245,11 @@ export function App() {
               >
                 {effActiveTab === 'calculator' ? (
                   <div className={styles.calculatorWorkspace}>
-                    <div className={styles.calculatorPlate}>
-                      <PlateCalculator />
-                    </div>
-                    <div className={styles.calculatorRow}>
-                      <div>
-                        <RepCalculator tabRows={tabRows} baselineNames={defaultCanonicals} />
-                      </div>
-                      <div>
-                        <StrengthScoreCalculator dateRange={dateRange} unit={dataUnit} />
-                      </div>
-                    </div>
+                    <StrengthScoreCalculator
+                      dateRange={dateRange}
+                      unit={dataUnit}
+                      collapsible={false}
+                    />
                   </div>
                 ) : effActiveTab === 'sigma' ? (
                   <SigmaTab
@@ -273,7 +276,7 @@ export function App() {
                   />
                 ) : null}
               </div>
-              <nav className={styles.mobileNav} aria-label="Primary navigation">
+              <nav className={styles.mobileNav} aria-label="My Training views">
                 <button
                   type="button"
                   className={clsx(

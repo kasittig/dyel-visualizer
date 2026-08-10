@@ -217,7 +217,16 @@ export function TeamViewPage() {
   if (dataState.status === 'error') {
     return (
       <main className={styles.main}>
+        <div className={styles.teamViewPage}>Team</div>
+        <h1>Team data could not be loaded</h1>
         <p className={styles.errorMsg}>{dataState.message}</p>
+        <p>
+          Team views use the published team index and each lifter&apos;s published training sheet.
+          Check the data setup, then try again.
+        </p>
+        <a href={`${siteRootPath()}?page=setup`} className={styles.accentLink}>
+          Open Data &amp; Setup
+        </a>
       </main>
     );
   }
@@ -225,9 +234,6 @@ export function TeamViewPage() {
   return (
     <main className={styles.main}>
       <p className={styles.backLink}>
-        <a href={siteRootPath()} className={styles.accentLink}>
-          ← Back to DYEL Visualizer
-        </a>
         <a
           href={`${siteRootPath()}team/summary`}
           className={clsx(styles.accentLink, styles.summaryLink)}

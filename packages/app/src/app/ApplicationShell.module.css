@@ -1,0 +1,115 @@
+.shell {
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  min-height: 4rem;
+  padding: var(--safe-top) max(var(--page-gutter), var(--safe-right)) 0
+    max(var(--page-gutter), var(--safe-left));
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--bg) 94%, transparent);
+  backdrop-filter: blur(14px);
+}
+
+.brand {
+  color: var(--text-h);
+  font: 700 1.25rem/1 var(--heading);
+  letter-spacing: 0.12em;
+  text-decoration: none;
+}
+
+.desktopNav {
+  display: flex;
+  align-self: stretch;
+  gap: clamp(0.25rem, 1.4vw, 1rem);
+}
+
+.navLink {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch-target);
+  padding: 0.5rem;
+  color: var(--muted);
+  font: 600 0.76rem/1.1 var(--heading);
+  letter-spacing: 0.035em;
+  text-decoration: none;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.navLink:hover,
+.navLink[aria-current='page'] {
+  color: var(--accent);
+}
+
+.navLink[aria-current='page']::after {
+  position: absolute;
+  right: 0.5rem;
+  bottom: -1px;
+  left: 0.5rem;
+  height: 3px;
+  background: var(--accent);
+  content: '';
+}
+
+.body {
+  flex: 1;
+  min-width: 0;
+}
+
+.mobileNav {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .header {
+    position: static;
+    min-height: 3.5rem;
+    padding-inline: max(1rem, var(--safe-right)) max(1rem, var(--safe-left));
+  }
+
+  .desktopNav {
+    display: none;
+  }
+
+  .mobileNav {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 70;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    padding: 0.25rem var(--safe-right) var(--safe-bottom) var(--safe-left);
+    border-top: 1px solid var(--border);
+    background: color-mix(in srgb, var(--code-bg) 96%, transparent);
+    box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.08);
+    backdrop-filter: blur(14px);
+  }
+
+  .mobileLink {
+    justify-content: center;
+    min-width: 0;
+    min-height: 3.5rem;
+    padding: 0.5rem 0.15rem;
+    font-size: 0.65rem;
+    letter-spacing: 0;
+  }
+
+  .mobileLink[aria-current='page']::after {
+    top: -0.25rem;
+    right: 20%;
+    bottom: auto;
+    left: 20%;
+  }
+}

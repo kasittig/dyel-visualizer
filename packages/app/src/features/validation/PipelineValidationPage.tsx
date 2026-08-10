@@ -4,6 +4,7 @@ import { usePipelineValidation } from './usePipelineValidation';
 import type { InputMode } from '../../app/appTabs';
 import { InputModeToggle } from '../data-source';
 import styles from './PipelineValidationPage.module.css';
+import { siteRootPath } from '../../shared/pageRouting';
 
 const BANNERS = {
   ok: ['var(--success)', '✓', 'Your pipeline data is valid.'],
@@ -55,8 +56,8 @@ export function PipelineValidationPage() {
       <div className={styles.header}>
         <h1>Pipeline Validation</h1>
         <p className={styles.backLinkP}>
-          <a href="./" className={styles.accentLink}>
-            ← Back to DYEL Visualizer
+          <a href={`${siteRootPath()}?page=setup`} className={styles.accentLink}>
+            ← Back to Data &amp; Setup
           </a>
         </p>
       </div>

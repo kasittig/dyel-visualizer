@@ -14,9 +14,11 @@ export function useResolvedRawInput(
   status: 'idle' | 'loading' | 'success' | 'error';
   raw: RawInput[];
   lastUpdatedAt: Date | null;
+  error: string | null;
 } {
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [raw, setRaw] = useState<RawInput[]>([]);
+  const [error, setError] = useState<string | null>(null);
   const [lastUpdate, setLastUpdate] = useState<{ sheetKey: string; at: Date } | null>(null);
 
   useEffect(() => {
@@ -25,15 +27,18 @@ export function useResolvedRawInput(
         // eslint-disable-next-line react-hooks/set-state-in-effect
         setStatus('idle');
         setRaw([]);
+        setError(null);
         return;
       }
       try {
+        setError(null);
         setStatus('loading');
         setRaw([buildRawInput('text', pastedText)]);
         setStatus('success');
-      } catch {
+      } catch (err) {
         setStatus('error');
         setRaw([]);
+        setError(err instanceof Error ? err.message : 'Could not read the pasted training data.');
       }
       return;
     }
@@ -42,10 +47,12 @@ export function useResolvedRawInput(
     if (!ref) {
       setStatus('idle');
       setRaw([]);
+      setError(null);
       return;
     }
 
     setStatus('loading');
+    setError(null);
     const controller = new AbortController();
 
     fetchSheetCsv(sheetCsvUrl(ref, '0'), controller.signal)
@@ -53,6 +60,7 @@ export function useResolvedRawInput(
         setRaw([buildRawInput('url', csv)]);
         setLastUpdate({ sheetKey: url, at: new Date() });
         setStatus('success');
+        setError(null);
       })
       .catch((err: unknown) => {
         if (err instanceof Error && err.name === 'AbortError') {
@@ -60,6 +68,7 @@ export function useResolvedRawInput(
         }
         setStatus('error');
         setRaw([]);
+        setError(err instanceof Error ? err.message : 'Could not load this training data.');
       });
 
     return () => controller.abort();
@@ -69,5 +78,6 @@ export function useResolvedRawInput(
     status,
     raw,
     lastUpdatedAt: lastUpdate?.sheetKey === url ? lastUpdate.at : null,
+    error,
   };
 }

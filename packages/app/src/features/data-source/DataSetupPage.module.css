@@ -1,0 +1,141 @@
+.page {
+  width: min(880px, 100%);
+  margin: 0 auto;
+  padding: 2rem 1rem 4rem;
+}
+.page h1 {
+  margin: 0.15rem 0 0.5rem;
+  font-size: clamp(2rem, 5vw, 3rem);
+}
+.eyebrow {
+  margin: 0;
+  color: var(--accent);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.card {
+  margin-top: 1.5rem;
+  padding: clamp(1rem, 3vw, 1.75rem);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--card-bg);
+}
+.card h2 {
+  margin-top: 0;
+}
+.statusHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.sourceName,
+.updated {
+  margin: 0.25rem 0 0;
+  color: var(--muted);
+}
+.status {
+  padding: 0.35rem 0.65rem;
+  border-radius: 999px;
+  background: var(--code-bg);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+.status[data-state='connected'] {
+  color: var(--success, #18794e);
+}
+.error {
+  margin: 1rem 0;
+  padding: 0.85rem 1rem;
+  border-left: 4px solid var(--danger, #c53030);
+  background: var(--code-bg);
+}
+.error p {
+  margin: 0.25rem 0 0;
+}
+.field {
+  display: grid;
+  gap: 0.45rem;
+  margin-top: 1rem;
+  font-weight: 700;
+}
+.field input,
+.field textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  color: inherit;
+  background: var(--bg);
+  font: inherit;
+}
+.field small {
+  color: var(--muted);
+  font-weight: 400;
+}
+.actions,
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1rem;
+  margin-top: 1rem;
+}
+.actions button {
+  min-height: 44px;
+  padding: 0.6rem 1rem;
+  border: 0;
+  border-radius: 7px;
+  background: var(--accent);
+  color: white;
+  font: inherit;
+  font-weight: 700;
+}
+.actions button:disabled {
+  opacity: 0.6;
+}
+.actions .secondary {
+  border: 1px solid var(--border);
+  background: transparent;
+  color: inherit;
+}
+.indexPicker {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  font-weight: 700;
+}
+.indexChoices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.indexChoices button {
+  min-height: 36px;
+  padding: 0.4rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+.indexChoices button[aria-pressed='true'] {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+@media (max-width: 600px) {
+  .statusHeader {
+    display: grid;
+  }
+  .actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .actions a {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+  }
+}

@@ -129,7 +129,10 @@ export default defineConfig([
     // which main.tsx lazy-loads for code-splitting. Barrel-importing useIndexData here would
     // statically pull IndexPage into the main bundle and defeat that split, so this file keeps
     // the deep import `../index-page/useIndexData` instead. See the comment in SheetUrlPanel.tsx.
-    files: ['packages/app/src/features/data-source/SheetUrlPanel.tsx'],
+    files: [
+      'packages/app/src/features/data-source/SheetUrlPanel.tsx',
+      'packages/app/src/features/data-source/DataSetupPage.tsx',
+    ],
     rules: {
       'no-restricted-imports': 'off',
     },

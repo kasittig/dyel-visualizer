@@ -155,6 +155,10 @@ describe('TeamViewPage', () => {
     });
     render(<TeamViewPage />);
     expect(screen.getByText('Failed to fetch sheets')).toBeDefined();
+    expect(screen.getByRole('heading', { name: 'Team data could not be loaded' })).toBeDefined();
+    expect(screen.getByRole('link', { name: 'Open Data & Setup' }).getAttribute('href')).toBe(
+      '/?page=setup'
+    );
   });
 
   it.each([
@@ -258,7 +262,7 @@ describe('TeamViewPage', () => {
     expect(link.getAttribute('target')).toBe('_blank');
   });
 
-  it('back link and summary view link resolve against the site root, not the current path', () => {
+  it('summary view link resolves against the site root, not the current path', () => {
     window.history.pushState({}, '', '/dyel-visualizer/team');
     vi.mocked(useTeamViewData).mockReturnValue({
       status: 'success',
@@ -266,9 +270,6 @@ describe('TeamViewPage', () => {
     });
     render(<TeamViewPage />);
 
-    expect(screen.getByText('← Back to DYEL Visualizer').getAttribute('href')).toBe(
-      '/dyel-visualizer/'
-    );
     expect(screen.getByText('🏆 Summary view').getAttribute('href')).toBe(
       '/dyel-visualizer/team/summary'
     );

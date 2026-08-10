@@ -1,4 +1,5 @@
 export { SheetUrlPanel } from './SheetUrlPanel';
+export { DataSetupPage, type DataSetupPageProps } from './DataSetupPage';
 export { GettingStarted } from './GettingStarted';
 export { InputModeToggle } from './InputModeToggle';
 export { useResolvedRawInput } from './useResolvedRawInput';

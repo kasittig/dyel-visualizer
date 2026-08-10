@@ -20,20 +20,20 @@ describe('ExerciseAlternativesPage', () => {
 
     expect(screen.getByRole('heading', { level: 1, name: 'Exercise alternatives' })).toBeDefined();
     expect(screen.getByText(/no training sheet is required/i)).toBeDefined();
-    expect(screen.getByRole('region', { name: 'Find an alternative' })).toBeDefined();
+    expect(screen.getByRole('region', { name: 'Exercise alternatives' })).toBeDefined();
     expect(screen.getByText(/choose an exercise to see the issues/i)).toBeDefined();
   });
 
   it.each([
-    ['/alternatives', '/'],
-    ['/dyel-visualizer/alternatives', '/dyel-visualizer/'],
-  ])('links back to the site root from %s', (path, expected) => {
+    ['/alternatives', '/?page=tools&tool=alternatives'],
+    ['/dyel-visualizer/alternatives', '/dyel-visualizer/?page=tools&tool=alternatives'],
+  ])('links back to Training Tools from %s', (path, expected) => {
     window.history.pushState({}, '', path);
     render(<ExerciseAlternativesPage />);
 
-    expect(
-      screen.getByRole('link', { name: /back to dyel visualizer/i }).getAttribute('href')
-    ).toBe(expected);
+    expect(screen.getByRole('link', { name: /back to training tools/i }).getAttribute('href')).toBe(
+      expected
+    );
   });
 
   it('recommends adjustments before replacements for a Swiss-bar grip that feels too small', async () => {

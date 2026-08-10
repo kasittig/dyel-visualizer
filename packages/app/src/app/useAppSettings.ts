@@ -5,9 +5,7 @@ import type { InputMode, PageTab } from './appTabs';
 import type { LiftType } from '@dyel/api';
 
 export function useAppSettings() {
-  const [isFirstUse] = useState(() => {
-    const hasSavedSource =
-      localStorage.getItem('dyel:url') !== null || localStorage.getItem('dyel:pastedText') !== null;
+  useState(() => {
     const p = new URLSearchParams(window.location.search),
       u = p.get('sheet'),
       m = p.get('mode'),
@@ -23,7 +21,7 @@ export function useAppSettings() {
     if (t !== null) {
       localStorage.setItem('dyel:pastedText', JSON.stringify(t));
     }
-    return !hasSavedSource;
+    return null;
   });
 
   const [url, setUrl] = useLocalStorageState<string>(
@@ -32,7 +30,6 @@ export function useAppSettings() {
   );
   const [inputMode, setInputMode] = useLocalStorageState<InputMode>('dyel:inputMode', 'url');
   const [pastedText, setPastedText] = useLocalStorageState<string>('dyel:pastedText', '');
-  const [panelForcedOpen, setPanelForcedOpen] = useState(false);
   const [refreshToken, setRefreshToken] = useState(0);
   const [activeTab, setActiveTab] = useLocalStorageState<PageTab>('dyel:activeTab', 'sigma');
   const [lastLiftTab, setLastLiftTab] = useLocalStorageState<LiftType>('dyel:lastLiftTab', 'squat');
@@ -62,23 +59,15 @@ export function useAppSettings() {
     history.replaceState(null, '', `?${p.toString()}`);
   }, [inputMode, url, pastedText]);
 
-  const tok = (clr = false) => {
-    if (clr) {
-      setPanelForcedOpen(false);
-    }
-    setShownResetToken((t) => t + 1);
-  };
+  const resetShown = () => setShownResetToken((token) => token + 1);
 
   return {
-    isFirstUse,
     url,
     setUrl,
     inputMode,
     setInputMode,
     pastedText,
     setPastedText,
-    panelForcedOpen,
-    setPanelForcedOpen,
     refreshToken,
     setRefreshToken,
     activeTab,
@@ -92,15 +81,15 @@ export function useAppSettings() {
     setDateRange,
     handleUrlChange: (u: string) => {
       setUrl(u);
-      tok(true);
+      resetShown();
     },
-    handleTextChange: (t: string, closePanel = true) => {
+    handleTextChange: (t: string) => {
       setPastedText(t);
-      tok(closePanel);
+      resetShown();
     },
     handleModeChange: (m: InputMode) => {
       setInputMode(m);
-      tok();
+      resetShown();
     },
   };
 }

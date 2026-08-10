@@ -3,12 +3,23 @@ import { StrictMode, lazy, Suspense } from 'react';
 import { createRoot } from 'react-dom/client';
 import './index.css';
 import { App } from './app/App.tsx';
+import { ApplicationShell } from './app/ApplicationShell.tsx';
 import { ErrorBoundary } from './shared/components/ErrorBoundary.tsx';
 import { resolvePage } from './shared/pageRouting.ts';
 
 const ConjugateInfoPage = lazy(() =>
   import('./features/conjugate-info/ConjugateInfoPage.tsx').then((m) => ({
     default: m.ConjugateInfoPage,
+  }))
+);
+
+const LearnPage = lazy(() =>
+  import('./features/conjugate-info/LearnPage.tsx').then((m) => ({ default: m.LearnPage }))
+);
+
+const MetricGuidePage = lazy(() =>
+  import('./features/conjugate-info/MetricGuidePage.tsx').then((m) => ({
+    default: m.MetricGuidePage,
   }))
 );
 
@@ -41,67 +52,45 @@ const ExerciseAlternativesPage = lazy(() =>
     default: m.ExerciseAlternativesPage,
   }))
 );
+const LAZY_PAGES = {
+  learn: LearnPage,
+  metrics: MetricGuidePage,
+  conjugate: ConjugateInfoPage,
+  index: IndexPage,
+  validator: ValidatorPage,
+  'pipeline-validation': PipelineValidationPage,
+  coach: TeamViewPage,
+  team: TeamSummaryPage,
+  'team-summary': TeamSummaryPage,
+  alternatives: ExerciseAlternativesPage,
+};
 
 function resolvePageComponent(page: string | null) {
-  if (page === 'conjugate') {
-    return (
-      <Suspense>
-        <ConjugateInfoPage />
-      </Suspense>
-    );
+  if (page === 'tools') {
+    return <App destination="tools" />;
   }
-  if (page === 'index') {
-    return (
-      <Suspense>
-        <IndexPage />
-      </Suspense>
-    );
+  if (page === 'setup') {
+    return <App destination="setup" />;
   }
-  if (page === 'validator') {
-    return (
-      <Suspense>
-        <ValidatorPage />
-      </Suspense>
-    );
-  }
-  if (page === 'pipeline-validation') {
-    return (
-      <Suspense>
-        <PipelineValidationPage />
-      </Suspense>
-    );
-  }
-  if (page === 'team' || page === 'coach') {
-    return (
-      <Suspense>
-        <TeamViewPage />
-      </Suspense>
-    );
-  }
-  if (page === 'team-summary') {
-    return (
-      <Suspense>
-        <TeamSummaryPage />
-      </Suspense>
-    );
-  }
-  if (page === 'alternatives') {
-    return (
-      <Suspense>
-        <ExerciseAlternativesPage />
-      </Suspense>
-    );
-  }
-  if (page === null) {
+  if (page === null || page === 'my-training') {
     return <App />;
   }
-  return <p>Page not found.</p>;
+  const Page = LAZY_PAGES[page as keyof typeof LAZY_PAGES];
+  return Page ? (
+    <Suspense>
+      <Page />
+    </Suspense>
+  ) : (
+    <p>Page not found.</p>
+  );
 }
 
 const page = resolvePage();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <ErrorBoundary>{resolvePageComponent(page)}</ErrorBoundary>
+    <ErrorBoundary>
+      <ApplicationShell page={page}>{resolvePageComponent(page)}</ApplicationShell>
+    </ErrorBoundary>
   </StrictMode>
 );

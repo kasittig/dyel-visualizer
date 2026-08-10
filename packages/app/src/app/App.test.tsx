@@ -3,14 +3,25 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { App } from './App';
 
 const setActiveTab = vi.fn();
+const appSettingsState = vi.hoisted(() => ({
+  url: 'https://docs.google.com/spreadsheets/d/test/pubhtml',
+  inputMode: 'url' as const,
+  pastedText: '',
+}));
+const orchestrationState = vi.hoisted(() => ({
+  status: 'success' as 'idle' | 'loading' | 'success' | 'error',
+  requestStatus: 'success' as 'idle' | 'loading' | 'success' | 'error',
+  lastUpdatedAt: null as Date | null,
+  isUsingCachedData: false,
+  model: {},
+}));
+const visualizerState = vi.hoisted(() => ({
+  visibleLiftIds: new Set(['squat', 'bench', 'deadlift', 'accessory']),
+}));
 
 vi.mock('./useAppSettings', () => ({
   useAppSettings: () => ({
-    url: 'https://docs.google.com/spreadsheets/d/test/pubhtml',
-    inputMode: 'url',
-    pastedText: '',
-    panelForcedOpen: false,
-    setPanelForcedOpen: vi.fn(),
+    ...appSettingsState,
     refreshToken: 0,
     setRefreshToken: vi.fn(),
     activeTab: 'sigma',
@@ -28,18 +39,13 @@ vi.mock('./useAppSettings', () => ({
 }));
 
 vi.mock('./usePipelineOrchestration', () => ({
-  usePipelineOrchestration: () => ({
-    status: 'success',
-    model: {},
-    invalidUrl: false,
-    textValidation: { isValid: true },
-  }),
+  usePipelineOrchestration: () => orchestrationState,
 }));
 
 vi.mock('./useVisualizerData', () => ({
   useVisualizerData: () => ({
     tabRows: [],
-    visibleLiftIds: new Set(['squat', 'bench', 'deadlift', 'accessory']),
+    visibleLiftIds: visualizerState.visibleLiftIds,
     defaultCanonicals: { squat: 'Squat', bench: 'Bench', deadlift: 'Deadlift', accessory: 'Row' },
     dataUnit: 'lbs',
     volumeByDate: [],
@@ -69,6 +75,27 @@ describe('desktop workspace controls', () => {
   afterEach(() => {
     cleanup();
     setActiveTab.mockClear();
+    Object.assign(orchestrationState, {
+      status: 'success',
+      requestStatus: 'success',
+      lastUpdatedAt: null,
+      isUsingCachedData: false,
+      model: {},
+    });
+    visualizerState.visibleLiftIds = new Set(['squat', 'bench', 'deadlift', 'accessory']);
+    appSettingsState.url = 'https://docs.google.com/spreadsheets/d/test/pubhtml';
+  });
+
+  it('keeps My Training discoverable before data is connected', () => {
+    appSettingsState.url = '';
+    orchestrationState.status = 'idle';
+    orchestrationState.requestStatus = 'idle';
+    render(<App />);
+
+    expect(screen.getByRole('heading', { name: 'Connect your training log' })).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Connect training data' }).getAttribute('href')).toBe(
+      '/?page=setup'
+    );
   });
 
   it('exposes distinct primary navigation and a globally scoped filter toolbar', () => {
@@ -89,5 +116,38 @@ describe('desktop workspace controls', () => {
 
     fireEvent.click(within(desktopNav).getByRole('tab', { name: 'Bench' }));
     expect(setActiveTab).toHaveBeenCalledWith('bench');
+  });
+
+  it.each([
+    ['loading', 'Loading your training'],
+    ['error', 'Your training log could not be loaded'],
+  ] as const)('distinguishes the %s state from analysis content', (status, heading) => {
+    orchestrationState.status = status;
+    orchestrationState.requestStatus = status;
+    render(<App />);
+
+    expect(screen.getByRole('heading', { name: heading })).toBeTruthy();
+    expect(screen.queryByText('Overview content')).toBeNull();
+  });
+
+  it('distinguishes an empty connected log from a failed request', () => {
+    visualizerState.visibleLiftIds = new Set();
+    render(<App />);
+
+    expect(screen.getByRole('heading', { name: 'No training sets to analyze yet' })).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Open Data & Setup' })).toBeTruthy();
+  });
+
+  it('keeps analysis visible while clearly identifying cached data', () => {
+    Object.assign(orchestrationState, {
+      requestStatus: 'error',
+      isUsingCachedData: true,
+      lastUpdatedAt: new Date('2026-08-02T14:30:00.000Z'),
+    });
+    render(<App />);
+
+    expect(screen.getByRole('status').textContent).toContain('Showing saved training data');
+    expect(screen.getByRole('status').textContent).toContain('latest refresh failed');
+    expect(screen.getByText('Overview content')).toBeTruthy();
   });
 });
