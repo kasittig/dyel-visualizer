@@ -2,7 +2,10 @@
   width: 100%;
   max-width: 760px;
   margin: 0 auto;
-  padding: clamp(1.5rem, 5vw, 3.5rem) var(--page-gutter);
+  padding-top: clamp(1.5rem, 5vw, 3.5rem);
+  padding-right: max(var(--page-gutter), var(--safe-right));
+  padding-bottom: clamp(1.5rem, 5vw, 3.5rem);
+  padding-left: max(var(--page-gutter), var(--safe-left));
   text-align: left;
 }
 
