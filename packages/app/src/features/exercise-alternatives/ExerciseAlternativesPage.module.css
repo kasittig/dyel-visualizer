@@ -58,12 +58,13 @@
 
 .formPlaceholder p {
   margin: 0.75rem 0 0;
-  color: var(--muted);
+  color: var(--text);
 }
 
 @media (max-width: 640px) {
   .page {
-    --page-gutter: max(1rem, var(--safe-left));
+    padding-right: max(1rem, var(--safe-right));
+    padding-left: max(1rem, var(--safe-left));
   }
 
   .formPlaceholder {
